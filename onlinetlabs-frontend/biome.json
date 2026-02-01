@@ -1,0 +1,89 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.3.13/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": false
+  },
+  "files": {
+    "ignoreUnknown": true,
+    "includes": [
+      "**",
+      "!node_modules",
+      "!.next",
+      "!.source",
+      "!dist",
+      "!build",
+      "!next-env.d.ts"
+    ]
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf"
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "semicolons": "asNeeded",
+      "trailingCommas": "es5"
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "suspicious": {
+        "noUnknownAtRules": "off",
+        "noArrayIndexKey": "off"
+      },
+      "a11y": {
+        "useSemanticElements": "off",
+        "useKeyWithClickEvents": "off",
+        "useGenericFontNames": "off"
+      },
+      "complexity": {
+        "noImportantStyles": "off"
+      }
+    },
+    "domains": {
+      "next": "recommended",
+      "react": "recommended"
+    }
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": {
+          "level": "on",
+          "options": {
+            "groups": [
+              ["^react$", "^react/"],
+              ["^next$", "^next/"],
+              [":PACKAGE:"],
+              [":BLANK_LINE:"],
+              [{ "type": true }],
+              ["^@/types/"],
+              ["^@/(lib|hooks|config|ui|shared)/"],
+              [":BLANK_LINE:"],
+              ["^@/styles/"],
+              ["^@/entities/"],
+              ["^@/features/"],
+              ["^@/widgets/"],
+              ["^@/app/"],
+              [":BLANK_LINE:"],
+              [":PATH:"]
+            ],
+            "identifierOrder": "natural"
+          }
+        }
+      }
+    }
+  }
+}
