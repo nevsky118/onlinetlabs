@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "onlinetlabs-mcp-sdk"
+version = "0.1.0"
+description = "SDK для создания MCP-серверов сложных систем"
+authors = []
+readme = "README.md"
+packages = [{include = "onlinetlabs_mcp_sdk", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pydantic = "^2.0.0"
+mcp = "^1.8.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^9.0.0"
+pytest-asyncio = "^1.0.0"
+ruff = "^0.14.0"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/test_public_api.py" = ["F401"]
+"tests/test_conformance.py" = ["E402"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
