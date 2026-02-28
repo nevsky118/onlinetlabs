@@ -50,3 +50,14 @@ yarn-error.log*
 
 # === Worktrees ===
 .worktrees/
+
+**/.claude
+
+**/.vscode
+
+**/.github
+
+docs/
+
+**/CLAUDE.md
+**/AGENTS.md
