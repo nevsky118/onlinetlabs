@@ -1,5 +1,6 @@
 import pytest
 
+from tests.helpers.factories import build_session_context
 from tests.report import autotests
 
 pytestmark = [pytest.mark.unit, pytest.mark.connection]
@@ -30,8 +31,8 @@ class TestBaseConnectionManager:
         from onlinetlabs_mcp_sdk.connection import BaseConnectionManager
 
         class FakeManager(BaseConnectionManager):
-            async def connect(self, environment_url: str):
-                return {"url": environment_url}
+            async def connect(self, ctx):
+                return {"url": ctx.environment_url}
 
             async def disconnect(self, connection) -> None:
                 pass
@@ -58,8 +59,8 @@ class TestConnectionPool:
                 self.connected = []
                 self.disconnected = []
 
-            async def connect(self, environment_url: str):
-                conn = {"url": environment_url, "alive": True}
+            async def connect(self, ctx):
+                conn = {"url": ctx.environment_url, "user_id": ctx.user_id, "alive": True}
                 self.connected.append(conn)
                 return conn
 
@@ -86,7 +87,8 @@ class TestConnectionPool:
 
         # Act
         with autotests.step("Получаем соединение"):
-            conn = await pool.get_connection("http://localhost:3080")
+            ctx = build_session_context(environment_url="http://localhost:3080")
+            conn = await pool.get_connection(ctx)
 
         # Assert
         with autotests.step("Проверяем URL соединения"):
@@ -104,11 +106,12 @@ class TestConnectionPool:
 
         pool = ConnectionPool(manager=fake_manager, max_size=5)
         await pool.start()
+        ctx = build_session_context(environment_url="http://localhost:3080")
 
         # Act
         with autotests.step("Получаем два соединения к одному URL"):
-            conn1 = await pool.get_connection("http://localhost:3080")
-            conn2 = await pool.get_connection("http://localhost:3080")
+            conn1 = await pool.get_connection(ctx)
+            conn2 = await pool.get_connection(ctx)
 
         # Assert
         with autotests.step("Проверяем что соединение одно"):
@@ -127,8 +130,8 @@ class TestConnectionPool:
 
         pool = ConnectionPool(manager=fake_manager, max_size=5)
         await pool.start()
-        await pool.get_connection("http://host1:3080")
-        await pool.get_connection("http://host2:3080")
+        await pool.get_connection(build_session_context(environment_url="http://host1:3080"))
+        await pool.get_connection(build_session_context(environment_url="http://host2:3080"))
 
         # Act
         with autotests.step("Закрываем пул"):
@@ -150,11 +153,64 @@ class TestConnectionPool:
 
         pool = ConnectionPool(manager=fake_manager, max_size=2)
         await pool.start()
-        await pool.get_connection("http://host1")
-        await pool.get_connection("http://host2")
+        await pool.get_connection(build_session_context(environment_url="http://host1", user_id="u1"))
+        await pool.get_connection(build_session_context(environment_url="http://host2", user_id="u2"))
 
         # Act & Assert
         with autotests.step("Пытаемся превысить max_size"):
             with pytest.raises(MCPServerError):
-                await pool.get_connection("http://host3")
+                await pool.get_connection(build_session_context(environment_url="http://host3", user_id="u3"))
+            await pool.close()
+
+    @autotests.num("156")
+    @autotests.external_id("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+    @autotests.name("MCP SDK Connection: connect получает SessionContext")
+    async def test_connect_receives_session_context(self, fake_manager):
+        """Проверяет что пул передаёт SessionContext в connect."""
+
+        # Arrange
+        from onlinetlabs_mcp_sdk.connection import ConnectionPool
+
+        pool = ConnectionPool(manager=fake_manager, max_size=5)
+        await pool.start()
+        ctx = build_session_context(
+            environment_url="http://localhost:3080",
+            user_id="student-42",
+        )
+
+        # Act
+        with autotests.step("Получаем соединение через SessionContext"):
+            conn = await pool.get_connection(ctx)
+
+        # Assert
+        with autotests.step("Проверяем что connect получил данные из контекста"):
+            assert conn["url"] == "http://localhost:3080"
+            assert conn["user_id"] == "student-42"
+            await pool.close()
+
+    @autotests.num("157")
+    @autotests.external_id("b2c3d4e5-f6a7-8901-bcde-f12345678901")
+    @autotests.name("MCP SDK Connection: разные пользователи — разные соединения")
+    async def test_different_users_different_connections(self, fake_manager):
+        """Проверяет что разные user_id при одном env_url дают разные соединения."""
+
+        # Arrange
+        from onlinetlabs_mcp_sdk.connection import ConnectionPool
+
+        pool = ConnectionPool(manager=fake_manager, max_size=5)
+        await pool.start()
+        ctx_a = build_session_context(environment_url="http://localhost:3080", user_id="alice")
+        ctx_b = build_session_context(environment_url="http://localhost:3080", user_id="bob")
+
+        # Act
+        with autotests.step("Получаем соединения для двух пользователей"):
+            conn_a = await pool.get_connection(ctx_a)
+            conn_b = await pool.get_connection(ctx_b)
+
+        # Assert
+        with autotests.step("Проверяем что соединения разные"):
+            assert conn_a is not conn_b
+            assert conn_a["user_id"] == "alice"
+            assert conn_b["user_id"] == "bob"
+            assert len(fake_manager.connected) == 2
             await pool.close()
