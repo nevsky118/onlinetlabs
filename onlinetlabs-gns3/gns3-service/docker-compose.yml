@@ -1,0 +1,33 @@
+services:
+  gns3:
+    build:
+      dockerfile: Dockerfile
+    ports:
+      - "3080:3080"
+    environment:
+      GNS3_AUTH: "true"
+      GNS3_DEFAULT_ADMIN_USER: admin
+      GNS3_DEFAULT_ADMIN_PASSWORD: admin
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3080/v3/version"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    tmpfs:
+      - /tmp
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: gns3test
+      POSTGRES_PASSWORD: gns3test
+      POSTGRES_DB: gns3_service_test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gns3test"]
+      interval: 3s
+      timeout: 2s
+      retries: 5
+    tmpfs:
+      - /var/lib/postgresql/data

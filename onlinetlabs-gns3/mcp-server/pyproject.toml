@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "gns3-mcp-server"
+version = "0.1.0"
+description = "MCP-сервер для GNS3"
+authors = []
+packages = [{include = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+onlinetlabs-mcp-sdk = {path = "../../onlinetlabs-mcp-sdk", develop = true}
+httpx = "^0.28.0"
+python-dotenv = "^1.0.0"
+websockets = "^15.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^9.0.0"
+pytest-asyncio = "^1.0.0"
+ruff = "^0.14.0"
+respx = "^0.22.0"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
