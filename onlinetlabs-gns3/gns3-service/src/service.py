@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.models import Session, SessionStatus
-from src.models import SessionResponse
+from src.models import PasswordResetResponse, SessionResponse
 
 if TYPE_CHECKING:
     from src.gns3_admin_client import GNS3AdminClient
@@ -86,6 +86,28 @@ class SessionService:
                 await self._admin.delete_user(user_id)
             except Exception:
                 logger.exception("Cleanup failed for user %s", user_id)
+
+    async def reset_password(self, db: AsyncSession, session_id: str) -> PasswordResetResponse:
+        import uuid as uuid_mod
+        session = await db.get(Session, uuid_mod.UUID(session_id))
+        if session is None:
+            raise ValueError(f"Session {session_id} not found")
+        if session.status == SessionStatus.CLOSED:
+            raise ValueError(f"Session {session_id} is closed")
+
+        new_password = secrets.token_urlsafe(16)
+        await self._admin.update_user_password(session.gns3_user_id, new_password)
+        jwt = await self._admin.get_user_token(session.gns3_username, new_password)
+
+        session.gns3_password_hash = hashlib.sha256(new_password.encode()).hexdigest()
+        await db.commit()
+
+        return PasswordResetResponse(
+            session_id=str(session.id),
+            gns3_jwt=jwt,
+            gns3_username=session.gns3_username,
+            gns3_password=new_password,
+        )
 
     async def delete_session(self, db: AsyncSession, session_id: str) -> None:
         import uuid as uuid_mod

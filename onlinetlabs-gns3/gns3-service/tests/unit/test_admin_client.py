@@ -207,6 +207,34 @@ class TestGNS3AdminClient:
         await client.delete_role("r1")
         await client.close()
 
+    @autotests.num("4401")
+    @autotests.external_id("e1f2a3b4-0015-4eee-ffff-440100000001")
+    @autotests.name("GNS3 Admin Client: update_user_password отправляет PUT с новым паролем")
+    @respx.mock
+    async def test_update_user_password(self, base_url):
+        import json
+
+        from src.gns3_admin_client import GNS3AdminClient
+
+        with autotests.step("Подготовка — mock GNS3 API"):
+            respx.post(f"{base_url}/v3/access/users/authenticate").mock(
+                return_value=Response(200, json={"access_token": "jwt"})
+            )
+            route = respx.put(f"{base_url}/v3/access/users/u1").mock(
+                return_value=Response(200, json={})
+            )
+
+        with autotests.step("Вызываем update_user_password"):
+            client = GNS3AdminClient(base_url, "admin", "admin")
+            await client.authenticate()
+            await client.update_user_password("u1", "new-secret")
+
+        with autotests.step("Проверяем тело запроса"):
+            sent = json.loads(route.calls.last.request.content)
+            assert sent["password"] == "new-secret"
+
+        await client.close()
+
     @autotests.num("441")
     @autotests.external_id("e1f2a3b4-0012-4eee-ffff-441000000001")
     @autotests.name("GNS3 Admin Client: create_user 409 вызывает HTTPStatusError")
