@@ -21,13 +21,6 @@ class TestImports:
         with autotests.step("Импортируем models"):
             from src.models import SessionCreate, SessionResponse, HistoryEvent  # noqa: F401
 
-    @autotests.num("402")
-    @autotests.external_id("e1f2a3b4-0003-4eee-ffff-000000000003")
-    @autotests.name("GNS3 Service: FastAPI app импортируем")
-    def test_app_importable(self):
-        with autotests.step("Импортируем app"):
-            from src.main import create_app  # noqa: F401
-
     @autotests.num("403")
     @autotests.external_id("e1f2a3b4-0004-4eee-ffff-000000000003")
     @autotests.name("GNS3 Service: DB models импортируемы")

@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
 from src.models import (
     ErrorResponse,
     HistoryEvent,
+    PasswordResetResponse,
     SessionCreate,
     SessionResponse,
     SessionStatus,
@@ -74,6 +75,37 @@ async def get_session(
         gns3_username=session.gns3_username,
         created_at=session.created_at,
     )
+
+
+@router.post(
+    "/sessions/{session_id}/reset-password",
+    response_model=PasswordResetResponse,
+    tags=["sessions"],
+    summary="Сбросить пароль GNS3",
+    description=(
+        "Генерирует новый пароль для GNS3-пользователя сессии, "
+        "обновляет его в GNS3 и возвращает новые учётные данные с JWT. "
+        "Пароль возвращается один раз."
+    ),
+    responses={
+        404: {"model": ErrorResponse, "description": "Сессия не найдена"},
+        409: {"model": ErrorResponse, "description": "Сессия закрыта"},
+    },
+)
+async def reset_password(
+    session_id: str = Path(description="UUID сессии"),
+    service=Depends(_get_service),
+    db=Depends(_get_db),
+):
+    try:
+        return await service.reset_password(db=db, session_id=session_id)
+    except ValueError as exc:
+        msg = str(exc)
+        if "not found" in msg:
+            raise HTTPException(status_code=404, detail=msg)
+        if "closed" in msg:
+            raise HTTPException(status_code=409, detail=msg)
+        raise
 
 
 @router.delete(

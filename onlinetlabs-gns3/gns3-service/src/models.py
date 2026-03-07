@@ -90,6 +90,25 @@ class HistoryEvent(BaseModel):
     )
 
 
+class PasswordResetResponse(BaseModel):
+    """Новые учётные данные после сброса пароля."""
+
+    session_id: str = Field(
+        description="UUID сессии",
+        examples=["f47ac10b-58cc-4372-a567-0e02b2c3d479"],
+    )
+    gns3_jwt: str = Field(
+        description="Новый JWT-токен для доступа к GNS3 API",
+    )
+    gns3_username: str = Field(
+        description="Имя пользователя в GNS3 (не меняется)",
+        examples=["student_user42"],
+    )
+    gns3_password: str = Field(
+        description="Новый пароль (plaintext) — возвращается один раз",
+    )
+
+
 class ErrorResponse(BaseModel):
     """Стандартный ответ об ошибке."""
 

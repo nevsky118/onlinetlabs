@@ -106,3 +106,78 @@ class TestSessionService:
         svc = SessionService(admin_client=admin_client, gns3_url="http://gns3:3080")
         with pytest.raises(ValueError, match="not found"):
             await svc.delete_session(db=db_session, session_id=str(uuid.uuid4()))
+
+    @autotests.num("445")
+    @autotests.external_id("f1a2b3c4-0006-4fff-aaaa-445000000001")
+    @autotests.name("GNS3 Session Service: reset_password генерирует новый пароль и JWT")
+    async def test_reset_password(self, admin_client, db_session):
+        from src.db.models import Session
+        from src.service import SessionService
+
+        with autotests.step("Подготовка — активная сессия"):
+            mock_session = Session(
+                id=uuid.uuid4(),
+                gns3_user_id="gns3-uid-1",
+                gns3_username="student-abc",
+                gns3_password_hash="old-hash",
+                gns3_project_id="pid",
+                student_user_id="student-1",
+            )
+            db_session.get = AsyncMock(return_value=mock_session)
+            admin_client.get_user_token.return_value = "new-jwt"
+
+        with autotests.step("Вызываем reset_password"):
+            svc = SessionService(admin_client=admin_client, gns3_url="http://gns3:3080")
+            result = await svc.reset_password(db=db_session, session_id=str(mock_session.id))
+
+        with autotests.step("Проверяем результат"):
+            assert result.gns3_jwt == "new-jwt"
+            assert result.gns3_username == "student-abc"
+            assert result.gns3_password
+
+        with autotests.step("Хеш обновлён в БД"):
+            assert mock_session.gns3_password_hash != "old-hash"
+            db_session.commit.assert_called()
+
+        with autotests.step("Вызовы admin API корректны"):
+            admin_client.update_user_password.assert_called_once_with("gns3-uid-1", result.gns3_password)
+            admin_client.get_user_token.assert_called_with("student-abc", result.gns3_password)
+
+    @autotests.num("446")
+    @autotests.external_id("f1a2b3c4-0007-4fff-aaaa-446000000001")
+    @autotests.name("GNS3 Session Service: reset_password несуществующей сессии бросает ValueError")
+    async def test_reset_password_not_found(self, admin_client, db_session):
+        from src.service import SessionService
+
+        with autotests.step("Сессия не найдена в БД"):
+            db_session.get = AsyncMock(return_value=None)
+
+        with autotests.step("reset_password бросает ValueError"):
+            svc = SessionService(admin_client=admin_client, gns3_url="http://gns3:3080")
+            with pytest.raises(ValueError, match="not found"):
+                await svc.reset_password(db=db_session, session_id=str(uuid.uuid4()))
+
+    @autotests.num("447")
+    @autotests.external_id("f1a2b3c4-0008-4fff-aaaa-447000000001")
+    @autotests.name("GNS3 Session Service: reset_password закрытой сессии бросает ValueError")
+    async def test_reset_password_closed_session(self, admin_client, db_session):
+        from src.db.models import Session
+        from src.db.models import SessionStatus as DBStatus
+        from src.service import SessionService
+
+        with autotests.step("Подготовка — закрытая сессия"):
+            mock_session = Session(
+                id=uuid.uuid4(),
+                gns3_user_id="gns3-uid-1",
+                gns3_username="student-abc",
+                gns3_password_hash="hash",
+                gns3_project_id="pid",
+                student_user_id="student-1",
+                status=DBStatus.CLOSED,
+            )
+            db_session.get = AsyncMock(return_value=mock_session)
+
+        with autotests.step("reset_password бросает ValueError"):
+            svc = SessionService(admin_client=admin_client, gns3_url="http://gns3:3080")
+            with pytest.raises(ValueError, match="closed"):
+                await svc.reset_password(db=db_session, session_id=str(mock_session.id))
