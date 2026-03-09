@@ -34,8 +34,12 @@ next-env.d.ts
 *.pem
 .env*
 !.env.example
+local.env
+ci.env
 !local.env.example
 *.env.aes
+!local.env.aes
+!ci.env.aes
 
 # === IDE ===
 .idea/
