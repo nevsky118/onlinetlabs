@@ -1,8 +1,8 @@
-"""onlinetlabs-mcp-sdk — SDK для создания MCP-серверов сложных систем."""
+"""mcp-sdk — SDK для создания MCP-серверов сложных систем."""
 
-from onlinetlabs_mcp_sdk.connection import BaseConnectionManager, ConnectionPool
-from onlinetlabs_mcp_sdk.context import ServerCapabilities, SessionContext
-from onlinetlabs_mcp_sdk.errors import (
+from mcp_sdk.connection import BaseConnectionManager, ConnectionPool
+from mcp_sdk.context import ServerCapabilities, SessionContext
+from mcp_sdk.errors import (
     ActionExecutionError,
     ComponentNotFoundError,
     MCPServerError,
@@ -10,7 +10,7 @@ from onlinetlabs_mcp_sdk.errors import (
     TargetSystemAPIError,
     TargetSystemConnectionError,
 )
-from onlinetlabs_mcp_sdk.models import (
+from mcp_sdk.models import (
     ActionResult,
     ActionSpec,
     Component,
@@ -21,13 +21,13 @@ from onlinetlabs_mcp_sdk.models import (
     SystemOverview,
     UserAction,
 )
-from onlinetlabs_mcp_sdk.protocols import (
+from mcp_sdk.protocols import (
     ActionProvider,
     HistoryProvider,
     LogProvider,
     StateProvider,
 )
-from onlinetlabs_mcp_sdk.server import OnlinetlabsMCPServer
+from mcp_sdk.server import OnlinetlabsMCPServer
 
 __all__ = [
     "StateProvider",

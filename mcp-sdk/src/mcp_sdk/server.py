@@ -9,10 +9,10 @@ from typing import Any, Callable
 from mcp.server.fastmcp import FastMCP
 from pydantic import ValidationError
 
-from onlinetlabs_mcp_sdk.context import ServerCapabilities, SessionContext
-from onlinetlabs_mcp_sdk.errors import MCPServerError, SessionContextError
-from onlinetlabs_mcp_sdk.models import LogLevel
-from onlinetlabs_mcp_sdk.protocols import (
+from mcp_sdk.context import ServerCapabilities, SessionContext
+from mcp_sdk.errors import MCPServerError, SessionContextError
+from mcp_sdk.models import LogLevel
+from mcp_sdk.protocols import (
     ActionProvider,
     HistoryProvider,
     LogProvider,
