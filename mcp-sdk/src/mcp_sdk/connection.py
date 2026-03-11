@@ -3,8 +3,8 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-from onlinetlabs_mcp_sdk.context import SessionContext
-from onlinetlabs_mcp_sdk.errors import MCPServerError
+from mcp_sdk.context import SessionContext
+from mcp_sdk.errors import MCPServerError
 
 
 class BaseConnectionManager(ABC):

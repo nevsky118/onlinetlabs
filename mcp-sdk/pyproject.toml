@@ -1,10 +1,10 @@
 [tool.poetry]
-name = "onlinetlabs-mcp-sdk"
+name = "mcp_sdk"
 version = "0.1.0"
 description = "SDK для создания MCP-серверов сложных систем"
 authors = []
 readme = "README.md"
-packages = [{include = "onlinetlabs_mcp_sdk", from = "src"}]
+packages = [{include = "mcp_sdk", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"

@@ -3,8 +3,8 @@
 from datetime import datetime
 from typing import Any, Protocol, runtime_checkable
 
-from onlinetlabs_mcp_sdk.context import SessionContext
-from onlinetlabs_mcp_sdk.models import (
+from mcp_sdk.context import SessionContext
+from mcp_sdk.models import (
     ActionResult,
     ActionSpec,
     Component,

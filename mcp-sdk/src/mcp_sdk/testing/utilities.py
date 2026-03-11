@@ -2,8 +2,9 @@
 
 from typing import Any
 
-from onlinetlabs_mcp_sdk.context import SessionContext
-from onlinetlabs_mcp_sdk.models import Component, ErrorEntry
+from mcp_sdk.context import SessionContext
+from mcp_sdk.models import Component, ErrorEntry
+from mcp_sdk.testing.custom_assertions import assert_is_instance, assert_is_not_none, assert_true
 
 
 def mock_session_context(**overrides: Any) -> SessionContext:
@@ -19,18 +20,18 @@ def mock_session_context(**overrides: Any) -> SessionContext:
 
 def assert_valid_component(obj: Any) -> None:
     """Проверить что объект — валидный Component."""
-    assert isinstance(obj, Component), f"Expected Component, got {type(obj).__name__}"
-    assert obj.id, "Component.id must not be empty"
-    assert obj.name, "Component.name must not be empty"
-    assert obj.type, "Component.type must not be empty"
-    assert obj.status, "Component.status must not be empty"
+    assert_is_instance(obj, Component, f"Expected Component, got {type(obj).__name__}")
+    assert_true(obj.id, "Component.id must not be empty")
+    assert_true(obj.name, "Component.name must not be empty")
+    assert_true(obj.type, "Component.type must not be empty")
+    assert_true(obj.status, "Component.status must not be empty")
 
 
 def assert_valid_error_entry(obj: Any) -> None:
     """Проверить что объект — валидный ErrorEntry."""
-    assert isinstance(obj, ErrorEntry), f"Expected ErrorEntry, got {type(obj).__name__}"
-    assert obj.timestamp is not None, "ErrorEntry.timestamp must not be None"
-    assert obj.message, "ErrorEntry.message must not be empty"
+    assert_is_instance(obj, ErrorEntry, f"Expected ErrorEntry, got {type(obj).__name__}")
+    assert_is_not_none(obj.timestamp, "ErrorEntry.timestamp must not be None")
+    assert_true(obj.message, "ErrorEntry.message must not be empty")
 
 
 class FakeConnectionPool:
