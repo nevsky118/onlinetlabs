@@ -1,0 +1,78 @@
+services:
+  gns3-server:
+    build:
+      context: gns3-service
+    ports:
+      - "3080:3080"
+    environment:
+      GNS3_AUTH: "true"
+      GNS3_DEFAULT_ADMIN_USER: admin
+      GNS3_DEFAULT_ADMIN_PASSWORD: admin
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3080/v3/version"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    tmpfs:
+      - /tmp
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: gns3test
+      POSTGRES_PASSWORD: gns3test
+      POSTGRES_DB: gns3_service_test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gns3test"]
+      interval: 3s
+      timeout: 2s
+      retries: 5
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  gns3-service:
+    build:
+      context: ..
+      dockerfile: gns3/gns3-service/Dockerfile.service
+    ports:
+      - "8101:8101"
+    environment:
+      GNS3_URL: http://gns3-server:3080
+      GNS3_ADMIN_USER: admin
+      GNS3_ADMIN_PASSWORD: admin
+      DB_USER: gns3test
+      DB_PASSWORD: gns3test
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: gns3_service_test
+      SERVICE_HOST: 0.0.0.0
+      SERVICE_PORT: 8101
+      LOG_LEVEL: INFO
+    depends_on:
+      gns3-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8101/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  gns3-mcp:
+    build:
+      context: ..
+      dockerfile: gns3/gns3-mcp/Dockerfile
+    ports:
+      - "8100:8100"
+    environment:
+      MCP_SERVER_NAME: gns3
+      MCP_TRANSPORT: streamable-http
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: 8100
+      GNS3_SERVICE_URL: http://gns3-service:8101
+    depends_on:
+      gns3-service:
+        condition: service_healthy

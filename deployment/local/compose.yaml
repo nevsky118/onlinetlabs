@@ -28,5 +28,45 @@ services:
       db:
         condition: service_healthy
 
+  backend:
+    build:
+      context: ../..
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-onlinetlabs}
+      REDIS_URL: redis://redis:6379/0
+      ENVIRONMENT: development
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret}
+      LOG_LEVEL: INFO
+      AGENTS_PROVIDER: ${AGENTS_PROVIDER:-anthropic}
+      AGENTS_API_KEY: ${AGENTS_API_KEY:-stub}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 2s
+      retries: 5
+
 volumes:
   pgdata:
