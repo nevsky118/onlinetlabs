@@ -17,7 +17,7 @@ from models.course import Course
 from models.lab import Lab
 
 
-CONTENT_DIR = Path(__file__).resolve().parent.parent / "onlinetlabs-frontend" / "content"
+CONTENT_DIR = Path(__file__).resolve().parent.parent / "frontend" / "content"
 
 
 def parse_frontmatter(file_path: Path) -> dict | None:

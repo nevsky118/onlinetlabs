@@ -11,7 +11,8 @@
 - [Структура](#структура)
 - [API](#api)
 - [MCP SDK](#mcp-sdk)
-- [Тесты](#тесты)
+- [Автотесты](#автотесты)
+- [Управление окружением](#управление-окружением)
 
 ## Архитектура
 
@@ -75,23 +76,20 @@ cd onlinetlabs
 make install
 ```
 
-Настройка окружения:
+Настройка окружения — расшифровать конфиги (нужен `CONFIG_PASSWORD`):
 
 ```bash
-# Backend
-cd onlinetlabs-backend && cp local.env.example local.env
-# заполнить DB_*, JWT_SECRET, CLAUDE_API_KEY
-
-# Frontend
-cd onlinetlabs-frontend && cp .env.example .env.local
-# заполнить BETTER_AUTH_SECRET, GITHUB_CLIENT_ID/SECRET
+CONFIG_PASSWORD=... make decrypt file=backend/local.env.aes
+CONFIG_PASSWORD=... cd gns3 && make decrypt file=gns3-service/local.env.aes
+CONFIG_PASSWORD=... cd gns3 && make decrypt file=gns3-mcp/local.env.aes
+CONFIG_PASSWORD=... cd autotests && make decrypt file=settings/configuration/local.env.aes
 ```
 
 Запуск:
 
 ```bash
-make up-db    # PostgreSQL + pgAdmin
-make serve    # API (hot-reload)
+make up-db    # PostgreSQL + Redis
+make serve    # Backend API (hot-reload)
 make dev      # Frontend (hot-reload)
 ```
 
@@ -99,26 +97,46 @@ make dev      # Frontend (hot-reload)
 - Swagger: http://localhost:8000/docs
 - pgAdmin: http://localhost:5050
 
+## Docker
+
+Два независимых стека:
+
+**Core** (`deployment/local/compose.yaml`) — backend + DB + Redis:
+```bash
+make up       # всё (с --wait для healthcheck)
+make up-db    # только БД + Redis
+make down     # остановить
+```
+
+**GNS3 Plugin** (`gns3/docker-compose.yml`) — gns3-server + postgres + gns3-service + gns3-mcp:
+```bash
+cd gns3
+make up       # весь стек
+make gns3-up  # только GNS3 сервер
+make up-db    # только PostgreSQL
+make down     # остановить
+```
+
 ## Make-команды
 
 | Команда | Описание |
 |-|-|
 | `make install` | Зависимости (poetry + pnpm) |
-| `make serve` | Backend (uvicorn) |
+| `make serve` | Backend (uvicorn, `ENV=local` по умолчанию) |
+| `make serve ENV=prod` | Backend с `prod.env` |
 | `make dev` | Frontend (next dev) |
-| `make up` / `make down` | Docker сервисы |
-| `make up-db` | Только БД + pgAdmin |
+| `make up` / `make down` | Docker core-стек |
+| `make up-db` | Только БД + Redis |
 | `make logs` / `make ps` | Логи / статус |
 | `make psql` | Консоль PostgreSQL |
 | `make migrate` | Применить миграции |
 | `make migrate-create msg="..."` | Новая миграция |
 | `make migrate-rollback` | Откат |
-| `make test` | Backend тесты (smoke + api + auth) |
-| `make test-all` | Все backend тесты |
-| `make test-sdk` | MCP SDK тесты |
+| `make test` | Все тесты (backend + SDK) |
 | `make lint` / `make format` | Линтер / форматирование |
 | `make check` | Все проверки (CI) |
-| `make encrypt` / `make decrypt` | Шифрование .env |
+| `make encrypt file=...` | Шифрование env-файла |
+| `make decrypt file=...` | Расшифровка env-файла |
 | `make sync-content` | MDX → БД |
 | `make clean` | Очистить кэш |
 
@@ -126,7 +144,7 @@ make dev      # Frontend (hot-reload)
 
 ```
 onlinetlabs/
-├── onlinetlabs-frontend/        # Next.js 16
+├── frontend/                    # Next.js 16
 │   ├── app/
 │   │   ├── (auth)/              # sign-in, sign-up
 │   │   ├── (app)/               # courses, labs
@@ -142,31 +160,37 @@ onlinetlabs/
 │   ├── features/auth/           # формы логина
 │   └── widgets/                 # header, footer
 │
-├── onlinetlabs-backend/         # FastAPI
-│   ├── auth/                    # JWT, OAuth
+├── backend/                     # FastAPI
+│   ├── auth/                    # JWT, OAuth, регистрация/удаление
 │   ├── config/                  # Settings, шифрование
 │   ├── courses/                 # CRUD
-│   ├── labs/                    # CRUD
+│   ├── labs/                    # CRUD (+ создание/удаление для тестов)
 │   ├── progress/                # Прогресс студента
 │   ├── sessions/                # Сессии обучения
 │   ├── models/                  # ORM (9 таблиц)
 │   ├── db/                      # Async сессия
 │   ├── migrations/              # Alembic
+│   ├── Dockerfile               # Docker-образ
 │   └── tests/                   # unit/integration/smoke
 │
-├── onlinetlabs-mcp-sdk/         # MCP SDK
-│   ├── src/onlinetlabs_mcp_sdk/
-│   │   ├── server.py            # MCPServer
-│   │   ├── protocols.py         # State/Log/History/Action
-│   │   ├── models.py            # Pydantic-модели
-│   │   ├── connection.py        # ConnectionPool
-│   │   ├── context.py           # SessionContext
-│   │   ├── errors.py            # Ошибки
-│   │   └── testing/             # ConformanceTestSuite
-│   └── tests/                   # unit/integration/smoke
+├── gns3/                        # GNS3 плагин (отдельный стек)
+│   ├── gns3-service/            # FastAPI — сессии, проекты, история
+│   ├── gns3-mcp/                # MCP-сервер для агентов
+│   ├── docker-compose.yml       # GNS3 + postgres + service + mcp
+│   └── Makefile
 │
-├── deployment/local/            # Docker Compose
-├── scripts/                     # sync_content
+├── mcp-sdk/                     # MCP SDK
+│
+├── autotests/                   # API-автотесты (httpx + pytest)
+│   ├── conftest.py              # Фикстуры: users, tokens, lab, GNS3 project
+│   ├── api/                     # API methods, helpers, data
+│   ├── api_tests/               # smoke + crud тесты
+│   └── Makefile                 # make test / make test ENV=ci
+│
+├── deployment/local/            # Docker Compose (core)
+│   ├── compose.yaml             # db + pgadmin + backend + redis
+│   └── pgadmin/
+│
 ├── Makefile
 └── lefthook.yml
 ```
@@ -200,22 +224,43 @@ server = OnlinetlabsMCPServer(
 )
 ```
 
-Валидация реализаций через `ConformanceTestSuite`:
+## Автотесты
 
-```python
-from onlinetlabs_mcp_sdk.testing import ConformanceTestSuite
-
-class TestGNS3(ConformanceTestSuite):
-    provider_class = GNS3StateProvider
-```
-
-## Тесты
+20 API-тестов, все сервисы. Автоматическая настройка тестовых данных и очистка.
 
 ```bash
-make test        # smoke + api + auth
-make test-all    # все
-make test-sdk    # MCP SDK
-make check       # lint + typecheck
+cd autotests
+make test              # все тесты (ENV=local)
+make test ENV=ci       # CI-окружение (Docker-сети)
 ```
 
-Маркеры: `smoke`, `api`, `auth`, `unit`, `integration`. Backend тесты на SQLite in-memory, PostgreSQL не нужен.
+Conftest автоматически:
+- Регистрирует тестовых пользователей → генерирует JWT
+- Создаёт тестовую лабораторную (`autotest-lab`)
+- Создаёт шаблонный проект GNS3
+- Удаляет всё после завершения тестов
+
+## Управление окружением
+
+Конфиги хранятся зашифрованными (AES-256-CBC). Расшифрованные файлы не коммитятся.
+
+| Файл | Назначение |
+|-|-|
+| Файл | Назначение |
+|-|-|
+| `*.env.aes` | Зашифрованный конфиг (в git) |
+| `*.env` | Расшифрованный (gitignored, не коммитится) |
+
+```bash
+# Расшифровка
+CONFIG_PASSWORD=... make decrypt file=backend/local.env.aes
+
+# Зашифровать после изменений
+CONFIG_PASSWORD=... make encrypt file=backend/local.env
+```
+
+Все Makefile поддерживают `ENV=` для выбора окружения:
+```bash
+make serve              # ENV=local (по умолчанию)
+make serve ENV=prod     # prod-окружение
+```
