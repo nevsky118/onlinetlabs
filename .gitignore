@@ -33,13 +33,9 @@ next-env.d.ts
 .DS_Store
 *.pem
 .env*
-!.env.example
 local.env
 ci.env
-!local.env.example
-*.env.aes
-!local.env.aes
-!ci.env.aes
+!*.env.aes
 
 # === IDE ===
 .idea/
