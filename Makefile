@@ -1,12 +1,14 @@
 .PHONY: help install serve dev up up-db down logs ps psql \
         migrate migrate-create migrate-rollback \
-        test test-all test-sdk lint format check \
+        test lint format check \
         encrypt decrypt clean sync-content
 
 # ── Paths ────────────────────────────────────────────────────
-BE := onlinetlabs-backend
-FE := onlinetlabs-frontend
-SDK := onlinetlabs-mcp-sdk
+BE := backend
+FE := frontend
+SDK := mcp-sdk
+ENV ?= local
+ENV_FILE := $(ENV).env
 DC := docker compose -f deployment/local/compose.yaml
 
 # ── Colors ───────────────────────────────────────────────────
@@ -25,7 +27,7 @@ help:
 	@printf "$(B)══════════════════════════════════════════$(N)\n"
 	@printf "\n  $(B)Development$(N)\n"
 	@printf "  $(Y)%-20s$(N) %s\n" "install"            "Install all dependencies (poetry + pnpm)"
-	@printf "  $(Y)%-20s$(N) %s\n" "serve"              "Backend API (uvicorn + hot reload)"
+	@printf "  $(Y)%-20s$(N) %s\n" "serve"              "Backend API (ENV=local|dev|prod)"
 	@printf "  $(Y)%-20s$(N) %s\n" "dev"                "Frontend dev server (next dev)"
 	@printf "\n  $(B)Docker$(N)\n"
 	@printf "  $(Y)%-20s$(N) %s\n" "up"                 "Start all services"
@@ -39,9 +41,7 @@ help:
 	@printf "  $(Y)%-20s$(N) %s\n" "migrate-create"     "Create migration (msg=\"description\")"
 	@printf "  $(Y)%-20s$(N) %s\n" "migrate-rollback"   "Rollback last migration"
 	@printf "\n  $(B)Testing$(N)\n"
-	@printf "  $(Y)%-20s$(N) %s\n" "test"               "Run tests (smoke + api + auth)"
-	@printf "  $(Y)%-20s$(N) %s\n" "test-all"           "Run all tests"
-	@printf "  $(Y)%-20s$(N) %s\n" "test-sdk"           "Run MCP SDK tests"
+	@printf "  $(Y)%-20s$(N) %s\n" "test"               "Run all tests (backend + SDK)"
 	@printf "\n  $(B)Code Quality$(N)\n"
 	@printf "  $(Y)%-20s$(N) %s\n" "lint"               "Lint (ruff + biome)"
 	@printf "  $(Y)%-20s$(N) %s\n" "format"             "Format (ruff + biome)"
@@ -60,14 +60,14 @@ install:
 	cd $(SDK) && poetry install
 
 serve:
-	cd $(BE) && ENV_FILE=local.env.example poetry run uvicorn main:app --reload --host 0.0.0.0 --port 8000
+	cd $(BE) && ENV_FILE=$(ENV_FILE) poetry run uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 dev:
 	cd $(FE) && pnpm dev
 
 # ── Docker ───────────────────────────────────────────────────
 up:
-	$(DC) up -d
+	$(DC) up -d --wait
 
 up-db:
 	$(DC) up -d db
@@ -86,22 +86,17 @@ psql:
 
 # ── Migrations ───────────────────────────────────────────────
 migrate:
-	cd $(BE) && poetry run alembic upgrade head
+	cd $(BE) && ENV_FILE=$(ENV_FILE) poetry run alembic upgrade head
 
 migrate-create:
-	cd $(BE) && poetry run alembic revision --autogenerate -m "$(msg)"
+	cd $(BE) && ENV_FILE=$(ENV_FILE) poetry run alembic revision --autogenerate -m "$(msg)"
 
 migrate-rollback:
-	cd $(BE) && poetry run alembic downgrade -1
+	cd $(BE) && ENV_FILE=$(ENV_FILE) poetry run alembic downgrade -1
 
 # ── Testing ──────────────────────────────────────────────────
 test:
-	cd $(BE) && PYTHONPATH=. pytest -v -m "smoke or api or auth" tests/
-
-test-all:
 	cd $(BE) && PYTHONPATH=. pytest -v tests/
-
-test-sdk:
 	cd $(SDK) && PYTHONPATH=src poetry run pytest -v tests/
 
 # ── Code Quality ─────────────────────────────────────────────
