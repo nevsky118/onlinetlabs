@@ -1,3 +1,5 @@
+"""Конфигурация приложения."""
+
 from enum import Enum
 from typing import Self
 from urllib.parse import quote_plus
@@ -6,6 +8,8 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class DatabaseConfig(BaseModel):
+    """Подключение к PostgreSQL."""
+
     user: str = Field(description="PostgreSQL user")
     password: str = Field(description="PostgreSQL password")
     host: str = Field(description="PostgreSQL host")
@@ -29,10 +33,14 @@ class DatabaseConfig(BaseModel):
 
 
 class RedisConfig(BaseModel):
+    """Подключение к Redis."""
+
     url: str = Field(description="Redis URL (redis://...)")
 
 
 class ApiConfig(BaseModel):
+    """Настройки API-сервера."""
+
     environment: str = Field(
         description="Environment: local | development | production | test"
     )
@@ -53,6 +61,8 @@ class ApiConfig(BaseModel):
 
 
 class LogConfig(BaseModel):
+    """Настройки логирования."""
+
     log_level: str = Field(
         description="Level: DEBUG | INFO | WARNING | ERROR | CRITICAL"
     )
@@ -74,6 +84,8 @@ class LlmProvider(str, Enum):
 
 
 class AgentsConfig(BaseModel):
+    """Настройки LLM-провайдера для агентов."""
+
     provider: LlmProvider = LlmProvider.ANTHROPIC
     model: str = Field(default="claude-sonnet-4-20250514")
     base_url: str | None = None
@@ -91,9 +103,43 @@ class AgentsConfig(BaseModel):
         return self
 
 
+class LearningAnalyticsConfig(BaseModel):
+    """Конфигурация Learning Analytics: сбор, анализ, интервенции."""
+
+    # Циклы
+    poll_interval: float = Field(default=5.0, description="Интервал опроса MCP (сек)")
+    analysis_interval: float = Field(default=15.0, description="Интервал анализа (сек)")
+    cooldown_period: float = Field(default=60.0, description="Мин. пауза между интервенциями (сек)")
+    enabled: bool = Field(default=True, description="Включить интервенции (False для контрольной группы)")
+
+    # Пороги struggle-детекции
+    error_repeat_threshold: int = Field(default=3, description="Повторов одной ошибки для срабатывания")
+    idle_threshold: int = Field(default=3, description="Кол-во idle-периодов для детекции")
+    entropy_threshold: float = Field(default=0.9, description="Порог энтропии действий (trial-and-error)")
+    error_freq_threshold: float = Field(default=2.0, description="Ошибок/мин для детекции flailing")
+    stuck_time_multiplier: float = Field(default=2.0, description="Множитель avg_latency для детекции stuck")
+    rate_slope_threshold: float = Field(default=-0.5, description="Порог slope для детекции замедления")
+    min_latency_floor: float = Field(default=30.0, description="Мин. базовая латентность для stuck (сек)")
+    min_idle_for_stuck: int = Field(default=2, description="Мин. idle-периодов для stuck")
+
+    # Параметры фичей
+    idle_gap_seconds: float = Field(default=60.0, description="Gap > N сек = idle период")
+    rate_window_seconds: float = Field(default=120.0, description="Окно для подсчёта action rate (сек)")
+    min_rate_windows: int = Field(default=3, description="Мин. окон для расчёта slope")
+    error_freq_window_minutes: float = Field(default=5.0, description="Окно частоты ошибок (мин)")
+
+    # Коллектор
+    dedup_max_size: int = Field(default=10_000, description="Макс. размер dedup-кэша")
+    mcp_actions_limit: int = Field(default=50, description="Лимит list_user_actions")
+    mcp_logs_limit: int = Field(default=100, description="Лимит get_logs")
+
+
 class ConfigModel(BaseModel):
+    """Корневая конфигурация приложения."""
+
     database: DatabaseConfig
     redis: RedisConfig
     api: ApiConfig
     log: LogConfig
     agents: AgentsConfig
+    learning_analytics: LearningAnalyticsConfig = Field(default_factory=LearningAnalyticsConfig)

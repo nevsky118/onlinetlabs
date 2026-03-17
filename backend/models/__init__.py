@@ -10,6 +10,7 @@ from models.enums import (
 from models.lab import Lab, LabStep
 from models.progress import CourseProgress, LabProgress, StepAttempt
 from models.session import LearningSession
+from models.behavioral_event import BehavioralEvent  # noqa: F401
 from models.user import Account, Session, User, UserRole, VerificationToken
 
 __all__ = [
@@ -26,6 +27,7 @@ __all__ = [
     "LabProgress",
     "StepAttempt",
     "LearningSession",
+    "BehavioralEvent",
     "Difficulty",
     "ProgressStatus",
     "AttemptResult",
