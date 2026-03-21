@@ -1,7 +1,7 @@
 """Orchestrator — маршрутизация запросов к агентам."""
 
 from config.config_model import ConfigModel
-from agents.orchestrator.models import OrchestratorInput, OrchestratorResponse
+from agents.orchestrator.models import OrchestratorInput, OrchestratorResponse, InterventionInput
 from agents.orchestrator.router import resolve_agent
 
 
@@ -15,7 +15,7 @@ class Orchestrator:
         self._agents = {}
 
     def _get_agent(self, agent_name: str):
-        """Lazy-инициализация агента по имени."""
+        """Lazy-создание агента по имени."""
         if agent_name in self._agents:
             return self._agents[agent_name]
 
@@ -73,6 +73,38 @@ class Orchestrator:
                 agent_used=agent_name,
                 success=False,
                 error=str(e),
+            )
+
+    async def intervene(self, input_data: InterventionInput) -> OrchestratorResponse:
+        """Проактивная интервенция от SessionMonitor."""
+        agent_name = f"intervene_{input_data.intervention_type}"
+        resolved = resolve_agent(agent_name)
+
+        if resolved is None:
+            resolved = input_data.intervention_type
+
+        agent = self._get_agent(resolved)
+        if agent is None:
+            return OrchestratorResponse(
+                agent_used=resolved, success=False,
+                error=f"Agent not available for intervention: {resolved}",
+            )
+
+        try:
+            agent_input = self._build_agent_input(resolved, OrchestratorInput(
+                session_id=input_data.session_id,
+                user_id=input_data.user_id,
+                intent=agent_name,
+                payload=input_data.context,
+            ))
+            result = await agent.run(agent_input)
+            return OrchestratorResponse(
+                agent_used=resolved, success=True,
+                data=result.model_dump(),
+            )
+        except Exception as e:
+            return OrchestratorResponse(
+                agent_used=resolved, success=False, error=str(e),
             )
 
     def _build_agent_input(self, agent_name: str, input_data: OrchestratorInput):

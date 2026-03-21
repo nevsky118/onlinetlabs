@@ -19,3 +19,11 @@ class OrchestratorResponse(BaseModel):
     success: bool
     data: dict = Field(default_factory=dict)
     error: str | None = None
+
+
+class InterventionInput(BaseModel):
+    """Проактивная интервенция от SessionMonitor."""
+    session_id: str
+    user_id: str
+    intervention_type: str = Field(description="hint | tutor | simplify")
+    context: dict = Field(default_factory=dict, description="Struggle context for the agent")

@@ -6,6 +6,8 @@ INTENT_TO_AGENT = {
     "hint": "hint",
     "lab": "lab",
     "analytics": "analytics",
+    "intervene_hint": "hint",
+    "intervene_tutor": "tutor",
 }
 
 
