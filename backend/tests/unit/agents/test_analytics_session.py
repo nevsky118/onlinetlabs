@@ -1,6 +1,4 @@
 import pytest
-from datetime import datetime, timezone
-
 from agents.analytics.agent import AnalyticsAgent
 from agents.analytics.models import (
     AnalyticsResult,
@@ -9,24 +7,11 @@ from agents.analytics.models import (
     SuggestedIntervention,
 )
 from config.config_model import LearningAnalyticsConfig
+from tests.settings.data.analytics_data import SessionFeaturesData
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 
 pytestmark = [pytest.mark.unit, pytest.mark.agents]
-
-
-def _make_features(**overrides) -> SessionFeatures:
-    defaults = dict(
-        avg_inter_action_latency=10.0, action_rate_slope=0.0,
-        idle_periods=0, total_active_time=300.0, time_on_current_step=20.0,
-        error_repeat_count=0, error_repeat_rate=0.0,
-        action_sequence_entropy=0.3, undo_redo_ratio=0.0,
-        error_frequency=0.0, error_frequency_slope=0.0,
-        unique_error_types=0, dominant_error=None,
-        components_touched=5, action_diversity=0.5, events_total=30,
-        session_id="s1", computed_at=datetime.now(tz=timezone.utc),
-    )
-    return SessionFeatures(**(defaults | overrides))
 
 
 class TestAnalyticsAgentSession:
@@ -36,7 +21,7 @@ class TestAnalyticsAgentSession:
     def test_e4f5a6b7_no_struggle_normal_session(self, config_model):
         with autotest.step("Создаём агент и нормальные фичи"):
             agent = AnalyticsAgent(config_model, db=None)
-            features = _make_features()
+            features = SessionFeatures(**SessionFeaturesData().data)
 
         with autotest.step("Вызываем analyze_session"):
             result = agent.analyze_session(features, LearningAnalyticsConfig())
@@ -52,7 +37,7 @@ class TestAnalyticsAgentSession:
     def test_f5a6b7c8_detects_repeating_errors(self, config_model):
         with autotest.step("Создаём фичи с error_repeat_count=4"):
             agent = AnalyticsAgent(config_model, db=None)
-            features = _make_features(error_repeat_count=4)
+            features = SessionFeatures(**SessionFeaturesData(error_repeat_count=4).data)
 
         with autotest.step("Вызываем analyze_session"):
             result = agent.analyze_session(features, LearningAnalyticsConfig(error_repeat_threshold=3))
@@ -68,7 +53,7 @@ class TestAnalyticsAgentSession:
     def test_a6b7c8d9_detects_idle(self, config_model):
         with autotest.step("Создаём фичи с idle_periods=4 и отрицательным slope"):
             agent = AnalyticsAgent(config_model, db=None)
-            features = _make_features(idle_periods=4, action_rate_slope=-0.8)
+            features = SessionFeatures(**SessionFeaturesData(idle_periods=4, action_rate_slope=-0.8).data)
 
         with autotest.step("Вызываем analyze_session"):
             result = agent.analyze_session(features, LearningAnalyticsConfig())
@@ -83,7 +68,7 @@ class TestAnalyticsAgentSession:
     def test_b7c8d9e0_detects_trial_and_error(self, config_model):
         with autotest.step("Создаём фичи с высокой энтропией и частотой ошибок"):
             agent = AnalyticsAgent(config_model, db=None)
-            features = _make_features(action_sequence_entropy=0.95, error_frequency=3.0)
+            features = SessionFeatures(**SessionFeaturesData(action_sequence_entropy=0.95, error_frequency=3.0).data)
 
         with autotest.step("Вызываем analyze_session"):
             result = agent.analyze_session(features, LearningAnalyticsConfig())

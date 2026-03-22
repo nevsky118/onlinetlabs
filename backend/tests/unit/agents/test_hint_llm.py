@@ -2,23 +2,11 @@ import pytest
 
 from agents.hint.agent import HintAgent, HINT_SYSTEM_PROMPT
 from agents.hint.models import HintInput, HintResponse
-from learning_analytics.context import AgentContext
+from tests.settings.data.analytics_data import AgentContextData
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_true, assert_equal
 
 pytestmark = [pytest.mark.unit, pytest.mark.agents]
-
-
-def _make_context(**overrides) -> AgentContext:
-    defaults = dict(
-        topology_summary="2 ноды (R1 running, R2 stopped)",
-        recent_errors=["OSPF timeout"],
-        recent_actions=["start_node(R1)"],
-        struggle_type="repeating_errors",
-        dominant_error="OSPF timeout",
-        features_summary="10 событий",
-    )
-    return AgentContext(**(defaults | overrides))
 
 
 class TestHintAgentLLM:
@@ -48,7 +36,7 @@ class TestHintAgentLLM:
     async def test_b2c3d4e5_run_with_context(self, config_model):
         with autotest.step("Создаём агент с контекстом"):
             agent = HintAgent(config_model)
-            context = _make_context()
+            context = AgentContextData().context
             inp = HintInput(
                 session_id="s1", user_id="u1",
                 lab_slug="lab-ospf", step_slug="step-1",

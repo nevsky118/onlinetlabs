@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from agents.analytics.models import DifficultyRecommendation, StudentMetrics
 from agents.analytics.tools import AnalyticsTools
 from agents.analytics.agent import AnalyticsAgent
-from tests.unit.conftest import make_attempt
+from tests.settings.data.analytics_data import AttemptData
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import (
     assert_equal,
@@ -25,17 +25,17 @@ class TestAnalyticsTools:
         now = datetime.now(tz=timezone.utc)
         with autotest.step("Создаём 3 попытки: 2 pass, 1 fail"):
             attempts = [
-                make_attempt(
+                AttemptData(
                     step_slug="step-1", result="pass", attempt_number=1,
                     started_at=now - timedelta(minutes=10),
                     ended_at=now - timedelta(minutes=5),
                 ),
-                make_attempt(
+                AttemptData(
                     id="a2", step_slug="step-1", result="fail", attempt_number=2,
                     started_at=now - timedelta(minutes=4),
                     ended_at=now - timedelta(minutes=2),
                 ),
-                make_attempt(
+                AttemptData(
                     id="a3", step_slug="step-2", result="pass", attempt_number=1,
                     started_at=now - timedelta(minutes=2),
                     ended_at=now,
@@ -74,7 +74,7 @@ class TestAnalyticsTools:
         now = datetime.now(tz=timezone.utc)
         with autotest.step("Создаём 3 неудачи подряд на step-1"):
             attempts = [
-                make_attempt(
+                AttemptData(
                     id=f"a{i}", step_slug="step-1", result="fail",
                     attempt_number=i,
                     started_at=now - timedelta(minutes=10 - i),
@@ -96,9 +96,9 @@ class TestAnalyticsTools:
     def test_f4a5b6c7_detect_error_patterns(self):
         with autotest.step("Создаём попытки с повторяющимися ошибками"):
             attempts = [
-                make_attempt(id="a1", result="fail", error_details="timeout on ping"),
-                make_attempt(id="a2", result="fail", error_details="timeout on ping"),
-                make_attempt(id="a3", result="fail", error_details="wrong interface"),
+                AttemptData(id="a1", result="fail", error_details="timeout on ping"),
+                AttemptData(id="a2", result="fail", error_details="timeout on ping"),
+                AttemptData(id="a3", result="fail", error_details="wrong interface"),
             ]
 
         with autotest.step("Ищем паттерны"):
@@ -114,8 +114,8 @@ class TestAnalyticsTools:
     def test_f5a6b7c8_detect_error_patterns_no_repeats(self):
         with autotest.step("Создаём попытки с уникальными ошибками"):
             attempts = [
-                make_attempt(id="a1", result="fail", error_details="error A"),
-                make_attempt(id="a2", result="fail", error_details="error B"),
+                AttemptData(id="a1", result="fail", error_details="error A"),
+                AttemptData(id="a2", result="fail", error_details="error B"),
             ]
 
         with autotest.step("Ищем паттерны"):
@@ -131,8 +131,8 @@ class TestAnalyticsTools:
     def test_f6a7b8c9_detect_error_patterns_all_pass(self):
         with autotest.step("Создаём только успешные попытки"):
             attempts = [
-                make_attempt(id="a1", result="pass"),
-                make_attempt(id="a2", result="pass"),
+                AttemptData(id="a1", result="pass"),
+                AttemptData(id="a2", result="pass"),
             ]
 
         with autotest.step("Ищем паттерны"):
@@ -172,7 +172,7 @@ class TestAnalyticsAgent:
         now = datetime.now(tz=timezone.utc)
         with autotest.step("Создаём 10 успешных попыток"):
             attempts = [
-                make_attempt(
+                AttemptData(
                     id=f"a{i}", step_slug=f"step-{i}", result="pass",
                     started_at=now - timedelta(minutes=i + 1),
                     ended_at=now - timedelta(minutes=i),
@@ -195,7 +195,7 @@ class TestAnalyticsAgent:
         now = datetime.now(tz=timezone.utc)
         with autotest.step("Создаём 10 неудачных попыток"):
             attempts = [
-                make_attempt(
+                AttemptData(
                     id=f"a{i}", step_slug="step-1", result="fail",
                     started_at=now - timedelta(minutes=i + 1),
                     ended_at=now - timedelta(minutes=i),

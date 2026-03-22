@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 from learning_analytics.features import FeatureExtractor
 from agents.analytics.models import SessionFeatures
-from tests.unit.conftest import make_event, make_event_sequence
+from tests.settings.data.analytics_data import EventData, EventSequenceData
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import (
     assert_equal,
@@ -36,7 +36,7 @@ class TestFeatureExtractor:
     @autotest.name("FeatureExtractor: средняя латентность между действиями")
     def test_01a2b3c4_avg_inter_action_latency(self):
         with autotest.step("Создаём 5 событий с интервалом 10с"):
-            events = make_event_sequence(5, interval_seconds=10.0)
+            events = EventSequenceData(5, interval_seconds=10.0).events
 
         with autotest.step("Вычисляем фичи"):
             fe = FeatureExtractor()
@@ -53,9 +53,9 @@ class TestFeatureExtractor:
         now = datetime.now(tz=timezone.utc)
         with autotest.step("Создаём события с gap > 60с"):
             events = [
-                make_event(id="e1", timestamp=now - timedelta(seconds=200)),
-                make_event(id="e2", timestamp=now - timedelta(seconds=100)),
-                make_event(id="e3", timestamp=now),
+                EventData(id="e1", timestamp=now - timedelta(seconds=200)),
+                EventData(id="e2", timestamp=now - timedelta(seconds=100)),
+                EventData(id="e3", timestamp=now),
             ]
 
         with autotest.step("Вычисляем фичи"):
@@ -72,12 +72,12 @@ class TestFeatureExtractor:
         now = datetime.now(tz=timezone.utc)
         with autotest.step("Создаём 3 одинаковые ошибки подряд"):
             events = [
-                make_event(id="e1", event_type="error", action="cfg_err", message="bad ip",
-                           success=False, timestamp=now - timedelta(seconds=30)),
-                make_event(id="e2", event_type="error", action="cfg_err", message="bad ip",
-                           success=False, timestamp=now - timedelta(seconds=20)),
-                make_event(id="e3", event_type="error", action="cfg_err", message="bad ip",
-                           success=False, timestamp=now - timedelta(seconds=10)),
+                EventData(id="e1", event_type="error", action="cfg_err", message="bad ip",
+                         success=False, timestamp=now - timedelta(seconds=30)),
+                EventData(id="e2", event_type="error", action="cfg_err", message="bad ip",
+                         success=False, timestamp=now - timedelta(seconds=20)),
+                EventData(id="e3", event_type="error", action="cfg_err", message="bad ip",
+                         success=False, timestamp=now - timedelta(seconds=10)),
             ]
 
         with autotest.step("Вычисляем фичи"):
@@ -92,7 +92,7 @@ class TestFeatureExtractor:
     @autotest.name("FeatureExtractor: энтропия 0 при однородных действиях")
     def test_34d5e6f7_action_sequence_entropy_uniform(self):
         with autotest.step("Создаём 10 одинаковых действий"):
-            events = make_event_sequence(10, action="start_node")
+            events = EventSequenceData(10, action="start_node").events
 
         with autotest.step("Вычисляем фичи"):
             fe = FeatureExtractor()
@@ -109,8 +109,8 @@ class TestFeatureExtractor:
         now = datetime.now(tz=timezone.utc)
         with autotest.step("Создаём 10 событий с 5 разными action"):
             events = [
-                make_event(id=f"e{i}", action=actions[i % len(actions)],
-                           timestamp=now - timedelta(seconds=(10 - i) * 5))
+                EventData(id=f"e{i}", action=actions[i % len(actions)],
+                         timestamp=now - timedelta(seconds=(10 - i) * 5))
                 for i in range(10)
             ]
 
@@ -128,9 +128,9 @@ class TestFeatureExtractor:
         now = datetime.now(tz=timezone.utc)
         with autotest.step("Создаём события на 2 компонентах"):
             events = [
-                make_event(id="e1", component_id="n1", timestamp=now - timedelta(seconds=20)),
-                make_event(id="e2", component_id="n2", timestamp=now - timedelta(seconds=10)),
-                make_event(id="e3", component_id="n1", timestamp=now),
+                EventData(id="e1", component_id="n1", timestamp=now - timedelta(seconds=20)),
+                EventData(id="e2", component_id="n2", timestamp=now - timedelta(seconds=10)),
+                EventData(id="e3", component_id="n1", timestamp=now),
             ]
 
         with autotest.step("Вычисляем фичи"):
@@ -147,8 +147,8 @@ class TestFeatureExtractor:
         now = datetime.now(tz=timezone.utc)
         with autotest.step("Создаём 5 ошибок за 5 минут"):
             events = [
-                make_event(id=f"e{i}", event_type="error", action="err", success=False,
-                           message=f"err-{i}", timestamp=now - timedelta(minutes=5 - i))
+                EventData(id=f"e{i}", event_type="error", action="err", success=False,
+                         message=f"err-{i}", timestamp=now - timedelta(minutes=5 - i))
                 for i in range(5)
             ]
 

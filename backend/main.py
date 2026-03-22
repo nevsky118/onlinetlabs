@@ -7,6 +7,7 @@ from auth.router import router as auth_router
 from config import settings
 from courses.router import router as courses_router
 from db.session import get_db
+from experiment.router import router as experiment_router
 from labs.router import router as labs_router
 from progress.router import router as progress_router
 from sessions.router import router as sessions_router
@@ -26,6 +27,7 @@ app.include_router(courses_router, prefix="/courses", tags=["courses"])
 app.include_router(labs_router, prefix="/labs", tags=["labs"])
 app.include_router(progress_router, prefix="/users/me/progress", tags=["progress"])
 app.include_router(sessions_router, prefix="/users/me/sessions", tags=["sessions"])
+app.include_router(experiment_router, prefix="/experiment", tags=["experiment"])
 
 
 @app.get("/")
