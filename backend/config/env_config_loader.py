@@ -57,6 +57,7 @@ class EnvConfigLoader:
             temperature=float(values.get("AGENTS_TEMPERATURE", "0.3")),
             max_tokens=int(values.get("AGENTS_MAX_TOKENS", "4096")),
             request_timeout=int(values.get("AGENTS_REQUEST_TIMEOUT", "30")),
+            yandex_folder=values.get("AGENTS_YANDEX_FOLDER") or None,
         )
         return ConfigModel(
             database=database, redis=redis, api=api, log=log, agents=agents
