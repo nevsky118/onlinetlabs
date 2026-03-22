@@ -31,11 +31,11 @@ class DifficultyRecommendation(BaseModel):
     error_patterns: list[str] = Field(default_factory=list)
 
 
-class SessionAnalyticsInput(BaseModel):
-    """Вход для аналитики сессии в реальном времени."""
-    session_id: str
-    user_id: str
-    lab_slug: str
+class DifficultyLevel(str, Enum):
+    """Уровни сложности."""
+    BEGINNER = "beginner"
+    INTERMEDIATE = "intermediate"
+    ADVANCED = "advanced"
 
 
 class StruggleType(str, Enum):

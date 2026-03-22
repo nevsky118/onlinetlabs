@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, Field
 
+from learning_analytics.context import AgentContext
+
 
 class TutorInput(BaseModel):
     """Вопрос студента к тьютору."""
@@ -12,6 +14,7 @@ class TutorInput(BaseModel):
     context: str = Field(default="", description="Контекст лабы/курса")
     lab_slug: str | None = None
     step_slug: str | None = None
+    agent_context: AgentContext | None = None
 
 
 class TutorResponse(BaseModel):

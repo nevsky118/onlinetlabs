@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 from agents.analytics.models import (
     AnalyticsResult,
     DifficultyRecommendation,
-    SessionAnalyticsInput,
     SessionFeatures,
     StudentMetrics,
     StruggleType,
@@ -31,19 +30,6 @@ def _make_features(**overrides) -> SessionFeatures:
 
 
 class TestAnalyticsModels:
-    @autotest.num("500")
-    @autotest.external_id("a0b1c2d3-e4f5-4a6b-8c7d-e8f9a0b1c2d3")
-    @autotest.name("SessionAnalyticsInput: создание модели")
-    def test_a0b1c2d3_session_analytics_input(self):
-        with autotest.step("Создаём SessionAnalyticsInput"):
-            inp = SessionAnalyticsInput(
-                session_id="s1", user_id="u1", lab_slug="lab-1"
-            )
-
-        with autotest.step("Проверяем поля"):
-            assert_equal(inp.session_id, "s1", "session_id")
-            assert_equal(inp.user_id, "u1", "user_id")
-
     @autotest.num("501")
     @autotest.external_id("b1c2d3e4-f5a6-4b7c-9d8e-f0a1b2c3d4e5")
     @autotest.name("StruggleType: значения enum")

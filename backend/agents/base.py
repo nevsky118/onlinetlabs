@@ -54,6 +54,17 @@ class BaseAgent:
                     cfg.model,
                     provider=OpenAIProvider(base_url=cfg.base_url),
                 )
+            case LlmProvider.YANDEX:
+                from openai import AsyncOpenAI
+                client = AsyncOpenAI(
+                    api_key=cfg.api_key,
+                    base_url=cfg.base_url or "https://ai.api.cloud.yandex.net/v1",
+                    default_headers={"x-folder-id": cfg.yandex_folder},
+                )
+                return OpenAIModel(
+                    cfg.model_uri,
+                    provider=OpenAIProvider(openai_client=client),
+                )
             case _:
                 raise ValueError(f"Unsupported LLM provider: {cfg.provider}")
 

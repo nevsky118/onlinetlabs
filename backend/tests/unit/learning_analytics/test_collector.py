@@ -1,4 +1,5 @@
 import pytest
+from collections import OrderedDict
 from datetime import datetime, timezone
 
 from config.config_model import LearningAnalyticsConfig
@@ -87,7 +88,7 @@ class TestBehavioralCollectorNormalization:
         with autotest.step("Создаём collector и генерируем ключ"):
             ts = datetime.now(tz=timezone.utc)
             collector = BehavioralCollector.__new__(BehavioralCollector)
-            collector._seen = set()
+            collector._seen = OrderedDict()
             collector._cfg = LearningAnalyticsConfig()
             key = collector._dedup_key(ts, "start_node", "n1")
 

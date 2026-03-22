@@ -185,3 +185,41 @@ class TestLearningAnalyticsConfig:
         with autotest.step("Проверяем learning_analytics"):
             assert_true(config.learning_analytics is not None, "learning_analytics не None")
             assert_equal(config.learning_analytics.poll_interval, 5.0, "poll_interval по умолчанию")
+
+
+class TestAgentsConfigYandex:
+    @autotest.num("110")
+    @autotest.external_id("e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b")
+    @autotest.name("AgentsConfig: YANDEX model_uri формирует gpt://folder/model")
+    def test_e1f2a3b4_yandex_model_uri(self):
+        with autotest.step("Создаём YANDEX конфиг"):
+            cfg = AgentsConfig(
+                provider=LlmProvider.YANDEX,
+                api_key="yandex-key",
+                yandex_folder="b1g2h3j4k5",
+                model="yandexgpt/latest",
+                base_url="https://ai.api.cloud.yandex.net/v1",
+            )
+        with autotest.step("Проверяем model_uri"):
+            assert_equal(cfg.model_uri, "gpt://b1g2h3j4k5/yandexgpt/latest", "model_uri")
+
+    @autotest.num("111")
+    @autotest.external_id("f2a3b4c5-d6e7-4f8a-9b0c-1d2e3f4a5b6c")
+    @autotest.name("AgentsConfig: model_uri для не-YANDEX возвращает model")
+    def test_f2a3b4c5_model_uri_non_yandex(self):
+        with autotest.step("Создаём Anthropic конфиг"):
+            cfg = AgentsConfig(api_key="sk-test")
+        with autotest.step("Проверяем model_uri"):
+            assert_equal(cfg.model_uri, cfg.model, "model_uri = model")
+
+    @autotest.num("112")
+    @autotest.external_id("a3b4c5d6-e7f8-4a9b-0c1d-2e3f4a5b6c7d")
+    @autotest.name("AgentsConfig: YANDEX без yandex_folder бросает ошибку")
+    def test_a3b4c5d6_yandex_requires_folder(self):
+        with autotest.step("Пытаемся создать YANDEX без folder"):
+            with pytest.raises(ValueError, match="yandex_folder"):
+                AgentsConfig(
+                    provider=LlmProvider.YANDEX,
+                    api_key="yandex-key",
+                    model="yandexgpt/latest",
+                )

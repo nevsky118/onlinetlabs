@@ -27,6 +27,7 @@ class FeatureExtractor:
 
         latencies = self._inter_action_latencies(sorted_events)
         idle_gap = self._config.idle_gap_seconds
+        max_consec_errors = self._max_consecutive_errors(sorted_events)
 
         return SessionFeatures(
             avg_inter_action_latency=round(
@@ -40,9 +41,9 @@ class FeatureExtractor:
             time_on_current_step=round(
                 self._time_on_current_step(sorted_events, now), 2
             ),
-            error_repeat_count=self._max_consecutive_errors(sorted_events),
+            error_repeat_count=max_consec_errors,
             error_repeat_rate=round(
-                self._max_consecutive_errors(sorted_events) / len(error_events)
+                max_consec_errors / len(error_events)
                 if error_events
                 else 0.0,
                 4,
