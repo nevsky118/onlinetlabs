@@ -6,6 +6,7 @@ from config.config_model import (
     ApiConfig,
     ConfigModel,
     DatabaseConfig,
+    LearningAnalyticsConfig,
     LlmProvider,
     LogConfig,
     RedisConfig,
@@ -151,3 +152,36 @@ class TestConfigModel:
                 "llm" not in ConfigModel.model_fields,
                 "ConfigModel не должен содержать поле 'llm'",
             )
+
+
+class TestLearningAnalyticsConfig:
+    @autotest.num("108")
+    @autotest.external_id("c8d9e0f1-a2b3-4c4d-9e5f-a6b7c8d9e0f1")
+    @autotest.name("LearningAnalyticsConfig: значения по умолчанию")
+    def test_c8d9e0f1_defaults(self):
+        with autotest.step("Создаём LearningAnalyticsConfig без параметров"):
+            cfg = LearningAnalyticsConfig()
+
+        with autotest.step("Проверяем значения по умолчанию"):
+            assert_equal(cfg.poll_interval, 5.0, "poll_interval = 5.0")
+            assert_equal(cfg.analysis_interval, 15.0, "analysis_interval = 15.0")
+            assert_equal(cfg.cooldown_period, 60.0, "cooldown_period = 60.0")
+            assert_true(cfg.enabled, "enabled по умолчанию True")
+            assert_equal(cfg.error_repeat_threshold, 3, "error_repeat_threshold = 3")
+
+    @autotest.num("109")
+    @autotest.external_id("d9e0f1a2-b3c4-4d5e-af6b-c7d8e9f0a1b2")
+    @autotest.name("ConfigModel: содержит поле learning_analytics")
+    def test_d9e0f1a2_config_model_has_learning_analytics(self):
+        with autotest.step("Создаём ConfigModel без явного learning_analytics"):
+            config = ConfigModel(
+                database=DatabaseConfig(user="u", password="p", host="h", port=5432, db="d"),
+                redis=RedisConfig(url="redis://localhost"),
+                api=ApiConfig(environment="test", jwt_secret="s"),
+                log=LogConfig(log_level="DEBUG"),
+                agents=AgentsConfig(api_key="sk-test"),
+            )
+
+        with autotest.step("Проверяем learning_analytics"):
+            assert_true(config.learning_analytics is not None, "learning_analytics не None")
+            assert_equal(config.learning_analytics.poll_interval, 5.0, "poll_interval по умолчанию")

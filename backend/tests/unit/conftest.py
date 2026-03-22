@@ -1,3 +1,7 @@
+# Общий conftest для unit-тестов.
+
+from datetime import datetime, timedelta, timezone
+
 import pytest
 
 from config.config_model import (
@@ -5,26 +9,27 @@ from config.config_model import (
     ApiConfig,
     ConfigModel,
     DatabaseConfig,
-    LogConfig,
+    LearningAnalyticsConfig,
     LlmProvider,
+    LogConfig,
     RedisConfig,
 )
 from mcp_sdk.context import SessionContext
+from mcp_sdk.errors import ComponentNotFoundError
 from mcp_sdk.models import (
     ActionResult,
     Component,
     ComponentDetail,
     SystemOverview,
 )
-from mcp_sdk.errors import ComponentNotFoundError
 
 
 # ---------------------------------------------------------------------------
-# Fake MCP clients
+# Fake MCP клиенты
 # ---------------------------------------------------------------------------
 
 class FakeMCPClient:
-    """Implements StateProvider + ActionProvider for unit tests."""
+    """Реализация StateProvider + ActionProvider для тестов."""
 
     def __init__(
         self,
@@ -73,7 +78,7 @@ class FakeMCPClient:
 
 
 class FakeFailingMCPClient(FakeMCPClient):
-    """execute_action always returns success=False."""
+    """execute_action всегда возвращает success=False."""
 
     async def execute_action(self, ctx, action_name, params):
         self.calls.append(("execute_action", (ctx, action_name, params), {}))
@@ -81,12 +86,11 @@ class FakeFailingMCPClient(FakeMCPClient):
 
 
 # ---------------------------------------------------------------------------
-# Fake StepAttempt (duck-typed object for analytics)
+# Фабрики тестовых данных
 # ---------------------------------------------------------------------------
 
 def make_attempt(**overrides):
-    from datetime import datetime, timedelta, timezone
-
+    """Фабрика duck-typed StepAttempt для тестов."""
     now = datetime.now(tz=timezone.utc)
     defaults = {
         "id": "attempt-1",
@@ -102,8 +106,44 @@ def make_attempt(**overrides):
     return type("FakeAttempt", (), final)()
 
 
+def make_event(**overrides):
+    """Фабрика duck-typed BehavioralEvent для тестов."""
+    now = datetime.now(tz=timezone.utc)
+    defaults = {
+        "id": "evt-1",
+        "session_id": "sess-1",
+        "user_id": "user-1",
+        "lab_slug": "lab-1",
+        "timestamp": now,
+        "event_type": "action",
+        "component_id": "node-1",
+        "component_type": "qemu",
+        "action": "start_node",
+        "raw_command": None,
+        "success": True,
+        "severity": None,
+        "message": None,
+        "extra_data": None,
+    }
+    final = defaults | overrides
+    return type("FakeEvent", (), final)()
+
+
+def make_event_sequence(count: int, interval_seconds: float = 10.0, **overrides):
+    """Создать последовательность событий с интервалом interval_seconds."""
+    now = datetime.now(tz=timezone.utc)
+    return [
+        make_event(
+            id=f"evt-{i}",
+            timestamp=now - timedelta(seconds=(count - i) * interval_seconds),
+            **overrides,
+        )
+        for i in range(count)
+    ]
+
+
 # ---------------------------------------------------------------------------
-# Config fixtures
+# Фикстуры
 # ---------------------------------------------------------------------------
 
 def _make_agents(**overrides):
@@ -126,10 +166,6 @@ def config_model(agents_config):
         agents=agents_config,
     )
 
-
-# ---------------------------------------------------------------------------
-# MCP fixtures
-# ---------------------------------------------------------------------------
 
 @pytest.fixture()
 def fake_mcp():
