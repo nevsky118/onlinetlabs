@@ -1,6 +1,4 @@
 import pytest
-from datetime import datetime, timezone
-
 from agents.analytics.models import (
     AnalyticsResult,
     DifficultyRecommendation,
@@ -9,24 +7,11 @@ from agents.analytics.models import (
     StruggleType,
     SuggestedIntervention,
 )
+from tests.settings.data.analytics_data import SessionFeaturesData
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 
 pytestmark = [pytest.mark.unit, pytest.mark.agents]
-
-
-def _make_features(**overrides) -> SessionFeatures:
-    defaults = dict(
-        avg_inter_action_latency=10.0, action_rate_slope=0.0,
-        idle_periods=0, total_active_time=300.0, time_on_current_step=20.0,
-        error_repeat_count=0, error_repeat_rate=0.0,
-        action_sequence_entropy=0.3, undo_redo_ratio=0.0,
-        error_frequency=0.0, error_frequency_slope=0.0,
-        unique_error_types=0, dominant_error=None,
-        components_touched=5, action_diversity=0.5, events_total=30,
-        session_id="s1", computed_at=datetime.now(tz=timezone.utc),
-    )
-    return SessionFeatures(**(defaults | overrides))
 
 
 class TestAnalyticsModels:
@@ -54,7 +39,7 @@ class TestAnalyticsModels:
     @autotest.name("AnalyticsResult: создание с вложенными моделями")
     def test_d3e4f5a6_analytics_result(self):
         with autotest.step("Создаём SessionFeatures и DifficultyRecommendation"):
-            features = _make_features()
+            features = SessionFeatures(**SessionFeaturesData().data)
             metrics = StudentMetrics(
                 total_attempts=5, success_rate=0.8,
                 avg_time_per_step=60.0, struggling_steps=[],

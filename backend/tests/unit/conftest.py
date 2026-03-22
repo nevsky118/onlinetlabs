@@ -1,7 +1,5 @@
 # Общий conftest для unit-тестов.
 
-from datetime import datetime, timedelta, timezone
-
 import pytest
 
 from config.config_model import (
@@ -24,9 +22,7 @@ from mcp_sdk.models import (
 )
 
 
-# ---------------------------------------------------------------------------
 # Fake MCP клиенты
-# ---------------------------------------------------------------------------
 
 class FakeMCPClient:
     """Реализация StateProvider + ActionProvider для тестов."""
@@ -85,75 +81,11 @@ class FakeFailingMCPClient(FakeMCPClient):
         return ActionResult(success=False, message=f"Failed: {action_name}")
 
 
-# ---------------------------------------------------------------------------
-# Фабрики тестовых данных
-# ---------------------------------------------------------------------------
-
-def make_attempt(**overrides):
-    """Фабрика duck-typed StepAttempt для тестов."""
-    now = datetime.now(tz=timezone.utc)
-    defaults = {
-        "id": "attempt-1",
-        "step_slug": "step-1",
-        "result": "pass",
-        "attempt_number": 1,
-        "score": 100.0,
-        "started_at": now - timedelta(minutes=5),
-        "ended_at": now,
-        "error_details": None,
-    }
-    final = defaults | overrides
-    return type("FakeAttempt", (), final)()
-
-
-def make_event(**overrides):
-    """Фабрика duck-typed BehavioralEvent для тестов."""
-    now = datetime.now(tz=timezone.utc)
-    defaults = {
-        "id": "evt-1",
-        "session_id": "sess-1",
-        "user_id": "user-1",
-        "lab_slug": "lab-1",
-        "timestamp": now,
-        "event_type": "action",
-        "component_id": "node-1",
-        "component_type": "qemu",
-        "action": "start_node",
-        "raw_command": None,
-        "success": True,
-        "severity": None,
-        "message": None,
-        "extra_data": None,
-    }
-    final = defaults | overrides
-    return type("FakeEvent", (), final)()
-
-
-def make_event_sequence(count: int, interval_seconds: float = 10.0, **overrides):
-    """Создать последовательность событий с интервалом interval_seconds."""
-    now = datetime.now(tz=timezone.utc)
-    return [
-        make_event(
-            id=f"evt-{i}",
-            timestamp=now - timedelta(seconds=(count - i) * interval_seconds),
-            **overrides,
-        )
-        for i in range(count)
-    ]
-
-
-# ---------------------------------------------------------------------------
 # Фикстуры
-# ---------------------------------------------------------------------------
-
-def _make_agents(**overrides):
-    defaults = dict(api_key="sk-ant-test")
-    return AgentsConfig(**{**defaults, **overrides})
-
 
 @pytest.fixture()
 def agents_config():
-    return _make_agents()
+    return AgentsConfig(api_key="sk-ant-test")
 
 
 @pytest.fixture()

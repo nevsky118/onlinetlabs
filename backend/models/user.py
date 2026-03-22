@@ -32,6 +32,7 @@ class User(Base):
     image: Mapped[str | None] = mapped_column(Text)
     password_hash: Mapped[str | None] = mapped_column(Text)
     role: Mapped[str] = mapped_column(String(50), default=UserRole.STUDENT.value)
+    experiment_group: Mapped[str | None] = mapped_column(String(20), default=None)
 
     accounts: Mapped[list["Account"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
