@@ -53,7 +53,57 @@ flowchart LR
     style Target stroke-dasharray: 5 5
 ```
 
-> Пунктир — в разработке (MCP-интеграция, агенты, WebSocket-сессии).
+> Пунктир — в разработке (WebSocket-сессии, frontend интервенций).
+
+### Learning Analytics: замкнутый цикл реального времени
+
+```mermaid
+flowchart LR
+    subgraph Target["Целевая система"]
+        GNS3["GNS3 / Docker / ..."]
+    end
+
+    subgraph MCP["MCP Server"]
+        Actions["list_user_actions()"]
+        Logs["get_logs()"]
+        Errors["list_errors()"]
+    end
+
+    subgraph LA["Learning Analytics"]
+        Collector["BehavioralCollector"]
+        DB[("behavioral_events")]
+        Features["FeatureExtractor<br/>16 фич"]
+        Analytics["AnalyticsAgent<br/>struggle-детекция"]
+    end
+
+    subgraph Agents["Агенты"]
+        Orch["Orchestrator"]
+        Hint["HintAgent"]
+        Tutor["TutorAgent"]
+    end
+
+    WS["WebSocket → студент"]
+
+    GNS3 --> Actions & Logs & Errors
+    Actions & Logs & Errors --> Collector
+    Collector --> DB
+    DB --> Features
+    Features --> Analytics
+    Analytics -->|struggle| Orch
+    Orch --> Hint & Tutor
+    Hint & Tutor --> WS
+```
+
+**Struggle-детекция** (4 типа, все пороги конфигурируемы через `LearningAnalyticsConfig`):
+
+| Тип | Условие | Интервенция |
+|-|-|-|
+| `REPEATING_ERRORS` | N+ одинаковых ошибок подряд | Hint |
+| `TRIAL_AND_ERROR` | Высокая энтропия + частые ошибки | Tutor |
+| `IDLE` | Много idle-периодов + замедление | Tutor |
+| `STUCK_ON_STEP` | Долго на одном компоненте + idle | Hint |
+
+**Доменная независимость:** при смене целевой системы меняется только MCP-сервер. Коллектор, фичи, аналитика и агенты работают с любой системой через стандартизованные MCP-модели (`UserAction`, `LogEntry`, `ErrorEntry`).
 
 ## Технологии
 
@@ -167,7 +217,18 @@ onlinetlabs/
 │   ├── labs/                    # CRUD (+ создание/удаление для тестов)
 │   ├── progress/                # Прогресс студента
 │   ├── sessions/                # Сессии обучения
-│   ├── models/                  # ORM (9 таблиц)
+│   ├── models/                  # ORM (10 таблиц, вкл. behavioral_events)
+│   ├── agents/                  # Мультиагентная система
+│   │   ├── orchestrator/        # Маршрутизация + проактивные интервенции
+│   │   ├── tutor/               # Ответы на вопросы
+│   │   ├── hint/                # Прогрессивные подсказки (3 уровня)
+│   │   ├── lab/                 # Взаимодействие с лаб-средой через MCP
+│   │   ├── validator/           # Проверка выполнения задач
+│   │   └── analytics/           # Анализ прогресса + struggle-детекция
+│   ├── learning_analytics/      # Замкнутый LA-цикл реального времени
+│   │   ├── collector.py         # Опрос MCP, дедупликация, нормализация
+│   │   ├── features.py          # 16 поведенческих фич
+│   │   └── monitor.py           # Сбор + анализ + интервенция
 │   ├── db/                      # Async сессия
 │   ├── migrations/              # Alembic
 │   ├── Dockerfile               # Docker-образ
