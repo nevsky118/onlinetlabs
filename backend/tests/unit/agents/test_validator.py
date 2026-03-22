@@ -21,15 +21,13 @@ def _make_validation_input(**overrides):
     return ValidationInput(**(defaults | overrides))
 
 
-# ---------------------------------------------------------------------------
 # ValidatorTools
-# ---------------------------------------------------------------------------
 
 class TestValidatorTools:
     @autotest.num("420")
-    @autotest.external_id("agents-validator-tools-get-current-state")
+    @autotest.external_id("b1c2d3e4-f5a6-4b7c-8d9e-abc012340001")
     @autotest.name("ValidatorTools.get_current_state: возвращает компоненты")
-    async def test_get_current_state(self, fake_mcp):
+    async def test_b1c2d3e4_get_current_state(self, fake_mcp):
         with autotest.step("Вызываем get_current_state"):
             tools = ValidatorTools(fake_mcp)
             result = await tools.get_current_state(_make_validation_input())
@@ -39,9 +37,9 @@ class TestValidatorTools:
             assert_true(isinstance(result[0], Component), f"тип: {type(result[0])}")
 
     @autotest.num("421")
-    @autotest.external_id("agents-validator-tools-check-status-pass")
+    @autotest.external_id("b2c3d4e5-f6a7-4b8c-8d9e-abc012340002")
     @autotest.name("ValidatorTools.check_component_status: статус совпадает")
-    async def test_check_component_status_pass(self, fake_mcp):
+    async def test_b2c3d4e5_check_component_status_pass(self, fake_mcp):
         with autotest.step("Проверяем running для n1"):
             tools = ValidatorTools(fake_mcp)
             result = await tools.check_component_status(_make_validation_input(), "n1", "running")
@@ -53,9 +51,9 @@ class TestValidatorTools:
             assert_equal(result.actual, "running", "actual")
 
     @autotest.num("422")
-    @autotest.external_id("agents-validator-tools-check-status-fail")
+    @autotest.external_id("b3c4d5e6-f7a8-4b9c-8d9e-abc012340003")
     @autotest.name("ValidatorTools.check_component_status: статус не совпадает")
-    async def test_check_component_status_fail(self, fake_mcp):
+    async def test_b3c4d5e6_check_component_status_fail(self, fake_mcp):
         with autotest.step("Проверяем stopped для n1 (он running)"):
             tools = ValidatorTools(fake_mcp)
             result = await tools.check_component_status(_make_validation_input(), "n1", "stopped")
@@ -66,9 +64,9 @@ class TestValidatorTools:
             assert_equal(result.actual, "running", "actual")
 
     @autotest.num("423")
-    @autotest.external_id("agents-validator-tools-check-connectivity")
+    @autotest.external_id("b4c5d6e7-f8a9-4bac-8d9e-abc012340004")
     @autotest.name("ValidatorTools.check_connectivity: проверка связности")
-    async def test_check_connectivity(self, fake_mcp):
+    async def test_b4c5d6e7_check_connectivity(self, fake_mcp):
         with autotest.step("Проверяем связность n1 → n1"):
             tools = ValidatorTools(fake_mcp)
             result = await tools.check_connectivity(_make_validation_input(), "n1", "n1")
@@ -79,15 +77,13 @@ class TestValidatorTools:
             assert_true(not result.passed, "нет связей в fake")
 
 
-# ---------------------------------------------------------------------------
 # ValidatorAgent
-# ---------------------------------------------------------------------------
 
 class TestValidatorAgent:
     @autotest.num("425")
-    @autotest.external_id("agents-validator-agent-init")
+    @autotest.external_id("b5c6d7e8-f9aa-4bbc-8d9e-abc012340005")
     @autotest.name("ValidatorAgent: инициализация")
-    def test_init(self, config_model, fake_mcp):
+    def test_b5c6d7e8_init(self, config_model, fake_mcp):
         with autotest.step("Создаём ValidatorAgent"):
             agent = ValidatorAgent(config_model, fake_mcp)
 
@@ -95,9 +91,9 @@ class TestValidatorAgent:
             assert_true(agent.tools is not None, "tools не None")
 
     @autotest.num("426")
-    @autotest.external_id("agents-validator-agent-system-prompt")
+    @autotest.external_id("b6c7d8e9-faab-4bcc-8d9e-abc012340006")
     @autotest.name("ValidatorAgent: system_prompt содержит роль")
-    def test_system_prompt(self, config_model, fake_mcp):
+    def test_b6c7d8e9_system_prompt(self, config_model, fake_mcp):
         with autotest.step("Получаем system_prompt"):
             agent = ValidatorAgent(config_model, fake_mcp)
             prompt = agent.system_prompt()
@@ -106,9 +102,9 @@ class TestValidatorAgent:
             assert_true(len(prompt) > 10, "prompt содержательный")
 
     @autotest.num("427")
-    @autotest.external_id("agents-validator-agent-run-pass")
+    @autotest.external_id("b7c8d9ea-fbbc-4bdc-8d9e-abc012340007")
     @autotest.name("ValidatorAgent: run с проходящими проверками")
-    async def test_run_pass(self, config_model, fake_mcp):
+    async def test_b7c8d9ea_run_pass(self, config_model, fake_mcp):
         with autotest.step("Запускаем run с expected=running"):
             agent = ValidatorAgent(config_model, fake_mcp)
             inp = _make_validation_input(
@@ -123,9 +119,9 @@ class TestValidatorAgent:
             assert_equal(len(result.checks), 1, "1 проверка")
 
     @autotest.num("428")
-    @autotest.external_id("agents-validator-agent-run-fail")
+    @autotest.external_id("b8c9daeb-fccd-4bec-8d9e-abc012340008")
     @autotest.name("ValidatorAgent: run с непроходящими проверками")
-    async def test_run_fail(self, config_model, fake_mcp):
+    async def test_b8c9daeb_run_fail(self, config_model, fake_mcp):
         with autotest.step("Запускаем run с expected=stopped"):
             agent = ValidatorAgent(config_model, fake_mcp)
             inp = _make_validation_input(
@@ -138,10 +134,10 @@ class TestValidatorAgent:
             assert_less(result.score, 100.0, "оценка < 100")
 
     @autotest.num("429")
-    @autotest.external_id("agents-validator-agent-run-mixed")
+    @autotest.external_id("b9cadbfc-fdde-4bfc-8d9e-abc012340009")
     @autotest.name("ValidatorAgent: run с частичным прохождением")
-    async def test_run_mixed(self, config_model):
-        from tests.unit.agents.conftest import FakeMCPClient
+    async def test_b9cadbfc_run_mixed(self, config_model):
+        from tests.unit.conftest import FakeMCPClient
         from mcp_sdk.models import Component
 
         with autotest.step("Создаём среду с двумя компонентами"):
