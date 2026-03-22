@@ -36,9 +36,7 @@ class OnlinetlabsMCPServer:
         self._validate_minimum()
         self._discover_and_register()
 
-    # ------------------------------------------------------------------
     # Validation
-    # ------------------------------------------------------------------
 
     def _validate_minimum(self) -> None:
         """Реализация должна удовлетворять минимум StateProvider."""
@@ -48,9 +46,7 @@ class OnlinetlabsMCPServer:
                 f"Got {type(self._impl).__name__}"
             )
 
-    # ------------------------------------------------------------------
     # Discovery & registration
-    # ------------------------------------------------------------------
 
     def _discover_and_register(self) -> None:
         """Интроспекция протоколов и регистрация соответствующих MCP-инструментов."""
@@ -73,9 +69,7 @@ class OnlinetlabsMCPServer:
         # Мета-инструмент — всегда
         self._register_capabilities_tool()
 
-    # ------------------------------------------------------------------
     # State tools
-    # ------------------------------------------------------------------
 
     def _register_state_tools(self) -> None:
         impl = self._impl
@@ -132,9 +126,7 @@ class OnlinetlabsMCPServer:
 
         self._tool_names.append("get_system_overview")
 
-    # ------------------------------------------------------------------
     # Log tools
-    # ------------------------------------------------------------------
 
     def _register_log_tools(self) -> None:
         impl = self._impl
@@ -180,9 +172,7 @@ class OnlinetlabsMCPServer:
 
         self._tool_names.append("get_logs")
 
-    # ------------------------------------------------------------------
     # History tools
-    # ------------------------------------------------------------------
 
     def _register_history_tools(self) -> None:
         impl = self._impl
@@ -206,9 +196,7 @@ class OnlinetlabsMCPServer:
 
         self._tool_names.append("list_user_actions")
 
-    # ------------------------------------------------------------------
     # Action tools
-    # ------------------------------------------------------------------
 
     def _register_action_tools(self) -> None:
         impl = self._impl
@@ -256,9 +244,7 @@ class OnlinetlabsMCPServer:
 
         self._tool_names.append("execute_action")
 
-    # ------------------------------------------------------------------
     # Meta tool
-    # ------------------------------------------------------------------
 
     def _register_capabilities_tool(self) -> None:
         caps = self._capabilities
@@ -277,9 +263,7 @@ class OnlinetlabsMCPServer:
 
         self._tool_names.append("get_capabilities")
 
-    # ------------------------------------------------------------------
     # Domain tool decorator
-    # ------------------------------------------------------------------
 
     def domain_tool(self, **kwargs: Any) -> Callable:
         """Декоратор для регистрации доменно-специфичных инструментов."""
@@ -293,9 +277,7 @@ class OnlinetlabsMCPServer:
 
         return wrapper
 
-    # ------------------------------------------------------------------
     # Properties
-    # ------------------------------------------------------------------
 
     @property
     def capabilities(self) -> frozenset[str]:
@@ -309,9 +291,7 @@ class OnlinetlabsMCPServer:
     def mcp(self) -> FastMCP:
         return self._mcp
 
-    # ------------------------------------------------------------------
     # Run
-    # ------------------------------------------------------------------
 
     def run(self, transport: str = "streamable-http", **kwargs: Any) -> None:
         """Запуск MCP-сервера."""

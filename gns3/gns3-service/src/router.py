@@ -172,9 +172,7 @@ async def health(db=Depends(_get_db)):
     return {"status": "ok"}
 
 
-# ---------------------------------------------------------------------------
 # Projects (proxy to GNS3 server)
-# ---------------------------------------------------------------------------
 
 
 def _get_admin_client(request: Request):

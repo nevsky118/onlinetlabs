@@ -19,9 +19,7 @@ from autotests.settings.delete_entities.entities_helper_api import EntitiesHelpe
 from autotests.settings.utils.utils import get_current_test_name
 
 
-# ---------------------------------------------------------------------------
 # Хуки Pytest
-# ---------------------------------------------------------------------------
 
 
 def pytest_addoption(parser):
@@ -57,9 +55,7 @@ def pytest_configure(config):
         config.option.htmlpath = os.path.join("logs", "reports", filename)
 
 
-# ---------------------------------------------------------------------------
 # Конфигурация
-# ---------------------------------------------------------------------------
 
 
 @pytest.fixture(scope="session")
@@ -86,9 +82,7 @@ def config(pytestconfig) -> ConfigModel:
     return EnvConfigLoader().load(env_path=env_path)
 
 
-# ---------------------------------------------------------------------------
 # Генерация токенов через реальный API
-# ---------------------------------------------------------------------------
 
 
 _TEST_PASSWORD = "test_password_12345"
@@ -246,9 +240,7 @@ async def _generate_tokens(config, _ensure_test_users):
                     )
 
 
-# ---------------------------------------------------------------------------
 # HTTP-клиенты
-# ---------------------------------------------------------------------------
 
 
 @pytest_asyncio.fixture()
@@ -265,9 +257,7 @@ async def anon_client(config, _generate_tokens, _ensure_gns3_template_project, _
         yield client
 
 
-# ---------------------------------------------------------------------------
 # Очистка сущностей
-# ---------------------------------------------------------------------------
 
 
 @pytest_asyncio.fixture(autouse=True)

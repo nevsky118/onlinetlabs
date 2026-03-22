@@ -36,9 +36,7 @@ class ConformanceTestSuite:
     server_impl и mock_session_ctx.
     """
 
-    # -----------------------------------------------------------------------
     # StateProvider
-    # -----------------------------------------------------------------------
 
     @autotest.num("500")
     @autotest.external_id("c1a2b3d4-e5f6-7890-abcd-100000000001")
@@ -115,9 +113,7 @@ class ConformanceTestSuite:
             assert_is_not_none(result.system_name, "system_name не должен быть None")
             assert_greater_equal(result.component_count, 0, "component_count должен быть >= 0")
 
-    # -----------------------------------------------------------------------
     # LogProvider
-    # -----------------------------------------------------------------------
 
     @autotest.num("504")
     @autotest.external_id("a5e6f7b8-c9d0-1234-efab-500000000005")
@@ -155,9 +151,7 @@ class ConformanceTestSuite:
             for item in result:
                 assert_is_instance(item, LogEntry, f"Элемент {item} не является LogEntry")
 
-    # -----------------------------------------------------------------------
     # HistoryProvider
-    # -----------------------------------------------------------------------
 
     @autotest.num("506")
     @autotest.external_id("c7a8b9d0-e1f2-3456-abcd-700000000007")
@@ -177,9 +171,7 @@ class ConformanceTestSuite:
             for item in result:
                 assert_is_instance(item, UserAction, f"Элемент {item} не является UserAction")
 
-    # -----------------------------------------------------------------------
     # ActionProvider
-    # -----------------------------------------------------------------------
 
     @autotest.num("507")
     @autotest.external_id("d8b9c0e1-f2a3-4567-bcde-800000000008")
