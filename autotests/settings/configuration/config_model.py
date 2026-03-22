@@ -48,6 +48,22 @@ class ConfigModel(BaseModel):
         default="",
         description="UUID шаблонного проекта GNS3 для тестов.",
     )
+    gns3_url: str = Field(
+        default="http://localhost:3080",
+        description="URL GNS3 сервера.",
+    )
+    gns3_mcp_url: str = Field(
+        default="http://localhost:8100",
+        description="URL GNS3 MCP сервера.",
+    )
+    gns3_admin_user: str = Field(
+        default="admin",
+        description="Логин администратора GNS3.",
+    )
+    gns3_admin_password: str = Field(
+        default="admin",
+        description="Пароль администратора GNS3.",
+    )
     accounts: Dict[str, Account] = Field(
         default={},
         description="Словарь тестовых аккаунтов (по ключу — имя аккаунта).",
