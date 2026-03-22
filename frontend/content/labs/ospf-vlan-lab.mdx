@@ -1,0 +1,255 @@
+---
+title: Настройка OSPF и межсетевого взаимодействия VLAN
+description: Лабораторная работа по настройке VLAN, inter-VLAN routing и OSPF в GNS3
+slug: ospf-vlan-lab
+difficulty: beginner
+duration: 30-45 мин
+steps: 5
+---
+
+# Настройка OSPF и межсетевого взаимодействия VLAN
+
+## Цель
+
+Настроить сеть с двумя маршрутизаторами и двумя коммутаторами. Организовать VLAN-сегментацию, межсетевое взаимодействие VLAN через sub-interfaces и динамическую маршрутизацию OSPF.
+
+## Топология
+
+```
+PC1 (VLAN 10) ──┐                    ┌── PC3 (VLAN 10)
+                SW1 ── R1 ──── R2 ── SW2
+PC2 (VLAN 20) ──┘                    └── PC4 (VLAN 20)
+```
+
+## Оборудование
+
+| Устройство | Тип | Описание |
+|-|-|-|
+| R1, R2 | Маршрутизатор (Cisco IOS) | Inter-VLAN routing + OSPF |
+| SW1, SW2 | Коммутатор (Cisco IOS) | VLAN-сегментация |
+| PC1-PC4 | VPCS | Тестовые хосты |
+
+## Адресация
+
+| Сеть | VLAN | Подсеть | Шлюз |
+|-|-|-|-|
+| Management | 10 | 192.168.10.0/24 | .1 (R1 / R2) |
+| Users | 20 | 192.168.20.0/24 | .1 (R1 / R2) |
+| Линк R1-R2 | — | 10.0.0.0/30 | R1: .1, R2: .2 |
+
+| Хост | VLAN | IP | Шлюз |
+|-|-|-|-|
+| PC1 | 10 | 192.168.10.10/24 | 192.168.10.1 |
+| PC2 | 20 | 192.168.20.10/24 | 192.168.20.1 |
+| PC3 | 10 | 192.168.10.20/24 | 192.168.10.1 |
+| PC4 | 20 | 192.168.20.20/24 | 192.168.20.1 |
+
+---
+
+## Шаг 1: Настройка VLAN на коммутаторах
+
+### Теория
+
+VLAN (Virtual LAN) позволяет логически разделить одну физическую сеть на несколько изолированных сегментов. Устройства в разных VLAN не могут взаимодействовать напрямую — для этого нужен маршрутизатор.
+
+Создадим два VLAN:
+- **VLAN 10 (Management)** — для управления сетью
+- **VLAN 20 (Users)** — для пользовательского трафика
+
+### Задание
+
+На SW1 и SW2:
+
+```
+Switch> enable
+Switch# configure terminal
+Switch(config)# vlan 10
+Switch(config-vlan)# name Management
+Switch(config-vlan)# exit
+Switch(config)# vlan 20
+Switch(config-vlan)# name Users
+Switch(config-vlan)# exit
+```
+
+### Проверка
+
+`show vlan brief` на каждом коммутаторе должна показать VLAN 10 и VLAN 20.
+
+### Критерий валидации
+
+VLAN 10 и VLAN 20 существуют на обоих коммутаторах.
+
+---
+
+## Шаг 2: Назначение портов и trunk
+
+### Теория
+
+Каждый порт коммутатора работает в одном из двух режимов:
+- **Access** — принадлежит одному VLAN. К нему подключаются конечные устройства.
+- **Trunk** — передаёт трафик нескольких VLAN одновременно. Используется между коммутаторами и маршрутизаторами.
+
+Trunk-порты добавляют тег 802.1Q к каждому кадру.
+
+### Задание
+
+На SW1:
+
+```
+SW1(config)# interface Fa0/1
+SW1(config-if)# switchport mode access
+SW1(config-if)# switchport access vlan 10
+SW1(config-if)# exit
+
+SW1(config)# interface Fa0/2
+SW1(config-if)# switchport mode access
+SW1(config-if)# switchport access vlan 20
+SW1(config-if)# exit
+
+SW1(config)# interface Fa0/0
+SW1(config-if)# switchport mode trunk
+SW1(config-if)# switchport trunk allowed vlan 10,20
+SW1(config-if)# exit
+```
+
+На SW2 — аналогично: Fa0/1 → VLAN 10, Fa0/2 → VLAN 20, Fa0/0 → trunk.
+
+### Проверка
+
+`show interfaces trunk` показывает trunk-порт с разрешёнными VLAN 10, 20.
+
+### Критерий валидации
+
+Trunk-порты UP. Access-порты в правильных VLAN.
+
+---
+
+## Шаг 3: Sub-interfaces для inter-VLAN routing
+
+### Теория
+
+Для маршрутизации между VLAN используется метод **Router-on-a-Stick**: один физический интерфейс маршрутизатора разделяется на sub-interfaces, каждый обслуживает свой VLAN.
+
+Sub-interface получает:
+- Номер VLAN через `encapsulation dot1Q <vlan-id>`
+- IP-адрес — шлюз для хостов в этом VLAN
+
+### Задание
+
+На R1:
+
+```
+R1(config)# interface Gi0/0
+R1(config-if)# no shutdown
+R1(config-if)# exit
+
+R1(config)# interface Gi0/0.10
+R1(config-subif)# encapsulation dot1Q 10
+R1(config-subif)# ip address 192.168.10.1 255.255.255.0
+R1(config-subif)# exit
+
+R1(config)# interface Gi0/0.20
+R1(config-subif)# encapsulation dot1Q 20
+R1(config-subif)# ip address 192.168.20.1 255.255.255.0
+R1(config-subif)# exit
+```
+
+На R2 — аналогично. Линк R1-R2:
+
+```
+R1(config)# interface Gi0/1
+R1(config-if)# ip address 10.0.0.1 255.255.255.252
+R1(config-if)# no shutdown
+
+R2(config)# interface Gi0/1
+R2(config-if)# ip address 10.0.0.2 255.255.255.252
+R2(config-if)# no shutdown
+```
+
+### Проверка
+
+`show ip interface brief` показывает sub-interfaces с IP-адресами в состоянии UP/UP.
+
+### Критерий валидации
+
+Sub-interfaces с правильными IP на R1 и R2.
+
+---
+
+## Шаг 4: Настройка OSPF
+
+### Теория
+
+OSPF (Open Shortest Path First) — протокол динамической маршрутизации. Маршрутизаторы обмениваются информацией о сетях и строят таблицу маршрутизации автоматически.
+
+- **Area 0** (backbone) — обязательна
+- **Router ID** — уникальный идентификатор в OSPF-домене
+- **Adjacency FULL** — полная синхронизация между соседями
+
+### Задание
+
+На R1:
+
+```
+R1(config)# router ospf 1
+R1(config-router)# router-id 1.1.1.1
+R1(config-router)# network 10.0.0.0 0.0.0.3 area 0
+R1(config-router)# network 192.168.10.0 0.0.0.255 area 0
+R1(config-router)# network 192.168.20.0 0.0.0.255 area 0
+R1(config-router)# exit
+```
+
+На R2:
+
+```
+R2(config)# router ospf 1
+R2(config-router)# router-id 2.2.2.2
+R2(config-router)# network 10.0.0.0 0.0.0.3 area 0
+R2(config-router)# network 192.168.10.0 0.0.0.255 area 0
+R2(config-router)# network 192.168.20.0 0.0.0.255 area 0
+R2(config-router)# exit
+```
+
+### Проверка
+
+`show ip ospf neighbor` показывает соседа в состоянии FULL. `show ip route ospf` показывает маршруты с пометкой `O`.
+
+### Критерий валидации
+
+OSPF adjacency между R1 и R2 в состоянии FULL.
+
+---
+
+## Шаг 5: Проверка связности
+
+### Теория
+
+После настройки VLAN, inter-VLAN routing и OSPF трафик от PC1 (VLAN 10, SW1) до PC3 (VLAN 10, SW2) идёт:
+
+```
+PC1 → SW1 → R1 (sub-interface) → R1 (Gi0/1) → R2 (Gi0/1) → R2 (sub-interface) → SW2 → PC3
+```
+
+### Задание
+
+Настроить IP на VPCS:
+
+```
+PC1> ip 192.168.10.10/24 192.168.10.1
+PC2> ip 192.168.20.10/24 192.168.20.1
+PC3> ip 192.168.10.20/24 192.168.10.1
+PC4> ip 192.168.20.20/24 192.168.20.1
+```
+
+Проверка:
+
+```
+PC1> ping 192.168.10.1     # шлюз R1
+PC1> ping 192.168.20.10    # inter-VLAN через R1
+PC1> ping 192.168.10.20    # сквозная через OSPF
+PC1> ping 192.168.20.20    # между VLAN через два маршрутизатора
+```
+
+### Критерий валидации
+
+Ping от PC1 (192.168.10.10) до PC3 (192.168.10.20) успешен.
