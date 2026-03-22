@@ -1,6 +1,6 @@
 """AnalyticsAgent — анализ прогресса и адаптация сложности."""
 
-from typing import Callable
+from collections.abc import Callable
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,6 +9,7 @@ from agents.base import BaseAgent
 from agents.analytics.models import (
     AnalyticsInput,
     AnalyticsResult,
+    DifficultyLevel,
     DifficultyRecommendation,
     SessionFeatures,
     StudentMetrics,
@@ -86,28 +87,30 @@ class AnalyticsAgent(BaseAgent):
         attempts = await self.tools.get_attempts(
             input_data.user_id, input_data.lab_slug
         )
-        return self.analyze(attempts, current_difficulty="intermediate")
+        return self.analyze(attempts, current_difficulty=DifficultyLevel.INTERMEDIATE)
 
     def analyze(
-        self, attempts: list, current_difficulty: str
+        self, attempts: list, current_difficulty: str | DifficultyLevel = DifficultyLevel.INTERMEDIATE
     ) -> DifficultyRecommendation:
         """Пакетный анализ по StepAttempt. Рекомендация сложности."""
         metrics = self.tools.compute_metrics(attempts)
         error_patterns = self.tools.detect_error_patterns(attempts)
 
+        current = DifficultyLevel(current_difficulty) if isinstance(current_difficulty, str) else current_difficulty
+
         if metrics.success_rate >= 0.9:
-            recommended = "advanced"
+            recommended = DifficultyLevel.ADVANCED
             reasoning = "Высокий процент успеха — можно увеличить сложность."
         elif metrics.success_rate <= 0.3 or len(metrics.struggling_steps) > 0:
-            recommended = "beginner"
+            recommended = DifficultyLevel.BEGINNER
             reasoning = "Низкий процент успеха или проблемные шаги — снизить сложность."
         else:
-            recommended = current_difficulty
+            recommended = current
             reasoning = "Средний прогресс — сохранить текущий уровень."
 
         return DifficultyRecommendation(
-            current_difficulty=current_difficulty,
-            recommended_difficulty=recommended,
+            current_difficulty=current.value,
+            recommended_difficulty=recommended.value,
             reasoning=reasoning,
             metrics=metrics,
             error_patterns=error_patterns,
@@ -124,8 +127,8 @@ class AnalyticsAgent(BaseAgent):
             struggling_steps=[],
         )
         diff_reco = DifficultyRecommendation(
-            current_difficulty="intermediate",
-            recommended_difficulty="intermediate",
+            current_difficulty=DifficultyLevel.INTERMEDIATE.value,
+            recommended_difficulty=DifficultyLevel.INTERMEDIATE.value,
             reasoning="Анализ на основе сессии",
             metrics=metrics,
         )

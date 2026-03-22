@@ -81,6 +81,7 @@ class LlmProvider(str, Enum):
     ANTHROPIC = "anthropic"
     OPENAI = "openai"
     OLLAMA = "ollama"
+    YANDEX = "yandex"
 
 
 class AgentsConfig(BaseModel):
@@ -93,6 +94,14 @@ class AgentsConfig(BaseModel):
     temperature: float = Field(default=0.3, ge=0.0, le=2.0)
     max_tokens: int = Field(default=4096, ge=1)
     request_timeout: int = Field(default=30, ge=1)
+    yandex_folder: str | None = Field(default=None, description="ID каталога Yandex Cloud")
+
+    @property
+    def model_uri(self) -> str:
+        """URI модели: gpt://folder/model для Yandex, plain model для остальных."""
+        if self.provider == LlmProvider.YANDEX and self.yandex_folder:
+            return f"gpt://{self.yandex_folder}/{self.model}"
+        return self.model
 
     @model_validator(mode="after")
     def validate_provider_requirements(self) -> Self:
@@ -100,6 +109,11 @@ class AgentsConfig(BaseModel):
             raise ValueError(f"api_key required for provider '{self.provider.value}'")
         if self.provider == LlmProvider.OLLAMA and not self.base_url:
             self.base_url = "http://localhost:11434/v1"
+        if self.provider == LlmProvider.YANDEX:
+            if not self.api_key:
+                raise ValueError("api_key required for provider 'yandex'")
+            if not self.yandex_folder:
+                raise ValueError("yandex_folder required for provider 'yandex'")
         return self
 
 

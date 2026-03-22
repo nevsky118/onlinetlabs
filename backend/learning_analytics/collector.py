@@ -3,6 +3,7 @@
 import asyncio
 import hashlib
 import logging
+from collections import OrderedDict
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -24,8 +25,12 @@ class BehavioralCollector:
         self._task: asyncio.Task | None = None
         self._running = False
         self._last_error_poll: datetime | None = None
-        self._seen: set[str] = set()
+        self._seen: OrderedDict[str, None] = OrderedDict()
         self._component_types: dict[str, str] = {}
+        self._session_id: str | None = None
+        self._user_id: str | None = None
+        self._lab_slug: str | None = None
+        self._ctx = None
 
     @property
     def is_running(self) -> bool:
@@ -157,13 +162,12 @@ class BehavioralCollector:
         return hashlib.md5(raw.encode()).hexdigest()
 
     def _is_new(self, key: str) -> bool:
-        """True если событие новое. Bounded set."""
+        """True если событие новое. Bounded OrderedDict."""
         if key in self._seen:
             return False
-        self._seen.add(key)
-        if len(self._seen) > self._cfg.dedup_max_size:
-            keep = list(self._seen)[self._cfg.dedup_max_size // 2:]
-            self._seen = set(keep)
+        self._seen[key] = None
+        while len(self._seen) > self._cfg.dedup_max_size:
+            self._seen.popitem(last=False)  # remove oldest
         return True
 
     # Нормализация MCP-моделей → event dict

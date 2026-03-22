@@ -9,6 +9,7 @@ from agents.analytics.agent import AnalyticsAgent
 from agents.orchestrator.models import InterventionInput
 from config.config_model import LearningAnalyticsConfig
 from learning_analytics.collector import BehavioralCollector
+from learning_analytics.context import MCPContextBuilder
 from learning_analytics.features import FeatureExtractor
 
 logger = logging.getLogger(__name__)
@@ -17,14 +18,16 @@ logger = logging.getLogger(__name__)
 class SessionMonitor:
     """Один на сессию. Управляет сбором событий, анализом и интервенциями."""
 
-    def __init__(self, mcp_client, db_factory, orchestrator, learning_analytics_config: LearningAnalyticsConfig):
+    def __init__(self, mcp_client, db_factory, orchestrator, learning_analytics_config: LearningAnalyticsConfig, gateway=None):
         """Инициализация с MCP-клиентом, DB-фабрикой, оркестратором и конфигом."""
         self._mcp = mcp_client
         self._db_factory = db_factory
         self._orchestrator = orchestrator
         self._learning_analytics_config = learning_analytics_config
+        self._gateway = gateway
         self._collector: BehavioralCollector | None = None
         self._feature_extractor = FeatureExtractor(learning_analytics_config)
+        self._context_builder = MCPContextBuilder(mcp_client)
         self._analysis_task: asyncio.Task | None = None
         self._running = False
         self._last_intervention_at: datetime | None = None
@@ -41,6 +44,7 @@ class SessionMonitor:
         self._session_id = session_id
         self._user_id = user_id
         self._lab_slug = lab_slug
+        self._ctx = ctx
         self._analytics_agent = analytics_agent
         self._running = True
 
@@ -84,10 +88,11 @@ class SessionMonitor:
             stmt = (
                 select(BehavioralEvent)
                 .where(BehavioralEvent.session_id == self._session_id)
-                .order_by(BehavioralEvent.timestamp)
+                .order_by(BehavioralEvent.timestamp.desc())
+                .limit(500)
             )
             result = await session.execute(stmt)
-            events = list(result.scalars().all())
+            events = list(reversed(result.scalars().all()))
 
         if not events:
             return
@@ -97,6 +102,12 @@ class SessionMonitor:
 
         if not analysis.struggle_detected or not self._should_trigger_intervention():
             return
+
+        context = await self._context_builder.build(
+            self._ctx, features,
+            analysis.struggle_type.value if analysis.struggle_type else None,
+            features.dominant_error,
+        )
 
         response = await self._orchestrator.intervene(InterventionInput(
             session_id=self._session_id,
@@ -109,9 +120,20 @@ class SessionMonitor:
                 "step_slug": "current",
                 "attempts_count": features.error_repeat_count,
                 "last_error": features.dominant_error,
+                "agent_context": context.model_dump(),
             },
         ))
         self._last_intervention_at = datetime.now(tz=timezone.utc)
+
+        if response.success and self._gateway:
+            await self._gateway.send_intervention(self._session_id, {
+                "intervention_type": analysis.suggested_intervention.value,
+                "content": response.data.get("hint") or response.data.get("answer", ""),
+                "hint_level": response.data.get("hint_level"),
+                "struggle_type": analysis.struggle_type.value if analysis.struggle_type else None,
+                "dismissible": True,
+            })
+
         await self._log_intervention(analysis, response)
 
         logger.info(

@@ -1,8 +1,12 @@
 """Orchestrator — маршрутизация запросов к агентам."""
 
+import logging
+
 from config.config_model import ConfigModel
 from agents.orchestrator.models import OrchestratorInput, OrchestratorResponse, InterventionInput
 from agents.orchestrator.router import resolve_agent
+
+logger = logging.getLogger(__name__)
 
 
 class Orchestrator:
@@ -81,7 +85,11 @@ class Orchestrator:
         resolved = resolve_agent(agent_name)
 
         if resolved is None:
-            resolved = input_data.intervention_type
+            logger.warning("No agent route for intervention: %s", agent_name)
+            return OrchestratorResponse(
+                agent_used=agent_name, success=False,
+                error=f"No route for intervention: {agent_name}",
+            )
 
         agent = self._get_agent(resolved)
         if agent is None:
