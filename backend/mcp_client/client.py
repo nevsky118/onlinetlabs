@@ -72,7 +72,7 @@ class MCPClient:
 
         return None
 
-    # --- StateProvider ---
+    # StateProvider
 
     async def list_components(self, ctx: SessionContext) -> list[Component]:
         data = await self._call_tool("list_components", {"ctx": self._ctx_dict(ctx)})
@@ -91,7 +91,7 @@ class MCPClient:
         data = await self._call_tool("get_system_overview", {"ctx": self._ctx_dict(ctx)})
         return SystemOverview.model_validate(data)
 
-    # --- ActionProvider ---
+    # ActionProvider
 
     async def list_available_actions(
         self, ctx: SessionContext, component_id: str | None = None
@@ -112,7 +112,7 @@ class MCPClient:
         )
         return ActionResult.model_validate(data)
 
-    # --- LogProvider ---
+    # LogProvider
 
     async def list_errors(
         self, ctx: SessionContext, since: datetime | None = None
@@ -134,7 +134,7 @@ class MCPClient:
         items = data.get("result", data) if isinstance(data, dict) else data
         return [LogEntry.model_validate(item) for item in items]
 
-    # --- HistoryProvider ---
+    # HistoryProvider
 
     async def list_user_actions(
         self, ctx: SessionContext, limit: int = 50
@@ -145,7 +145,7 @@ class MCPClient:
         items = data.get("result", data) if isinstance(data, dict) else data
         return [UserAction.model_validate(item) for item in items]
 
-    # --- Domain tools (direct pass-through) ---
+    # Domain tools (direct pass-through)
 
     async def call_domain_tool(
         self, tool_name: str, ctx: SessionContext, **kwargs: Any
