@@ -10,6 +10,7 @@ class EntitiesTypes(Enum):
     Порядок важен: верхние удаляются первыми.
     """
 
+    gns3_project = "gns3_project"
     gns3_session = "gns3_session"
     session = "session"
     user = "user"

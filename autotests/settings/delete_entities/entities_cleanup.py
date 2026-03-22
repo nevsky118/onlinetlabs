@@ -30,6 +30,8 @@ class EntitiesCleanup:
             for id_ in ids_:
                 try:
                     match type_:
+                        case EntitiesTypes.gns3_project.name:
+                            await self.entities_helper_api.delete_gns3_project(project_id=id_)
                         case EntitiesTypes.gns3_session.name:
                             await self.entities_helper_api.gns3_sessions_api.delete_session(session_id=id_)
                         case EntitiesTypes.session.name:
