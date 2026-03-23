@@ -120,25 +120,36 @@ flowchart LR
 
 Требования: Python 3.11+, Poetry, Node.js 20+, pnpm, Docker.
 
+> **Windows:** если Poetry не найден после установки через pip — добавьте
+> `%APPDATA%\Python\Python313\Scripts` в PATH. Для корректного вывода ошибок: `chcp 65001`.
+
 ```bash
 git clone https://github.com/nevsky118/onlinetlabs.git
 cd onlinetlabs
+pip install poetry   # если ещё не установлен
 make install
 ```
 
 Настройка окружения — расшифровать конфиги (нужен `CONFIG_PASSWORD`):
 
 ```bash
-CONFIG_PASSWORD=... make decrypt file=backend/local.env.aes
-CONFIG_PASSWORD=... cd gns3 && make decrypt file=gns3-service/local.env.aes
-CONFIG_PASSWORD=... cd gns3 && make decrypt file=gns3-mcp/local.env.aes
-CONFIG_PASSWORD=... cd autotests && make decrypt file=settings/configuration/local.env.aes
+export CONFIG_PASSWORD=...
+
+# backend (путь относительно backend/)
+make decrypt file=local.env.aes
+
+# gns3 (оба сервиса)
+cd gns3 && make decrypt file=gns3-service/local.env.aes && make decrypt file=gns3-mcp/local.env.aes && cd ..
+
+# autotests
+cd autotests && make decrypt file=settings/configuration/local.env.aes && cd ..
 ```
 
 Запуск:
 
 ```bash
-make up-db    # PostgreSQL + Redis
+make up-db    # PostgreSQL
+make migrate  # применить миграции
 make serve    # Backend API (hot-reload)
 make dev      # Frontend (hot-reload)
 ```
@@ -305,8 +316,6 @@ Conftest автоматически:
 
 Конфиги хранятся зашифрованными (AES-256-CBC). Расшифрованные файлы не коммитятся.
 
-| Файл | Назначение |
-|-|-|
 | Файл | Назначение |
 |-|-|
 | `*.env.aes` | Зашифрованный конфиг (в git) |

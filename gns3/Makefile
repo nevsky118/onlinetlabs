@@ -97,10 +97,10 @@ migrate-rollback:
 
 # ── Encryption ───────────────────────────────────────────────
 encrypt:
-	cd $(SERVICE_DIR) && poetry run python -m src.config.encryption encrypt $(file)
+	openssl enc -aes-256-cbc -salt -pbkdf2 -in $(file) -out $(file).aes -pass pass:$(CONFIG_PASSWORD)
 
 decrypt:
-	cd $(SERVICE_DIR) && poetry run python -m src.config.encryption decrypt $(file)
+	openssl enc -aes-256-cbc -d -salt -pbkdf2 -in $(file) -out $$(echo $(file) | sed 's/.aes$$//') -pass pass:$(CONFIG_PASSWORD)
 
 # ── Cleanup ──────────────────────────────────────────────────
 clean:
