@@ -28,16 +28,11 @@ def encrypt_file(filepath: str, password: str) -> str:
 
 
 def decrypt_file(filepath: str, password: str) -> str:
-    """Decrypt .aes file to a temp file that is deleted on process exit."""
     if not filepath.endswith(".aes"):
         raise ValueError("File must have .aes extension")
     if not os.path.isfile(filepath):
         raise FileNotFoundError(f"File not found: {filepath}")
-    import atexit
-    import tempfile
-    fd, output = tempfile.mkstemp(suffix=".env")
-    os.close(fd)
-    atexit.register(lambda p=output: os.unlink(p) if os.path.exists(p) else None)
+    output = filepath.removesuffix(".aes")
     subprocess.run(
         [
             "openssl",
