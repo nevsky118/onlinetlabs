@@ -1,5 +1,5 @@
 import { loader } from "fumadocs-core/source"
-import { course as courseSource, labs as labsSource } from "@/.source"
+import { course as courseSource, labs as labsSource } from "../../.source"
 
 export const course = loader({
   baseUrl: "/courses",

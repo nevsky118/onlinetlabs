@@ -1,10 +1,15 @@
 import type { Metadata } from "next"
-import { RegisterForm } from "@/features/auth"
+import { Suspense } from "react"
+import { RegisterForm } from "@/modules/auth"
 
 export const metadata: Metadata = {
   title: "Sign Up",
 }
 
 export default function SignUpPage() {
-  return <RegisterForm />
+  return (
+    <Suspense>
+      <RegisterForm />
+    </Suspense>
+  )
 }

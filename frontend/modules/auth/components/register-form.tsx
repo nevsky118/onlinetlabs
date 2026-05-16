@@ -6,12 +6,12 @@ import { useRouter } from "next/navigation"
 import { useQueryState } from "nuqs"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
-import { redirectParser } from "../lib/search-params"
+import { type RegisterFormValues, registerSchema } from "../lib/schemas"
+import { redirectParser } from "../search-params"
+import { authClient } from "@/auth/client"
 import { Icons } from "@/components/icons"
-import { type LoginFormValues, loginSchema } from "@/entities/user"
 import { validateRedirect } from "@/lib/redirect"
 import { cn } from "@/lib/utils"
-import { authClient } from "@/shared/auth/client"
 import { Button } from "@/ui/button"
 import {
   Card,
@@ -30,7 +30,7 @@ import {
 import { Input } from "@/ui/input"
 import { Spinner } from "@/ui/spinner"
 
-export function LoginForm({
+export function RegisterForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
@@ -56,18 +56,18 @@ export function LoginForm({
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
   })
 
   const onSubmit = handleSubmit(async (data) => {
     setServerError(undefined)
-    await authClient.signIn.credential(
-      { email: data.email, password: data.password },
+    await authClient.signUp.credential(
+      { email: data.email, password: data.password, name: data.name },
       {
         onSuccess: () => router.push(validateRedirect(redirect)),
         onError: (ctx) =>
-          setServerError(ctx.error.message ?? "Invalid email or password."),
+          setServerError(ctx.error.message ?? "Registration failed."),
       }
     )
   })
@@ -76,9 +76,9 @@ export function LoginForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle>Sign In to Your Account</CardTitle>
+          <CardTitle>Create an Account</CardTitle>
           <CardDescription>
-            Enter your email below to sign in to your account
+            Enter your details below to create your account
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -87,6 +87,16 @@ export function LoginForm({
               {serverError && (
                 <FieldError aria-live="polite">{serverError}</FieldError>
               )}
+              <Field>
+                <FieldLabel htmlFor="name">Name</FieldLabel>
+                <Input
+                  id="name"
+                  type="text"
+                  autoComplete="name"
+                  placeholder="John Doe"
+                  {...register("name")}
+                />
+              </Field>
               <Field>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
                 <Input
@@ -106,16 +116,17 @@ export function LoginForm({
                 <Input
                   id="password"
                   type="password"
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   {...register("password")}
                 />
                 {errors.password && (
                   <FieldError>{errors.password.message}</FieldError>
                 )}
+                <FieldDescription>At least 8 characters</FieldDescription>
               </Field>
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting && <Spinner />}
-                Sign In
+                Create Account
               </Button>
             </FieldGroup>
           </form>
@@ -137,10 +148,10 @@ export function LoginForm({
               ) : (
                 <Icons.gitHub aria-hidden="true" />
               )}
-              Sign In with GitHub
+              Sign Up with GitHub
             </Button>
             <FieldDescription className="text-center">
-              Don&apos;t have an account? <Link href="/sign-up">Sign Up</Link>
+              Already have an account? <Link href="/sign-in">Sign In</Link>
             </FieldDescription>
           </div>
         </CardContent>

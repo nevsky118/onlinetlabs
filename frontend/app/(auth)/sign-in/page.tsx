@@ -1,10 +1,15 @@
 import type { Metadata } from "next"
-import { LoginForm } from "@/features/auth"
+import { Suspense } from "react"
+import { LoginForm } from "@/modules/auth"
 
 export const metadata: Metadata = {
   title: "Sign In",
 }
 
 export default function SignInPage() {
-  return <LoginForm />
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  )
 }

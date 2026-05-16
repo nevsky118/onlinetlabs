@@ -1,6 +1,6 @@
 import { headers } from "next/headers"
 import { backendExchangeToken } from "./api"
-import { auth } from "@/shared/auth"
+import { auth } from "@/auth"
 
 export async function getBackendToken(): Promise<string | null> {
   const session = await auth.api.getSession({

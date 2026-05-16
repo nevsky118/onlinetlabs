@@ -6,12 +6,12 @@ import { useRouter } from "next/navigation"
 import { useQueryState } from "nuqs"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
-import { redirectParser } from "../lib/search-params"
+import { type LoginFormValues, loginSchema } from "../lib/schemas"
+import { redirectParser } from "../search-params"
+import { authClient } from "@/auth/client"
 import { Icons } from "@/components/icons"
-import { type RegisterFormValues, registerSchema } from "@/entities/user"
 import { validateRedirect } from "@/lib/redirect"
 import { cn } from "@/lib/utils"
-import { authClient } from "@/shared/auth/client"
 import { Button } from "@/ui/button"
 import {
   Card,
@@ -30,7 +30,7 @@ import {
 import { Input } from "@/ui/input"
 import { Spinner } from "@/ui/spinner"
 
-export function RegisterForm({
+export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
@@ -56,18 +56,18 @@ export function RegisterForm({
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
   })
 
   const onSubmit = handleSubmit(async (data) => {
     setServerError(undefined)
-    await authClient.signUp.credential(
-      { email: data.email, password: data.password, name: data.name },
+    await authClient.signIn.credential(
+      { email: data.email, password: data.password },
       {
         onSuccess: () => router.push(validateRedirect(redirect)),
         onError: (ctx) =>
-          setServerError(ctx.error.message ?? "Registration failed."),
+          setServerError(ctx.error.message ?? "Invalid email or password."),
       }
     )
   })
@@ -76,9 +76,9 @@ export function RegisterForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle>Create an Account</CardTitle>
+          <CardTitle>Sign In to Your Account</CardTitle>
           <CardDescription>
-            Enter your details below to create your account
+            Enter your email below to sign in to your account
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -87,16 +87,6 @@ export function RegisterForm({
               {serverError && (
                 <FieldError aria-live="polite">{serverError}</FieldError>
               )}
-              <Field>
-                <FieldLabel htmlFor="name">Name</FieldLabel>
-                <Input
-                  id="name"
-                  type="text"
-                  autoComplete="name"
-                  placeholder="John Doe"
-                  {...register("name")}
-                />
-              </Field>
               <Field>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
                 <Input
@@ -116,17 +106,16 @@ export function RegisterForm({
                 <Input
                   id="password"
                   type="password"
-                  autoComplete="new-password"
+                  autoComplete="current-password"
                   {...register("password")}
                 />
                 {errors.password && (
                   <FieldError>{errors.password.message}</FieldError>
                 )}
-                <FieldDescription>At least 8 characters</FieldDescription>
               </Field>
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting && <Spinner />}
-                Create Account
+                Sign In
               </Button>
             </FieldGroup>
           </form>
@@ -148,10 +137,10 @@ export function RegisterForm({
               ) : (
                 <Icons.gitHub aria-hidden="true" />
               )}
-              Sign Up with GitHub
+              Sign In with GitHub
             </Button>
             <FieldDescription className="text-center">
-              Already have an account? <Link href="/sign-in">Sign In</Link>
+              Don&apos;t have an account? <Link href="/sign-up">Sign Up</Link>
             </FieldDescription>
           </div>
         </CardContent>

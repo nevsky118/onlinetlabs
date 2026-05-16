@@ -26,11 +26,11 @@
       "@/components/*": ["./shared/components/*"],
       "@/shared/*": ["./shared/*"],
       "@/content/*": ["./content/*"],
-      "@/entities/*": ["./entities/*"],
-      "@/features/*": ["./features/*"],
-      "@/widgets/*": ["./widgets/*"],
-      "@/app/*": ["./app/*"],
-      "@/*": ["./*"]
+      "@/modules/*": ["./modules/*"],
+      "@/auth": ["./auth/index.ts"],
+      "@/auth/*": ["./auth/*"],
+      "@/styles/*": ["./styles/*"],
+      "@/app/*": ["./app/*"]
     }
   },
   "include": [

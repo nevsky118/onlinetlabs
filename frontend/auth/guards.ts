@@ -1,7 +1,7 @@
 import { forbidden, unauthorized } from "next/navigation"
 import type { Role } from "./permissions"
 import { getSession } from "./session"
-import { auth } from "@/shared/auth"
+import { auth } from "@/auth"
 
 export async function requireAuth() {
   const session = await getSession()
