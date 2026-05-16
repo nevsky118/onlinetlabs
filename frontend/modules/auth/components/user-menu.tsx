@@ -2,7 +2,7 @@
 
 import { LogOut } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { authClient } from "@/shared/auth/client"
+import { authClient } from "@/auth/client"
 import { Avatar, AvatarFallback, AvatarImage } from "@/ui/avatar"
 import { Button } from "@/ui/button"
 import {

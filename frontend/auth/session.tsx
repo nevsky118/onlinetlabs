@@ -1,6 +1,6 @@
 import { headers } from "next/headers"
 import { cache, type ReactNode } from "react"
-import { auth } from "@/shared/auth"
+import { auth } from "@/auth"
 
 export const getSession = cache(async () => {
   return auth.api.getSession({ headers: await headers() })

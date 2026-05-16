@@ -1,5 +1,5 @@
-import { SiteFooter } from "@/widgets/site-footer"
-import { SiteHeader } from "@/widgets/site-header"
+import { SiteFooter } from "./_components/site-footer"
+import { SiteHeader } from "./_components/site-header"
 
 export default async function AppLayout({
   children,
