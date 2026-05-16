@@ -1,4 +1,4 @@
-"""API endpoints для мониторинга и экспорта эксперимента."""
+"""API-эндпоинты для мониторинга и экспорта эксперимента."""
 
 import csv
 import io
@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth.dependencies import get_current_user
 from db.session import get_db
 from experiment.analysis import compute_experiment_analysis
+from experiment.group_assigner import ExperimentGroup
 from experiment.schemas import (
     ExperimentStatusResponse,
     GroupUpdateRequest,
@@ -25,11 +26,64 @@ from models.user import User
 router = APIRouter()
 
 
+METRICS_EXPORT_FIELDS = [
+    "user_id",
+    "session_id",
+    "experiment_group",
+    "agent_backend",
+    "total_time_seconds",
+    "steps_completed",
+    "total_errors",
+    "repeated_errors",
+    "unique_error_types",
+    "interventions_received",
+    "interventions_succeeded",
+    "interventions_failed",
+    "final_score",
+    "completed",
+]
+
+
 def _require_admin(current_user: dict = Depends(get_current_user)) -> dict:
-    """Только admin."""
+    """Только администратор."""
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin only")
     return current_user
+
+
+def _build_status_response(
+    counts: dict[str, int], completed: int, in_progress: int
+) -> ExperimentStatusResponse:
+    """Собрать статус для финальных буквенных групп исследования OpenClaw."""
+    group_a_count = counts.get(ExperimentGroup.GROUP_A.value, 0)
+    group_b_count = counts.get(ExperimentGroup.GROUP_B.value, 0)
+    return ExperimentStatusResponse(
+        total_participants=group_a_count + group_b_count,
+        group_a_count=group_a_count,
+        group_b_count=group_b_count,
+        completed_count=completed,
+        in_progress_count=in_progress,
+    )
+
+
+def _metric_to_export_row(metric) -> dict:
+    """Преобразовать объект метрики в строку экспорта."""
+    return {
+        "user_id": metric.user_id,
+        "session_id": metric.session_id,
+        "experiment_group": metric.experiment_group,
+        "agent_backend": getattr(metric, "agent_backend", None),
+        "total_time_seconds": metric.total_time_seconds,
+        "steps_completed": metric.steps_completed,
+        "total_errors": metric.total_errors,
+        "repeated_errors": metric.repeated_errors,
+        "unique_error_types": metric.unique_error_types,
+        "interventions_received": metric.interventions_received,
+        "interventions_succeeded": getattr(metric, "interventions_succeeded", 0),
+        "interventions_failed": getattr(metric, "interventions_failed", 0),
+        "final_score": metric.final_score,
+        "completed": metric.completed,
+    }
 
 
 @router.get("/status", response_model=ExperimentStatusResponse)
@@ -49,25 +103,18 @@ async def get_status(
     counts = {row[0]: row[1] for row in result.all()}
 
     completed_result = await db.execute(
-        select(func.count(ExperimentMetrics.id))
-        .where(ExperimentMetrics.completed.is_(True))
+        select(func.count(ExperimentMetrics.id)).where(
+            ExperimentMetrics.completed.is_(True)
+        )
     )
     completed = completed_result.scalar() or 0
 
     in_progress_result = await db.execute(
-        select(func.count(LearningSession.id))
-        .where(LearningSession.status == "active")
+        select(func.count(LearningSession.id)).where(LearningSession.status == "active")
     )
     in_progress = in_progress_result.scalar() or 0
 
-    total = sum(counts.values())
-    return ExperimentStatusResponse(
-        total_participants=total,
-        control_count=counts.get("control", 0),
-        experimental_count=counts.get("experimental", 0),
-        completed_count=completed,
-        in_progress_count=in_progress,
-    )
+    return _build_status_response(counts, completed=completed, in_progress=in_progress)
 
 
 @router.get("/participants", response_model=list[ParticipantResponse])
@@ -76,9 +123,7 @@ async def list_participants(
     _: dict = Depends(_require_admin),
 ):
     """Список участников эксперимента."""
-    result = await db.execute(
-        select(User).where(User.experiment_group.isnot(None))
-    )
+    result = await db.execute(select(User).where(User.experiment_group.isnot(None)))
     users = result.scalars().all()
 
     participants = []
@@ -92,20 +137,23 @@ async def list_participants(
         latest = metrics_result.scalar_one_or_none()
 
         sessions_result = await db.execute(
-            select(func.count(LearningSession.id))
-            .where(LearningSession.user_id == user.id)
+            select(func.count(LearningSession.id)).where(
+                LearningSession.user_id == user.id
+            )
         )
         sessions_count = sessions_result.scalar() or 0
 
-        participants.append(ParticipantResponse(
-            user_id=user.id,
-            email=user.email,
-            name=user.name,
-            experiment_group=user.experiment_group,
-            sessions_count=sessions_count,
-            completed=latest.completed if latest else False,
-            total_time_seconds=latest.total_time_seconds if latest else None,
-        ))
+        participants.append(
+            ParticipantResponse(
+                user_id=user.id,
+                email=user.email,
+                name=user.name,
+                experiment_group=user.experiment_group,
+                sessions_count=sessions_count,
+                completed=latest.completed if latest else False,
+                total_time_seconds=latest.total_time_seconds if latest else None,
+            )
+        )
     return participants
 
 
@@ -117,8 +165,10 @@ async def update_group(
     _: dict = Depends(_require_admin),
 ):
     """Переназначить группу участника."""
-    if body.group not in ("control", "experimental"):
-        raise HTTPException(status_code=400, detail="group must be 'control' or 'experimental'")
+    if body.group not in (ExperimentGroup.GROUP_A.value, ExperimentGroup.GROUP_B.value):
+        raise HTTPException(
+            status_code=400, detail="group must be 'group_a' or 'group_b'"
+        )
 
     await db.execute(
         update(User).where(User.id == user_id).values(experiment_group=body.group)
@@ -127,7 +177,9 @@ async def update_group(
     return {"ok": True}
 
 
-@router.get("/session/{session_id}/timeline", response_model=list[TimelineEventResponse])
+@router.get(
+    "/session/{session_id}/timeline", response_model=list[TimelineEventResponse]
+)
 async def get_session_timeline(
     session_id: str,
     db: AsyncSession = Depends(get_db),
@@ -168,40 +220,20 @@ async def export_metrics(
     if format == "csv":
         output = io.StringIO()
         writer = csv.writer(output)
-        writer.writerow([
-            "user_id", "session_id", "experiment_group", "total_time_seconds",
-            "steps_completed", "total_errors", "repeated_errors",
-            "unique_error_types", "interventions_received", "final_score", "completed",
-        ])
+        writer.writerow(METRICS_EXPORT_FIELDS)
         for m in metrics:
-            writer.writerow([
-                m.user_id, m.session_id, m.experiment_group, m.total_time_seconds,
-                m.steps_completed, m.total_errors, m.repeated_errors,
-                m.unique_error_types, m.interventions_received, m.final_score, m.completed,
-            ])
+            row = _metric_to_export_row(m)
+            writer.writerow([row[field] for field in METRICS_EXPORT_FIELDS])
         output.seek(0)
         return StreamingResponse(
             output,
             media_type="text/csv",
-            headers={"Content-Disposition": "attachment; filename=experiment_metrics.csv"},
+            headers={
+                "Content-Disposition": "attachment; filename=experiment_metrics.csv"
+            },
         )
 
-    return [
-        {
-            "user_id": m.user_id,
-            "session_id": m.session_id,
-            "experiment_group": m.experiment_group,
-            "total_time_seconds": m.total_time_seconds,
-            "steps_completed": m.steps_completed,
-            "total_errors": m.total_errors,
-            "repeated_errors": m.repeated_errors,
-            "unique_error_types": m.unique_error_types,
-            "interventions_received": m.interventions_received,
-            "final_score": m.final_score,
-            "completed": m.completed,
-        }
-        for m in metrics
-    ]
+    return [_metric_to_export_row(m) for m in metrics]
 
 
 @router.get("/analysis")

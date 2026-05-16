@@ -1,4 +1,4 @@
-"""SessionMonitor — замкнутый цикл LA: сбор → анализ → интервенция."""
+"""SessionMonitor — замкнутый цикл аналитики обучения: сбор → анализ → интервенция."""
 
 import asyncio
 import logging
@@ -18,11 +18,20 @@ logger = logging.getLogger(__name__)
 class SessionMonitor:
     """Один на сессию. Управляет сбором событий, анализом и интервенциями."""
 
-    def __init__(self, mcp_client, db_factory, orchestrator, learning_analytics_config: LearningAnalyticsConfig, gateway=None):
-        """Инициализация с MCP-клиентом, DB-фабрикой, оркестратором и конфигом."""
+    def __init__(
+        self,
+        mcp_client,
+        db_factory,
+        orchestrator,
+        learning_analytics_config: LearningAnalyticsConfig,
+        gateway=None,
+        intervention_router=None,
+    ):
+        """Инициализация с MCP-клиентом, фабрикой БД, оркестратором и конфигом."""
         self._mcp = mcp_client
         self._db_factory = db_factory
         self._orchestrator = orchestrator
+        self._intervention_router = intervention_router
         self._learning_analytics_config = learning_analytics_config
         self._gateway = gateway
         self._collector: BehavioralCollector | None = None
@@ -37,8 +46,12 @@ class SessionMonitor:
         self._analytics_agent: AnalyticsAgent | None = None
 
     async def start_session(
-        self, session_id: str, user_id: str, lab_slug: str,
-        ctx, analytics_agent: AnalyticsAgent,
+        self,
+        session_id: str,
+        user_id: str,
+        lab_slug: str,
+        ctx,
+        analytics_agent: AnalyticsAgent,
     ) -> None:
         """Запуск сбора и анализа для сессии."""
         self._session_id = session_id
@@ -48,7 +61,9 @@ class SessionMonitor:
         self._analytics_agent = analytics_agent
         self._running = True
 
-        self._collector = BehavioralCollector(self._mcp, self._db_factory, self._learning_analytics_config)
+        self._collector = BehavioralCollector(
+            self._mcp, self._db_factory, self._learning_analytics_config
+        )
         await self._collector.start(session_id, user_id, lab_slug, ctx)
         self._analysis_task = asyncio.create_task(self._analysis_loop())
 
@@ -80,7 +95,7 @@ class SessionMonitor:
                 logger.warning("Цикл анализа: ошибка", exc_info=True)
 
     async def _run_analysis(self) -> None:
-        """Один цикл: загрузить события → фичи → struggle-детекция → интервенция."""
+        """Один цикл: загрузить события → фичи → детекция затруднений → интервенция."""
         from sqlalchemy import select
         from models.behavioral_event import BehavioralEvent
 
@@ -98,23 +113,28 @@ class SessionMonitor:
             return
 
         features = self._feature_extractor.compute(self._session_id, events)
-        analysis = self._analytics_agent.analyze_session(features, self._learning_analytics_config)
+        analysis = self._analytics_agent.analyze_session(
+            features, self._learning_analytics_config
+        )
 
         if not analysis.struggle_detected or not self._should_trigger_intervention():
             return
 
         context = await self._context_builder.build(
-            self._ctx, features,
+            self._ctx,
+            features,
             analysis.struggle_type.value if analysis.struggle_type else None,
             features.dominant_error,
         )
 
-        response = await self._orchestrator.intervene(InterventionInput(
+        intervention_input = InterventionInput(
             session_id=self._session_id,
             user_id=self._user_id,
             intervention_type=analysis.suggested_intervention.value,
             context={
-                "struggle_type": analysis.struggle_type.value if analysis.struggle_type else None,
+                "struggle_type": analysis.struggle_type.value
+                if analysis.struggle_type
+                else None,
                 "dominant_error": features.dominant_error,
                 "lab_slug": self._lab_slug,
                 "step_slug": "current",
@@ -122,17 +142,27 @@ class SessionMonitor:
                 "last_error": features.dominant_error,
                 "agent_context": context.model_dump(),
             },
-        ))
+        )
+        if self._intervention_router:
+            response = await self._intervention_router.intervene(intervention_input)
+        else:
+            response = await self._orchestrator.intervene(intervention_input)
         self._last_intervention_at = datetime.now(tz=timezone.utc)
 
         if response.success and self._gateway:
-            await self._gateway.send_intervention(self._session_id, {
-                "intervention_type": analysis.suggested_intervention.value,
-                "content": response.data.get("hint") or response.data.get("answer", ""),
-                "hint_level": response.data.get("hint_level"),
-                "struggle_type": analysis.struggle_type.value if analysis.struggle_type else None,
-                "dismissible": True,
-            })
+            await self._gateway.send_intervention(
+                self._session_id,
+                {
+                    "intervention_type": analysis.suggested_intervention.value,
+                    "content": response.data.get("hint")
+                    or response.data.get("answer", ""),
+                    "hint_level": response.data.get("hint_level"),
+                    "struggle_type": analysis.struggle_type.value
+                    if analysis.struggle_type
+                    else None,
+                    "dismissible": True,
+                },
+            )
 
         await self._log_intervention(analysis, response)
 
@@ -146,27 +176,39 @@ class SessionMonitor:
     # Логирование интервенций
 
     async def _log_intervention(self, analysis, response) -> None:
-        """Записать интервенцию как BehavioralEvent для анализа эффекта."""
+        """Записать интервенцию как поведенческое событие для анализа эффекта."""
         from models.behavioral_event import BehavioralEvent
 
         try:
             async with self._db_factory() as session:
-                session.add(BehavioralEvent(
-                    id=str(uuid4()),
-                    session_id=self._session_id,
-                    user_id=self._user_id,
-                    lab_slug=self._lab_slug,
-                    timestamp=datetime.now(tz=timezone.utc),
-                    event_type="intervention",
-                    action=f"intervene_{analysis.suggested_intervention.value}",
-                    success=response.success,
-                    message=str(response.data) if response.data else None,
-                    extra_data={
-                        "struggle_type": analysis.struggle_type.value if analysis.struggle_type else None,
-                        "confidence": analysis.confidence,
-                        "agent_used": response.agent_used,
-                    },
-                ))
+                session.add(
+                    BehavioralEvent(
+                        id=str(uuid4()),
+                        session_id=self._session_id,
+                        user_id=self._user_id,
+                        lab_slug=self._lab_slug,
+                        timestamp=datetime.now(tz=timezone.utc),
+                        event_type="intervention",
+                        action=f"intervene_{analysis.suggested_intervention.value}",
+                        success=response.success,
+                        message=str(response.data) if response.data else response.error,
+                        extra_data={
+                            "struggle_type": analysis.struggle_type.value
+                            if analysis.struggle_type
+                            else None,
+                            "confidence": analysis.confidence,
+                            "agent_used": response.agent_used,
+                            "agent_backend": response.agent_backend,
+                            "experiment_group": response.metadata.get(
+                                "experiment_group"
+                            ),
+                            "latency_ms": response.latency_ms,
+                            "error_code": response.metadata.get("error_code"),
+                            "model": response.metadata.get("model"),
+                            "provider": response.metadata.get("provider"),
+                        },
+                    )
+                )
                 await session.commit()
         except Exception:
             logger.error("Не удалось записать интервенцию", exc_info=True)
@@ -174,12 +216,14 @@ class SessionMonitor:
     # Контроль частоты интервенций
 
     def _should_intervene(self) -> bool:
-        """Cooldown прошёл или первая интервенция."""
+        """Период охлаждения прошёл или это первая интервенция."""
         if self._last_intervention_at is None:
             return True
-        elapsed = (datetime.now(tz=timezone.utc) - self._last_intervention_at).total_seconds()
+        elapsed = (
+            datetime.now(tz=timezone.utc) - self._last_intervention_at
+        ).total_seconds()
         return elapsed >= self._learning_analytics_config.cooldown_period
 
     def _should_trigger_intervention(self) -> bool:
-        """Интервенции включены и cooldown прошёл."""
+        """Интервенции включены и период охлаждения прошёл."""
         return self._learning_analytics_config.enabled and self._should_intervene()
