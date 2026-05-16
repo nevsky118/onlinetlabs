@@ -8,6 +8,7 @@ from config.config_model import (
     ConfigModel,
     DatabaseConfig,
     LogConfig,
+    OpenClawConfig,
     RedisConfig,
 )
 
@@ -59,6 +60,18 @@ class EnvConfigLoader:
             request_timeout=int(values.get("AGENTS_REQUEST_TIMEOUT", "30")),
             yandex_folder=values.get("AGENTS_YANDEX_FOLDER") or None,
         )
+        openclaw = OpenClawConfig(
+            enabled=_str2bool(values.get("OPENCLAW_ENABLED", "false")),
+            base_url=values.get("OPENCLAW_BASE_URL", "http://localhost:18789"),
+            token=values.get("OPENCLAW_TOKEN") or None,
+            model=values.get("OPENCLAW_MODEL", "openclaw"),
+            timeout_seconds=float(values.get("OPENCLAW_TIMEOUT_SECONDS", "30")),
+        )
         return ConfigModel(
-            database=database, redis=redis, api=api, log=log, agents=agents
+            database=database,
+            redis=redis,
+            api=api,
+            log=log,
+            agents=agents,
+            openclaw=openclaw,
         )

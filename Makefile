@@ -1,7 +1,7 @@
 .PHONY: help install serve dev up up-db down logs ps psql \
         migrate migrate-create migrate-rollback \
         test lint format check \
-        encrypt decrypt clean sync-content
+        encrypt decrypt clean sync-content openclaw
 
 # ── Paths ────────────────────────────────────────────────────
 BE := backend
@@ -10,6 +10,9 @@ SDK := mcp-sdk
 ENV ?= local
 ENV_FILE := $(ENV).env
 DC := docker compose -f deployment/local/compose.yaml
+OPENCLAW_PORT ?= 18789
+OPENCLAW_AUTH ?= none
+OPENCLAW_BIND ?= loopback
 
 # ── Colors ───────────────────────────────────────────────────
 B := \033[0;34m
@@ -29,6 +32,7 @@ help:
 	@printf "  $(Y)%-20s$(N) %s\n" "install"            "Install all dependencies (poetry + pnpm)"
 	@printf "  $(Y)%-20s$(N) %s\n" "serve"              "Backend API (ENV=local|dev|prod)"
 	@printf "  $(Y)%-20s$(N) %s\n" "dev"                "Frontend dev server (next dev)"
+	@printf "  $(Y)%-20s$(N) %s\n" "openclaw"           "OpenClaw Gateway (OPENCLAW_PORT=18789)"
 	@printf "\n  $(B)Docker$(N)\n"
 	@printf "  $(Y)%-20s$(N) %s\n" "up"                 "Start all services"
 	@printf "  $(Y)%-20s$(N) %s\n" "up-db"              "Start database only"
@@ -64,6 +68,9 @@ serve:
 
 dev:
 	cd $(FE) && pnpm dev
+
+openclaw:
+	openclaw gateway run --auth $(OPENCLAW_AUTH) --bind $(OPENCLAW_BIND) --port $(OPENCLAW_PORT) --force --allow-unconfigured
 
 # ── Docker ───────────────────────────────────────────────────
 up:

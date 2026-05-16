@@ -94,18 +94,23 @@ class AgentsConfig(BaseModel):
     temperature: float = Field(default=0.3, ge=0.0, le=2.0)
     max_tokens: int = Field(default=4096, ge=1)
     request_timeout: int = Field(default=30, ge=1)
-    yandex_folder: str | None = Field(default=None, description="ID каталога Yandex Cloud")
+    yandex_folder: str | None = Field(
+        default=None, description="ID каталога Yandex Cloud"
+    )
 
     @property
     def model_uri(self) -> str:
-        """URI модели: gpt://folder/model для Yandex, plain model для остальных."""
+        """URI модели: gpt://folder/model для Yandex, обычное имя модели для остальных."""
         if self.provider == LlmProvider.YANDEX and self.yandex_folder:
             return f"gpt://{self.yandex_folder}/{self.model}"
         return self.model
 
     @model_validator(mode="after")
     def validate_provider_requirements(self) -> Self:
-        if self.provider in (LlmProvider.ANTHROPIC, LlmProvider.OPENAI) and not self.api_key:
+        if (
+            self.provider in (LlmProvider.ANTHROPIC, LlmProvider.OPENAI)
+            and not self.api_key
+        ):
             raise ValueError(f"api_key required for provider '{self.provider.value}'")
         if self.provider == LlmProvider.OLLAMA and not self.base_url:
             self.base_url = "http://localhost:11434/v1"
@@ -123,29 +128,67 @@ class LearningAnalyticsConfig(BaseModel):
     # Циклы
     poll_interval: float = Field(default=5.0, description="Интервал опроса MCP (сек)")
     analysis_interval: float = Field(default=15.0, description="Интервал анализа (сек)")
-    cooldown_period: float = Field(default=60.0, description="Мин. пауза между интервенциями (сек)")
-    enabled: bool = Field(default=True, description="Включить интервенции (False для контрольной группы)")
+    cooldown_period: float = Field(
+        default=60.0, description="Мин. пауза между интервенциями (сек)"
+    )
+    enabled: bool = Field(
+        default=True, description="Включить интервенции (False для контрольной группы)"
+    )
 
     # Пороги struggle-детекции
-    error_repeat_threshold: int = Field(default=3, description="Повторов одной ошибки для срабатывания")
-    idle_threshold: int = Field(default=3, description="Кол-во idle-периодов для детекции")
-    entropy_threshold: float = Field(default=0.9, description="Порог энтропии действий (trial-and-error)")
-    error_freq_threshold: float = Field(default=2.0, description="Ошибок/мин для детекции flailing")
-    stuck_time_multiplier: float = Field(default=2.0, description="Множитель avg_latency для детекции stuck")
-    rate_slope_threshold: float = Field(default=-0.5, description="Порог slope для детекции замедления")
-    min_latency_floor: float = Field(default=30.0, description="Мин. базовая латентность для stuck (сек)")
-    min_idle_for_stuck: int = Field(default=2, description="Мин. idle-периодов для stuck")
+    error_repeat_threshold: int = Field(
+        default=3, description="Повторов одной ошибки для срабатывания"
+    )
+    idle_threshold: int = Field(
+        default=3, description="Кол-во idle-периодов для детекции"
+    )
+    entropy_threshold: float = Field(
+        default=0.9, description="Порог энтропии действий (trial-and-error)"
+    )
+    error_freq_threshold: float = Field(
+        default=2.0, description="Ошибок/мин для детекции flailing"
+    )
+    stuck_time_multiplier: float = Field(
+        default=2.0, description="Множитель avg_latency для детекции stuck"
+    )
+    rate_slope_threshold: float = Field(
+        default=-0.5, description="Порог slope для детекции замедления"
+    )
+    min_latency_floor: float = Field(
+        default=30.0, description="Мин. базовая латентность для stuck (сек)"
+    )
+    min_idle_for_stuck: int = Field(
+        default=2, description="Мин. idle-периодов для stuck"
+    )
 
     # Параметры фичей
-    idle_gap_seconds: float = Field(default=60.0, description="Gap > N сек = idle период")
-    rate_window_seconds: float = Field(default=120.0, description="Окно для подсчёта action rate (сек)")
+    idle_gap_seconds: float = Field(
+        default=60.0, description="Gap > N сек = idle период"
+    )
+    rate_window_seconds: float = Field(
+        default=120.0, description="Окно для подсчёта action rate (сек)"
+    )
     min_rate_windows: int = Field(default=3, description="Мин. окон для расчёта slope")
-    error_freq_window_minutes: float = Field(default=5.0, description="Окно частоты ошибок (мин)")
+    error_freq_window_minutes: float = Field(
+        default=5.0, description="Окно частоты ошибок (мин)"
+    )
 
     # Коллектор
     dedup_max_size: int = Field(default=10_000, description="Макс. размер dedup-кэша")
     mcp_actions_limit: int = Field(default=50, description="Лимит list_user_actions")
     mcp_logs_limit: int = Field(default=100, description="Лимит get_logs")
+
+
+class OpenClawConfig(BaseModel):
+    """Конфигурация OpenClaw Gateway для экспериментального бэкенда."""
+
+    enabled: bool = Field(default=False, description="Включить бэкенд OpenClaw")
+    base_url: str = Field(
+        default="http://localhost:18789", description="OpenClaw Gateway URL"
+    )
+    token: str | None = Field(default=None, description="Bearer token для Gateway")
+    model: str = Field(default="openclaw", description="Имя модели OpenClaw")
+    timeout_seconds: float = Field(default=30.0, ge=1.0, description="Таймаут запроса")
 
 
 class ConfigModel(BaseModel):
@@ -156,4 +199,7 @@ class ConfigModel(BaseModel):
     api: ApiConfig
     log: LogConfig
     agents: AgentsConfig
-    learning_analytics: LearningAnalyticsConfig = Field(default_factory=LearningAnalyticsConfig)
+    learning_analytics: LearningAnalyticsConfig = Field(
+        default_factory=LearningAnalyticsConfig
+    )
+    openclaw: OpenClawConfig = Field(default_factory=OpenClawConfig)
