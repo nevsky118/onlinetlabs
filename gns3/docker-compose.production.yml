@@ -1,0 +1,11 @@
+# Production override: KVM device passthrough for QEMU images (Cisco IOSv/IOSvL2).
+# Run on x86_64 Linux host with /dev/kvm:
+#   docker compose -f docker-compose.yml -f docker-compose.production.yml up -d
+# Do NOT use on ARM hosts — no /dev/kvm available.
+services:
+  gns3-server:
+    devices:
+      - /dev/kvm:/dev/kvm
+    cap_add:
+      - SYS_NICE
+      - NET_ADMIN

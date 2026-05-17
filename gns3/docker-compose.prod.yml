@@ -1,0 +1,73 @@
+# Production overrides for the gns3 stack — MSK-8 (8 vCPU / 16 GB) sizing.
+# Layered on top of docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d
+#
+# Differences from docker-compose.yml (dev):
+#   - restart: unless-stopped on every service.
+#   - mem_limit + cpus on every service (sums to ~6 vCPU / ~6 GB, leaving headroom for host docker + KVM nodes).
+#   - postgres switches from tmpfs to a named volume so DB survives restarts.
+#   - All credentials/secrets are required via env-interpolation (:?) — no compose defaults
+#     to prevent shipping with `admin/admin`. See .env.prod.example.
+#   - extra_hosts: host-gateway on gns3-service + pgbouncer so host.docker.internal works on Linux.
+#   - HEALTHCHECK already in base file is inherited; this override does not need to redefine.
+#
+# NOTE: this file does not redefine the production KVM/cap_add additions for gns3-server —
+# those live in docker-compose.production.yml and must be layered separately on x86_64 Linux:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.production.yml ...
+
+services:
+  gns3-server:
+    restart: unless-stopped
+    mem_limit: 4g
+    cpus: 4.0
+    environment:
+      GNS3_AUTH: "true"
+      GNS3_DEFAULT_ADMIN_USER: ${GNS3_ADMIN_USER:?set GNS3_ADMIN_USER in .env.prod}
+      GNS3_DEFAULT_ADMIN_PASSWORD: ${GNS3_ADMIN_PASSWORD:?set GNS3_ADMIN_PASSWORD in .env.prod}
+      GNS3_BIND_PATH_TRANSLATION: "/data=${ONLINETLABS_HOST_ROOT:?set ONLINETLABS_HOST_ROOT in .env.prod}/gns3/runtime/data;/root/.local/share/GNS3=${ONLINETLABS_HOST_ROOT}/gns3/runtime/gns3-resources"
+
+  postgres:
+    restart: unless-stopped
+    mem_limit: 1g
+    cpus: 1.0
+    environment:
+      POSTGRES_USER: ${GNS3_DB_USER:?set GNS3_DB_USER in .env.prod}
+      POSTGRES_PASSWORD: ${GNS3_DB_PASSWORD:?set GNS3_DB_PASSWORD in .env.prod}
+      POSTGRES_DB: ${GNS3_DB_NAME:?set GNS3_DB_NAME in .env.prod}
+    # Базовый docker-compose.yml монтирует анонимный том в /var/lib/postgresql/data.
+    # docker compose merge склеивает volumes-списки — добавление named-volume на тот же
+    # target в overlay вызовет конфликт. Решение: в overlay явно используем тот же mount
+    # path, но именованный том. Compose дедуплицирует по target, оставляя последний.
+    volumes:
+      - gns3_postgres_data:/var/lib/postgresql/data
+
+  gns3-service:
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 1.0
+    environment:
+      GNS3_ADMIN_USER: ${GNS3_ADMIN_USER:?set GNS3_ADMIN_USER in .env.prod}
+      GNS3_ADMIN_PASSWORD: ${GNS3_ADMIN_PASSWORD:?set GNS3_ADMIN_PASSWORD in .env.prod}
+      DB_USER: ${GNS3_DB_USER:?set GNS3_DB_USER in .env.prod}
+      DB_PASSWORD: ${GNS3_DB_PASSWORD:?set GNS3_DB_PASSWORD in .env.prod}
+      DB_NAME: ${GNS3_DB_NAME:?set GNS3_DB_NAME in .env.prod}
+      REDIS_URL: ${GNS3_REDIS_URL:?set GNS3_REDIS_URL in .env.prod}
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?set INTERNAL_API_TOKEN in .env.prod}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  pgbouncer:
+    restart: unless-stopped
+    mem_limit: 128m
+    cpus: 0.5
+    # pgbouncer routes onlinetlabs DB via host.docker.internal — required on Linux.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  gns3-mcp:
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 1.0
+
+volumes:
+  gns3_postgres_data:

@@ -8,6 +8,8 @@ from src.config.config_model import (
     DatabaseConfig,
     GNS3Config,
     GNS3ServiceConfigModel,
+    RedisConfig,
+    SecurityConfig,
     ServiceConfig,
 )
 
@@ -32,8 +34,10 @@ class EnvConfigLoader:
                 raise KeyError(f"Required env var not set: {key}")
             return value
 
+        gns3_url = _req("GNS3_URL")
         gns3 = GNS3Config(
-            url=_req("GNS3_URL"),
+            url=gns3_url,
+            public_url=values.get("GNS3_PUBLIC_URL", gns3_url),
             admin_user=_req("GNS3_ADMIN_USER"),
             admin_password=_req("GNS3_ADMIN_PASSWORD"),
         )
@@ -50,4 +54,12 @@ class EnvConfigLoader:
             port=int(values.get("SERVICE_PORT", "8101")),
             log_level=values.get("LOG_LEVEL", "INFO"),
         )
-        return GNS3ServiceConfigModel(gns3=gns3, database=database, service=service)
+        redis = RedisConfig(url=_req("REDIS_URL"))
+        security = SecurityConfig(internal_api_token=_req("INTERNAL_API_TOKEN"))
+        return GNS3ServiceConfigModel(
+            gns3=gns3,
+            database=database,
+            service=service,
+            redis=redis,
+            security=security,
+        )

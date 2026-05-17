@@ -1,11 +1,29 @@
-FROM python:3.14-slim
+# Multi-stage build: compile native wheels (asyncpg, greenlet, ...) in a builder
+# with gcc/libc6-dev, then copy the populated site-packages into a slim runtime
+# image that only carries curl + docker-cli (~250 MB smaller final image).
+
+FROM python:3.14-slim AS builder
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends curl gcc libc6-dev && rm -rf /var/lib/apt/lists/*
-RUN pip install poetry && poetry config virtualenvs.create false
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        gcc libc6-dev curl \
+    && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir poetry && poetry config virtualenvs.create false
 COPY mcp-sdk /mcp-sdk
 COPY gns3/gns3-service/pyproject.toml gns3/gns3-service/poetry.lock* ./
-RUN poetry install --no-interaction --no-root
+RUN poetry install --no-interaction --no-root --only=main
+
+
+FROM python:3.14-slim AS runtime
+WORKDIR /app
+# docker-cli: docker CLI used by exec router to run commands inside node containers
+# (vtysh / ping / etc.) on the host's Docker daemon via mounted /var/run/docker.sock.
+RUN apt-get update && apt-get install -y --no-install-recommends curl docker-cli \
+    && rm -rf /var/lib/apt/lists/*
+# Copy pre-built site-packages + console scripts (alembic, uvicorn, ...) from builder.
+COPY --from=builder /usr/local/lib/python3.14/site-packages /usr/local/lib/python3.14/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+# mcp-sdk is referenced via path dependency in pyproject — keep the same layout at runtime.
+COPY mcp-sdk /mcp-sdk
 COPY gns3/gns3-service/ .
-RUN poetry install --no-interaction
 EXPOSE 8101
 CMD ["sh", "-c", "alembic upgrade head && uvicorn src.main:app --host 0.0.0.0 --port 8101"]

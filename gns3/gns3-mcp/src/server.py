@@ -37,6 +37,20 @@ if __import__("typing").TYPE_CHECKING:
     from mcp_sdk.connection import ConnectionPool
 
 
+_history_client: httpx.AsyncClient | None = None
+
+
+def _get_history_client(base_url: str) -> httpx.AsyncClient:
+    global _history_client
+    if _history_client is None:
+        _history_client = httpx.AsyncClient(
+            base_url=base_url,
+            timeout=30,
+            limits=httpx.Limits(max_connections=20, max_keepalive_connections=5),
+        )
+    return _history_client
+
+
 ACTIONS: list[dict] = [
     {"name": "start_all_nodes", "description": "Запуск всех нод", "params": {}, "types": []},
     {"name": "stop_all_nodes", "description": "Остановка всех нод", "params": {}, "types": []},
@@ -253,21 +267,21 @@ class GNS3Server:
         """Запрашивает историю из gns3-service."""
         if not self._history_url:
             return []
-        async with httpx.AsyncClient(base_url=self._history_url) as client:
-            response = await client.get(
-                f"/history/{ctx.session_id}/actions",
-                params={"limit": limit},
+        client = _get_history_client(self._history_url)
+        response = await client.get(
+            f"/history/{ctx.session_id}/actions",
+            params={"limit": limit},
+        )
+        if response.status_code != 200:
+            return []
+        events = response.json()
+        return [
+            UserAction(
+                timestamp=event["timestamp"],
+                component_id=event.get("component_id"),
+                action=event["event_type"],
+                raw_command=None,
+                success=True,
             )
-            if response.status_code != 200:
-                return []
-            events = response.json()
-            return [
-                UserAction(
-                    timestamp=event["timestamp"],
-                    component_id=event.get("component_id"),
-                    action=event["event_type"],
-                    raw_command=None,
-                    success=True,
-                )
-                for event in events
-            ]
+            for event in events
+        ]

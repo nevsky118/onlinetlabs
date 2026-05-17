@@ -6,7 +6,10 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class GNS3Config(BaseModel):
-    url: str = Field(description="GNS3 server URL")
+    url: str = Field(description="GNS3 server URL (internal, used by gns3-service)")
+    public_url: str = Field(
+        description="GNS3 server URL exposed to end-user browsers (deep-links, creds dialog)"
+    )
     admin_user: str = Field(description="GNS3 admin username")
     admin_password: str = Field(description="GNS3 admin password")
 
@@ -27,6 +30,10 @@ class DatabaseConfig(BaseModel):
         )
 
 
+class RedisConfig(BaseModel):
+    url: str = Field(description="Redis URL (redis://...)")
+
+
 class ServiceConfig(BaseModel):
     host: str = Field(default="127.0.0.1", description="Service host")
     port: int = Field(default=8101, description="Service port")
@@ -42,7 +49,17 @@ class ServiceConfig(BaseModel):
         return upper
 
 
+class SecurityConfig(BaseModel):
+    """Shared-secret config for server-to-server auth (backend → gns3-service)."""
+
+    internal_api_token: str = Field(
+        description="Shared bearer token required on /v1/exec/vtysh"
+    )
+
+
 class GNS3ServiceConfigModel(BaseModel):
     gns3: GNS3Config
     database: DatabaseConfig
     service: ServiceConfig
+    redis: RedisConfig
+    security: SecurityConfig
