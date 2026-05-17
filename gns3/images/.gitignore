@@ -1,0 +1,7 @@
+*
+!.gitignore
+!README.md
+!QEMU
+QEMU/*
+!QEMU/.gitkeep
+!QEMU/README.md

@@ -1,0 +1,16 @@
+hostname $FRR_HOSTNAME
+!
+interface eth0
+ ip address $FRR_SITE_IP
+exit
+!
+interface eth1
+ ip address $FRR_BACKBONE_IP
+ ip ospf network point-to-point
+exit
+!
+router ospf
+ ospf router-id $FRR_ROUTER_ID
+ network $FRR_BACKBONE_NET area 0
+ network $FRR_SITE_NET area 0
+exit

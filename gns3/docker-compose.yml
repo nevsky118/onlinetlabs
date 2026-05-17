@@ -1,18 +1,46 @@
+# Dev-стек gns3. Минимум обвязки: без restart-полиси, без mem_limit/cpus,
+# секреты — с разумными dev-дефолтами (без `:?required` маркеров).
+# Для production-сайзинга и обязательных секретов используется overlay:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml ...
 services:
   gns3-server:
     build:
-      context: gns3-service
+      context: gns3-server
+    # dynamips/ubridge/qemu need raw networking + kernel modules.
+    # pid=host: FRR/docker template nodes run on the host Docker daemon. ubridge
+    # (inside gns3-server) must enter the FRR container's netns via its PID,
+    # which is a host-level PID — invisible from a container-private pidns.
+    privileged: true
+    pid: host
     ports:
       - "3080:3080"
     environment:
       GNS3_AUTH: "true"
-      GNS3_DEFAULT_ADMIN_USER: admin
-      GNS3_DEFAULT_ADMIN_PASSWORD: admin
+      GNS3_DEFAULT_ADMIN_USER: ${GNS3_ADMIN_USER:-admin}
+      GNS3_DEFAULT_ADMIN_PASSWORD: ${GNS3_ADMIN_PASSWORD:-admin}
+      # When gns3-server constructs HostConfig.Mounts.Source for FRR/docker
+      # template nodes, it uses paths inside its own container. The host
+      # Docker daemon only understands host paths. Patched gns3server module
+      # translates these prefixes before sending to Docker.
+      # В dev дефолт — текущий путь репозитория; в prod overlay переопределяет.
+      GNS3_BIND_PATH_TRANSLATION: "/data=${ONLINETLABS_HOST_ROOT:-.}/gns3/runtime/data;/root/.local/share/GNS3=${ONLINETLABS_HOST_ROOT:-.}/gns3/runtime/gns3-resources"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3080/v3/version"]
       interval: 5s
       timeout: 3s
-      retries: 10
+      retries: 30
+    volumes:
+      # FRR/docker template nodes: gns3-server constructs HostConfig.Mounts.Source
+      # paths inside its own container, then asks the host Docker daemon to bind
+      # them when launching node containers. For this to work, /data and the
+      # docker resources dir must be host bind-mounts (not named volumes), so
+      # the same path resolves on both gns3-server's view and the Docker daemon.
+      - ./runtime/data:/data
+      - ./images:/data/images
+      - ./runtime/gns3-resources:/root/.local/share/GNS3
+      # FRR (and any future docker-typed GNS3 templates) need GNS3 server to
+      # talk to the host's Docker daemon to spawn container nodes.
+      - /var/run/docker.sock:/var/run/docker.sock
     tmpfs:
       - /tmp
 
@@ -21,15 +49,19 @@ services:
     ports:
       - "5433:5432"
     environment:
-      POSTGRES_USER: gns3test
-      POSTGRES_PASSWORD: gns3test
-      POSTGRES_DB: gns3_service_test
+      POSTGRES_USER: ${GNS3_DB_USER:-gns3test}
+      POSTGRES_PASSWORD: ${GNS3_DB_PASSWORD:-gns3test}
+      POSTGRES_DB: ${GNS3_DB_NAME:-gns3_service_test}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U gns3test"]
+      test: ["CMD-SHELL", "pg_isready -U ${GNS3_DB_USER:-gns3test}"]
       interval: 3s
       timeout: 2s
       retries: 5
-    tmpfs:
+    # Дев — эфемерный анонимный том. Prod overlay подменяет на named volume.
+    # tmpfs тут НЕ используем: docker compose merge не умеет очистить tmpfs-список
+    # из overlay, поэтому хранилище задаётся через volumes (анонимный том в dev,
+    # named volume в prod).
+    volumes:
       - /var/lib/postgresql/data
 
   gns3-service:
@@ -40,23 +72,59 @@ services:
       - "8101:8101"
     environment:
       GNS3_URL: http://gns3-server:3080
-      GNS3_ADMIN_USER: admin
-      GNS3_ADMIN_PASSWORD: admin
-      DB_USER: gns3test
-      DB_PASSWORD: gns3test
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: gns3_service_test
+      GNS3_PUBLIC_URL: http://localhost:3080
+      GNS3_ADMIN_USER: ${GNS3_ADMIN_USER:-admin}
+      GNS3_ADMIN_PASSWORD: ${GNS3_ADMIN_PASSWORD:-admin}
+      DB_USER: ${GNS3_DB_USER:-gns3test}
+      DB_PASSWORD: ${GNS3_DB_PASSWORD:-gns3test}
+      DB_HOST: pgbouncer
+      DB_PORT: 6432
+      DB_NAME: ${GNS3_DB_NAME:-gns3_service_test}
       SERVICE_HOST: 0.0.0.0
       SERVICE_PORT: 8101
       LOG_LEVEL: INFO
+      # Redis lives in a separate compose project (local-redis-1) — reach via host gateway.
+      REDIS_URL: ${GNS3_REDIS_URL:-redis://host.docker.internal:6379/0}
+      # Shared secret between backend and gns3-service for /v1/exec/vtysh auth.
+      # Dev дефолт; prod overlay делает обязательным.
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:-dev-secret}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      # exec router invokes `docker exec <node-container-id>` on the host daemon
+      # to run vtysh / ping inside FRR/docker node containers. The CLI is bundled
+      # in the image (docker.io apt package).
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       gns3-server:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      pgbouncer:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8101/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  pgbouncer:
+    image: edoburu/pgbouncer:1.22.1-p0
+    # NOTE: pgbouncer routes both `gns3_service_test` (this compose's postgres)
+    # and `onlinetlabs` (host.docker.internal → external local-db-1 container).
+    # The external onlinetlabs DB lives in a separate compose project and is
+    # NOT modelled as a depends_on. Bring it up BEFORE running this stack, or
+    # the first /labs query will fail with "connection refused".
+    ports:
+      - "6432:6432"
+    volumes:
+      - ./pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+      - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "localhost", "-p", "6432"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -76,3 +144,6 @@ services:
     depends_on:
       gns3-service:
         condition: service_healthy
+
+volumes:
+  gns3_data:

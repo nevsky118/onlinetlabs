@@ -1,6 +1,7 @@
 # Pydantic schemas для gns3-service API.
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -40,11 +41,15 @@ class SessionResponse(BaseModel):
         examples=["student_user42"],
     )
     gns3_password: str = Field(
-        description="Пароль (plaintext) — возвращается один раз при создании, в БД хранится хеш",
+        description="Пароль в открытом виде, отдаётся один раз. В БД больше не хранится.",
     )
     gns3_url: str = Field(
         description="URL GNS3-сервера для подключения клиента",
         examples=["http://gns3.example.com:3080"],
+    )
+    gns3_deep_url: str = Field(
+        description="Deep-link URL для прямого открытия проекта студента в GNS3 Web UI",
+        examples=["http://gns3.example.com:3080/static/web-ui/controller/1/project/<uuid>"],
     )
 
 
@@ -122,6 +127,19 @@ class ProjectResponse(BaseModel):
     name: str = Field(description="Имя проекта")
 
 
+class ProjectResetResponse(BaseModel):
+    """Данные после сброса проекта сессии."""
+
+    session_id: str = Field(
+        description="UUID сессии",
+        examples=["f47ac10b-58cc-4372-a567-0e02b2c3d479"],
+    )
+    project_id: str = Field(
+        description="UUID нового склонированного проекта в GNS3",
+        examples=["c3d4e5f6-a7b8-9012-cdef-123456789012"],
+    )
+
+
 class ErrorResponse(BaseModel):
     """Стандартный ответ об ошибке."""
 
@@ -129,3 +147,54 @@ class ErrorResponse(BaseModel):
         description="Описание ошибки",
         examples=["Session not found"],
     )
+
+
+class NodeState(BaseModel):
+    """Состояние узла GNS3 в сессии."""
+
+    id: str = Field(description="UUID узла GNS3")
+    name: str = Field(description="Имя узла, видимое студенту")
+    node_type: str = Field(description="Тип узла GNS3 (dynamips, qemu, ethernet_switch, vpcs и т.д.)")
+    status: Literal["started", "stopped", "suspended"] = Field(
+        description="Текущий статус узла"
+    )
+    console: int | None = Field(description="TCP-порт консоли (telnet/vnc/spice)")
+    console_type: str | None = Field(description="Тип консоли: telnet, vnc, spice")
+    console_host: str = Field(description="Hostname для подключения к консоли")
+    symbol: str = Field(description="Путь к SVG-символу узла внутри GNS3")
+
+
+class LinkEndpoint(BaseModel):
+    """Один конец link'а между узлами."""
+
+    node_id: str = Field(description="UUID узла на этом конце link'а")
+    adapter_number: int = Field(description="Номер сетевого адаптера узла")
+    port_number: int = Field(description="Номер порта внутри адаптера")
+
+
+class LinkState(BaseModel):
+    """Link между узлами в топологии GNS3."""
+
+    id: str = Field(description="UUID линка GNS3")
+    nodes: list[LinkEndpoint] = Field(description="Концы link'а (обычно два узла)")
+
+
+class SessionMetrics(BaseModel):
+    """Агрегированные метрики сессии для UI."""
+
+    nodes_total: int = Field(description="Всего узлов в проекте")
+    nodes_started: int = Field(description="Узлов в статусе started")
+    links_count: int = Field(description="Количество link'ов")
+    uptime_seconds: int = Field(description="Сколько секунд прошло с момента запуска сессии")
+
+
+class SessionStateResponse(BaseModel):
+    """Полное состояние сессии — узлы, links, метрики."""
+
+    session_id: str = Field(description="UUID сессии")
+    project_id: str = Field(description="UUID GNS3-проекта сессии")
+    status: Literal["active", "closed"] = Field(description="Статус сессии в gns3-service")
+    started_at: datetime = Field(description="Время старта сессии (UTC)")
+    nodes: list[NodeState] = Field(description="Список узлов с их статусами")
+    links: list[LinkState] = Field(description="Список link'ов")
+    metrics: SessionMetrics = Field(description="Агрегированные метрики")
