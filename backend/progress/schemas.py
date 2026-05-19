@@ -4,6 +4,8 @@ from pydantic import BaseModel
 
 
 class CourseProgressResponse(BaseModel):
+    """Прогресс пользователя по курсу."""
+
     id: str
     course_slug: str
     status: str
@@ -13,6 +15,8 @@ class CourseProgressResponse(BaseModel):
 
 
 class LabProgressResponse(BaseModel):
+    """Прогресс пользователя по лабораторной."""
+
     id: str
     lab_slug: str
     status: str
@@ -23,12 +27,16 @@ class LabProgressResponse(BaseModel):
 
 
 class StepAttemptCreate(BaseModel):
+    """Данные для записи попытки прохождения шага."""
+
     result: str
     score: float | None = None
     error_details: dict | None = None
 
 
 class StepAttemptResponse(BaseModel):
+    """Попытка прохождения шага лабораторной."""
+
     id: str
     step_slug: str
     attempt_number: int
@@ -39,9 +47,13 @@ class StepAttemptResponse(BaseModel):
 
 
 class LabProgressDetailResponse(LabProgressResponse):
+    """Прогресс по лабораторной вместе с попытками по шагам."""
+
     attempts: list[StepAttemptResponse]
 
 
 class AllProgressResponse(BaseModel):
+    """Весь прогресс пользователя по курсам и лабораторным."""
+
     courses: list[CourseProgressResponse]
     labs: list[LabProgressResponse]

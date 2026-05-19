@@ -2,10 +2,13 @@
 
 import asyncio
 import logging
+from dataclasses import dataclass
 from datetime import datetime, timezone
+from typing import Any
 from uuid import uuid4
 
 from agents.analytics.agent import AnalyticsAgent
+from agents.analytics.models import AnalyticsResult, SessionFeatures
 from agents.orchestrator.models import InterventionInput
 from config.config_model import LearningAnalyticsConfig
 from learning_analytics.collector import BehavioralCollector
@@ -13,6 +16,16 @@ from learning_analytics.context import MCPContextBuilder
 from learning_analytics.features import FeatureExtractor
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class PendingIntervention:
+    """Решение об интервенции, готовое к отправке и записи."""
+
+    analysis: AnalyticsResult
+    features: SessionFeatures
+    payload: InterventionInput
+    response: Any | None = None
 
 
 class SessionMonitor:
@@ -40,6 +53,7 @@ class SessionMonitor:
         self._analysis_task: asyncio.Task | None = None
         self._running = False
         self._last_intervention_at: datetime | None = None
+        self._last_event_at: datetime | None = None
         self._session_id: str | None = None
         self._user_id: str | None = None
         self._lab_slug: str | None = None
@@ -54,12 +68,22 @@ class SessionMonitor:
         analytics_agent: AnalyticsAgent,
     ) -> None:
         """Запуск сбора и анализа для сессии."""
+        from sqlalchemy import func, select
+        from models.behavioral_event import BehavioralEvent
+
         self._session_id = session_id
         self._user_id = user_id
         self._lab_slug = lab_slug
         self._ctx = ctx
         self._analytics_agent = analytics_agent
         self._running = True
+
+        async with self._db_factory() as session:
+            stmt = select(func.max(BehavioralEvent.timestamp)).where(
+                BehavioralEvent.session_id == session_id
+            )
+            result = await session.execute(stmt)
+            self._last_event_at = result.scalar_one_or_none()
 
         self._collector = BehavioralCollector(
             self._mcp, self._db_factory, self._learning_analytics_config
@@ -95,30 +119,62 @@ class SessionMonitor:
                 logger.warning("Цикл анализа: ошибка", exc_info=True)
 
     async def _run_analysis(self) -> None:
-        """Один цикл: загрузить события → фичи → детекция затруднений → интервенция."""
-        from sqlalchemy import select
-        from models.behavioral_event import BehavioralEvent
-
-        async with self._db_factory() as session:
-            stmt = (
-                select(BehavioralEvent)
-                .where(BehavioralEvent.session_id == self._session_id)
-                .order_by(BehavioralEvent.timestamp.desc())
-                .limit(500)
-            )
-            result = await session.execute(stmt)
-            events = list(reversed(result.scalars().all()))
-
+        """Оркестратор цикла: загрузка событий, решение, отправка, запись."""
+        async with self._db_factory() as db:
+            events = await self._load_new_events(db)
         if not events:
             return
 
+        self._last_event_at = events[-1].timestamp
         features = self._feature_extractor.compute(self._session_id, events)
+
+        pending = await self._decide_intervention(features)
+        if pending is None:
+            return
+
+        await self._dispatch_intervention(pending)
+        async with self._db_factory() as db:
+            await self._persist_intervention(db, pending)
+
+        logger.info(
+            "Интервенция: type=%s struggle=%s success=%s",
+            pending.analysis.suggested_intervention.value,
+            pending.analysis.struggle_type,
+            pending.response.success if pending.response else False,
+        )
+
+    async def _load_new_events(self, db) -> list:
+        """Загрузить новые поведенческие события по курсору."""
+        from sqlalchemy import func, select
+        from models.behavioral_event import BehavioralEvent
+
+        latest_stmt = select(func.max(BehavioralEvent.timestamp)).where(
+            BehavioralEvent.session_id == self._session_id
+        )
+        latest = (await db.execute(latest_stmt)).scalar_one_or_none()
+        if latest is None:
+            return []
+        if self._last_event_at is not None and latest <= self._last_event_at:
+            return []
+
+        stmt = (
+            select(BehavioralEvent)
+            .where(BehavioralEvent.session_id == self._session_id)
+            .order_by(BehavioralEvent.timestamp.desc())
+            .limit(500)
+        )
+        result = await db.execute(stmt)
+        return list(reversed(result.scalars().all()))
+
+    async def _decide_intervention(
+        self, features: SessionFeatures
+    ) -> PendingIntervention | None:
+        """Анализ фичей и сборка решения об интервенции, или None."""
         analysis = self._analytics_agent.analyze_session(
             features, self._learning_analytics_config
         )
-
         if not analysis.struggle_detected or not self._should_trigger_intervention():
-            return
+            return None
 
         context = await self._context_builder.build(
             self._ctx,
@@ -126,8 +182,7 @@ class SessionMonitor:
             analysis.struggle_type.value if analysis.struggle_type else None,
             features.dominant_error,
         )
-
-        intervention_input = InterventionInput(
+        payload = InterventionInput(
             session_id=self._session_id,
             user_id=self._user_id,
             intervention_type=analysis.suggested_intervention.value,
@@ -143,13 +198,19 @@ class SessionMonitor:
                 "agent_context": context.model_dump(),
             },
         )
+        return PendingIntervention(analysis=analysis, features=features, payload=payload)
+
+    async def _dispatch_intervention(self, pending: PendingIntervention) -> None:
+        """Прогнать интервенцию через оркестратор и отправить клиенту через шлюз."""
         if self._intervention_router:
-            response = await self._intervention_router.intervene(intervention_input)
+            response = await self._intervention_router.intervene(pending.payload)
         else:
-            response = await self._orchestrator.intervene(intervention_input)
+            response = await self._orchestrator.intervene(pending.payload)
+        pending.response = response
         self._last_intervention_at = datetime.now(tz=timezone.utc)
 
         if response.success and self._gateway:
+            analysis = pending.analysis
             await self._gateway.send_intervention(
                 self._session_id,
                 {
@@ -164,66 +225,60 @@ class SessionMonitor:
                 },
             )
 
-        await self._log_intervention(analysis, response)
-
-        logger.info(
-            "Интервенция: type=%s struggle=%s success=%s",
-            analysis.suggested_intervention.value,
-            analysis.struggle_type,
-            response.success,
-        )
+    async def _persist_intervention(self, db, pending: PendingIntervention) -> None:
+        """Записать интервенцию в поведенческие события для последующего анализа."""
+        if pending.response is None:
+            return
+        await self._log_intervention_in(db, pending.analysis, pending.response)
 
     # Логирование интервенций
 
-    async def _log_intervention(self, analysis, response) -> None:
+    async def _log_intervention_in(self, db, analysis, response) -> None:
         """Записать интервенцию как поведенческое событие для анализа эффекта."""
         from models.behavioral_event import BehavioralEvent
 
         try:
-            async with self._db_factory() as session:
-                session.add(
-                    BehavioralEvent(
-                        id=str(uuid4()),
-                        session_id=self._session_id,
-                        user_id=self._user_id,
-                        lab_slug=self._lab_slug,
-                        timestamp=datetime.now(tz=timezone.utc),
-                        event_type="intervention",
-                        action=f"intervene_{analysis.suggested_intervention.value}",
-                        success=response.success,
-                        message=str(response.data) if response.data else response.error,
-                        extra_data={
-                            "struggle_type": analysis.struggle_type.value
-                            if analysis.struggle_type
-                            else None,
-                            "confidence": analysis.confidence,
-                            "agent_used": response.agent_used,
-                            "agent_backend": response.agent_backend,
-                            "experiment_group": response.metadata.get(
-                                "experiment_group"
-                            ),
-                            "latency_ms": response.latency_ms,
-                            "error_code": response.metadata.get("error_code"),
-                            "model": response.metadata.get("model"),
-                            "provider": response.metadata.get("provider"),
-                        },
-                    )
+            db.add(
+                BehavioralEvent(
+                    id=str(uuid4()),
+                    session_id=self._session_id,
+                    user_id=self._user_id,
+                    lab_slug=self._lab_slug,
+                    timestamp=datetime.now(tz=timezone.utc),
+                    event_type="intervention",
+                    action=f"intervene_{analysis.suggested_intervention.value}",
+                    success=response.success,
+                    message=str(response.data) if response.data else response.error,
+                    extra_data={
+                        "struggle_type": analysis.struggle_type.value
+                        if analysis.struggle_type
+                        else None,
+                        "confidence": analysis.confidence,
+                        "agent_used": response.agent_used,
+                        "agent_backend": response.agent_backend,
+                        "experiment_group": response.metadata.get(
+                            "experiment_group"
+                        ),
+                        "latency_ms": response.latency_ms,
+                        "error_code": response.metadata.get("error_code"),
+                        "model": response.metadata.get("model"),
+                        "provider": response.metadata.get("provider"),
+                    },
                 )
-                await session.commit()
+            )
+            await db.commit()
         except Exception:
             logger.error("Не удалось записать интервенцию", exc_info=True)
 
     # Контроль частоты интервенций
 
-    def _should_intervene(self) -> bool:
-        """Период охлаждения прошёл или это первая интервенция."""
+    def _should_trigger_intervention(self) -> bool:
+        """Интервенции включены и период охлаждения прошёл."""
+        if not self._learning_analytics_config.enabled:
+            return False
         if self._last_intervention_at is None:
             return True
         elapsed = (
             datetime.now(tz=timezone.utc) - self._last_intervention_at
         ).total_seconds()
         return elapsed >= self._learning_analytics_config.cooldown_period
-
-    def _should_trigger_intervention(self) -> bool:
-        """Интервенции включены и период охлаждения прошёл."""
-        return self._learning_analytics_config.enabled and self._should_intervene()

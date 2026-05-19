@@ -7,6 +7,7 @@ from models.progress import CourseProgress, LabProgress, StepAttempt
 
 
 async def start_lab(db: AsyncSession, user_id: str, lab_slug: str) -> LabProgress:
+    """Возвращает существующий прогресс по лабораторной или создаёт новый со статусом in_progress."""
     result = await db.execute(
         select(LabProgress).where(
             LabProgress.user_id == user_id, LabProgress.lab_slug == lab_slug
@@ -36,6 +37,7 @@ async def record_step_attempt(
     score: float | None = None,
     error_details: dict | None = None,
 ) -> StepAttempt:
+    """Создаёт попытку прохождения шага с автоматическим номером и сохраняет её в БД."""
     count_result = await db.execute(
         select(func.count()).where(
             StepAttempt.user_id == user_id,
@@ -60,6 +62,7 @@ async def record_step_attempt(
 
 
 async def get_all_progress(db: AsyncSession, user_id: str) -> dict:
+    """Возвращает весь прогресс пользователя по курсам и лабораторным из БД."""
     courses_result = await db.execute(
         select(CourseProgress).where(CourseProgress.user_id == user_id)
     )
@@ -75,6 +78,7 @@ async def get_all_progress(db: AsyncSession, user_id: str) -> dict:
 async def get_lab_progress_detail(
     db: AsyncSession, user_id: str, lab_slug: str
 ) -> dict | None:
+    """Возвращает прогресс по лабораторной с попытками по шагам или None, если прогресса нет."""
     lp_result = await db.execute(
         select(LabProgress).where(
             LabProgress.user_id == user_id, LabProgress.lab_slug == lab_slug

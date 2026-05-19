@@ -9,6 +9,8 @@ from models.base import Base
 
 
 class BehavioralEvent(Base):
+    """Поведенческое событие в лабе. Действие над компонентом, команда и результат."""
+
     __tablename__ = "behavioral_events"
     __table_args__ = (
         Index("ix_behavioral_events_session_ts", "session_id", "timestamp"),
