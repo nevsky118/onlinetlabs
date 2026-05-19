@@ -26,6 +26,7 @@ async def get_progress(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    """Возвращает весь прогресс пользователя по курсам и лабораторным."""
     result = await get_all_progress(db, current_user["id"])
     return AllProgressResponse(
         courses=[
@@ -60,6 +61,10 @@ async def get_lab_progress(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    """Возвращает прогресс по лабораторной с попытками по шагам.
+
+    Если прогресса нет, отдаёт 404.
+    """
     detail = await get_lab_progress_detail(db, current_user["id"], lab_slug)
     if detail is None:
         raise HTTPException(
@@ -95,6 +100,7 @@ async def start_lab_endpoint(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    """Начинает лабораторную для пользователя и возвращает её прогресс."""
     lp = await start_lab(db, current_user["id"], lab_slug)
     return LabProgressResponse(
         id=lp.id,
@@ -118,6 +124,7 @@ async def record_attempt_endpoint(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    """Записывает попытку прохождения шага лабораторной."""
     attempt = await record_step_attempt(
         db,
         current_user["id"],

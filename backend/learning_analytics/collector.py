@@ -130,7 +130,7 @@ class BehavioralCollector:
             logger.warning("Не удалось получить ошибки", exc_info=True)
         return result
 
-    # Persistence
+    # Запись в БД
 
     async def _persist(self, events: list[dict]) -> None:
         """Пакетная запись событий в DB."""
@@ -157,17 +157,20 @@ class BehavioralCollector:
             return None
 
     def _dedup_key(self, ts: datetime, action: str, cid: str | None) -> str:
-        """MD5-хеш (timestamp, action, component_id) для дедупликации."""
+        """Стабильный ключ дедупликации из timestamp, action и component_id.
+
+        MD5 для краткости, не для безопасности.
+        """
         raw = f"{ts.isoformat()}:{action}:{cid or ''}"
         return hashlib.md5(raw.encode()).hexdigest()
 
     def _is_new(self, key: str) -> bool:
-        """True если событие новое. Bounded OrderedDict."""
+        """True если событие новое. Ограниченный OrderedDict."""
         if key in self._seen:
             return False
         self._seen[key] = None
         while len(self._seen) > self._cfg.dedup_max_size:
-            self._seen.popitem(last=False)  # remove oldest
+            self._seen.popitem(last=False)  # вытесняем самый старый
         return True
 
     # Нормализация MCP-моделей → event dict
