@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import DateTime, ForeignKey, Index, String
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -9,7 +9,13 @@ from models.base import Base
 
 
 class LearningSession(Base):
+    """Учебная сессия пользователя в лабе с её статусом и временем."""
+
     __tablename__ = "learning_sessions"
+    __table_args__ = (
+        Index("ix_learning_sessions_user_status", "user_id", "status"),
+        Index("ix_learning_sessions_user_started", "user_id", "started_at"),
+    )
 
     id: Mapped[str] = mapped_column(
         String(255), primary_key=True, default=lambda: str(uuid4())

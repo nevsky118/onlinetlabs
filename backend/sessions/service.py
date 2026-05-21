@@ -1,54 +1,51 @@
-from datetime import datetime, timezone
+"""Re-export public API of sessions services."""
 
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sessions.services.launch import (
+    MAX_CONCURRENT_SESSIONS_PER_USER,
+    count_active_sessions,
+    launch_session,
+)
+from sessions.services.lifecycle import (
+    end_lab,
+    end_session,
+    reset_lab,
+    restart_lab,
+    stop_lab,
+)
+from sessions.services.proxy import (
+    existing_gns3_deep_url,
+    existing_gns3_url,
+    get_credentials,
+    proxy_activity,
+    proxy_bulk_node_action,
+    proxy_node_action,
+)
+from sessions.services.query import (
+    get_active_session,
+    get_owned_session,
+    get_session,
+    get_session_state,
+    get_user_sessions,
+)
 
-from experiment.group_assigner import assign_group
-from models.session import LearningSession
-from models.user import User
-
-
-async def create_session(
-    db: AsyncSession, user_id: str, lab_slug: str
-) -> LearningSession:
-    await _assign_experiment_group_if_needed(db, user_id)
-    session = LearningSession(user_id=user_id, lab_slug=lab_slug)
-    db.add(session)
-    await db.commit()
-    await db.refresh(session)
-    return session
-
-
-async def _assign_experiment_group_if_needed(db: AsyncSession, user_id: str) -> None:
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if user is not None and user.experiment_group is None:
-        user.experiment_group = assign_group().value
-
-
-async def end_session(
-    db: AsyncSession, session_id: str, user_id: str, status: str
-) -> LearningSession | None:
-    result = await db.execute(
-        select(LearningSession).where(
-            LearningSession.id == session_id,
-            LearningSession.user_id == user_id,
-        )
-    )
-    session = result.scalar_one_or_none()
-    if session is None:
-        return None
-    session.status = status
-    session.ended_at = datetime.now(timezone.utc)
-    await db.commit()
-    await db.refresh(session)
-    return session
-
-
-async def get_user_sessions(db: AsyncSession, user_id: str) -> list[LearningSession]:
-    result = await db.execute(
-        select(LearningSession)
-        .where(LearningSession.user_id == user_id)
-        .order_by(LearningSession.started_at.desc())
-    )
-    return list(result.scalars().all())
+__all__ = [
+    "MAX_CONCURRENT_SESSIONS_PER_USER",
+    "count_active_sessions",
+    "end_lab",
+    "end_session",
+    "existing_gns3_deep_url",
+    "existing_gns3_url",
+    "get_active_session",
+    "get_credentials",
+    "get_owned_session",
+    "get_session",
+    "get_session_state",
+    "get_user_sessions",
+    "launch_session",
+    "proxy_activity",
+    "proxy_bulk_node_action",
+    "proxy_node_action",
+    "reset_lab",
+    "restart_lab",
+    "stop_lab",
+]
