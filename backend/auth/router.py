@@ -1,7 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import Request as FastAPIRequest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth.dependencies import create_backend_token
+from auth.dependencies import (
+    create_backend_token,
+    require_admin,
+    require_internal_caller,
+)
+from rate_limit import limiter
 from auth.schemas import (
     ExchangeRequest,
     GitHubCallbackRequest,
@@ -26,7 +32,13 @@ router = APIRouter()
 @router.post(
     "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
 )
-async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("3/minute")
+async def register(
+    request: FastAPIRequest,
+    req: RegisterRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Регистрирует нового пользователя. При занятом email возвращает 409."""
     existing = await get_user_by_email(db, req.email)
     if existing:
         raise HTTPException(
@@ -46,7 +58,13 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/login", response_model=UserResponse)
-async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("5/minute")
+async def login(
+    request: FastAPIRequest,
+    req: LoginRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Проверяет email и пароль. При неверных данных возвращает 401."""
     user = await get_user_by_email(db, req.email)
     if not user or not user.password_hash:
         raise HTTPException(
@@ -64,10 +82,22 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/exchange", response_model=TokenResponse)
-async def exchange(req: ExchangeRequest, db: AsyncSession = Depends(get_db)):
-    """Exchange Better Auth session data for a backend JWT."""
+@limiter.limit("30/minute")
+async def exchange(
+    request: FastAPIRequest,
+    req: ExchangeRequest,
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(require_internal_caller),
+):
+    """Обмен Better Auth сессии на backend-JWT.
+
+    Вызывающая сторона обязана передать Authorization Bearer INTERNAL_API_TOKEN.
+    Это подтверждает что запрос пришёл с Next.js сервера, который уже проверил
+    better-auth сессию. Идентификатор пользователя это email из доверенного канала,
+    backend выдаёт JWT на свой канонический User.id.
+    """
     user = await get_user_by_email(db, req.email)
-    if not user or user.id != req.user_id:
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
         )
@@ -77,7 +107,12 @@ async def exchange(req: ExchangeRequest, db: AsyncSession = Depends(get_db)):
 
 
 @router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_user_endpoint(user_id: str, db: AsyncSession = Depends(get_db)):
+async def delete_user_endpoint(
+    user_id: str,
+    db: AsyncSession = Depends(get_db),
+    _: dict = Depends(require_admin),
+):
+    """Удаляет пользователя по id (только для admin). При отсутствии возвращает 404."""
     deleted = await delete_user(db, user_id)
     if not deleted:
         raise HTTPException(
@@ -87,8 +122,15 @@ async def delete_user_endpoint(user_id: str, db: AsyncSession = Depends(get_db))
 
 @router.post("/github-callback", response_model=UserResponse)
 async def github_callback(
-    req: GitHubCallbackRequest, db: AsyncSession = Depends(get_db)
+    req: GitHubCallbackRequest,
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(require_internal_caller),
 ):
+    """Создаёт или обновляет пользователя по данным GitHub и возвращает его профиль.
+
+    Только server-to-server. Вызывающая сторона обязана передать Authorization
+    Bearer INTERNAL_API_TOKEN, иначе любой браузер мог бы создавать пользователей.
+    """
     user = await upsert_github_user(
         db=db,
         email=req.email,
