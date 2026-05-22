@@ -47,6 +47,20 @@ export const credentialAuthPlugin = () => {
           }
 
           const user = toAuthUser(backendUser)
+
+          const existingUser = await ctx.context.internalAdapter.findUserById(
+            user.id
+          )
+          if (!existingUser) {
+            await ctx.context.internalAdapter.createUser({
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              emailVerified: user.emailVerified,
+              image: user.image,
+            })
+          }
+
           const session = await ctx.context.internalAdapter.createSession(
             user.id,
             false
@@ -91,6 +105,20 @@ export const credentialAuthPlugin = () => {
           }
 
           const user = toAuthUser(backendUser)
+
+          const existingUser = await ctx.context.internalAdapter.findUserById(
+            user.id
+          )
+          if (!existingUser) {
+            await ctx.context.internalAdapter.createUser({
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              emailVerified: user.emailVerified,
+              image: user.image,
+            })
+          }
+
           const session = await ctx.context.internalAdapter.createSession(
             user.id,
             false

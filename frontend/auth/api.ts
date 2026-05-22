@@ -40,14 +40,29 @@ export async function backendUpsertGithubUser(user: {
   image: string | null | undefined
   provider_account_id: string
 }) {
-  const { data } = await api.post<BackendUser>("/auth/github-callback", user)
+  // Server-only — forward the shared internal token so backend accepts this as a
+  // trusted Next.js call. github-callback is server-to-server only.
+  const internalToken = process.env.INTERNAL_API_TOKEN
+  const { data } = await api.post<BackendUser>(
+    "/auth/github-callback",
+    user,
+    internalToken
+      ? { headers: { Authorization: `Bearer ${internalToken}` } }
+      : undefined
+  )
   return data
 }
 
 export async function backendExchangeToken(userId: string, email: string) {
-  const { data } = await api.post<TokenResponse>("/auth/exchange", {
-    user_id: userId,
-    email,
-  })
+  // Server-only — frontend forwards the shared internal token so backend can
+  // distinguish a trusted Next.js call from an arbitrary browser request.
+  const internalToken = process.env.INTERNAL_API_TOKEN
+  const { data } = await api.post<TokenResponse>(
+    "/auth/exchange",
+    { user_id: userId, email },
+    internalToken
+      ? { headers: { Authorization: `Bearer ${internalToken}` } }
+      : undefined
+  )
   return data.access_token
 }
