@@ -11,6 +11,7 @@ class AnalyticsTools:
     """Инструменты для аналитики прогресса студента."""
 
     def __init__(self, db: AsyncSession | None):
+        """Сохраняет сессию БД для запросов попыток и прогресса."""
         self._db = db
 
     async def get_attempts(self, user_id: str, lab_slug: str) -> list:

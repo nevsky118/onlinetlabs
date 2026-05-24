@@ -8,6 +8,7 @@ class LabTools:
     """Обёртка над MCP-клиентом для операций с лаб-средой."""
 
     def __init__(self, mcp_client):
+        """Сохраняет MCP-клиент для вызова инструментов лаб-среды."""
         self._mcp = mcp_client
 
     def _build_ctx(self, input_data) -> SessionContext:

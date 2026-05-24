@@ -2,44 +2,47 @@
 
 import logging
 
-from config.config_model import ConfigModel
-from agents.orchestrator.models import OrchestratorInput, OrchestratorResponse, InterventionInput
+from agents.analytics.agent import AnalyticsAgent
+from agents.hint.agent import HintAgent
+from agents.orchestrator.models import (
+    InterventionInput,
+    OrchestratorInput,
+    OrchestratorResponse,
+)
 from agents.orchestrator.router import resolve_agent
+from agents.registry import AGENT_REGISTRY
+from config.config_model import ConfigModel
 
 logger = logging.getLogger(__name__)
 
 
 class Orchestrator:
-    """Оркестратор: создаёт агентов и маршрутизирует запросы."""
+    """Оркестратор создаёт агентов и маршрутизирует запросы."""
 
     def __init__(self, config: ConfigModel, mcp_client=None, db=None):
+        """Сохраняет конфиг и зависимости, кэш агентов создаётся лениво."""
         self.config = config
         self._mcp_client = mcp_client
         self._db = db
         self._agents = {}
 
     def _get_agent(self, agent_name: str):
-        """Lazy-создание агента по имени."""
+        """Lazy создание агента по имени через AGENT_REGISTRY."""
         if agent_name in self._agents:
             return self._agents[agent_name]
 
-        if agent_name == "tutor":
-            from agents.tutor.agent import TutorAgent
-            agent = TutorAgent(self.config, self._mcp_client)
-        elif agent_name == "hint":
-            from agents.hint.agent import HintAgent
-            agent = HintAgent(self.config)
-        elif agent_name == "lab":
-            from agents.lab.agent import LabAgent
-            agent = LabAgent(self.config, self._mcp_client)
-        elif agent_name == "validator":
-            from agents.validator.agent import ValidatorAgent
-            agent = ValidatorAgent(self.config, self._mcp_client)
-        elif agent_name == "analytics":
-            from agents.analytics.agent import AnalyticsAgent
-            agent = AnalyticsAgent(self.config, self._db)
-        else:
+        entry = AGENT_REGISTRY.get(agent_name)
+        if entry is None:
             return None
+        agent_cls, _ = entry
+
+        # Конструкторы агентов отличаются зависимостями, разводим явно.
+        if agent_cls is HintAgent:
+            agent = agent_cls(self.config)
+        elif agent_cls is AnalyticsAgent:
+            agent = agent_cls(self.config, self._db)
+        else:
+            agent = agent_cls(self.config, self._mcp_client)
 
         self._agents[agent_name] = agent
         return agent
@@ -64,7 +67,6 @@ class Orchestrator:
             )
 
         try:
-            # Build agent-specific input from payload
             agent_input = self._build_agent_input(agent_name, input_data)
             result = await agent.run(agent_input)
             return OrchestratorResponse(
@@ -117,26 +119,13 @@ class Orchestrator:
 
     def _build_agent_input(self, agent_name: str, input_data: OrchestratorInput):
         """Построить input для конкретного агента из payload."""
+        entry = AGENT_REGISTRY.get(agent_name)
+        if entry is None:
+            raise ValueError(f"No input builder for agent: {agent_name}")
+        _, input_model = entry
         payload = {
             "session_id": input_data.session_id,
             "user_id": input_data.user_id,
             **input_data.payload,
         }
-
-        if agent_name == "tutor":
-            from agents.tutor.models import TutorInput
-            return TutorInput(**payload)
-        elif agent_name == "hint":
-            from agents.hint.models import HintInput
-            return HintInput(**payload)
-        elif agent_name == "lab":
-            from agents.lab.models import LabQueryInput
-            return LabQueryInput(**payload)
-        elif agent_name == "validator":
-            from agents.validator.models import ValidationInput
-            return ValidationInput(**payload)
-        elif agent_name == "analytics":
-            from agents.analytics.models import AnalyticsInput
-            return AnalyticsInput(**payload)
-        else:
-            raise ValueError(f"No input builder for agent: {agent_name}")
+        return input_model(**payload)

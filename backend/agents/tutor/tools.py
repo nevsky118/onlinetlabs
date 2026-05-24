@@ -5,6 +5,7 @@ class TutorTools:
     """Инструменты для получения контекста лабы и курса."""
 
     def __init__(self, mcp_client=None):
+        """Сохраняет необязательный MCP-клиент для получения контекста."""
         self._mcp = mcp_client
 
     async def get_lab_context(self, lab_slug: str) -> str:

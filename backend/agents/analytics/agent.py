@@ -19,6 +19,13 @@ from agents.analytics.models import (
 from agents.analytics.tools import AnalyticsTools
 
 
+ANALYTICS_SYSTEM_PROMPT = (
+    "Ты — AnalyticsAgent, агент для анализа поведения студента. "
+    "Твоя роль: вычислять метрики прогресса, находить паттерны ошибок, "
+    "рекомендовать уровень сложности. Будь объективен."
+)
+
+
 # Правила детекции struggle
 # (predicate, struggle_type, intervention, confidence_fn)
 
@@ -71,16 +78,13 @@ class AnalyticsAgent(BaseAgent):
     """Анализ поведения студента, рекомендация сложности и детекция struggle."""
 
     def __init__(self, config: ConfigModel, db: AsyncSession | None):
+        """Создаёт инструменты аналитики поверх сессии БД."""
         self.tools = AnalyticsTools(db)
         super().__init__(config)
 
     def system_prompt(self) -> str:
         """Системный промпт агента."""
-        return (
-            "Ты — AnalyticsAgent, агент для анализа поведения студента. "
-            "Твоя роль: вычислять метрики прогресса, находить паттерны ошибок, "
-            "рекомендовать уровень сложности. Будь объективен."
-        )
+        return ANALYTICS_SYSTEM_PROMPT
 
     async def run(self, input_data: AnalyticsInput) -> DifficultyRecommendation:
         """Получить попытки из DB, вычислить метрики, рекомендовать сложность."""

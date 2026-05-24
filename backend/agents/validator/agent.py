@@ -6,20 +6,25 @@ from agents.validator.models import CheckResult, ValidationInput, ValidationResu
 from agents.validator.tools import ValidatorTools
 
 
+VALIDATOR_SYSTEM_PROMPT = (
+    "Ты — ValidatorAgent, агент для проверки выполнения лабораторных задач. "
+    "Твоя роль: проверить состояние компонентов среды против ожидаемых критериев, "
+    "выставить оценку и дать обратную связь. "
+    "Будь объективен и точен."
+)
+
+
 class ValidatorAgent(BaseAgent):
     """Агент для валидации выполнения шагов лабы."""
 
     def __init__(self, config: ConfigModel, mcp_client):
+        """Создаёт инструменты валидации поверх MCP-клиента."""
         self.tools = ValidatorTools(mcp_client)
         super().__init__(config)
 
     def system_prompt(self) -> str:
-        return (
-            "Ты — ValidatorAgent, агент для проверки выполнения лабораторных задач. "
-            "Твоя роль: проверить состояние компонентов среды против ожидаемых критериев, "
-            "выставить оценку и дать обратную связь. "
-            "Будь объективен и точен."
-        )
+        """Системный промпт агента."""
+        return VALIDATOR_SYSTEM_PROMPT
 
     async def run(self, input_data: ValidationInput) -> ValidationResult:
         """Запустить проверки по критериям и вернуть результат."""

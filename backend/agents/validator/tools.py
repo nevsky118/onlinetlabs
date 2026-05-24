@@ -10,9 +10,11 @@ class ValidatorTools:
     """Обёртка над MCP-клиентом для валидации состояния."""
 
     def __init__(self, mcp_client):
+        """Сохраняет MCP-клиент для проверки состояния компонентов."""
         self._mcp = mcp_client
 
     def _build_ctx(self, input_data) -> SessionContext:
+        """Построить SessionContext из input модели."""
         return SessionContext(
             user_id=input_data.user_id,
             session_id=input_data.session_id,
