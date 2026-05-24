@@ -14,6 +14,7 @@ class BaseAgent:
     """Базовый агент. Наследники переопределяют system_prompt() и run()."""
 
     def __init__(self, config: ConfigModel):
+        """Сохраняет конфиг и откладывает построение pydantic-ai Agent."""
         self.config = config
         self.agents_config = config.agents
         self._agent: Agent | None = None
