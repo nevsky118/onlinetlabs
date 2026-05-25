@@ -36,10 +36,20 @@ def do_run_migrations(connection):
 
 
 async def run_async_migrations():
+    import uuid
+
+    def _unique_stmt_name() -> str:
+        return f"__asyncpg_{uuid.uuid4().hex}__"
+
     connectable = async_engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args={
+            "statement_cache_size": 0,
+            "prepared_statement_cache_size": 0,
+            "prepared_statement_name_func": _unique_stmt_name,
+        },
     )
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)

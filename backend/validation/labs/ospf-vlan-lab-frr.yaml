@@ -1,0 +1,49 @@
+slug: ospf-vlan-lab-frr
+steps:
+  - id: pc-ips
+    title: PC настроены
+    checks:
+      - kind: vpcs.show_ip
+        node: PC1
+        expect:
+          ip: "192.168.10.10/24"
+          gateway: "192.168.10.1"
+      - kind: vpcs.show_ip
+        node: PC3
+        expect:
+          ip: "192.168.110.20/24"
+          gateway: "192.168.110.1"
+
+  - id: ospf-adjacency
+    title: OSPF Full adjacency
+    checks:
+      - kind: frr.ospf_neighbor
+        node: R1
+        expect:
+          neighbor_id: "2.2.2.2"
+          state: "Full"
+      - kind: frr.ospf_neighbor
+        node: R2
+        expect:
+          neighbor_id: "1.1.1.1"
+          state: "Full"
+      - kind: frr.route_in_table
+        node: R1
+        expect:
+          prefix: "192.168.110.0/24"
+          protocol: "O"
+      - kind: frr.route_in_table
+        node: R2
+        expect:
+          prefix: "192.168.10.0/24"
+          protocol: "O"
+
+  - id: connectivity
+    title: Связность cross-site
+    checks:
+      - kind: vpcs.ping
+        from: PC1
+        to: "192.168.110.20"
+        expect:
+          received: ">=4"
+          ttl: 62

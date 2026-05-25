@@ -2,6 +2,8 @@ from pydantic import BaseModel
 
 
 class LabSummary(BaseModel):
+    """Краткое описание лабораторной работы в составе курса."""
+
     slug: str
     title: str
     difficulty: str
@@ -10,6 +12,8 @@ class LabSummary(BaseModel):
 
 
 class CourseResponse(BaseModel):
+    """Курс без вложенных лабораторных работ."""
+
     slug: str
     title: str
     description: str | None
@@ -19,4 +23,6 @@ class CourseResponse(BaseModel):
 
 
 class CourseDetailResponse(CourseResponse):
+    """Курс вместе со списком его лабораторных работ."""
+
     labs: list[LabSummary]
