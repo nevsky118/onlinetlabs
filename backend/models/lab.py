@@ -14,6 +14,8 @@ if TYPE_CHECKING:
 
 
 class Lab(Base):
+    """Лабораторная работа. Привязана к курсу, имеет среду выполнения и шаги."""
+
     __tablename__ = "labs"
 
     slug: Mapped[str] = mapped_column(String(255), primary_key=True)
@@ -25,6 +27,10 @@ class Lab(Base):
     )
     order_in_course: Mapped[int] = mapped_column(Integer, default=0)
     environment_type: Mapped[str] = mapped_column(String(50), default="none")
+    gns3_template_project_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    gns3_template_project_id_iosvl2: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    gns3_template_project_id_frr: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    gns3_completed_template_project_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     meta: Mapped[dict | None] = mapped_column(JSON, default=None)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
@@ -44,6 +50,8 @@ class Lab(Base):
 
 
 class LabStep(Base):
+    """Шаг лабораторной работы с порядком и типом валидации."""
+
     __tablename__ = "lab_steps"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

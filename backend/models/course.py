@@ -14,6 +14,8 @@ if TYPE_CHECKING:
 
 
 class Course(Base):
+    """Учебный курс с набором лаб, сложностью и предусловиями."""
+
     __tablename__ = "courses"
 
     slug: Mapped[str] = mapped_column(String(255), primary_key=True)

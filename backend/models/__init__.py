@@ -11,7 +11,10 @@ from models.lab import Lab, LabStep
 from models.progress import CourseProgress, LabProgress, StepAttempt
 from models.session import LearningSession
 from models.behavioral_event import BehavioralEvent  # noqa: F401
+from models.platform_event import PlatformEvent  # noqa: F401
+from models.chat_message import ChatMessage  # noqa: F401
 from models.experiment import ExperimentMetrics  # noqa: F401
+from models.validation_run import ValidationRun
 from models.user import Account, Session, User, UserRole, VerificationToken
 
 __all__ = [
@@ -29,6 +32,9 @@ __all__ = [
     "StepAttempt",
     "LearningSession",
     "BehavioralEvent",
+    "PlatformEvent",
+    "ChatMessage",
+    "ValidationRun",
     "Difficulty",
     "ProgressStatus",
     "AttemptResult",

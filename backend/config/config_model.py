@@ -19,6 +19,7 @@ class DatabaseConfig(BaseModel):
 
     @property
     def async_url(self) -> str:
+        """Собирает строку подключения asyncpg из пользователя, пароля, хоста, порта и имени БД."""
         return (
             f"postgresql+asyncpg://{quote_plus(self.user)}:{quote_plus(self.password)}"
             f"@{self.host}:{self.port}/{self.db}"
@@ -26,6 +27,7 @@ class DatabaseConfig(BaseModel):
 
     @property
     def sync_url(self) -> str:
+        """Собирает синхронную строку подключения psycopg из пользователя, пароля, хоста, порта и имени БД."""
         return (
             f"postgresql://{quote_plus(self.user)}:{quote_plus(self.password)}"
             f"@{self.host}:{self.port}/{self.db}"
@@ -54,6 +56,7 @@ class ApiConfig(BaseModel):
     @field_validator("environment")
     @classmethod
     def validate_environment(cls, v: str) -> str:
+        """Проверяет, что окружение входит в список допустимых значений."""
         allowed = {"local", "development", "production", "test"}
         if v not in allowed:
             raise ValueError(f"ENVIRONMENT must be one of {allowed}, got '{v}'")
@@ -70,6 +73,7 @@ class LogConfig(BaseModel):
     @field_validator("log_level")
     @classmethod
     def validate_log_level(cls, v: str) -> str:
+        """Проверяет уровень логирования и приводит его к верхнему регистру."""
         allowed = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
         upper = v.upper()
         if upper not in allowed:
@@ -78,6 +82,8 @@ class LogConfig(BaseModel):
 
 
 class LlmProvider(str, Enum):
+    """Поддерживаемые LLM-провайдеры для агентов."""
+
     ANTHROPIC = "anthropic"
     OPENAI = "openai"
     OLLAMA = "ollama"
@@ -107,6 +113,7 @@ class AgentsConfig(BaseModel):
 
     @model_validator(mode="after")
     def validate_provider_requirements(self) -> Self:
+        """Проверяет обязательные поля под выбранный провайдер и подставляет base_url для Ollama по умолчанию."""
         if (
             self.provider in (LlmProvider.ANTHROPIC, LlmProvider.OPENAI)
             and not self.api_key
@@ -191,6 +198,30 @@ class OpenClawConfig(BaseModel):
     timeout_seconds: float = Field(default=30.0, ge=1.0, description="Таймаут запроса")
 
 
+class GNS3Config(BaseModel):
+    """Интеграция с gns3-service и GNS3-сервером."""
+
+    service_url: str = Field(description="Внутренний URL gns3-service")
+    public_url: str = Field(description="Browser-reachable URL GNS3 Web UI для студента")
+    internal_url: str = Field(description="Внутренний URL GNS3-сервера для MCP SessionContext")
+    node_host: str = Field(default="", description="Host для прямых TCP-подключений к console-портам узлов (telnet VPCS). Если пусто — derive из internal_url/public_url.")
+
+
+class MCPConfig(BaseModel):
+    """Подключение к GNS3 MCP-серверу."""
+
+    server_url: str = Field(description="URL GNS3 MCP-сервера")
+
+
+class SecurityConfig(BaseModel):
+    """Секреты приложения."""
+
+    cred_encryption_key: str = Field(description="Fernet-ключ для шифрования GNS3-кредов")
+    internal_api_token: str = Field(
+        description="Shared secret for server-to-server calls (Next.js → backend /auth/exchange, backend → gns3-service /v1/exec/vtysh)"
+    )
+
+
 class ConfigModel(BaseModel):
     """Корневая конфигурация приложения."""
 
@@ -203,3 +234,6 @@ class ConfigModel(BaseModel):
         default_factory=LearningAnalyticsConfig
     )
     openclaw: OpenClawConfig = Field(default_factory=OpenClawConfig)
+    gns3: GNS3Config
+    mcp: MCPConfig
+    security: SecurityConfig

@@ -1,4 +1,6 @@
 import os
+from functools import lru_cache
+from pathlib import Path
 
 from dotenv import dotenv_values
 
@@ -7,71 +9,132 @@ from config.config_model import (
     ApiConfig,
     ConfigModel,
     DatabaseConfig,
+    GNS3Config,
     LogConfig,
+    MCPConfig,
     OpenClawConfig,
     RedisConfig,
+    SecurityConfig,
 )
+from tools.env_cipher import decrypt_file
 
 
 def _str2bool(value: str) -> bool:
+    """Преобразует строковое значение из env в булево."""
     return value.strip().lower() in ("true", "1", "yes")
 
 
-class EnvConfigLoader:
-    def load(self, env_path: str) -> ConfigModel:
-        values = dotenv_values(env_path)
-        return self._build(values)
+def _build(values: dict[str, str | None]) -> ConfigModel:
+    """Собирает и валидирует корневую конфигурацию из словаря переменных окружения."""
 
-    def load_from_environ(self) -> ConfigModel:
-        return self._build(dict(os.environ))
+    def _req(key: str) -> str:
+        """Возвращает обязательную переменную окружения или падает с KeyError, если её нет."""
+        v = values.get(key)
+        if v is None:
+            raise KeyError(f"Required env var not set: {key}")
+        return v
 
-    @staticmethod
-    def _build(values: dict[str, str | None]) -> ConfigModel:
-        def _req(key: str) -> str:
-            v = values.get(key)
-            if v is None:
-                raise KeyError(f"Required env var not set: {key}")
-            return v
+    database = DatabaseConfig(
+        user=_req("DB_USER"),
+        password=_req("DB_PASSWORD"),
+        host=_req("DB_HOST"),
+        port=int(_req("DB_PORT")),
+        db=_req("DB_NAME"),
+        sql_echo=_str2bool(values.get("DB_SQL_ECHO", "false")),
+    )
+    redis = RedisConfig(url=_req("REDIS_URL"))
+    api = ApiConfig(
+        environment=_req("ENVIRONMENT"),
+        debug=_str2bool(values.get("DEBUG", "false")),
+        api_port=int(values.get("API_PORT", "8000")),
+        frontend_url=values.get("FRONTEND_URL", "http://localhost:3000"),
+        jwt_secret=_req("JWT_SECRET"),
+    )
+    log = LogConfig(log_level=_req("LOG_LEVEL"))
+    agents = AgentsConfig(
+        provider=values.get("AGENTS_PROVIDER", "anthropic"),
+        model=values.get("AGENTS_MODEL", "claude-sonnet-4-20250514"),
+        base_url=values.get("AGENTS_BASE_URL") or None,
+        api_key=values.get("AGENTS_API_KEY") or None,
+        temperature=float(values.get("AGENTS_TEMPERATURE", "0.3")),
+        max_tokens=int(values.get("AGENTS_MAX_TOKENS", "4096")),
+        request_timeout=int(values.get("AGENTS_REQUEST_TIMEOUT", "30")),
+        yandex_folder=values.get("AGENTS_YANDEX_FOLDER") or None,
+    )
+    openclaw = OpenClawConfig(
+        enabled=_str2bool(values.get("OPENCLAW_ENABLED", "false")),
+        base_url=values.get("OPENCLAW_BASE_URL", "http://localhost:18789"),
+        token=values.get("OPENCLAW_TOKEN") or None,
+        model=values.get("OPENCLAW_MODEL", "openclaw"),
+        timeout_seconds=float(values.get("OPENCLAW_TIMEOUT_SECONDS", "30")),
+    )
+    gns3 = GNS3Config(
+        service_url=values.get("GNS3_SERVICE_URL", "http://localhost:8101"),
+        public_url=values.get("GNS3_PUBLIC_URL", "http://localhost:3080"),
+        internal_url=values.get("GNS3_INTERNAL_URL", "http://localhost:3080"),
+        node_host=values.get("GNS3_NODE_HOST", ""),
+    )
+    mcp = MCPConfig(
+        server_url=values.get("MCP_SERVER_URL", "http://localhost:8100"),
+    )
+    security = SecurityConfig(
+        cred_encryption_key=_req("CRED_ENCRYPTION_KEY"),
+        internal_api_token=_req("INTERNAL_API_TOKEN"),
+    )
+    return ConfigModel(
+        database=database,
+        redis=redis,
+        api=api,
+        log=log,
+        agents=agents,
+        openclaw=openclaw,
+        gns3=gns3,
+        mcp=mcp,
+        security=security,
+    )
 
-        database = DatabaseConfig(
-            user=_req("DB_USER"),
-            password=_req("DB_PASSWORD"),
-            host=_req("DB_HOST"),
-            port=int(_req("DB_PORT")),
-            db=_req("DB_NAME"),
-            sql_echo=_str2bool(values.get("DB_SQL_ECHO", "false")),
-        )
-        redis = RedisConfig(url=_req("REDIS_URL"))
-        api = ApiConfig(
-            environment=_req("ENVIRONMENT"),
-            debug=_str2bool(values.get("DEBUG", "false")),
-            api_port=int(values.get("API_PORT", "8000")),
-            frontend_url=values.get("FRONTEND_URL", "http://localhost:3000"),
-            jwt_secret=_req("JWT_SECRET"),
-        )
-        log = LogConfig(log_level=_req("LOG_LEVEL"))
-        agents = AgentsConfig(
-            provider=values.get("AGENTS_PROVIDER", "anthropic"),
-            model=values.get("AGENTS_MODEL", "claude-sonnet-4-20250514"),
-            base_url=values.get("AGENTS_BASE_URL") or None,
-            api_key=values.get("AGENTS_API_KEY") or None,
-            temperature=float(values.get("AGENTS_TEMPERATURE", "0.3")),
-            max_tokens=int(values.get("AGENTS_MAX_TOKENS", "4096")),
-            request_timeout=int(values.get("AGENTS_REQUEST_TIMEOUT", "30")),
-            yandex_folder=values.get("AGENTS_YANDEX_FOLDER") or None,
-        )
-        openclaw = OpenClawConfig(
-            enabled=_str2bool(values.get("OPENCLAW_ENABLED", "false")),
-            base_url=values.get("OPENCLAW_BASE_URL", "http://localhost:18789"),
-            token=values.get("OPENCLAW_TOKEN") or None,
-            model=values.get("OPENCLAW_MODEL", "openclaw"),
-            timeout_seconds=float(values.get("OPENCLAW_TIMEOUT_SECONDS", "30")),
-        )
-        return ConfigModel(
-            database=database,
-            redis=redis,
-            api=api,
-            log=log,
-            agents=agents,
-            openclaw=openclaw,
-        )
+
+def _resolve_env_file() -> Path | None:
+    """Определяет путь к env-файлу из ENV_FILE. Возвращает None, если переменная не задана."""
+    env_file_name = os.getenv("ENV_FILE")
+    if env_file_name is None:
+        return None
+    path = Path(env_file_name)
+    if not path.is_absolute():
+        path = Path(__file__).resolve().parent.parent / path
+    if not path.exists():
+        raise FileNotFoundError(f"ENV_FILE={env_file_name} not found: {path}")
+    return path
+
+
+@lru_cache(maxsize=1)
+def load_settings() -> ConfigModel:
+    """Загружает конфигурацию из окружения или env-файла, расшифровывая .aes при необходимости.
+
+    Результат кэшируется на всё время жизни процесса.
+    """
+    env_path = _resolve_env_file()
+    if env_path is None:
+        return _build(dict(os.environ))
+    path_str = str(env_path)
+    if path_str.endswith(".aes"):
+        password = os.getenv("CONFIG_PASSWORD")
+        if not password:
+            raise OSError("CONFIG_PASSWORD env var required to decrypt .aes file")
+        path_str = decrypt_file(path_str, password)
+    return _build(dotenv_values(path_str))
+
+
+class _LazySettings:
+    """Ленивый прокси к конфигурации. Загружает настройки при первом обращении к атрибуту."""
+
+    _instance: ConfigModel | None = None
+
+    def __getattr__(self, name: str):
+        """Возвращает атрибут конфигурации, загружая её при первом доступе."""
+        if _LazySettings._instance is None:
+            _LazySettings._instance = load_settings()
+        return getattr(_LazySettings._instance, name)
+
+
+settings = _LazySettings()

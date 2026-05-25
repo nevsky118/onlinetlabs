@@ -9,6 +9,8 @@ from models.base import Base
 
 
 class CourseProgress(Base):
+    """Прогресс пользователя по курсу. Статус, оценка и время."""
+
     __tablename__ = "course_progress"
     __table_args__ = (
         UniqueConstraint(
@@ -37,6 +39,8 @@ class CourseProgress(Base):
 
 
 class LabProgress(Base):
+    """Прогресс пользователя по лабе. Статус, оценка и текущий шаг."""
+
     __tablename__ = "lab_progress"
     __table_args__ = (
         UniqueConstraint("user_id", "lab_slug", name="uq_lab_progress_user_lab"),
@@ -64,6 +68,8 @@ class LabProgress(Base):
 
 
 class StepAttempt(Base):
+    """Попытка прохождения шага лабы с её номером, результатом и оценкой."""
+
     __tablename__ = "step_attempts"
 
     id: Mapped[str] = mapped_column(

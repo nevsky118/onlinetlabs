@@ -1,4 +1,4 @@
-"""Auth.js compatible schema for OAuth providers like GitHub."""
+"""Совместимая с Auth.js схема для OAuth-провайдеров, например GitHub."""
 
 from datetime import datetime
 from enum import Enum
@@ -11,7 +11,7 @@ from models.base import Base
 
 
 class UserRole(str, Enum):
-    """User roles for access control."""
+    """Роли пользователя для разграничения доступа."""
 
     STUDENT = "student"
     INSTRUCTOR = "instructor"
@@ -19,7 +19,7 @@ class UserRole(str, Enum):
 
 
 class User(Base):
-    """Auth.js users table."""
+    """Таблица users Auth.js."""
 
     __tablename__ = "users"
 
@@ -43,7 +43,7 @@ class User(Base):
 
 
 class Account(Base):
-    """Auth.js accounts table - stores OAuth provider data."""
+    """Таблица accounts Auth.js. Хранит данные OAuth-провайдеров."""
 
     __tablename__ = "accounts"
 
@@ -68,7 +68,7 @@ class Account(Base):
 
 
 class Session(Base):
-    """Auth.js sessions table."""
+    """Таблица sessions Auth.js."""
 
     __tablename__ = "sessions"
 
@@ -85,7 +85,7 @@ class Session(Base):
 
 
 class VerificationToken(Base):
-    """Auth.js verification tokens for email verification."""
+    """Verification-токены Auth.js для подтверждения email."""
 
     __tablename__ = "verification_tokens"
 
