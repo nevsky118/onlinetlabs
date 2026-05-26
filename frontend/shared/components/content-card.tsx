@@ -50,7 +50,7 @@ export const ContentCard = ({
       <header className="h-14">
         <h2 className="text-xl">{title}</h2>
       </header>
-      <div className="flex content-center overflow-hidden rounded py-5">
+      <div className="flex content-center overflow-hidden rounded-none py-5">
         <div className="h-[132px] w-full border-x border-x-(--pattern-fg) bg-[repeating-linear-gradient(315deg,var(--pattern-fg)_0,var(--pattern-fg)_1px,transparent_0,transparent_50%)] bg-size-[10px_10px] bg-fixed [--pattern-fg:var(--color-foreground)]/5"></div>
       </div>
       {tags && tags.length > 0 && (

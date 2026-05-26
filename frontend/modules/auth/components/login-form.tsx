@@ -47,7 +47,7 @@ export function LoginForm({
         callbackURL: validateRedirect(redirect),
       })
     } catch {
-      setServerError("GitHub sign-in failed. Try again.")
+      setServerError("Не удалось войти через GitHub. Попробуйте снова.")
       setIsGithubLoading(false)
     }
   }
@@ -67,7 +67,7 @@ export function LoginForm({
       {
         onSuccess: () => router.push(validateRedirect(redirect)),
         onError: (ctx) =>
-          setServerError(ctx.error.message ?? "Invalid email or password."),
+          setServerError(ctx.error.message ?? "Неверный email или пароль."),
       }
     )
   })
@@ -76,9 +76,9 @@ export function LoginForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle>Sign In to Your Account</CardTitle>
+          <CardTitle>Вход в аккаунт</CardTitle>
           <CardDescription>
-            Enter your email below to sign in to your account
+            Введите email, чтобы войти в аккаунт
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -102,7 +102,7 @@ export function LoginForm({
                 )}
               </Field>
               <Field>
-                <FieldLabel htmlFor="password">Password</FieldLabel>
+                <FieldLabel htmlFor="password">Пароль</FieldLabel>
                 <Input
                   id="password"
                   type="password"
@@ -115,14 +115,14 @@ export function LoginForm({
               </Field>
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting && <Spinner />}
-                Sign In
+                Войти
               </Button>
             </FieldGroup>
           </form>
           <div className="mt-6 flex flex-col gap-4">
             <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
               <span className="bg-card text-muted-foreground relative z-10 px-2">
-                or
+                или
               </span>
             </div>
             <Button
@@ -137,10 +137,10 @@ export function LoginForm({
               ) : (
                 <Icons.gitHub aria-hidden="true" />
               )}
-              Sign In with GitHub
+              Войти через GitHub
             </Button>
             <FieldDescription className="text-center">
-              Don&apos;t have an account? <Link href="/sign-up">Sign Up</Link>
+              Нет аккаунта? <Link href="/sign-up">Зарегистрироваться</Link>
             </FieldDescription>
           </div>
         </CardContent>

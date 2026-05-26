@@ -1,8 +1,8 @@
 export const siteConfig = {
-  name: "onlinetlabs",
+  name: "Платформа",
   url: "#",
   ogImage: "#",
-  description: "onlinetlabs",
+  description: "Платформа",
   links: {
     github: "https://github.com/",
   },

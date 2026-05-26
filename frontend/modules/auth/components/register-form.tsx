@@ -47,7 +47,7 @@ export function RegisterForm({
         callbackURL: validateRedirect(redirect),
       })
     } catch {
-      setServerError("GitHub sign-in failed. Try again.")
+      setServerError("Не удалось войти через GitHub. Попробуйте снова.")
       setIsGithubLoading(false)
     }
   }
@@ -67,7 +67,7 @@ export function RegisterForm({
       {
         onSuccess: () => router.push(validateRedirect(redirect)),
         onError: (ctx) =>
-          setServerError(ctx.error.message ?? "Registration failed."),
+          setServerError(ctx.error.message ?? "Не удалось зарегистрироваться."),
       }
     )
   })
@@ -76,9 +76,9 @@ export function RegisterForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle>Create an Account</CardTitle>
+          <CardTitle>Создание аккаунта</CardTitle>
           <CardDescription>
-            Enter your details below to create your account
+            Заполните данные, чтобы создать аккаунт
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -88,12 +88,12 @@ export function RegisterForm({
                 <FieldError aria-live="polite">{serverError}</FieldError>
               )}
               <Field>
-                <FieldLabel htmlFor="name">Name</FieldLabel>
+                <FieldLabel htmlFor="name">Имя</FieldLabel>
                 <Input
                   id="name"
                   type="text"
                   autoComplete="name"
-                  placeholder="John Doe"
+                  placeholder="Иван Иванов"
                   {...register("name")}
                 />
               </Field>
@@ -112,7 +112,7 @@ export function RegisterForm({
                 )}
               </Field>
               <Field>
-                <FieldLabel htmlFor="password">Password</FieldLabel>
+                <FieldLabel htmlFor="password">Пароль</FieldLabel>
                 <Input
                   id="password"
                   type="password"
@@ -122,18 +122,18 @@ export function RegisterForm({
                 {errors.password && (
                   <FieldError>{errors.password.message}</FieldError>
                 )}
-                <FieldDescription>At least 8 characters</FieldDescription>
+                <FieldDescription>Минимум 8 символов</FieldDescription>
               </Field>
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting && <Spinner />}
-                Create Account
+                Создать аккаунт
               </Button>
             </FieldGroup>
           </form>
           <div className="mt-6 flex flex-col gap-4">
             <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
               <span className="bg-card text-muted-foreground relative z-10 px-2">
-                or
+                или
               </span>
             </div>
             <Button
@@ -148,10 +148,10 @@ export function RegisterForm({
               ) : (
                 <Icons.gitHub aria-hidden="true" />
               )}
-              Sign Up with GitHub
+              Зарегистрироваться через GitHub
             </Button>
             <FieldDescription className="text-center">
-              Already have an account? <Link href="/sign-in">Sign In</Link>
+              Уже есть аккаунт? <Link href="/sign-in">Войти</Link>
             </FieldDescription>
           </div>
         </CardContent>

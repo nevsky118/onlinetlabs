@@ -34,6 +34,8 @@ const contentSchema = frontmatterSchema.extend({
   description: z.string(),
   tasks: z.number().optional(),
   difficulty: z.enum(["easy", "medium", "hard"]).optional(),
+  duration: z.string().optional(),
+  launchable: z.boolean().default(true),
   tags: z.array(z.string()).default([]),
 })
 

@@ -61,7 +61,7 @@ export function UserMenu({ user }: UserMenuProps) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+        className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-none"
         side="bottom"
         align="end"
         sideOffset={4}
@@ -85,11 +85,11 @@ export function UserMenu({ user }: UserMenuProps) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem disabled>Account</DropdownMenuItem>
+          <DropdownMenuItem disabled>Аккаунт</DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={handleSignOut}>
-          Log out
+          Выйти
           <LogOut className="ml-auto" />
         </DropdownMenuItem>
       </DropdownMenuContent>
