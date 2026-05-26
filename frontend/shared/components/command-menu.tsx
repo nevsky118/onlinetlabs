@@ -3,12 +3,11 @@
 import { useDocsSearch } from "fumadocs-core/search/client"
 import { ArrowRightIcon, CornerDownLeftIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { Dialog as DialogPrimitive } from "radix-ui"
 import * as React from "react"
 import type { FumaDocsPageTree } from "@/lib/source"
 import { copyToClipboardWithMeta } from "@/components/copy-button"
-import { useIsMac } from "@/hooks/use-is-mac"
 import { useMutationObserver } from "@/hooks/use-mutation-observer"
-import { siteConfig } from "@/lib/config"
 import { trackEvent } from "@/lib/events"
 import { cn } from "@/lib/utils"
 import { Button } from "@/ui/button"
@@ -22,30 +21,44 @@ import {
 } from "@/ui/command"
 import {
   Dialog,
-  DialogContent,
   DialogHeader,
+  DialogOverlay,
+  DialogPortal,
   DialogTitle,
   DialogTrigger,
 } from "@/ui/dialog"
-import { Kbd, KbdGroup } from "@/ui/kbd"
 import { Separator } from "@/ui/separator"
 import { Spinner } from "@/ui/spinner"
 
-type DialogProps = React.ComponentProps<typeof Dialog>
+type PageTreeNode = FumaDocsPageTree["children"][number]
+type PageTreeFolder = Extract<PageTreeNode, { type: "folder" }>
+type PageTreePage = Extract<PageTreeNode, { type: "page" }>
+
+function getAllPagesFromFolder(folder: PageTreeFolder): PageTreePage[] {
+  const pages: PageTreePage[] = []
+
+  for (const child of folder.children) {
+    if (child.type === "page") {
+      pages.push(child as PageTreePage)
+    } else if (child.type === "folder") {
+      pages.push(...getAllPagesFromFolder(child as PageTreeFolder))
+    }
+  }
+
+  return pages
+}
 
 export function CommandMenu({
-  trees,
-  blocks,
+  tree,
   navItems,
   ...props
-}: DialogProps & {
-  trees: Array<{ tree: FumaDocsPageTree; label: string }>
-  blocks?: { name: string; description: string; categories: string[] }[]
+}: React.ComponentProps<typeof Dialog> & {
+  tree: FumaDocsPageTree
   navItems?: { href: string; label: string }[]
 }) {
   const router = useRouter()
-  const isMac = useIsMac()
   const [open, setOpen] = React.useState(false)
+  const [renderDelayedGroups, setRenderDelayedGroups] = React.useState(false)
   const [selectedType, setSelectedType] = React.useState<"page" | null>(null)
   const [copyPayload, setCopyPayload] = React.useState("")
 
@@ -82,14 +95,30 @@ export function CommandMenu({
 
       // Set new timeout to debounce both search and tracking.
       searchTimeoutRef.current = setTimeout(() => {
-        setSearch(value)
-        trackSearchQuery(value)
+        React.startTransition(() => {
+          setSearch(value)
+          trackSearchQuery(value)
+        })
       }, 500)
     },
     [setSearch, trackSearchQuery]
   )
 
   // Cleanup timeout on unmount.
+  React.useEffect(() => {
+    if (open) {
+      const frame = requestAnimationFrame(() => {
+        setRenderDelayedGroups(true)
+      })
+
+      return () => {
+        cancelAnimationFrame(frame)
+      }
+    }
+
+    setRenderDelayedGroups(false)
+  }, [open])
+
   React.useEffect(() => {
     return () => {
       if (searchTimeoutRef.current) {
@@ -98,15 +127,99 @@ export function CommandMenu({
     }
   }, [])
 
-  const handlePageHighlight = React.useCallback(() => {
-    setSelectedType("page")
-    setCopyPayload("")
-  }, [])
+  const commandFilter = React.useCallback(
+    (value: string, searchValue: string, keywords?: string[]) => {
+      const extendValue = value + " " + (keywords?.join(" ") || "")
+      if (extendValue.toLowerCase().includes(searchValue.toLowerCase())) {
+        return 1
+      }
+      return 0
+    },
+    []
+  )
 
-  const runCommand = React.useCallback((command: () => unknown) => {
-    setOpen(false)
-    command()
-  }, [])
+  const handlePageHighlight = React.useCallback(
+    (item: { url: string }) => {
+      setSelectedType("page")
+      setCopyPayload(item.url)
+    },
+    [setSelectedType, setCopyPayload]
+  )
+
+  const runCommand = React.useCallback(
+    (command: () => unknown) => {
+      setOpen(false)
+      command()
+    },
+    [setOpen]
+  )
+
+  const navItemsSection = React.useMemo(() => {
+    if (!navItems || navItems.length === 0) {
+      return null
+    }
+
+    return (
+      <CommandGroup
+        heading="Страницы"
+        className="p-0! **:[[cmdk-group-heading]]:scroll-mt-16 **:[[cmdk-group-heading]]:p-3! **:[[cmdk-group-heading]]:pb-1!"
+      >
+        {navItems.map((item) => (
+          <CommandMenuItem
+            key={item.href}
+            value={`Navigation ${item.label}`}
+            keywords={["nav", "navigation", item.label.toLowerCase()]}
+            onHighlight={() => {
+              setSelectedType("page")
+              setCopyPayload(item.href)
+            }}
+            onSelect={() => {
+              runCommand(() => router.push(item.href))
+            }}
+          >
+            <ArrowRightIcon />
+            {item.label}
+          </CommandMenuItem>
+        ))}
+      </CommandGroup>
+    )
+  }, [navItems, runCommand, router])
+
+  const pageGroupsSection = React.useMemo(() => {
+    return tree.children.map((group) => {
+      if (group.type !== "folder") {
+        return null
+      }
+
+      const pages = getAllPagesFromFolder(group as PageTreeFolder)
+
+      if (pages.length === 0) {
+        return null
+      }
+
+      return (
+        <CommandGroup
+          key={group.$id}
+          heading={group.name as React.ReactNode}
+          className="p-0! **:[[cmdk-group-heading]]:scroll-mt-16 **:[[cmdk-group-heading]]:p-3! **:[[cmdk-group-heading]]:pb-1!"
+        >
+          {pages.map((item) => (
+            <CommandMenuItem
+              key={item.url}
+              value={item.name?.toString() ? `${group.name} ${item.name}` : ""}
+              onHighlight={() => handlePageHighlight(item)}
+              onSelect={() => {
+                runCommand(() => router.push(item.url))
+              }}
+            >
+              <ArrowRightIcon />
+              {item.name}
+            </CommandMenuItem>
+          ))}
+        </CommandGroup>
+      )
+    })
+  }, [tree.children, handlePageHighlight, runCommand, router])
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -126,11 +239,8 @@ export function CommandMenu({
 
       if (e.key === "c" && (e.metaKey || e.ctrlKey)) {
         runCommand(() => {
-          if (selectedType === "page" || selectedType === "component") {
-            copyToClipboardWithMeta(copyPayload, {
-              name: "copy_npm_command",
-              properties: { command: copyPayload },
-            })
+          if (selectedType === "page" && copyPayload) {
+            copyToClipboardWithMeta(copyPayload)
           }
         })
       }
@@ -144,123 +254,54 @@ export function CommandMenu({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button
-          variant="secondary"
+          variant="outline"
           className={cn(
-            "bg-surface text-foreground dark:bg-card relative h-8 w-full justify-start pl-3 font-medium shadow-none sm:pr-12 md:w-48 lg:w-56 xl:w-64"
+            "relative h-8 w-full justify-start rounded-none border-none bg-muted pl-3 text-foreground shadow-none transition-colors hover:bg-muted/50 md:w-48 lg:w-40 xl:w-64 dark:bg-card"
           )}
           onClick={() => setOpen(true)}
           {...props}
         >
-          <span className="hidden lg:inline-flex">
-            Найти на {siteConfig.name}...
-          </span>
-          <span className="inline-flex lg:hidden">Найти...</span>
-          <div className="absolute top-1.5 right-1.5 hidden gap-1 sm:flex">
-            <KbdGroup>
-              <Kbd className="border">{isMac ? "⌘" : "Ctrl"}</Kbd>
-              <Kbd className="border">K</Kbd>
-            </KbdGroup>
-          </div>
+          <span className="hidden xl:inline-flex">Найти на платформе...</span>
+          <span className="inline-flex xl:hidden">Найти...</span>
         </Button>
       </DialogTrigger>
-      <DialogContent
-        showCloseButton={false}
-        className="rounded-xl border-none bg-clip-padding p-2 pb-11 shadow-2xl ring-4 ring-neutral-200/80 dark:bg-neutral-900 dark:ring-neutral-800"
-      >
+      <DialogContent className="rounded-none border-none bg-clip-padding p-2 pb-11 shadow-2xl ring-4 ring-neutral-200/80 dark:bg-neutral-900 dark:ring-neutral-800">
         <DialogHeader className="sr-only">
-          <DialogTitle>Найти на {siteConfig.name}...</DialogTitle>
-          {/* <DialogDescription>Search for a command to run...</DialogDescription> */}
+          <DialogTitle>Найти на платформе...</DialogTitle>
         </DialogHeader>
         <Command
-          className="**:data-[slot=command-input-wrapper]:bg-input/50 **:data-[slot=command-input-wrapper]:border-input rounded-none bg-transparent **:data-[slot=command-input]:!h-9 **:data-[slot=command-input]:py-0 **:data-[slot=command-input-wrapper]:mb-0 **:data-[slot=command-input-wrapper]:!h-9 **:data-[slot=command-input-wrapper]:rounded-md **:data-[slot=command-input-wrapper]:border"
-          filter={(value, search, keywords) => {
-            handleSearchChange(search)
-            const extendValue = `${value} ${keywords?.join(" ") || ""}`
-            if (extendValue.toLowerCase().includes(search.toLowerCase())) {
-              return 1
-            }
-            return 0
-          }}
+          className="rounded-none bg-transparent **:data-[slot=command-input]:h-8! **:data-[slot=command-input]:py-0 **:data-[slot=command-input-wrapper]:mb-0 **:data-[slot=command-input-wrapper]:h-8! **:data-[slot=command-input-wrapper]:rounded-none **:data-[slot=command-input-wrapper]:border **:data-[slot=command-input-wrapper]:border-input **:data-[slot=command-input-wrapper]:bg-input/50"
+          filter={commandFilter}
         >
           <div className="relative">
-            <CommandInput placeholder={`Найти на ${siteConfig.name}...`} />
+            <CommandInput
+              placeholder="Найти на платформе..."
+              onValueChange={handleSearchChange}
+            />
             {query.isLoading && (
               <div className="pointer-events-none absolute top-1/2 right-3 z-10 flex -translate-y-1/2 items-center justify-center">
-                <Spinner className="text-muted-foreground size-4" />
+                <Spinner className="size-4 text-muted-foreground" />
               </div>
             )}
           </div>
           <CommandList className="no-scrollbar min-h-80 scroll-pt-2 scroll-pb-1.5">
-            <CommandEmpty className="text-muted-foreground py-12 text-center text-sm">
+            <CommandEmpty className="py-12 text-center text-sm text-muted-foreground">
               {query.isLoading ? "Ищем..." : "Результатов не найдено."}
             </CommandEmpty>
-            {navItems && navItems.length > 0 && (
-              <CommandGroup
-                heading="Pages"
-                className="!p-0 [&_[cmdk-group-heading]]:scroll-mt-16 [&_[cmdk-group-heading]]:!p-3 [&_[cmdk-group-heading]]:!pb-1"
-              >
-                {navItems.map((item) => (
-                  <CommandMenuItem
-                    key={item.href}
-                    value={`Navigation ${item.label}`}
-                    keywords={["nav", "navigation", item.label.toLowerCase()]}
-                    onHighlight={() => {
-                      setSelectedType("page")
-                      setCopyPayload("")
-                    }}
-                    onSelect={() => {
-                      runCommand(() => router.push(item.href))
-                    }}
-                  >
-                    <ArrowRightIcon />
-                    {item.label}
-                  </CommandMenuItem>
-                ))}
-              </CommandGroup>
-            )}
-            {trees.map(({ tree, label }) =>
-              tree.children.map((group) => (
-                <CommandGroup
-                  key={`${label}-${group.$id}`}
-                  heading={`${label} - ${group.name}`}
-                  className="!p-0 [&_[cmdk-group-heading]]:scroll-mt-16 [&_[cmdk-group-heading]]:!p-3 [&_[cmdk-group-heading]]:!pb-1"
-                >
-                  {group.type === "folder" &&
-                    group.children.map((item) => {
-                      if (item.type === "page") {
-                        return (
-                          <CommandMenuItem
-                            key={item.url}
-                            value={
-                              item.name?.toString()
-                                ? `${label} ${group.name} ${item.name}`
-                                : ""
-                            }
-                            keywords={undefined}
-                            onHighlight={() => handlePageHighlight()}
-                            onSelect={() => {
-                              runCommand(() => router.push(item.url))
-                            }}
-                          >
-                            <ArrowRightIcon />
-                            {item.name}
-                          </CommandMenuItem>
-                        )
-                      }
-                      return null
-                    })}
-                </CommandGroup>
-              ))
-            )}
-            <SearchResults
-              open={open}
-              setOpen={setOpen}
-              query={query}
-              search={search}
-            />
+            {navItemsSection}
+            {renderDelayedGroups ? (
+              <>
+                {pageGroupsSection}
+                <SearchResults
+                  setOpen={setOpen}
+                  query={query}
+                  search={search}
+                />
+              </>
+            ) : null}
           </CommandList>
         </Command>
-        <div className="text-muted-foreground absolute inset-x-0 bottom-0 z-20 flex h-10 items-center gap-2 rounded-b-xl border-t border-t-neutral-100 bg-neutral-50 px-4 text-xs font-medium dark:border-t-neutral-700 dark:bg-neutral-800">
+        <div className="absolute inset-x-0 bottom-0 z-20 flex h-10 items-center gap-2 rounded-none border-t border-t-neutral-100 bg-neutral-50 px-4 text-xs font-medium text-muted-foreground dark:border-t-neutral-700 dark:bg-neutral-800">
           <div className="flex items-center gap-2">
             <CommandMenuKbd>
               <CornerDownLeftIcon />
@@ -269,9 +310,9 @@ export function CommandMenu({
           </div>
           {copyPayload && (
             <>
-              <Separator orientation="vertical" className="!h-4" />
+              <Separator orientation="vertical" className="h-4!" />
               <div className="flex items-center gap-1">
-                <CommandMenuKbd>{isMac ? "⌘" : "Ctrl"}</CommandMenuKbd>
+                <CommandMenuKbd>⌘</CommandMenuKbd>
                 <CommandMenuKbd>C</CommandMenuKbd>
                 {copyPayload}
               </div>
@@ -311,7 +352,7 @@ function CommandMenuItem({
     <CommandItem
       ref={ref}
       className={cn(
-        "data-[selected=true]:border-input data-[selected=true]:bg-input/50 h-9 rounded-md border border-transparent !px-3 font-medium",
+        "h-9 rounded-none border border-transparent px-3! font-medium data-[selected=true]:border-input data-[selected=true]:bg-input/50",
         className
       )}
       {...props}
@@ -325,7 +366,7 @@ function CommandMenuKbd({ className, ...props }: React.ComponentProps<"kbd">) {
   return (
     <kbd
       className={cn(
-        "bg-background text-muted-foreground pointer-events-none flex h-5 items-center justify-center gap-1 rounded border px-1 font-sans text-[0.7rem] font-medium select-none [&_svg:not([class*='size-'])]:size-3",
+        "pointer-events-none flex h-5 items-center justify-center gap-1 rounded-none border bg-background px-1 font-sans text-[0.7rem] font-medium text-muted-foreground select-none [&_svg:not([class*='size-'])]:size-3",
         className
       )}
       {...props}
@@ -340,23 +381,24 @@ function SearchResults({
   query,
   search,
 }: {
-  open: boolean
   setOpen: (open: boolean) => void
   query: Query
   search: string
 }) {
   const router = useRouter()
 
-  const uniqueResults =
-    query.data && Array.isArray(query.data)
-      ? query.data.filter(
-          (item, index, self) =>
-            !(
-              item.type === "text" &&
-              item.content.trim().split(/\s+/).length <= 1
-            ) && index === self.findIndex((t) => t.content === item.content)
-        )
-      : []
+  const uniqueResults = React.useMemo(() => {
+    if (!query.data || !Array.isArray(query.data)) {
+      return []
+    }
+
+    return query.data.filter(
+      (item, index, self) =>
+        !(
+          item.type === "text" && item.content.trim().split(/\s+/).length <= 1
+        ) && index === self.findIndex((t) => t.content === item.content)
+    )
+  }, [query.data])
 
   if (!search.trim()) {
     return null
@@ -372,8 +414,8 @@ function SearchResults({
 
   return (
     <CommandGroup
-      className="!px-0 [&_[cmdk-group-heading]]:scroll-mt-16 [&_[cmdk-group-heading]]:!p-3 [&_[cmdk-group-heading]]:!pb-1"
-      heading="Search Results"
+      className="px-0! **:[[cmdk-group-heading]]:scroll-mt-16 **:[[cmdk-group-heading]]:p-3! **:[[cmdk-group-heading]]:pb-1!"
+      heading="Результаты поиска"
     >
       {uniqueResults.map((item) => {
         return (
@@ -384,7 +426,7 @@ function SearchResults({
               router.push(item.url)
               setOpen(false)
             }}
-            className="data-[selected=true]:border-input data-[selected=true]:bg-input/50 h-9 rounded-md border border-transparent !px-3 font-normal"
+            className="h-9 rounded-none border border-transparent px-3! font-normal data-[selected=true]:border-input data-[selected=true]:bg-input/50"
             keywords={[item.content]}
             value={`${item.content} ${item.type}`}
           >
@@ -393,5 +435,29 @@ function SearchResults({
         )
       })}
     </CommandGroup>
+  )
+}
+
+function DialogContent({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Content> & {
+  showCloseButton?: boolean
+}) {
+  return (
+    <DialogPortal data-slot="dialog-portal">
+      <DialogOverlay />
+      <DialogPrimitive.Content
+        data-slot="dialog-content"
+        className={cn(
+          "fixed top-[15%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] gap-4 rounded-none border bg-background p-6 shadow-lg duration-200 outline-none sm:max-w-lg",
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </DialogPrimitive.Content>
+    </DialogPortal>
   )
 }

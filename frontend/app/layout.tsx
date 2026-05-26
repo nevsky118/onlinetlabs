@@ -6,9 +6,14 @@ import { cn } from "@/lib/utils"
 
 import "@/styles/globals.css"
 
+import { Inter } from "next/font/google"
 import { NuqsAdapter } from "nuqs/adapters/next/app"
+import { AnalyticsProvider } from "@/components/analytics-provider"
 import { LayoutProvider } from "@/hooks/use-layout"
 import { Toaster } from "@/ui/sonner"
+import { TooltipProvider } from "@/ui/tooltip"
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 
 export const metadata: Metadata = {
   title: {
@@ -47,7 +52,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={cn("font-sans", inter.variable)}
+    >
       <head>
         <script
           // biome-ignore lint: security/no-dangerously-set-inner-html
@@ -68,14 +77,16 @@ export default function RootLayout({
           fontVariables
         )}
       >
-        <ThemeProvider>
-          <NuqsAdapter>
-            <LayoutProvider>
-              {children}
-              <Toaster position="top-center" />
-            </LayoutProvider>
-          </NuqsAdapter>
-        </ThemeProvider>
+        <AnalyticsProvider>
+          <ThemeProvider>
+            <NuqsAdapter>
+              <LayoutProvider>
+                <TooltipProvider>{children}</TooltipProvider>
+                <Toaster position="bottom-right" />
+              </LayoutProvider>
+            </NuqsAdapter>
+          </ThemeProvider>
+        </AnalyticsProvider>
       </body>
     </html>
   )

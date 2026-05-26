@@ -16,7 +16,7 @@ export function ThemeSwitcher() {
       size="icon"
       className="group/toggle extend-touch-target size-8"
       onClick={toggleTheme}
-      title="Toggle theme"
+      title="Переключить тему"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -38,7 +38,7 @@ export function ThemeSwitcher() {
         <path d="M12 14.3l7.37 -7.37" />
         <path d="M12 19.6l8.85 -8.85" />
       </svg>
-      <span className="sr-only">Toggle theme</span>
+      <span className="sr-only">Переключить тему</span>
     </Button>
   )
 }

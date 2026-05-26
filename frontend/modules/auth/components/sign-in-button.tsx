@@ -10,7 +10,7 @@ export function SignInButton() {
   return (
     <Button asChild variant="link">
       <Link href={`/sign-in?redirect=${encodeURIComponent(pathname)}`}>
-        Sign In
+        Войти
       </Link>
     </Button>
   )

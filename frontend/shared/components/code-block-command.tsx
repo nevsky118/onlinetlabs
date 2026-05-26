@@ -72,7 +72,7 @@ export function CodeBlockCommand({
         }}
       >
         <div className="border-border/50 flex items-center gap-2 border-b px-3 py-1">
-          <div className="bg-foreground flex size-4 items-center justify-center rounded-[1px] opacity-70">
+          <div className="bg-foreground flex size-4 items-center justify-center rounded-none opacity-70">
             <TerminalIcon className="text-code size-3" />
           </div>
           <TabsList className="rounded-none bg-transparent p-0">
@@ -115,12 +115,12 @@ export function CodeBlockCommand({
             className="absolute top-2 right-2 z-10 size-7 opacity-70 hover:opacity-100 focus-visible:opacity-100"
             onClick={copyCommand}
           >
-            <span className="sr-only">Copy</span>
+            <span className="sr-only">Копировать</span>
             {hasCopied ? <CheckIcon /> : <CopyIcon />}
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          {hasCopied ? "Copied" : "Copy to Clipboard"}
+          {hasCopied ? "Скопировано" : "Скопировать"}
         </TooltipContent>
       </Tooltip>
     </div>

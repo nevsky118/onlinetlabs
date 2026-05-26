@@ -6,9 +6,10 @@ import { notFound } from "next/navigation"
 import z from "zod"
 import { mdxComponents } from "../../../../mdx-components"
 import { DocsTableOfContents } from "@/components/docs-toc"
+import { absoluteUrl } from "@/lib/absolute-url"
 import { siteConfig } from "@/lib/config"
 import { labs } from "@/lib/source"
-import { absoluteUrl } from "@/lib/utils"
+import { LaunchLabCard, LaunchLabMobileButton } from "@/modules/session"
 import { Badge } from "@/ui/badge"
 import { Button } from "@/ui/button"
 
@@ -97,6 +98,7 @@ export default async function Page(props: {
   const doc = page.data
   const MDX = doc.body
   const neighbours = findNeighbour(labs.pageTree, page.url)
+  const returnTo = `/labs/${params.slug.join("/")}`
 
   const raw = await page.data.getText("raw")
   const { attributes } = fm(raw)
@@ -135,7 +137,7 @@ export default async function Page(props: {
                     >
                       <Link href={neighbours.previous.url}>
                         <ArrowLeftIcon />
-                        <span className="sr-only">Previous</span>
+                        <span className="sr-only">Назад</span>
                       </Link>
                     </Button>
                   )}
@@ -147,7 +149,7 @@ export default async function Page(props: {
                       asChild
                     >
                       <Link href={neighbours.next.url}>
-                        <span className="sr-only">Next</span>
+                        <span className="sr-only">Вперёд</span>
                         <ArrowRightIcon />
                       </Link>
                     </Button>
@@ -160,19 +162,27 @@ export default async function Page(props: {
                 </p>
               )}
             </div>
+            {doc.launchable !== false && (
+              <div className="pt-4 xl:hidden">
+                <LaunchLabMobileButton
+                  labSlug={params.slug.join("/")}
+                  returnTo={returnTo}
+                />
+              </div>
+            )}
             {links ? (
               <div className="flex items-center gap-2 pt-4">
                 {links?.doc && (
-                  <Badge asChild variant="secondary" className="rounded-full">
+                  <Badge asChild variant="secondary" className="rounded-none">
                     <a href={links.doc} target="_blank" rel="noreferrer">
-                      Docs <ArrowUpRightIcon />
+                      Документация <ArrowUpRightIcon />
                     </a>
                   </Badge>
                 )}
                 {links?.api && (
-                  <Badge asChild variant="secondary" className="rounded-full">
+                  <Badge asChild variant="secondary" className="rounded-none">
                     <a href={links.api} target="_blank" rel="noreferrer">
-                      API Reference <ArrowUpRightIcon />
+                      API <ArrowUpRightIcon />
                     </a>
                   </Badge>
                 )}
@@ -215,9 +225,16 @@ export default async function Page(props: {
         {doc.toc?.length ? (
           <div className="no-scrollbar overflow-y-auto px-8">
             <DocsTableOfContents toc={doc.toc} />
-            <div className="h-12" />
           </div>
         ) : null}
+        {doc.launchable !== false && (
+          <div className="px-6">
+            <LaunchLabCard
+              labSlug={params.slug.join("/")}
+              returnTo={returnTo}
+            />
+          </div>
+        )}
       </div>
     </div>
   )

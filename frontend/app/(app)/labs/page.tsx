@@ -19,7 +19,8 @@ export const metadata: Metadata = {
 }
 
 export default function LabsPage() {
-  const pages = labs.getPages()
+  // Show only top-level lab pages, not nested ones like guides.
+  const pages = labs.getPages().filter((page) => page.slugs.length === 1)
 
   return (
     <div className="flex flex-1 flex-col">

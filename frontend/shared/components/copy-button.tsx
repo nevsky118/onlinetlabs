@@ -60,12 +60,12 @@ export function CopyButton({
           }}
           {...props}
         >
-          <span className="sr-only">Copy</span>
+          <span className="sr-only">Копировать</span>
           {hasCopied ? <CheckIcon /> : <CopyIcon />}
         </Button>
       </TooltipTrigger>
       <TooltipContent>
-        {hasCopied ? "Copied" : "Copy to Clipboard"}
+        {hasCopied ? "Скопировано" : "Скопировать"}
       </TooltipContent>
     </Tooltip>
   )
