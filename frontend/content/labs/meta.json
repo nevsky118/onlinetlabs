@@ -1,4 +1,4 @@
 {
   "root": true,
-  "pages": ["alpha", "beta"]
+  "pages": ["ospf-vlan-lab"]
 }

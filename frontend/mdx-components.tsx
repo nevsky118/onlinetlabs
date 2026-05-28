@@ -119,10 +119,26 @@ export const mdxComponents = {
       {...props}
     />
   ),
-  img: ({ className, alt, ...props }: React.ComponentProps<"img">) => (
-    // biome-ignore lint: @next/next/no-img-element
-    <img className={cn("rounded-md", className)} alt={alt} {...props} />
-  ),
+  img: ({
+    className,
+    alt,
+    src,
+    ...props
+  }: React.ComponentProps<"img"> & { src?: string | { src?: string } }) => {
+    const resolvedSrc =
+      typeof src === "object" && src !== null && "src" in src ? src.src : src
+    return (
+      // biome-ignore lint: @next/next/no-img-element
+      <img
+        className={cn("rounded-md", className)}
+        alt={alt}
+        src={resolvedSrc as string | undefined}
+        loading="lazy"
+        decoding="async"
+        {...props}
+      />
+    )
+  },
   hr: ({ ...props }: React.ComponentProps<"hr">) => (
     <hr className="my-4 md:my-8" {...props} />
   ),
