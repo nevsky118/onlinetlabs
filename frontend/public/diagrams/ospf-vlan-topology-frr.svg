@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 210" width="100%" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif">
+  <style>
+    .panel { fill: #0a0a0b; }
+    .pc    { fill: #0e2a47; stroke: #3b82f6; stroke-width: 2; }
+    .rt    { fill: #3a1c0c; stroke: #f97316; stroke-width: 2; }
+    .name  { fill: #fafafa; font-weight: 700; font-size: 18px; }
+    .site  { fill: #93c5fd; font-weight: 600; font-size: 13px; }
+    .back  { fill: #fbbf24; font-weight: 600; font-size: 13px; }
+    .iface { fill: #71717a; font-size: 11px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .addr  { fill: #a1a1aa; font-size: 11px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .ospf  { fill: #fbbf24; font-size: 11px; }
+    .link  { stroke: #52525b; stroke-width: 2; }
+    .bb     { stroke: #71717a; stroke-width: 1.6; }
+  </style>
+
+  <rect class="panel" x="0" y="0" width="880" height="210"/>
+
+  <!-- subnet labels over each segment -->
+  <text x="200" y="44" text-anchor="middle" class="site">192.168.10.0/24</text>
+  <text x="440" y="44" text-anchor="middle" class="back">10.0.0.0/30</text>
+  <text x="680" y="44" text-anchor="middle" class="site">192.168.110.0/24</text>
+
+  <!-- links -->
+  <line class="link" x1="150" y1="105" x2="250" y2="105"/>
+  <line class="bb"   x1="370" y1="101" x2="510" y2="101"/>
+  <line class="bb"   x1="370" y1="109" x2="510" y2="109"/>
+  <line class="link" x1="630" y1="105" x2="730" y2="105"/>
+
+  <!-- interface labels -->
+  <text x="244" y="98" text-anchor="end"   class="iface">eth0</text>
+  <text x="376" y="98" text-anchor="start" class="iface">eth1</text>
+  <text x="504" y="98" text-anchor="end"   class="iface">eth1</text>
+  <text x="636" y="98" text-anchor="start" class="iface">eth0</text>
+
+  <!-- nodes -->
+  <rect class="pc" x="30"  y="78" width="120" height="54"/>
+  <text x="90"  y="112" text-anchor="middle" class="name">PC1</text>
+  <rect class="rt" x="250" y="78" width="120" height="54"/>
+  <text x="310" y="112" text-anchor="middle" class="name">R1</text>
+  <rect class="rt" x="510" y="78" width="120" height="54"/>
+  <text x="570" y="112" text-anchor="middle" class="name">R2</text>
+  <rect class="pc" x="730" y="78" width="120" height="54"/>
+  <text x="790" y="112" text-anchor="middle" class="name">PC3</text>
+
+  <!-- sub labels -->
+  <text x="90"  y="152" text-anchor="middle" class="addr">192.168.10.10</text>
+  <text x="310" y="152" text-anchor="middle" class="addr">id 1.1.1.1</text>
+  <text x="440" y="152" text-anchor="middle" class="ospf">OSPF area 0</text>
+  <text x="570" y="152" text-anchor="middle" class="addr">id 2.2.2.2</text>
+  <text x="790" y="152" text-anchor="middle" class="addr">192.168.110.20</text>
+</svg>
