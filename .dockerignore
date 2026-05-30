@@ -1,0 +1,23 @@
+# Корневой контекст используется только backend-образом (нужны backend/ и mcp-sdk/).
+# Остальное в образ не идёт, чтобы не гонять 1.8G в docker daemon.
+**/node_modules
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/.next
+**/.next-docs
+.git
+frontend
+gns3
+autotests
+deployment
+docs
+.claude
+.archive
+.evidence
+**/.superpowers
+**/.venv
+*.log
+**/.DS_Store
+**/*.png
+**/*.webp
