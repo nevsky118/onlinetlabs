@@ -1,0 +1,13 @@
+# node_modules собирается внутри образа под alpine. Хостовый собран под macOS, не копировать.
+node_modules
+.next
+.next-docs
+.source
+.git
+.env
+.env.local
+.env.*.local
+.superpowers
+.claude
+*.log
+.DS_Store

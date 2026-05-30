@@ -37,6 +37,9 @@ local.env
 ci.env
 !*.env.aes
 
+# pgbouncer SCRAM hashes — credential material, regenerate per deploy
+gns3/pgbouncer/userlist.txt
+
 # === IDE ===
 .idea/
 *.swp
@@ -51,7 +54,21 @@ yarn-error.log*
 # === Worktrees ===
 .worktrees/
 
+# === AI assistant artifacts ===
 **/.claude
+**/.superpowers
+**/.cursor
+**/.cursorrules
+**/.aider*
+**/.windsurf
+**/.windsurfrules
+**/.continue
+**/.codeium
+**/.gemini
+**/handoff-*.md
+**/CLAUDE.md
+**/AGENTS.md
+**/GEMINI.md
 
 **/.vscode
 
@@ -59,7 +76,17 @@ yarn-error.log*
 
 docs/
 
-**/CLAUDE.md
-**/AGENTS.md
-backend/pytest.log
-autotests/pytest.log
+# Sandbox artifacts
+*.bak
+*.bak[0-9]*
+.!*
+
+# Test logs
+pytest.log
+
+# === GNS3 controller runtime state (DB, projects, images, JWT secret) ===
+# Mounted volume contents — never commit
+gns3/runtime/
+
+# === Archived/removed-but-preserved content ===
+.archive/
