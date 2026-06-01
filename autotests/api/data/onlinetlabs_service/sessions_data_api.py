@@ -35,3 +35,34 @@ class SessionUpdateData(DataAbstractionGenerator):
         self.data = {
             "status": self.status,
         }
+
+
+class NodeActionData(DataAbstractionGenerator):
+    """
+    Генерирует payload для node action эндпоинтов.
+
+    :ivar action: Имя действия (start/stop/suspend/reset/reload).
+    :ivar data: Пустой payload (action в path параметре).
+    """
+
+    def __init__(self, action: str):
+        self.action = action
+        self.data = {}
+
+
+class ActivityQueryData(DataAbstractionGenerator):
+    """
+    Генерирует query-параметры для GET activity.
+
+    :ivar limit: Лимит количества событий.
+    :ivar cursor: Курсор пагинации (опционально).
+    :ivar data: Словарь query-параметров.
+    """
+
+    def __init__(self, limit: int = 50, cursor: str | None = None):
+        self.limit = limit
+        self.cursor = cursor
+        params: dict = {"limit": limit}
+        if cursor:
+            params["cursor"] = cursor
+        self.data = params

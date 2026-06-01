@@ -37,18 +37,14 @@ class TestBaseAgent:
     @autotest.num("402")
     @autotest.external_id("d5f3c4e6-a7b8-4c9d-0e1f-2a3b4c5d6e7f")
     @autotest.name("BaseAgent: _get_model для Ollama")
-    def test_d5f3c4e6_get_model_ollama(self):
-        from config.config_model import AgentsConfig, ConfigModel, DatabaseConfig, RedisConfig, ApiConfig, LogConfig
+    def test_d5f3c4e6_get_model_ollama(self, config_model):
+        from config.config_model import AgentsConfig
         from pydantic_ai.models.openai import OpenAIModel
 
         with autotest.step("Создаём конфиг с Ollama"):
-            cfg = ConfigModel(
-                database=DatabaseConfig(user="u", password="p", host="h", port=5432, db="d"),
-                redis=RedisConfig(url="redis://localhost:6379/0"),
-                api=ApiConfig(environment="test", jwt_secret="s"),
-                log=LogConfig(log_level="DEBUG"),
-                agents=AgentsConfig(provider=LlmProvider.OLLAMA, model="llama3"),
-            )
+            cfg = config_model.model_copy(update={
+                "agents": AgentsConfig(provider=LlmProvider.OLLAMA, model="llama3"),
+            })
             agent = BaseAgent(cfg)
             model = agent._get_model()
 
@@ -59,10 +55,8 @@ class TestBaseAgent:
     @autotest.external_id("e6a4d5f7-b8c9-4d0e-1f2a-3b4c5d6e7f8a")
     @autotest.name("BaseAgent: system_prompt бросает NotImplementedError")
     def test_e6a4d5f7_system_prompt_raises(self, config_model):
-        with autotest.step("Создаём BaseAgent через __new__"):
-            agent = BaseAgent.__new__(BaseAgent)
-            agent.config = config_model
-            agent.agents_config = config_model.agents
+        with autotest.step("Создаём BaseAgent"):
+            agent = BaseAgent(config_model)
 
         with autotest.step("Вызываем system_prompt"):
             with pytest.raises(NotImplementedError):
@@ -72,10 +66,8 @@ class TestBaseAgent:
     @autotest.external_id("f7b5e6a8-c9d0-4e1f-2a3b-4c5d6e7f8a9b")
     @autotest.name("BaseAgent: run бросает NotImplementedError")
     async def test_f7b5e6a8_run_raises(self, config_model):
-        with autotest.step("Создаём BaseAgent через __new__"):
-            agent = BaseAgent.__new__(BaseAgent)
-            agent.config = config_model
-            agent.agents_config = config_model.agents
+        with autotest.step("Создаём BaseAgent"):
+            agent = BaseAgent(config_model)
 
         with autotest.step("Вызываем run"):
             with pytest.raises(NotImplementedError):
@@ -86,9 +78,7 @@ class TestBaseAgent:
     @autotest.name("BaseAgent: неподдерживаемый провайдер")
     def test_a8c6f7b9_unsupported_provider(self, config_model):
         with autotest.step("Подменяем provider на невалидный"):
-            agent = BaseAgent.__new__(BaseAgent)
-            agent.config = config_model
-            agent.agents_config = config_model.agents
+            agent = BaseAgent(config_model)
             original = agent.agents_config.provider
             agent.agents_config.provider = "unknown"
 

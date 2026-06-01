@@ -92,3 +92,56 @@ class Gns3SessionsApi:
                 f"{session_id}/actions",
                 params={"limit": limit},
             )
+
+    async def get_state(self, session_id: str) -> Response:
+        """
+        GET /sessions/{session_id}/state — снапшот состояния (nodes, links, ws_url).
+
+        :param session_id: UUID сессии.
+        :return: HTTP-ответ.
+        """
+        with autotest.step(f"GET /sessions/{session_id}/state"):
+            return await self.api_client.get(f"{session_id}/state")
+
+    async def post_node_action(self, session_id: str, node_id: str, action: str) -> Response:
+        """
+        POST /sessions/{session_id}/nodes/{node_id}/{action} — управление узлом.
+
+        :param session_id: UUID сессии.
+        :param node_id: ID узла.
+        :param action: start | stop | suspend | reload.
+        :return: HTTP-ответ.
+        """
+        with autotest.step(f"POST /sessions/{session_id}/nodes/{node_id}/{action}"):
+            return await self.api_client.post(
+                f"{session_id}/nodes/{node_id}/{action}",
+                json_data={},
+            )
+
+    async def post_bulk_node_action(self, session_id: str, action: str) -> Response:
+        """
+        POST /sessions/{session_id}/nodes/{action} — массовое действие над узлами.
+
+        :param session_id: UUID сессии.
+        :param action: start | stop | suspend | reload.
+        :return: HTTP-ответ.
+        """
+        with autotest.step(f"POST /sessions/{session_id}/nodes/{action}"):
+            return await self.api_client.post(
+                f"{session_id}/nodes/{action}",
+                json_data={},
+            )
+
+    async def get_activity(self, session_id: str, params: dict) -> Response:
+        """
+        GET /sessions/{session_id}/activity — поток событий сессии.
+
+        :param session_id: UUID сессии.
+        :param params: Query-параметры (limit, cursor).
+        :return: HTTP-ответ.
+        """
+        with autotest.step(f"GET /sessions/{session_id}/activity"):
+            return await self.api_client.get(
+                f"{session_id}/activity",
+                params=params,
+            )

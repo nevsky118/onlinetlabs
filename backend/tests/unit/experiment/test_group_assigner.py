@@ -8,22 +8,28 @@ pytestmark = [pytest.mark.unit]
 
 
 class TestGroupAssigner:
+    @pytest.mark.parametrize("forced_group", [
+        ExperimentGroup.GROUP_A,
+        ExperimentGroup.GROUP_B,
+    ])
     @autotest.num("600")
     @autotest.external_id("a1b2c3d4-e5f6-4789-abcd-600000000001")
-    @autotest.name("assign_group: возвращает group_a или group_b")
-    def test_a1b2c3d4_assign_group_valid(self):
+    @autotest.name("assign_group: возвращает обе валидные группы")
+    def test_a1b2c3d4_assign_group_returns_forced_choice(self, monkeypatch, forced_group):
         # Arrange
-        with autotest.step("Готовим количество назначений"):
-            iterations = 100
+        with autotest.step("Подменяем random.choice на детерминированную лямбду"):
+            monkeypatch.setattr(
+                "experiment.group_assigner.random.choice",
+                lambda choices: forced_group,
+            )
 
         # Act
-        with autotest.step("Назначаем группу 100 раз"):
-            groups = {assign_group() for _ in range(iterations)}
+        with autotest.step("Вызываем assign_group"):
+            result = assign_group()
 
         # Assert
-        with autotest.step("Обе группы встречаются"):
-            assert_true(ExperimentGroup.GROUP_A in groups, "group_a встречается")
-            assert_true(ExperimentGroup.GROUP_B in groups, "group_b встречается")
+        with autotest.step("Возвращается ожидаемая группа"):
+            assert_equal(result, forced_group, "assign_group вернул подменённое значение")
 
     @autotest.num("601")
     @autotest.external_id("b2c3d4e5-f6a7-4890-bcde-601000000002")

@@ -42,8 +42,17 @@ autotests/
 │
 └── api_tests/                           # Тесты
     ├── onlinetlabs_service/             # auth, courses, labs, progress, sessions
-    └── gns3_service/                    # sessions
+    ├── gns3_service/                    # sessions
+    └── e2e/                             # сквозные тесты (backend → gns3-service → MCP → LLM)
 ```
+
+### E2E-тесты
+
+`api_tests/e2e/` — сквозные тесты, проходящие через несколько сервисов
+(backend → gns3-service → MCP → LLM). Маркер класса — `@pytest.mark.e2e`
+(один маркер, без `api`/`smoke`/`crud`). Остальные правила README
+(декораторы `@autotest.num/external_id/name`, naming `test_<uuid8>_<snake>`,
+AAA с `autotest.step()`, очистка через `EntitiesRegistry`) применяются.
 
 ## Запуск
 

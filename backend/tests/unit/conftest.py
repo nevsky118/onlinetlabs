@@ -1,5 +1,26 @@
 # Общий conftest для unit-тестов.
 
+import os
+
+# Подменяем обязательные env vars до импорта модулей, которые их требуют
+# при загрузке (config.env_config_loader дёргается lazily из db.session и т.д.).
+_TEST_ENV_DEFAULTS = {
+    "DB_USER": "test",
+    "DB_PASSWORD": "test",
+    "DB_HOST": "localhost",
+    "DB_PORT": "5432",
+    "DB_NAME": "test",
+    "REDIS_URL": "redis://localhost:6379/0",
+    "ENVIRONMENT": "test",
+    "JWT_SECRET": "test-jwt-secret",
+    "LOG_LEVEL": "DEBUG",
+    "CRED_ENCRYPTION_KEY": "r1juy4ePJMqjrYbqXaCw7kDPq8Gwudckyv0wiIBIwfU=",
+    "INTERNAL_API_TOKEN": "test-internal-token",
+    "AGENTS_API_KEY": "sk-test",
+}
+for _key, _value in _TEST_ENV_DEFAULTS.items():
+    os.environ.setdefault(_key, _value)
+
 import pytest
 
 from config.config_model import (
@@ -7,10 +28,13 @@ from config.config_model import (
     ApiConfig,
     ConfigModel,
     DatabaseConfig,
+    GNS3Config,
     LearningAnalyticsConfig,
     LlmProvider,
     LogConfig,
+    MCPConfig,
     RedisConfig,
+    SecurityConfig,
 )
 from mcp_sdk.context import SessionContext
 from mcp_sdk.errors import ComponentNotFoundError
@@ -96,6 +120,16 @@ def config_model(agents_config):
         api=ApiConfig(environment="test", jwt_secret="test-secret"),
         log=LogConfig(log_level="DEBUG"),
         agents=agents_config,
+        gns3=GNS3Config(
+            service_url="http://gns3-service:8101",
+            public_url="http://localhost:3080",
+            internal_url="http://gns3-server:3080",
+        ),
+        mcp=MCPConfig(server_url="http://gns3-mcp:8100"),
+        security=SecurityConfig(
+            cred_encryption_key="r1juy4ePJMqjrYbqXaCw7kDPq8Gwudckyv0wiIBIwfU=",
+            internal_api_token="test-internal-token",
+        ),
     )
 
 

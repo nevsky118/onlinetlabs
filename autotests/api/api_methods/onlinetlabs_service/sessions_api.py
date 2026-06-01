@@ -78,3 +78,107 @@ class SessionsApi:
         """
         with autotest.step(f"DELETE /users/me/sessions/{session_id}"):
             return await self.api_client.delete(session_id)
+
+    async def get_credentials(self, session_id: str) -> Response:
+        """
+        GET /users/me/sessions/{session_id}/credentials — получение учётных данных GNS3.
+
+        :param session_id: Идентификатор сессии.
+        :return: HTTP-ответ.
+        """
+        with autotest.step(f"GET /users/me/sessions/{session_id}/credentials"):
+            return await self.api_client.get(f"{session_id}/credentials")
+
+    async def get_session(self, session_id: str) -> Response:
+        """
+        GET /users/me/sessions/{session_id} — получение сессии по id.
+
+        :param session_id: Идентификатор сессии.
+        :return: HTTP-ответ.
+        """
+        with autotest.step(f"GET /users/me/sessions/{session_id}"):
+            return await self.api_client.get(session_id)
+
+    async def post_stop(self, session_id: str) -> Response:
+        """
+        POST /users/me/sessions/{session_id}/stop — остановка лаборатории.
+
+        :param session_id: Идентификатор сессии.
+        :return: HTTP-ответ.
+        """
+        with autotest.step(f"POST /users/me/sessions/{session_id}/stop"):
+            return await self.api_client.post(f"{session_id}/stop", json_data={})
+
+    async def post_restart(self, session_id: str) -> Response:
+        """
+        POST /users/me/sessions/{session_id}/restart — перезапуск лаборатории.
+
+        :param session_id: Идентификатор сессии.
+        :return: HTTP-ответ.
+        """
+        with autotest.step(f"POST /users/me/sessions/{session_id}/restart"):
+            return await self.api_client.post(f"{session_id}/restart", json_data={})
+
+    async def post_reset(self, session_id: str) -> Response:
+        """
+        POST /users/me/sessions/{session_id}/reset — сброс лаборатории.
+
+        :param session_id: Идентификатор сессии.
+        :return: HTTP-ответ.
+        """
+        with autotest.step(f"POST /users/me/sessions/{session_id}/reset"):
+            return await self.api_client.post(f"{session_id}/reset", json_data={})
+
+    async def post_end(self, session_id: str) -> Response:
+        """
+        POST /users/me/sessions/{session_id}/end — завершение сессии.
+
+        :param session_id: Идентификатор сессии.
+        :return: HTTP-ответ.
+        """
+        with autotest.step(f"POST /users/me/sessions/{session_id}/end"):
+            return await self.api_client.post(f"{session_id}/end", json_data={})
+
+    async def get_session_state(self, session_id: str) -> Response:
+        """
+        GET /users/me/sessions/{session_id}/state — получение состояния сессии.
+
+        :param session_id: Идентификатор сессии.
+        :return: HTTP-ответ.
+        """
+        with autotest.step(f"GET /users/me/sessions/{session_id}/state"):
+            return await self.api_client.get(f"{session_id}/state")
+
+    async def post_node_action(self, session_id: str, node_id: str, action: str) -> Response:
+        """
+        POST /users/me/sessions/{session_id}/nodes/{node_id}/{action} — действие над узлом.
+
+        :param session_id: Идентификатор сессии.
+        :param node_id: Идентификатор узла.
+        :param action: Действие (start/stop/suspend/reset/reload).
+        :return: HTTP-ответ.
+        """
+        with autotest.step(f"POST /users/me/sessions/{session_id}/nodes/{node_id}/{action}"):
+            return await self.api_client.post(f"{session_id}/nodes/{node_id}/{action}", json_data={})
+
+    async def post_bulk_node_action(self, session_id: str, action: str) -> Response:
+        """
+        POST /users/me/sessions/{session_id}/nodes/{action} — bulk-действие над узлами.
+
+        :param session_id: Идентификатор сессии.
+        :param action: Действие (start/stop/suspend/reset/reload).
+        :return: HTTP-ответ.
+        """
+        with autotest.step(f"POST /users/me/sessions/{session_id}/nodes/{action}"):
+            return await self.api_client.post(f"{session_id}/nodes/{action}", json_data={})
+
+    async def get_session_activity(self, session_id: str, params: dict) -> Response:
+        """
+        GET /users/me/sessions/{session_id}/activity — лента событий сессии.
+
+        :param session_id: Идентификатор сессии.
+        :param params: Query-параметры (limit, cursor).
+        :return: HTTP-ответ.
+        """
+        with autotest.step(f"GET /users/me/sessions/{session_id}/activity"):
+            return await self.api_client.get(f"{session_id}/activity", params=params)

@@ -21,3 +21,34 @@ class Gns3SessionCreateData(DataAbstractionGenerator):
             "user_id": self.user_id,
             "lab_template_project_id": self.lab_template_project_id,
         }
+
+
+class NodeActionData(DataAbstractionGenerator):
+    """
+    Описывает действие над node (start/stop/suspend/reload).
+
+    :ivar action: Имя действия.
+    :ivar data: Пустой payload (action передаётся в URL).
+    """
+
+    def __init__(self, action: str):
+        self.action = action
+        self.data = {}
+
+
+class ActivityQueryData(DataAbstractionGenerator):
+    """
+    Query-параметры для GET /sessions/{id}/activity.
+
+    :ivar limit: Лимит событий.
+    :ivar cursor: Курсор пагинации.
+    :ivar data: Словарь query-параметров.
+    """
+
+    def __init__(self, limit: int = 50, cursor: str | None = None):
+        self.limit = limit
+        self.cursor = cursor
+        params: dict = {"limit": limit}
+        if cursor:
+            params["cursor"] = cursor
+        self.data = params

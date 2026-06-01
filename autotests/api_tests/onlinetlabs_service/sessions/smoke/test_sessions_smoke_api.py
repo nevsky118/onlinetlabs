@@ -51,6 +51,6 @@ class TestSessionsSmokeApi:
         with autotest.step("Проверяем статус код 201"):
             check_response_status(response, 201)
 
-        with autotest.step("Проверяем наличие id в ответе"):
+        with autotest.step("Проверяем наличие session_id в ответе"):
             body = response.json()
-            assert_is_not_none(body.get("id"), "id сессии не должен быть None")
+            assert_is_not_none(body.get("session_id"), "session_id сессии не должен быть None")

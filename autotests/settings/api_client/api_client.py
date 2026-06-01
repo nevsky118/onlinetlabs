@@ -124,6 +124,31 @@ class ApiClient:
             **kwargs,
         )
 
+    async def post_stream(
+        self,
+        path: str,
+        json_data: dict = None,
+        headers: dict = None,
+    ) -> list[str]:
+        """
+        Выполняет POST с чтением SSE-потока (text/event-stream).
+
+        :param path: Относительный путь до эндпоинта.
+        :param json_data: JSON-данные в теле запроса.
+        :param headers: Заголовки запроса.
+        :return: Список строк ответа (включая пустые строки-разделители SSE).
+        """
+        lines: list[str] = []
+        async with self.client.stream(
+            "POST",
+            self._url(path),
+            headers=self._get_headers(headers),
+            json=json_data,
+        ) as response:
+            async for line in response.aiter_lines():
+                lines.append(line)
+        return lines
+
     async def get(self, path: str, **kwargs) -> Response:
         """
         Выполняет GET-запрос.

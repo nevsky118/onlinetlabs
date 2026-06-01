@@ -1,26 +1,27 @@
 import pytest
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
+from mcp_sdk.testing.custom_assertions import assert_equal
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from experiment.group_assigner import ExperimentGroup
-from models import Base
 from models.lab import Lab
-from models.session import LearningSession
 from models.user import User
-from sessions import service
+from sessions.services.launch import assign_experiment_group_if_needed
 
 pytestmark = [pytest.mark.unit]
 
 
-class TestSessionService:
+class TestAssignExperimentGroupIfNeeded:
     @pytest.fixture(autouse=True)
     async def setup(self):
         self.engine = create_async_engine("sqlite+aiosqlite:///:memory:")
         self.session_factory = async_sessionmaker(self.engine, expire_on_commit=False)
+        # Создаём только нужные для теста таблицы. Полная metadata содержит
+        # JSONB-колонки с server_default '::jsonb', которые SQLite не понимает.
         async with self.engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
+            await conn.run_sync(User.__table__.create)
+            await conn.run_sync(Lab.__table__.create)
         yield
         await self.engine.dispose()
 
@@ -41,71 +42,52 @@ class TestSessionService:
             result = await db.execute(select(User).where(User.id == user_id))
             return result.scalar_one()
 
-    async def _get_learning_session(self, session_id: str) -> LearningSession:
-        async with self.session_factory() as db:
-            result = await db.execute(
-                select(LearningSession).where(LearningSession.id == session_id)
-            )
-            return result.scalar_one()
-
     @autotest.num("650")
     @autotest.external_id("7bc8fd0e-1aa4-4f46-a443-bcf1928a2ca8")
-    @autotest.name("create_session: назначает группу новому участнику")
-    async def test_7bc8fd0e_create_session_assigns_group(self, monkeypatch):
+    @autotest.name("assign_experiment_group_if_needed: новый user получает группу из DI")
+    async def test_7bc8fd0e_assigns_group_via_di(self):
         # Arrange
-        with autotest.step("Готовим пользователя без experiment_group в БД"):
+        with autotest.step("Готовим пользователя без experiment_group"):
             await self._create_user_and_lab("u1", experiment_group=None)
-            monkeypatch.setattr(
-                service,
-                "assign_group",
-                lambda: ExperimentGroup.GROUP_B,
-            )
 
         # Act
-        with autotest.step("Создаём учебную сессию"):
+        with autotest.step("Вызываем с фейк-assigner через DI"):
             async with self.session_factory() as db:
-                session = await service.create_session(db, "u1", "ospf-vlan-lab")
+                await assign_experiment_group_if_needed(
+                    db, "u1", group_assigner=lambda: ExperimentGroup.GROUP_B,
+                )
+                await db.commit()
 
         # Assert
-        with autotest.step("Проверяем сохранённую группу пользователя"):
+        with autotest.step("Группа из DI сохранена в БД"):
             user = await self._get_user("u1")
             assert_equal(user.experiment_group, "group_b", "experiment_group")
 
-        with autotest.step("Проверяем сохранённую учебную сессию"):
-            saved_session = await self._get_learning_session(session.id)
-            assert_equal(saved_session.user_id, "u1", "user_id")
-            assert_equal(saved_session.lab_slug, "ospf-vlan-lab", "lab_slug")
-            assert_equal(saved_session.status, "active", "status")
-
     @autotest.num("651")
     @autotest.external_id("a0d67028-622f-48b0-8380-73e4c86b06fb")
-    @autotest.name("create_session: сохраняет существующую группу")
-    async def test_a0d67028_create_session_keeps_existing_group(self, monkeypatch):
+    @autotest.name("assign_experiment_group_if_needed: существующая группа не перезаписывается")
+    async def test_a0d67028_keeps_existing_group(self):
         # Arrange
-        with autotest.step("Готовим пользователя с experiment_group в БД"):
+        with autotest.step("Готовим пользователя с experiment_group=group_a"):
             await self._create_user_and_lab("u1", experiment_group="group_a")
+
+        # Act
+        with autotest.step("Вызываем с фейк-assigner и считаем вызовы"):
             assign_called = False
 
-            def assign_forbidden():
+            def assign_forbidden() -> ExperimentGroup:
                 nonlocal assign_called
                 assign_called = True
                 return ExperimentGroup.GROUP_B
 
-            monkeypatch.setattr(service, "assign_group", assign_forbidden)
-
-        # Act
-        with autotest.step("Создаём учебную сессию"):
             async with self.session_factory() as db:
-                session = await service.create_session(db, "u1", "ospf-vlan-lab")
+                await assign_experiment_group_if_needed(
+                    db, "u1", group_assigner=assign_forbidden,
+                )
+                await db.commit()
 
         # Assert
-        with autotest.step("Проверяем сохранение группы"):
+        with autotest.step("Группа не меняется и assigner не вызван"):
             user = await self._get_user("u1")
             assert_equal(user.experiment_group, "group_a", "experiment_group")
-            assert_true(not assign_called, "assign_group не вызывается")
-
-        with autotest.step("Проверяем сохранение учебной сессии"):
-            saved_session = await self._get_learning_session(session.id)
-            assert_equal(saved_session.user_id, "u1", "user_id")
-            assert_equal(saved_session.lab_slug, "ospf-vlan-lab", "lab_slug")
-            assert_equal(saved_session.status, "active", "status")
+            assert not assign_called, "assigner не должен вызываться"

@@ -1,0 +1,9 @@
+Codes: K - kernel route, C - connected, S - static, R - RIP,
+       O - OSPF, I - IS-IS, B - BGP, E - EIGRP, N - NHRP,
+       T - Table, v - VNC, V - VNC-Direct, A - Babel, D - SHARP,
+       F - PBR, f - OpenFabric,
+       > - selected route, * - FIB route, q - queued, r - rejected, b - backup
+
+O>* 192.168.110.0/24 [110/20] via 10.0.12.2, eth1, weight 1, 00:02:11
+O>* 192.168.120.0/24 [110/30] via 10.0.13.2, eth2, weight 1, 00:01:50
+O   10.0.12.0/24 [110/10] is directly connected, eth1, weight 1, 00:02:14
