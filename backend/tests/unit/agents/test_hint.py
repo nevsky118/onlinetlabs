@@ -64,18 +64,20 @@ class TestHintTools:
     def test_5e6f7a8b_generate_hint(self):
         tools = HintTools()
 
-        with autotest.step("Уровень 1"):
+        with autotest.step("Уровень 1 без ошибки — непустая подсказка с шагом"):
             h1 = tools.generate_hint("step-1", 1, None)
-            assert_true("уровня 1" in h1, "содержит уровень 1")
+            assert_true(bool(h1.strip()), "непустая подсказка")
+            assert_true("step-1" in h1, "содержит идентификатор шага")
 
-        with autotest.step("Уровень 2 с ошибкой"):
+        with autotest.step("Уровень 2 с ошибкой — last_error попадает в текст"):
             h2 = tools.generate_hint("step-1", 2, "timeout")
-            assert_true("уровня 2" in h2, "содержит уровень 2")
-            assert_true("timeout" in h2, "содержит ошибку")
+            assert_true(bool(h2.strip()), "непустая подсказка")
+            assert_true("timeout" in h2, "last_error попадает в текст")
 
-        with autotest.step("Уровень 3"):
-            h3 = tools.generate_hint("step-1", 3, None)
-            assert_true("уровня 3" in h3, "содержит уровень 3")
+        with autotest.step("Уровень 3 с ошибкой — last_error попадает в текст"):
+            h3 = tools.generate_hint("step-1", 3, "timeout")
+            assert_true(bool(h3.strip()), "непустая подсказка")
+            assert_true("timeout" in h3, "last_error попадает в текст")
 
 
 # HintAgent

@@ -1,0 +1,5 @@
+
+Neighbor ID     Pri State           Up Time         Dead Time Address         Interface                        RXmtL RqstL DBsmL
+2.2.2.2           1 Full/DR         00:02:14            38.482s 10.0.12.2       eth1:10.0.12.1                       0     0     0
+3.3.3.3           1 Full/Backup     00:01:55            35.118s 10.0.13.2       eth2:10.0.13.1                       0     0     0
+4.4.4.4           1 2-Way/DROther   00:01:32            33.001s 10.0.14.2       eth3:10.0.14.1                       0     0     0

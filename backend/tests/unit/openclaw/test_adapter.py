@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
@@ -60,11 +62,13 @@ class TestOpenClawInterventionAdapter:
             assert_equal(result.metadata["model"], "openclaw", "model")
 
         with autotest.step("Проверяем нормализованный prompt"):
-            user_message = server.requests[0]["payload"].decode()
+            payload = json.loads(server.requests[0]["payload"])
+            user_message = payload["messages"][1]["content"]
             assert_true("step-2" in user_message, "prompt содержит step_slug")
             assert_true("trunk down" in user_message, "prompt содержит ошибку")
             assert_true(
-                "СОСТОЯНИЕ СРЕДЫ" in user_message, "prompt содержит AgentContext"
+                agent_context.to_prompt() in user_message,
+                "prompt содержит сериализованный AgentContext",
             )
 
     @autotest.num("633")

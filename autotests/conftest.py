@@ -194,6 +194,7 @@ async def _ensure_test_lab(config):
             "title": "Autotest Lab",
             "difficulty": "beginner",
             "environment_type": "none",
+            "gns3_template_project_id": config.gns3_lab_template_project_id,
         })
         if response.status_code == 201:
             created = True

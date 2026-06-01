@@ -11,3 +11,10 @@ encrypt:
 
 decrypt:
 	openssl enc -aes-256-cbc -d -salt -pbkdf2 -in $(file) -out $$(echo $(file) | sed 's/.aes$$//') -pass pass:$(CONFIG_PASSWORD)
+
+.PHONY: test-e2e
+test-e2e:
+	cd ../backend && PYTHONPATH=.:.. poetry run pytest \
+		--rootdir=../autotests \
+		--envFile ../autotests/settings/configuration/local.env \
+		../autotests/api_tests/e2e/learning_analytics/ -v

@@ -34,6 +34,8 @@ class EntitiesCleanup:
                             await self.entities_helper_api.delete_gns3_project(project_id=id_)
                         case EntitiesTypes.gns3_session.name:
                             await self.entities_helper_api.gns3_sessions_api.delete_session(session_id=id_)
+                        case EntitiesTypes.learning_session.name:
+                            await self.entities_helper_api.sessions_api.post_end(session_id=id_)
                         case EntitiesTypes.session.name:
                             await self.entities_helper_api.sessions_api.delete_session(session_id=id_)
                         case EntitiesTypes.user.name:

@@ -24,7 +24,7 @@ class TestGns3SessionsSmokeApi:
         self.gns3_sessions_api = Gns3SessionsApi(anon_client, config, base_url=config.gns3_base_url)
         self.gns3_sessions_helper = Gns3SessionsHelperApi(anon_client, config, base_url=config.gns3_base_url)
 
-    @autotest.num("1")
+    @autotest.num("101")
     @autotest.external_id("5fa35cd6-e3d3-4ed7-b586-a7cd16a31e04")
     @autotest.name("Smoke: POST /sessions — 201 создание GNS3 сессии")
     async def test_5fa35cd6_create_gns3_session(self):
@@ -51,7 +51,7 @@ class TestGns3SessionsSmokeApi:
                 ent_param=body["session_id"],
             )
 
-    @autotest.num("2")
+    @autotest.num("102")
     @autotest.external_id("d52b0d65-d724-4520-b50a-e67806a8561d")
     @autotest.name("Smoke: GET /sessions/{session_id} — 200 статус сессии")
     async def test_d52b0d65_get_gns3_session(self):
@@ -72,7 +72,7 @@ class TestGns3SessionsSmokeApi:
             body = response.json()
             assert_is_not_none(body.get("status"), "status не должен быть None")
 
-    @autotest.num("3")
+    @autotest.num("103")
     @autotest.external_id("42df50e2-3f08-4649-881b-95aa38536ac7")
     @autotest.name("Smoke: POST /sessions/{session_id}/reset-password — 200 сброс пароля")
     async def test_42df50e2_reset_gns3_password(self):
@@ -93,7 +93,7 @@ class TestGns3SessionsSmokeApi:
             body = response.json()
             assert_is_not_none(body.get("gns3_password"), "gns3_password не должен быть None")
 
-    @autotest.num("4")
+    @autotest.num("104")
     @autotest.external_id("43bece25-725e-4c93-9efb-a0b77342bd40")
     @autotest.name("Smoke: DELETE /sessions/{session_id} — 200 удаление сессии")
     async def test_43bece25_delete_gns3_session(self):
@@ -110,7 +110,7 @@ class TestGns3SessionsSmokeApi:
         with autotest.step("Проверяем статус код 200"):
             check_response_status(response, 200)
 
-    @autotest.num("5")
+    @autotest.num("105")
     @autotest.external_id("0463e32e-ceb5-49ee-9f0b-7500189c0940")
     @autotest.name("Smoke: GET /history/{session_id}/actions — 200 история действий")
     async def test_0463e32e_get_gns3_history(self):

@@ -21,6 +21,7 @@ class EntitiesDictTemplate:
             # Порядок важен: верхние сущности удаляются первыми.
             EntitiesTypes.gns3_project.name: [],
             EntitiesTypes.gns3_session.name: [],
+            EntitiesTypes.learning_session.name: [],
             EntitiesTypes.session.name: [],
             EntitiesTypes.user.name: [],
         }

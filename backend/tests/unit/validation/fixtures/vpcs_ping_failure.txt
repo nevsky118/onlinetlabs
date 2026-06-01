@@ -1,0 +1,5 @@
+PC1> ping 192.168.99.99
+
+host (192.168.99.99) not reachable
+
+PC1>

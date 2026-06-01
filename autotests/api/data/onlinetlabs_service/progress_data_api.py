@@ -1,20 +1,14 @@
-# Генераторы тестовых данных для progress.
+# Data-генераторы для progress-эндпоинтов.
 
 from autotests.settings.utils.data_generator_abstraction import DataAbstractionGenerator
-from autotests.settings.utils.utils import Randomizer
 
 
 class StepAttemptData(DataAbstractionGenerator):
-    """
-    Генерирует payload для попытки прохождения шага.
+    """Payload для POST .../steps/{step_slug}/attempt."""
 
-    :ivar answer: Ответ пользователя.
-    :ivar data: Словарь-payload для POST.
-    """
-
-    def __init__(self, answer: str = None):
-        self.answer = answer or Randomizer.random_string(20)
-
-        self.data = {
-            "answer": self.answer,
-        }
+    def __init__(self, result: str = "pass", score: float | None = 1.0,
+                 error_details: dict | None = None):
+        self.result = result
+        self.score = score
+        self.error_details = error_details
+        self.data = {"result": result, "score": score, "error_details": error_details}

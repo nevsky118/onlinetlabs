@@ -1,5 +1,6 @@
 # Хелпер для e2e тестов: GNS3 → MCP → Agent пайплайн.
 
+import os
 import sys
 import uuid
 
@@ -10,7 +11,12 @@ from autotests.settings.delete_entities.entities_registry import EntitiesRegistr
 from autotests.settings.delete_entities.entity_types import EntitiesTypes
 from autotests.settings.reports import autotest
 
-sys.path.insert(0, "backend")
+sys.path.insert(
+    0,
+    os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "backend")
+    ),
+)
 
 
 class GNS3MCPHelper:

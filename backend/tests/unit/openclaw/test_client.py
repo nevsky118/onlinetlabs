@@ -77,7 +77,7 @@ class TestOpenClawClient:
             assert_true(not result.success, "запрос неуспешен")
             assert_equal(result.error_code, "openclaw_invalid_response", "код ошибки")
 
-    @autotest.num("636")
+    @autotest.num("639")
     @autotest.external_id("61b2179e-c824-40dd-b11e-54524aa3e91c")
     @autotest.name("OpenClawClient: переиспользует TCP-соединение")
     async def test_61b2179e_reuses_tcp_connection(self):

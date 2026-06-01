@@ -12,5 +12,6 @@ class EntitiesTypes(Enum):
 
     gns3_project = "gns3_project"
     gns3_session = "gns3_session"
+    learning_session = "learning_session"
     session = "session"
     user = "user"

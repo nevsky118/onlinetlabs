@@ -4,24 +4,12 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 from agents.orchestrator.models import OrchestratorResponse
+from config.config_model import LearningAnalyticsConfig
 from learning_analytics.monitor import SessionMonitor
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 
 pytestmark = [pytest.mark.unit]
-
-
-class FakeLearningAnalyticsConfig:
-    def __init__(self, **kwargs):
-        self.poll_interval = kwargs.get("poll_interval", 1.0)
-        self.analysis_interval = kwargs.get("analysis_interval", 2.0)
-        self.cooldown_period = kwargs.get("cooldown_period", 60.0)
-        self.enabled = kwargs.get("enabled", True)
-        self.error_repeat_threshold = kwargs.get("error_repeat_threshold", 3)
-        self.idle_threshold = kwargs.get("idle_threshold", 3)
-        self.entropy_threshold = kwargs.get("entropy_threshold", 0.9)
-        self.error_freq_threshold = kwargs.get("error_freq_threshold", 2.0)
-        self.stuck_time_multiplier = kwargs.get("stuck_time_multiplier", 2.0)
 
 
 class CapturingSession:
@@ -53,7 +41,7 @@ class TestSessionMonitor:
                 mcp_client=MagicMock(),
                 db_factory=MagicMock(),
                 orchestrator=MagicMock(),
-                learning_analytics_config=FakeLearningAnalyticsConfig(),
+                learning_analytics_config=LearningAnalyticsConfig(),
             )
 
         # Assert
@@ -70,13 +58,16 @@ class TestSessionMonitor:
                 mcp_client=MagicMock(),
                 db_factory=MagicMock(),
                 orchestrator=MagicMock(),
-                learning_analytics_config=FakeLearningAnalyticsConfig(),
+                learning_analytics_config=LearningAnalyticsConfig(),
             )
 
         # Act
         # Assert
         with autotest.step("Проверяем разрешение"):
-            assert_true(monitor._should_intervene(), "первая интервенция разрешена")
+            assert_true(
+                monitor._should_trigger_intervention(),
+                "первая интервенция разрешена",
+            )
 
     @autotest.num("542")
     @autotest.external_id("9ad1e2f3-a4b5-4c6d-8e7f-9a0b1c2d3e4f")
@@ -88,7 +79,7 @@ class TestSessionMonitor:
                 mcp_client=MagicMock(),
                 db_factory=MagicMock(),
                 orchestrator=MagicMock(),
-                learning_analytics_config=FakeLearningAnalyticsConfig(
+                learning_analytics_config=LearningAnalyticsConfig(
                     cooldown_period=60.0
                 ),
             )
@@ -97,7 +88,9 @@ class TestSessionMonitor:
         # Act
         # Assert
         with autotest.step("Проверяем блокировку"):
-            assert_true(not monitor._should_intervene(), "cooldown блокирует")
+            assert_true(
+                not monitor._should_trigger_intervention(), "cooldown блокирует"
+            )
 
     @autotest.num("543")
     @autotest.external_id("ab0e2f3a-b5c6-4d7e-9f8a-0b1c2d3e4f5a")
@@ -109,7 +102,7 @@ class TestSessionMonitor:
                 mcp_client=MagicMock(),
                 db_factory=MagicMock(),
                 orchestrator=MagicMock(),
-                learning_analytics_config=FakeLearningAnalyticsConfig(enabled=False),
+                learning_analytics_config=LearningAnalyticsConfig(enabled=False),
             )
 
         # Act
@@ -129,7 +122,7 @@ class TestSessionMonitor:
                 mcp_client=MagicMock(),
                 db_factory=MagicMock(),
                 orchestrator=MagicMock(),
-                learning_analytics_config=FakeLearningAnalyticsConfig(enabled=True),
+                learning_analytics_config=LearningAnalyticsConfig(enabled=True),
             )
 
         # Act
@@ -148,7 +141,7 @@ class TestSessionMonitor:
                 mcp_client=MagicMock(),
                 db_factory=lambda: db_session,
                 orchestrator=MagicMock(),
-                learning_analytics_config=FakeLearningAnalyticsConfig(),
+                learning_analytics_config=LearningAnalyticsConfig(),
             )
             monitor._session_id = "s1"
             monitor._user_id = "u1"
@@ -174,7 +167,7 @@ class TestSessionMonitor:
 
         # Act
         with autotest.step("Логируем интервенцию"):
-            await monitor._log_intervention(analysis, response)
+            await monitor._log_intervention_in(db_session, analysis, response)
 
         # Assert
         with autotest.step("Проверяем metadata события"):

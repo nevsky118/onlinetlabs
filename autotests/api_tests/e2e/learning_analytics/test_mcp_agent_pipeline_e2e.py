@@ -1,15 +1,31 @@
 # E2E тест: GNS3 → MCP → AgentContext → YandexGPT.
 
+import os
 import sys
 
 import pytest
 
-sys.path.insert(0, "backend")
+sys.path.insert(
+    0,
+    os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "backend")
+    ),
+)
 
-from agents.hint.agent import HintAgent
-from agents.hint.models import HintInput
-from agents.tutor.agent import TutorAgent
-from agents.tutor.models import TutorInput
+try:
+    from agents.hint.agent import HintAgent
+    from agents.hint.models import HintInput
+    from agents.tutor.agent import TutorAgent
+    from agents.tutor.models import TutorInput
+    from config.env_config_loader import EnvConfigLoader
+    from learning_analytics.context import MCPContextBuilder
+except ModuleNotFoundError as exc:
+    pytest.skip(
+        f"backend-зависимости недоступны в окружении автотестов ({exc.name}); "
+        "e2e запускать в окружении с зависимостями backend",
+        allow_module_level=True,
+    )
+
 from autotests.api.api_helpers.e2e.gns3_mcp_helper import GNS3MCPHelper
 from autotests.api.data.e2e.learning_analytics_data import HintTestData, MCPContextTestData
 from autotests.settings.reports import autotest
@@ -18,8 +34,6 @@ from autotests.settings.utils.custom_assertions import (
     assert_greater_equal,
     assert_true,
 )
-from config.env_config_loader import EnvConfigLoader
-from learning_analytics.context import MCPContextBuilder
 
 
 @pytest.mark.e2e
