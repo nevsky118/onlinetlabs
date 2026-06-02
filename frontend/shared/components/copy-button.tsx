@@ -2,15 +2,20 @@
 
 import { CheckIcon, CopyIcon } from "lucide-react"
 import * as React from "react"
-import { type Event, trackEvent } from "@/lib/events"
+import { trackCustom } from "@/lib/analytics"
 import { cn } from "@/lib/utils"
 import { Button } from "@/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/ui/tooltip"
 
-export function copyToClipboardWithMeta(value: string, event?: Event) {
+type CopyEvent = {
+  name: string
+  properties?: Record<string, string | number | boolean | null>
+}
+
+export function copyToClipboardWithMeta(value: string, event?: CopyEvent) {
   navigator.clipboard.writeText(value)
   if (event) {
-    trackEvent(event)
+    trackCustom(event.name, event.properties ?? {})
   }
 }
 
@@ -23,7 +28,7 @@ export function CopyButton({
 }: React.ComponentProps<typeof Button> & {
   value: string
   src?: string
-  event?: Event["name"]
+  event?: string
 }) {
   const [hasCopied, setHasCopied] = React.useState(false)
 
@@ -50,9 +55,8 @@ export function CopyButton({
               event
                 ? {
                     name: event,
-                    properties: {
-                      code: value,
-                    },
+                    // код может быть большим, режем до 500 символов под лимит properties
+                    properties: { code: String(value).slice(0, 500) },
                   }
                 : undefined
             )
