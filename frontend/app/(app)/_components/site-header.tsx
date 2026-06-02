@@ -1,6 +1,4 @@
 import Link from "next/link"
-import { Suspense } from "react"
-import { getSession } from "@/auth/session"
 import { CommandMenu } from "@/components/command-menu"
 import { Icons } from "@/components/icons"
 import { MainNav } from "@/components/main-nav"
@@ -9,18 +7,35 @@ import { SiteConfig } from "@/components/site-config"
 import { ThemeSwitcher } from "@/components/theme-switcher"
 import { siteConfig } from "@/lib/config"
 import { course, labs } from "@/lib/source"
-import { SignInButton, UserMenu } from "@/modules/auth"
 import { Button } from "@/ui/button"
 import { Separator } from "@/ui/separator"
+import { AuthStatus } from "./auth-status"
 
 export function SiteHeader() {
   const coursesPageTree = course.pageTree
   const labsPageTree = labs.pageTree
+  const commandTree = {
+    ...coursesPageTree,
+    children: [
+      {
+        type: "folder" as const,
+        $id: "courses",
+        name: "Курсы",
+        children: coursesPageTree.children,
+      },
+      {
+        type: "folder" as const,
+        $id: "labs",
+        name: "Лабораторные",
+        children: labsPageTree.children,
+      },
+    ],
+  } as typeof coursesPageTree
 
   return (
     <header className="bg-background sticky top-0 z-50 w-full">
       <div className="container-wrapper 3xl:fixed:px-0 px-6">
-        <div className="3xl:fixed:container flex h-(--header-height) items-center gap-2 **:data-[slot=separator]:h-4!">
+        <div className="3xl:fixed:container flex h-(--header-height) items-center gap-2 **:data-[slot=separator]:h-4! **:data-[slot=separator]:self-center">
           <MobileNav
             tree={coursesPageTree}
             items={siteConfig.navItems}
@@ -41,10 +56,7 @@ export function SiteHeader() {
           <div className="ml-auto flex items-center gap-2 md:flex-1 md:justify-end">
             <div className="hidden w-full flex-1 md:flex md:w-auto md:flex-none">
               <CommandMenu
-                trees={[
-                  { tree: coursesPageTree, label: "Courses" },
-                  { tree: labsPageTree, label: "Labs" },
-                ]}
+                tree={commandTree}
                 navItems={siteConfig.navItems}
               />
             </div>
@@ -52,28 +64,10 @@ export function SiteHeader() {
             <SiteConfig className="3xl:flex hidden" />
             <Separator orientation="vertical" />
             <ThemeSwitcher />
-            <Suspense>
-              <AuthStatus />
-            </Suspense>
+            <AuthStatus />
           </div>
         </div>
       </div>
     </header>
-  )
-}
-
-async function AuthStatus() {
-  const session = await getSession()
-
-  if (!session) return <SignInButton />
-
-  return (
-    <UserMenu
-      user={{
-        name: session.user.name,
-        email: session.user.email,
-        image: session.user.image ?? null,
-      }}
-    />
   )
 }
