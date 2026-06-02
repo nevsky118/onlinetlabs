@@ -8,7 +8,7 @@ import * as React from "react"
 import type { FumaDocsPageTree } from "@/lib/source"
 import { copyToClipboardWithMeta } from "@/components/copy-button"
 import { useMutationObserver } from "@/hooks/use-mutation-observer"
-import { trackEvent } from "@/lib/events"
+import { trackCustom } from "@/lib/analytics"
 import { cn } from "@/lib/utils"
 import { Button } from "@/ui/button"
 import {
@@ -76,12 +76,9 @@ export function CommandMenu({
     // Only track if the query is different from the last tracked query and has content.
     if (trimmedQuery && trimmedQuery !== lastTrackedQueryRef.current) {
       lastTrackedQueryRef.current = trimmedQuery
-      trackEvent({
-        name: "search_query",
-        properties: {
-          query: trimmedQuery,
-          query_length: trimmedQuery.length,
-        },
+      trackCustom("search_query", {
+        query: trimmedQuery,
+        query_length: trimmedQuery.length,
       })
     }
   }, [])
@@ -129,7 +126,7 @@ export function CommandMenu({
 
   const commandFilter = React.useCallback(
     (value: string, searchValue: string, keywords?: string[]) => {
-      const extendValue = value + " " + (keywords?.join(" ") || "")
+      const extendValue = `${value} ${keywords?.join(" ") || ""}`
       if (extendValue.toLowerCase().includes(searchValue.toLowerCase())) {
         return 1
       }
@@ -138,21 +135,15 @@ export function CommandMenu({
     []
   )
 
-  const handlePageHighlight = React.useCallback(
-    (item: { url: string }) => {
-      setSelectedType("page")
-      setCopyPayload(item.url)
-    },
-    [setSelectedType, setCopyPayload]
-  )
+  const handlePageHighlight = React.useCallback((item: { url: string }) => {
+    setSelectedType("page")
+    setCopyPayload(item.url)
+  }, [])
 
-  const runCommand = React.useCallback(
-    (command: () => unknown) => {
-      setOpen(false)
-      command()
-    },
-    [setOpen]
-  )
+  const runCommand = React.useCallback((command: () => unknown) => {
+    setOpen(false)
+    command()
+  }, [])
 
   const navItemsSection = React.useMemo(() => {
     if (!navItems || navItems.length === 0) {

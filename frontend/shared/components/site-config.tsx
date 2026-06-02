@@ -3,7 +3,7 @@
 import { GalleryHorizontalIcon } from "lucide-react"
 import type * as React from "react"
 import { useLayout } from "@/hooks/use-layout"
-import { trackEvent } from "@/lib/events"
+import { trackCustom } from "@/lib/analytics"
 import { cn } from "@/lib/utils"
 import { Button } from "@/ui/button"
 
@@ -17,10 +17,7 @@ export function SiteConfig({ className }: React.ComponentProps<typeof Button>) {
       onClick={() => {
         const newLayout = layout === "fixed" ? "full" : "fixed"
         setLayout(newLayout)
-        trackEvent({
-          name: "set_layout",
-          properties: { layout: newLayout },
-        })
+        trackCustom("set_layout", { layout: newLayout })
       }}
       className={cn("size-8", className)}
       title="Переключить макет"
