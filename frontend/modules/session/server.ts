@@ -13,3 +13,4 @@ export async function loadSession(sessionId: string) {
 
 export { SessionView }
 export { fetchSession }
+export { SessionFetchError } from "./lib/errors"

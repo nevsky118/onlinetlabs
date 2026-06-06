@@ -18,6 +18,7 @@ import {
   launchSessionApi,
   nodeActionApi,
 } from "./api"
+import { SessionFetchError } from "./lib/errors"
 import { mapCredentials, mapLaunch, mapSession } from "./lib/mappings"
 
 export async function launchLab(labSlug: string): Promise<LaunchResult> {
@@ -56,7 +57,8 @@ export async function fetchCredentials(
   sessionId: string
 ): Promise<Credentials> {
   const res = await getCredentialsApi(sessionId)
-  if (!res.ok) throw new Error("Credentials fetch failed")
+  if (!res.ok)
+    throw new SessionFetchError(res.status, "Credentials fetch failed")
   return mapCredentials(await res.json())
 }
 
@@ -90,7 +92,8 @@ export async function fetchSessionState(
   sessionId: string
 ): Promise<FullSessionState> {
   const res = await getSessionStateApi(sessionId)
-  if (!res.ok) throw new Error(`fetchSessionState ${res.status}`)
+  if (!res.ok)
+    throw new SessionFetchError(res.status, `fetchSessionState ${res.status}`)
   return res.json()
 }
 

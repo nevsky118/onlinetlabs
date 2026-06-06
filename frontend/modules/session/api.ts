@@ -1,5 +1,6 @@
 import "server-only"
 
+import { SessionFetchError } from "./lib/errors"
 import { getBackendToken } from "@/auth/token"
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000"
@@ -9,7 +10,7 @@ async function authedFetch(
   init?: RequestInit
 ): Promise<Response> {
   const token = await getBackendToken()
-  if (!token) throw new Error("Unauthorized")
+  if (!token) throw new SessionFetchError(401, "Unauthorized")
   return fetch(`${BACKEND_URL}${path}`, {
     ...init,
     headers: {
