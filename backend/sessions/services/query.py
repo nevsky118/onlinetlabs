@@ -1,3 +1,6 @@
+from datetime import datetime, timezone
+
+import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -59,7 +62,18 @@ async def get_session_state(
     gns3_sid = (session.meta or {}).get("gns3_service_session_id")
     if not gns3_sid:
         return None
-    raw = await gns3_client.get_state(gns3_sid)
+    try:
+        raw = await gns3_client.get_state(gns3_sid)
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 404:
+            # GNS3-сессия исчезла (например, инфраструктуру GNS3 перезапустили).
+            # Платформенная сессия осиротела — помечаем завершённой, чтобы
+            # пользователь не застрял и следующий запуск поднял свежую среду.
+            session.status = "ended"
+            session.ended_at = datetime.now(timezone.utc)
+            await db.commit()
+            return None
+        raise
     lab = await db.get(Lab, session.lab_slug)
     enriched = {
         "session_id": str(session.id),
