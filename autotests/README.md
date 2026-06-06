@@ -16,8 +16,8 @@ autotests/
 │   ├── configuration/
 │   │   ├── config_model.py             # ConfigModel, Account (Pydantic)
 │   │   ├── env_config_loader.py        # Загрузка из .env / os.environ
-│   │   ├── local.env.aes              # Локальный конфиг (зашифрованный)
-│   │   └── ci.env.aes                 # CI конфиг (Docker-сети, зашифрованный)
+│   │   ├── .env.aes              # Локальный конфиг (зашифрованный)
+│   │   └── .env.ci.aes                 # CI конфиг (Docker-сети, зашифрованный)
 │   ├── constants/
 │   │   └── constants_settings.py       # Константы фреймворка (аккаунты и др.)
 │   ├── reports/
@@ -65,7 +65,7 @@ make test ENV=ci       # CI-окружение (Docker-сети)
 
 ```bash
 cd autotests
-PYTHONPATH=.. poetry run pytest --rootdir=. --envFile settings/configuration/local.env [опции] .
+PYTHONPATH=.. poetry run pytest --rootdir=. --envFile settings/configuration/.env [опции] .
 ```
 
 | Опция | Описание |
@@ -181,16 +181,16 @@ class TestAuthRegisterSmokeApi:
 
 ```bash
 # Расшифровать
-CONFIG_PASSWORD=... make decrypt file=settings/configuration/local.env.aes
+CONFIG_PASSWORD=... make decrypt file=settings/configuration/.env.aes
 
 # Зашифровать после изменений
-CONFIG_PASSWORD=... make encrypt file=settings/configuration/local.env
+CONFIG_PASSWORD=... make encrypt file=settings/configuration/.env
 ```
 
 | Файл | URLs | Назначение |
 |-|-|-|
-| `local.env.aes` | `localhost:8000`, `localhost:8101` | Локальная разработка + Docker (exposed ports) |
-| `ci.env.aes` | `backend:8000`, `gns3-service:8101` | CI внутри Docker-сети |
+| `.env.aes` | `localhost:8000`, `localhost:8101` | Локальная разработка + Docker (exposed ports) |
+| `.env.ci.aes` | `backend:8000`, `gns3-service:8101` | CI внутри Docker-сети |
 
 `GNS3_LAB_TEMPLATE_PROJECT_ID` заполняется автоматически conftest-фикстурой.
 

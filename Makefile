@@ -8,7 +8,7 @@ BE := backend
 FE := frontend
 SDK := mcp-sdk
 ENV ?= local
-ENV_FILE := $(ENV).env
+ENV_FILE := $(if $(filter local,$(ENV)),.env,.env.$(ENV))
 DC := docker compose -f deployment/local/compose.yaml
 OPENCLAW_PORT ?= 18789
 OPENCLAW_AUTH ?= none
@@ -126,11 +126,30 @@ check:
 	cd $(SDK) && poetry run ruff format --check src/ tests/
 
 # ── Encryption ───────────────────────────────────────────────
+# Все зашифрованные env-файлы стека (источник истины в репозитории).
+ENV_AES := backend/.env.aes frontend/.env.aes \
+	gns3/.env.aes gns3/gns3-mcp/.env.aes gns3/gns3-service/.env.aes \
+	autotests/settings/configuration/.env.aes autotests/settings/configuration/.env.ci.aes
+
 encrypt:
-	cd $(BE) && poetry run python -m config.encryption encrypt $(file)
+	cd $(BE) && poetry run python -m tools.env_cipher encrypt $(file)
 
 decrypt:
-	cd $(BE) && poetry run python -m config.encryption decrypt $(file)
+	cd $(BE) && poetry run python -m tools.env_cipher decrypt $(file)
+
+# Расшифровать все .aes в соответствующие .env одной командой. Нужен CONFIG_PASSWORD.
+decrypt-all:
+	@test -n "$(CONFIG_PASSWORD)" || { echo "CONFIG_PASSWORD не задан"; exit 1; }
+	@for f in $(ENV_AES); do \
+		openssl enc -aes-256-cbc -d -salt -pbkdf2 -in $$f -out $${f%.aes} -pass pass:$(CONFIG_PASSWORD) && echo "  decrypted $${f%.aes}"; \
+	done
+
+# Зашифровать все .env обратно в .aes после изменения значений. Нужен CONFIG_PASSWORD.
+encrypt-all:
+	@test -n "$(CONFIG_PASSWORD)" || { echo "CONFIG_PASSWORD не задан"; exit 1; }
+	@for f in $(ENV_AES); do \
+		openssl enc -aes-256-cbc -salt -pbkdf2 -in $${f%.aes} -out $$f -pass pass:$(CONFIG_PASSWORD) && echo "  encrypted $${f%.aes}"; \
+	done
 
 # ── Content Sync ─────────────────────────────────────────────
 sync-content:

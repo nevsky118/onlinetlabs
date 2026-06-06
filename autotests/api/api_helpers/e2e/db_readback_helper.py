@@ -6,7 +6,7 @@ from pathlib import Path
 from sqlalchemy import select
 
 # db/session.py читает settings на уровне модуля — нужно загрузить env до импорта.
-_LOCAL_ENV = Path(__file__).parents[4] / "backend" / "local.env"
+_LOCAL_ENV = Path(__file__).parents[4] / "backend" / ".env"
 if _LOCAL_ENV.exists():
     from dotenv import dotenv_values
     for _k, _v in dotenv_values(str(_LOCAL_ENV)).items():

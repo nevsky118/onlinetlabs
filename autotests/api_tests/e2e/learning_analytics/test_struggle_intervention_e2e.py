@@ -36,7 +36,7 @@ class TestStruggleInterventionE2E:
         from config.env_config_loader import EnvConfigLoader
         from learning_analytics.features import FeatureExtractor
 
-        backend_config = EnvConfigLoader().load("../backend/local.env")
+        backend_config = EnvConfigLoader().load("../backend/.env")
         la_cfg = LearningAnalyticsConfig()
         with autotest.step("FeatureExtractor по 3 одинаковым ошибкам"):
             features = FeatureExtractor(la_cfg).compute("s1", _error_events(3))
@@ -59,7 +59,7 @@ class TestStruggleInterventionE2E:
         from learning_analytics.features import FeatureExtractor
         from learning_analytics.monitor import SessionMonitor
 
-        backend_config = EnvConfigLoader().load("../backend/local.env")
+        backend_config = EnvConfigLoader().load("../backend/.env")
         la_cfg = LearningAnalyticsConfig()
         events = _error_events(3)
 
