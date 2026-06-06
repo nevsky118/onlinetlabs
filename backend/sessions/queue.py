@@ -15,7 +15,9 @@ from config import settings
 logger = logging.getLogger(__name__)
 
 LAB_CAPS = {
-    "ospf-vlan-lab-frr": 50,
+    "lan-static-ip": 100,
+    "dhcp-basics": 60,
+    "inter-subnet-routing": 40,
 }
 GLOBAL_CAP = 50
 ACTIVE_TTL = 7 * 24 * 3600  # 7d crash-safety on counters

@@ -1,0 +1,23 @@
+slug: lan-static-ip
+steps:
+  - id: pc-ips
+    title: PC настроены
+    checks:
+      - kind: vpcs.show_ip
+        node: PC1
+        expect:
+          ip: "192.168.1.11/24"
+          gateway: "0.0.0.0"
+      - kind: vpcs.show_ip
+        node: PC2
+        expect:
+          ip: "192.168.1.12/24"
+          gateway: "0.0.0.0"
+  - id: connectivity
+    title: Связность
+    checks:
+      - kind: vpcs.ping
+        from: PC1
+        to: "192.168.1.12"
+        expect:
+          received: ">=4"

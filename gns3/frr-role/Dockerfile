@@ -10,6 +10,8 @@ COPY configs/daemons /etc/frr/daemons
 COPY configs/frr.cfg.tmpl /etc/frr/role-configs/frr.cfg.tmpl
 COPY configs/R1.env /etc/frr/role-configs/R1.env
 COPY configs/R2.env /etc/frr/role-configs/R2.env
+COPY configs/gw.cfg.tmpl /etc/frr/role-configs/gw.cfg.tmpl
+COPY configs/GW.env /etc/frr/role-configs/GW.env
 COPY entrypoint.sh /usr/local/bin/onlinetlabs-entrypoint
 
 RUN chmod +x /usr/local/bin/onlinetlabs-entrypoint && \

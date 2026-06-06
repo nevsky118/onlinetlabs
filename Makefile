@@ -1,7 +1,7 @@
 .PHONY: help install serve dev up up-db down logs ps psql \
         migrate migrate-create migrate-rollback \
         test lint format check \
-        encrypt decrypt clean sync-content openclaw
+        encrypt decrypt clean sync-content seed-lab-templates openclaw
 
 # ── Paths ────────────────────────────────────────────────────
 BE := backend
@@ -143,7 +143,10 @@ decrypt:
 
 # ── Content Sync ─────────────────────────────────────────────
 sync-content:
-	PYTHONPATH=$(BE) poetry run python -m scripts.sync_content
+	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=.. poetry run python -m scripts.sync_content
+
+seed-lab-templates:
+	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=.. poetry run python -m scripts.seed_lab_templates
 
 # ── Cleanup ──────────────────────────────────────────────────
 clean:

@@ -77,6 +77,7 @@ def _bootstrap() -> None:
 
     register("vpcs.show_ip", vpcs.vpcs_show_ip)
     register("vpcs.ping", vpcs.vpcs_ping)
+    register("vpcs.ip_in_subnet", vpcs.vpcs_ip_in_subnet)
     register("frr.ospf_neighbor", frr.frr_ospf_neighbor)
     register("frr.route_in_table", frr.frr_route_in_table)
     register("cisco.ospf_neighbor", cisco.cisco_ospf_neighbor)

@@ -1,6 +1,7 @@
 """VPCS check-handlers — `vpcs.show_ip`, `vpcs.ping`."""
 
 import asyncio
+import ipaddress
 import re
 
 from validation.checks.registry import CheckContext, CheckResult
@@ -137,6 +138,31 @@ def _matches(actual: int | None, expected) -> bool:
     }[op]
 
 
+def _parse_show_ip(text: str) -> dict:
+    """Извлечь ip и gateway из вывода VPCS-команды `show ip`.
+
+    `IP/MASK` имеет вид `192.168.10.10/24` (с префиксом), `GATEWAY` — голый адрес.
+    Возвращает `{ip, gateway}` со строками; отсутствующее поле — пустая строка.
+    """
+    ip_match = _IP_RE.search(text)
+    gw_match = _GW_RE.search(text)
+    return {
+        "ip": ip_match.group(1) if ip_match else "",
+        "gateway": gw_match.group(1) if gw_match else "",
+    }
+
+
+def _ip_in_subnet(ip_with_mask: str, subnet: str) -> bool:
+    """True, если адрес из `IP/MASK` (или голый адрес) принадлежит CIDR `subnet`."""
+    addr = ip_with_mask.split("/", 1)[0].strip()
+    if not addr:
+        return False
+    try:
+        return ipaddress.ip_address(addr) in ipaddress.ip_network(subnet, strict=False)
+    except ValueError:
+        return False
+
+
 async def vpcs_ping(ctx: CheckContext, params: dict, expect: dict) -> CheckResult:
     """Отправить ICMP с VPCS-узла и проверить received / ttl.
 
@@ -203,4 +229,67 @@ async def vpcs_ping(ctx: CheckContext, params: dict, expect: dict) -> CheckResul
     if "ttl" in expect:
         ok = ok and _matches(parsed["ttl"], expect.get("ttl"))
 
+    return CheckResult(ok=ok, expected=expect, actual=actual, log=text)
+
+
+async def vpcs_ip_in_subnet(ctx: CheckContext, params: dict, expect: dict) -> CheckResult:
+    """Подключается telnet'ом к VPCS-консоли, парсит `show ip`,
+    проверяет принадлежность адреса подсети и совпадение шлюза.
+
+    params: `{node: PC1}`
+    expect: `{subnet: "192.168.10.0/24", gateway: "192.168.10.1"}`
+    """
+    node_name = params.get("node")
+    if not node_name:
+        return CheckResult(
+            ok=False,
+            expected=expect,
+            actual={"error": "param 'node' missing"},
+            log="",
+        )
+
+    port = ctx.node_console_port(node_name)
+    if not port:
+        return CheckResult(
+            ok=False,
+            expected=expect,
+            actual={"error": f"node {node_name!r} not found or no console port"},
+            log="",
+        )
+    host = ctx.node_console_host(node_name)
+
+    try:
+        async with asyncio.timeout(_CONNECT_TIMEOUT):
+            reader, writer = await asyncio.open_connection(host, port)
+    except (asyncio.TimeoutError, TimeoutError, OSError) as exc:
+        return CheckResult(
+            ok=False,
+            expected=expect,
+            actual={"error": f"connect failed: {exc}"},
+            log="",
+        )
+
+    try:
+        writer.write(b"\r\n")
+        await writer.drain()
+        await asyncio.sleep(0.3)
+        await _drain_until_prompt(reader, timeout=0.5)
+
+        writer.write(b"show ip\r\n")
+        await writer.drain()
+
+        raw = await _drain_until_prompt(reader, timeout=_READ_TIMEOUT)
+    finally:
+        try:
+            writer.close()
+            await writer.wait_closed()
+        except Exception:
+            pass
+
+    text = raw.decode("utf-8", errors="replace")
+    parsed = _parse_show_ip(text)
+    actual = {"ip": parsed["ip"], "gateway": parsed["gateway"]}
+
+    subnet = expect.get("subnet", "")
+    ok = _ip_in_subnet(parsed["ip"], subnet) and parsed["gateway"] == expect.get("gateway")
     return CheckResult(ok=ok, expected=expect, actual=actual, log=text)

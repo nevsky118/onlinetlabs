@@ -1,0 +1,6 @@
+# Рендерится envsubst в entrypoint по env роли. Только DHCP, без DNS.
+port=0
+interface=eth0
+bind-interfaces
+dhcp-range=$DHCP_RANGE,$DHCP_LEASE_TIME
+dhcp-option=option:router,$DHCP_GATEWAY

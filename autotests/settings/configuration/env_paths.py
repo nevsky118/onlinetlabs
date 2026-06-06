@@ -1,6 +1,4 @@
-# Единственное место с конвенцией расположения env-файлов стека.
-# Нигде в коде путь к env не хардкодим — резолвим через env_file(service).
-# Тир (local/development/ci) берётся из переменной окружения ENV.
+# Единое место с конвенцией путей env: не хардкодим, резолвим env_file(service); тир из ENV (local/development/ci).
 
 import os
 from pathlib import Path

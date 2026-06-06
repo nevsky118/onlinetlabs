@@ -1,6 +1,5 @@
 #!/bin/sh
-# PE-3: trap регистрируется ДО set -eu — иначе ранний сбой (frrinit.sh start)
-# завершит процесс без cleanup, оставив зомби-демонов.
+# PE-3: trap до set -eu — иначе ранний сбой убьёт процесс без cleanup (зомби-демоны).
 shutdown() {
     echo "Received signal — stopping FRR daemons..."
     if [ -n "${TAIL_PID:-}" ]; then
@@ -35,8 +34,7 @@ if [ "$ETH0_READY" -eq 0 ]; then
     exit 1
 fi
 
-# eth0 — плоский site-интерфейс (IP вешает FRR-конфиг). VLAN-сабинтерфейсы
-# больше не нужны: топология упрощена до PC1—R1═R2—PC3 без свитчей.
+# eth0/eth1 — плоские интерфейсы, IP вешает FRR-конфиг роли.
 ip link set eth0 up || true
 
 if ip link show eth1 >/dev/null 2>&1; then
@@ -64,16 +62,23 @@ if [ "$VTYSH_READY" -eq 0 ]; then
     exit 1
 fi
 
-# PE-1: рендер конфига роли из env-файла и шаблона (envsubst).
-# Статического fallback нет: конвенция одна (env+tmpl). Нет env → падаем явно,
-# а не молча поднимаем bare/битый роутер.
+# PE-1: рендер роли (env+tmpl). Статического fallback нет — нет env → падаем явно.
 ROLE_CONFIGS_DIR=/etc/frr/role-configs
 RENDERED_CONFIG=/etc/frr/role-configs/rendered.cfg
 CONFIG_PATH=""
 
 if [ -n "$ROLE" ]; then
     ENV_FILE="$ROLE_CONFIGS_DIR/$ROLE.env"
-    TMPL_FILE="$ROLE_CONFIGS_DIR/frr.cfg.tmpl"
+
+    # Шаблон и набор обязательных переменных зависят от роли:
+    # GW — плоский шлюз двух /24 без OSPF; остальные — OSPF site+backbone.
+    if [ "$ROLE" = "GW" ]; then
+        TMPL_FILE="$ROLE_CONFIGS_DIR/gw.cfg.tmpl"
+        REQUIRED_VARS="FRR_HOSTNAME FRR_ETH0_IP FRR_ETH1_IP"
+    else
+        TMPL_FILE="$ROLE_CONFIGS_DIR/frr.cfg.tmpl"
+        REQUIRED_VARS="FRR_HOSTNAME FRR_SITE_IP FRR_SITE_NET FRR_BACKBONE_IP FRR_BACKBONE_NET FRR_ROUTER_ID"
+    fi
 
     if [ ! -f "$ENV_FILE" ] || [ ! -f "$TMPL_FILE" ]; then
         echo "ERROR: для FRR_ROLE=$ROLE нет $ENV_FILE или $TMPL_FILE" >&2
@@ -86,7 +91,7 @@ if [ -n "$ROLE" ]; then
     set +a
 
     # Валидация обязательных переменных — иначе envsubst подставит пусто и конфиг будет битый.
-    for _v in FRR_HOSTNAME FRR_SITE_IP FRR_SITE_NET FRR_BACKBONE_IP FRR_BACKBONE_NET FRR_ROUTER_ID; do
+    for _v in $REQUIRED_VARS; do
         eval "_val=\${$_v:-}"
         if [ -z "$_val" ]; then
             echo "ERROR: $_v не задана в $ENV_FILE" >&2
@@ -94,7 +99,7 @@ if [ -n "$ROLE" ]; then
         fi
     done
 
-    echo "Rendering frr.cfg.tmpl из $ENV_FILE (role=$ROLE)"
+    echo "Rendering $(basename "$TMPL_FILE") из $ENV_FILE (role=$ROLE)"
     envsubst < "$TMPL_FILE" > "$RENDERED_CONFIG"
     echo "=== rendered config ==="
     cat "$RENDERED_CONFIG"

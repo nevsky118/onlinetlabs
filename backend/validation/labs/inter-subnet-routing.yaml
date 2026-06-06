@@ -1,0 +1,24 @@
+slug: inter-subnet-routing
+steps:
+  - id: pc-config
+    title: PC с адресами и шлюзами
+    checks:
+      - kind: vpcs.show_ip
+        node: PC1
+        expect:
+          ip: "192.168.1.11/24"
+          gateway: "192.168.1.1"
+      - kind: vpcs.show_ip
+        node: PC2
+        expect:
+          ip: "192.168.2.11/24"
+          gateway: "192.168.2.1"
+  - id: cross-subnet
+    title: Связность между подсетями
+    checks:
+      - kind: vpcs.ping
+        from: PC1
+        to: "192.168.2.11"
+        expect:
+          received: ">=4"
+          ttl: 63

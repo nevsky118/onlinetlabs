@@ -109,10 +109,11 @@ def add_raw_node(
 def add_vpcs_node(
     client: httpx.Client, project_id: str, *, name: str, x: int, y: int,
 ) -> str:
-    """Обёртка для VPCS с дефолтным символом компьютера."""
+    """Обёртка для VPCS с дефолтным символом GNS3 (affinity blue client) — как у нативного VPCS."""
     return add_raw_node(
         client, project_id,
-        name=name, node_type="vpcs", x=x, y=y, symbol=":/symbols/computer.svg",
+        name=name, node_type="vpcs", x=x, y=y,
+        symbol=":/symbols/affinity/square/blue/client.svg",
     )
 
 
