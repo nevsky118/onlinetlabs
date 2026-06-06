@@ -7,6 +7,7 @@ import pytest
 
 pytest.importorskip("pydantic_ai")  # Tier 2: бежит только в backend-venv, иначе module-level skip
 
+from autotests.settings.configuration.env_paths import env_file
 from autotests.settings.reports import autotest
 
 
@@ -36,7 +37,7 @@ class TestStruggleInterventionE2E:
         from config.env_config_loader import EnvConfigLoader
         from learning_analytics.features import FeatureExtractor
 
-        backend_config = EnvConfigLoader().load("../backend/.env")
+        backend_config = EnvConfigLoader().load(str(env_file("backend")))
         la_cfg = LearningAnalyticsConfig()
         with autotest.step("FeatureExtractor по 3 одинаковым ошибкам"):
             features = FeatureExtractor(la_cfg).compute("s1", _error_events(3))
@@ -59,7 +60,7 @@ class TestStruggleInterventionE2E:
         from learning_analytics.features import FeatureExtractor
         from learning_analytics.monitor import SessionMonitor
 
-        backend_config = EnvConfigLoader().load("../backend/.env")
+        backend_config = EnvConfigLoader().load(str(env_file("backend")))
         la_cfg = LearningAnalyticsConfig()
         events = _error_events(3)
 

@@ -17,18 +17,21 @@ ROLE="${FRR_ROLE:-}"
 
 # Setup VLAN sub-interfaces if eth0/eth1 are present (GNS3 ubridge attaches them)
 # Retry: ubridge may attach interfaces slightly after container start.
+ETH0_TIMEOUT="${FRR_IFACE_TIMEOUT:-10}"
 ETH0_READY=0
-for i in 1 2 3 4 5 6 7 8 9 10; do
+i=0
+while [ "$i" -lt "$ETH0_TIMEOUT" ]; do
     if ip link show eth0 >/dev/null 2>&1; then
         ETH0_READY=1
         break
     fi
-    echo "Waiting for eth0 (attempt $i)..."
+    i=$((i + 1))
+    echo "Waiting for eth0 ($i/$ETH0_TIMEOUT)..."
     sleep 1
 done
 
 if [ "$ETH0_READY" -eq 0 ]; then
-    echo "ERROR: eth0 not present after 10 attempts — ubridge attach failed; refusing to continue" >&2
+    echo "ERROR: eth0 not present after ${ETH0_TIMEOUT}s — ubridge attach failed; refusing to continue" >&2
     exit 1
 fi
 
@@ -44,22 +47,26 @@ fi
 /usr/lib/frr/frrinit.sh start
 
 # Wait for vtysh ready
+VTYSH_TIMEOUT="${FRR_VTYSH_TIMEOUT:-12}"
 VTYSH_READY=0
-for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+i=0
+while [ "$i" -lt "$VTYSH_TIMEOUT" ]; do
     if vtysh -c "show version" >/dev/null 2>&1; then
         VTYSH_READY=1
         break
     fi
+    i=$((i + 1))
     sleep 1
 done
 
 if [ "$VTYSH_READY" -eq 0 ]; then
-    echo "ERROR: vtysh not ready after 12 attempts — FRR daemons failed to come up" >&2
+    echo "ERROR: vtysh not ready after ${VTYSH_TIMEOUT}s — FRR daemons failed to come up" >&2
     exit 1
 fi
 
-# PE-1: рендер конфига роли.
-# Приоритет: env-файл + шаблон envsubst → fallback на статический .cfg (backward compat).
+# PE-1: рендер конфига роли из env-файла и шаблона (envsubst).
+# Статического fallback нет: конвенция одна (env+tmpl). Нет env → падаем явно,
+# а не молча поднимаем bare/битый роутер.
 ROLE_CONFIGS_DIR=/etc/frr/role-configs
 RENDERED_CONFIG=/etc/frr/role-configs/rendered.cfg
 CONFIG_PATH=""
@@ -67,27 +74,39 @@ CONFIG_PATH=""
 if [ -n "$ROLE" ]; then
     ENV_FILE="$ROLE_CONFIGS_DIR/$ROLE.env"
     TMPL_FILE="$ROLE_CONFIGS_DIR/frr.cfg.tmpl"
-    STATIC_CFG="$ROLE_CONFIGS_DIR/$ROLE.cfg"
 
-    if [ -f "$ENV_FILE" ] && [ -f "$TMPL_FILE" ]; then
-        echo "Rendering frr.cfg.tmpl с $ENV_FILE (role=$ROLE)"
-        # shellcheck disable=SC1090
-        set -a
-        . "$ENV_FILE"
-        set +a
-        envsubst < "$TMPL_FILE" > "$RENDERED_CONFIG"
-        CONFIG_PATH="$RENDERED_CONFIG"
-    elif [ -f "$STATIC_CFG" ]; then
-        echo "WARN: $ENV_FILE отсутствует — fallback на статический $STATIC_CFG"
-        CONFIG_PATH="$STATIC_CFG"
+    if [ ! -f "$ENV_FILE" ] || [ ! -f "$TMPL_FILE" ]; then
+        echo "ERROR: для FRR_ROLE=$ROLE нет $ENV_FILE или $TMPL_FILE" >&2
+        exit 1
     fi
+
+    # shellcheck disable=SC1090
+    set -a
+    . "$ENV_FILE"
+    set +a
+
+    # Валидация обязательных переменных — иначе envsubst подставит пусто и конфиг будет битый.
+    for _v in FRR_HOSTNAME FRR_SITE_IP FRR_SITE_NET FRR_BACKBONE_IP FRR_BACKBONE_NET FRR_ROUTER_ID; do
+        eval "_val=\${$_v:-}"
+        if [ -z "$_val" ]; then
+            echo "ERROR: $_v не задана в $ENV_FILE" >&2
+            exit 1
+        fi
+    done
+
+    echo "Rendering frr.cfg.tmpl из $ENV_FILE (role=$ROLE)"
+    envsubst < "$TMPL_FILE" > "$RENDERED_CONFIG"
+    echo "=== rendered config ==="
+    cat "$RENDERED_CONFIG"
+    echo "======================="
+    CONFIG_PATH="$RENDERED_CONFIG"
 fi
 
 if [ -n "$CONFIG_PATH" ] && [ -f "$CONFIG_PATH" ]; then
     echo "Applying $CONFIG_PATH (role=$ROLE)"
     vtysh -f "$CONFIG_PATH" || echo "vtysh -f returned non-zero (transient — link may still be coming up)"
 else
-    echo "FRR_ROLE not set ($ROLE); booting bare FRR"
+    echo "FRR_ROLE not set; booting bare FRR"
 fi
 
 # Keep container alive — PID-1 signal proxying: forward SIGTERM/INT to FRR

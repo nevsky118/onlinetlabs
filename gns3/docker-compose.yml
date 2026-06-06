@@ -144,6 +144,3 @@ services:
     depends_on:
       gns3-service:
         condition: service_healthy
-
-volumes:
-  gns3_data:

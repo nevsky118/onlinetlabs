@@ -8,7 +8,7 @@ BE := backend
 FE := frontend
 SDK := mcp-sdk
 ENV ?= local
-ENV_FILE := $(if $(filter local,$(ENV)),.env,.env.$(ENV))
+ENV_FILE := ../deployment/$(ENV)/backend.env
 DC := docker compose -f deployment/local/compose.yaml
 OPENCLAW_PORT ?= 18789
 OPENCLAW_AUTH ?= none
@@ -67,7 +67,7 @@ serve:
 	cd $(BE) && ENV_FILE=$(ENV_FILE) poetry run uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 dev:
-	cd $(FE) && pnpm dev
+	cd $(FE) && ln -sf ../deployment/$(ENV)/frontend.env .env && pnpm dev
 
 openclaw:
 	openclaw gateway run --auth $(OPENCLAW_AUTH) --bind $(OPENCLAW_BIND) --port $(OPENCLAW_PORT) --force --allow-unconfigured
@@ -126,29 +126,19 @@ check:
 	cd $(SDK) && poetry run ruff format --check src/ tests/
 
 # ── Encryption ───────────────────────────────────────────────
-# Все зашифрованные env-файлы стека (источник истины в репозитории).
-ENV_AES := backend/.env.aes frontend/.env.aes \
-	gns3/.env.aes gns3/gns3-mcp/.env.aes gns3/gns3-service/.env.aes \
-	autotests/settings/configuration/.env.aes autotests/settings/configuration/.env.ci.aes
-
+# Все env стека лежат в deployment/<tier>/ и шифруются двумя командами. Ключ в
+# CONFIG_PASSWORD (в CI берётся из секретов раннера, в репозитории его нет).
+# gns3 шифруется отдельно (gns3/Makefile) — это отдельный сервис.
 encrypt:
-	cd $(BE) && poetry run python -m tools.env_cipher encrypt $(file)
-
-decrypt:
-	cd $(BE) && poetry run python -m tools.env_cipher decrypt $(file)
-
-# Расшифровать все .aes в соответствующие .env одной командой. Нужен CONFIG_PASSWORD.
-decrypt-all:
 	@test -n "$(CONFIG_PASSWORD)" || { echo "CONFIG_PASSWORD не задан"; exit 1; }
-	@for f in $(ENV_AES); do \
-		openssl enc -aes-256-cbc -d -salt -pbkdf2 -in $$f -out $${f%.aes} -pass pass:$(CONFIG_PASSWORD) && echo "  decrypted $${f%.aes}"; \
+	@find deployment -name '*.env' | while read -r f; do \
+		openssl enc -aes-256-cbc -salt -pbkdf2 -in "$$f" -out "$$f.aes" -pass pass:$(CONFIG_PASSWORD) && echo "  encrypted $$f"; \
 	done
 
-# Зашифровать все .env обратно в .aes после изменения значений. Нужен CONFIG_PASSWORD.
-encrypt-all:
+decrypt:
 	@test -n "$(CONFIG_PASSWORD)" || { echo "CONFIG_PASSWORD не задан"; exit 1; }
-	@for f in $(ENV_AES); do \
-		openssl enc -aes-256-cbc -salt -pbkdf2 -in $${f%.aes} -out $$f -pass pass:$(CONFIG_PASSWORD) && echo "  encrypted $${f%.aes}"; \
+	@find deployment -name '*.env.aes' | while read -r f; do \
+		openssl enc -aes-256-cbc -d -salt -pbkdf2 -in "$$f" -out "$${f%.aes}" -pass pass:$(CONFIG_PASSWORD) && echo "  decrypted $${f%.aes}"; \
 	done
 
 # ── Content Sync ─────────────────────────────────────────────
