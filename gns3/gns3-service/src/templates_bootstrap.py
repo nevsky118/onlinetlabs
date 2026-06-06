@@ -1,8 +1,5 @@
-# Декларативная регистрация GNS3-шаблонов при старте gns3-service.
-#
-# Принцип: приложение само поднимает свои инфра-зависимости. Список шаблонов
-# описан тут как данные; ensure-loop идемпотентен — повторный запуск не дубль.
-# Падение одного шаблона не блокирует загрузку приложения (degraded mode).
+# Декларативная идемпотентная регистрация GNS3-шаблонов при старте gns3-service.
+# Список — это данные; падение одного шаблона не блокирует старт (degraded mode).
 
 import logging
 from typing import Any
@@ -75,14 +72,29 @@ FRR_ROUTER_TEMPLATE = {
     "category": "router",
     "symbol": ":/symbols/affinity/square/blue/router.svg",
     "default_name_format": "R{0}",
-    # Демоны включаются файлом /etc/frr/daemons в образе onlinetlabs/frr-role
-    # (см. gns3/frr-role/configs/daemons: zebra=yes, ospfd=yes, остальные =no).
-    # Переменные FRR_* читает только upstream-скрипт docker-start; раз daemons-файл
-    # уже задан в образе, env реально ничего не меняет. Оставляем только
-    # zebra+ospfd как документацию намерения — синхронно с daemons-файлом.
-    # Если нужно включить новый демон — правь configs/daemons и пересобирай образ.
+    # Демоны задаёт configs/daemons в образе; этот env — документация намерения, поведения не меняет.
     "environment": "FRR_ZEBRA=yes\nFRR_OSPFD=yes",
     "usage": "Console: telnet to console port, then run `vtysh` for FRR CLI",
+}
+
+DHCP_SERVER_TEMPLATE = {
+    "name": "DHCP Server",
+    "template_type": "docker",
+    "compute_id": "local",
+    "image": "onlinetlabs/dhcp-role:latest",
+    "adapters": 1,
+    "console_type": "none",
+    "memory": 64,
+    "category": "guest",
+    "symbol": ":/symbols/affinity/square/blue/server.svg",
+    "default_name_format": "DHCP{0}",
+    # dnsmasq читает эти env при старте; build-скрипт переопределяет под подсеть.
+    "environment": (
+        "DHCP_SUBNET=192.168.10.0/24\n"
+        "DHCP_RANGE=192.168.10.100,192.168.10.200\n"
+        "DHCP_GATEWAY=192.168.10.1"
+    ),
+    "usage": "Headless dnsmasq DHCP server. Configure via DHCP_* env vars.",
 }
 
 
@@ -108,6 +120,7 @@ LAB_TEMPLATES: list[dict[str, Any]] = [
     CISCO_IOSV_TEMPLATE,
     CISCO_IOSVL2_TEMPLATE,
     FRR_ROUTER_TEMPLATE,
+    DHCP_SERVER_TEMPLATE,
 ]
 
 

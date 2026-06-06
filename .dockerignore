@@ -1,4 +1,5 @@
-# Корневой контекст используется только backend-образом (нужны backend/ и mcp-sdk/).
+# Корневой контекст используется backend, gns3-service и gns3-mcp образами
+# (нужны backend/, mcp-sdk/, gns3/gns3-service/, gns3/gns3-mcp/).
 # Остальное в образ не идёт, чтобы не гонять 1.8G в docker daemon.
 **/node_modules
 **/__pycache__
@@ -9,6 +10,8 @@
 .git
 frontend
 gns3
+!gns3/gns3-service
+!gns3/gns3-mcp
 autotests
 deployment
 docs

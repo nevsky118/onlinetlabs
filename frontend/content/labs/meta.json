@@ -1,4 +1,4 @@
 {
   "root": true,
-  "pages": ["ospf-vlan-lab"]
+  "pages": ["lan-static-ip", "dhcp-basics", "inter-subnet-routing"]
 }

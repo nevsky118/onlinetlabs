@@ -1,0 +1,11 @@
+hostname $FRR_HOSTNAME
+!
+ip forwarding
+!
+interface eth0
+ ip address $FRR_ETH0_IP
+exit
+!
+interface eth1
+ ip address $FRR_ETH1_IP
+exit

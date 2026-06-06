@@ -57,11 +57,11 @@ async def sync_labs(db: AsyncSession) -> int:
     if not labs_dir.exists():
         return 0
     count = 0
-    for mdx_file in sorted(labs_dir.glob("*.mdx")):
+    for mdx_file in sorted(labs_dir.glob("*/index.mdx")):
         fm = parse_frontmatter(mdx_file)
         if fm is None:
             continue
-        slug = mdx_file.stem
+        slug = mdx_file.parent.name
         result = await db.execute(select(Lab).where(Lab.slug == slug))
         lab = result.scalar_one_or_none()
         if lab is None:

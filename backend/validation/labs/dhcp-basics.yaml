@@ -1,0 +1,23 @@
+slug: dhcp-basics
+steps:
+  - id: dhcp-lease
+    title: PC получили адрес по DHCP
+    checks:
+      - kind: vpcs.ip_in_subnet
+        node: PC1
+        expect:
+          subnet: "192.168.10.0/24"
+          gateway: "192.168.10.1"
+      - kind: vpcs.ip_in_subnet
+        node: PC2
+        expect:
+          subnet: "192.168.10.0/24"
+          gateway: "192.168.10.1"
+  - id: gateway
+    title: Шлюз доступен
+    checks:
+      - kind: vpcs.ping
+        from: PC1
+        to: "192.168.10.1"
+        expect:
+          received: ">=4"
