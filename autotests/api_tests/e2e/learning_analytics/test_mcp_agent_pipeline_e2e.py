@@ -5,6 +5,8 @@ import sys
 
 import pytest
 
+from autotests.settings.configuration.env_paths import env_file
+
 sys.path.insert(
     0,
     os.path.abspath(
@@ -115,7 +117,7 @@ class TestMCPAgentPipelineE2E:
             )
 
         with autotest.step("Вызываем TutorAgent"):
-            config = EnvConfigLoader().load("../backend/.env")
+            config = EnvConfigLoader().load(str(env_file("backend")))
             tutor = TutorAgent(config, mcp_client=mcp)
             result = await tutor.run(TutorInput(
                 session_id="e2e-test",
@@ -147,7 +149,7 @@ class TestMCPAgentPipelineE2E:
             )
 
         with autotest.step("Вызываем HintAgent"):
-            config = EnvConfigLoader().load("../backend/.env")
+            config = EnvConfigLoader().load(str(env_file("backend")))
             hint_agent = HintAgent(config)
             result = await hint_agent.run(HintInput(
                 session_id="e2e-test",

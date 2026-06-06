@@ -35,7 +35,7 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - ../../backend/.env
+      - ./backend.env
     environment:
       # Переопределяем хостовые localhost-адреса из .env на docker-сетевые.
       DB_HOST: db
@@ -79,7 +79,7 @@ services:
     ports:
       - "3000:3000"
     env_file:
-      - ../../frontend/.env
+      - ./frontend.env
     environment:
       # Серверные вызовы фронта к бэкенду идут по docker-сети, а не на localhost.
       BACKEND_URL: http://backend:8000

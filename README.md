@@ -112,7 +112,7 @@ flowchart LR
 | Next.js 16 | Python 3.11+ | Pydantic 2 | PostgreSQL 16 |
 | React 19 | FastAPI | FastMCP | Docker Compose |
 | TailwindCSS 4 | SQLAlchemy + Alembic | mcp SDK | Lefthook |
-| Fumadocs (MDX) | Pydantic Settings | | |
+| Fumadocs (MDX) | Pydantic Settings | | Redis |
 | Better Auth | Poetry | | |
 | shadcn/ui | | | |
 
@@ -135,14 +135,11 @@ make install
 ```bash
 export CONFIG_PASSWORD=...
 
-# backend (путь относительно backend/)
-make decrypt file=.env.aes
+# весь стек — все env лежат в deployment/<tier>/ (local, development, ci)
+make decrypt
 
-# gns3 (оба сервиса)
-cd gns3 && make decrypt file=gns3-service/.env.aes && make decrypt file=gns3-mcp/.env.aes && cd ..
-
-# autotests
-cd autotests && make decrypt file=settings/configuration/.env.aes && cd ..
+# gns3 — отдельный сервис, шифруется отдельно
+cd gns3 && make decrypt file=.env.aes && make decrypt file=gns3-service/.env.aes && make decrypt file=gns3-mcp/.env.aes && cd ..
 ```
 
 Запуск:
@@ -162,14 +159,14 @@ make dev      # Frontend (hot-reload)
 
 Два независимых стека:
 
-**Core** (`deployment/local/compose.yaml`) — backend + DB + Redis:
+**Core** (`deployment/local/compose.yaml`) — frontend + backend + DB + Redis + pgAdmin:
 ```bash
 make up       # всё (с --wait для healthcheck)
 make up-db    # только БД + Redis
 make down     # остановить
 ```
 
-**GNS3 Plugin** (`gns3/docker-compose.yml`) — gns3-server + postgres + gns3-service + gns3-mcp:
+**GNS3 Plugin** (`gns3/docker-compose.yml`) — gns3-server + postgres + pgbouncer + gns3-service + gns3-mcp:
 ```bash
 cd gns3
 make up       # весь стек
@@ -184,7 +181,7 @@ make down     # остановить
 |-|-|
 | `make install` | Зависимости (poetry + pnpm) |
 | `make serve` | Backend (uvicorn, `ENV=local` по умолчанию) |
-| `make serve ENV=prod` | Backend с `prod.env` |
+| `make serve ENV=development` | Backend с development-конфигом |
 | `make dev` | Frontend (next dev) |
 | `make up` / `make down` | Docker core-стек |
 | `make up-db` | Только БД + Redis |
@@ -196,8 +193,7 @@ make down     # остановить
 | `make test` | Все тесты (backend + SDK) |
 | `make lint` / `make format` | Линтер / форматирование |
 | `make check` | Все проверки (CI) |
-| `make encrypt file=...` | Шифрование env-файла |
-| `make decrypt file=...` | Расшифровка env-файла |
+| `make encrypt` / `make decrypt` | Шифрование / расшифровка всех env в deployment/ |
 | `make sync-content` | MDX → БД |
 | `make clean` | Очистить кэш |
 
@@ -206,29 +202,25 @@ make down     # остановить
 ```
 onlinetlabs/
 ├── frontend/                    # Next.js 16
-│   ├── app/
+│   ├── app/                     # роуты (тонкие шеллы)
 │   │   ├── (auth)/              # sign-in, sign-up
-│   │   ├── (app)/               # courses, labs
-│   │   └── api/auth/            # Better Auth route
+│   │   ├── (app)/               # courses, labs, session
+│   │   └── api/                 # Better Auth + BFF route handlers
+│   ├── modules/                 # фичи (Cal.com-style): auth, session
+│   ├── auth/                    # Better Auth конфиг, guards, session, JWT
 │   ├── content/                 # MDX (Fumadocs)
-│   ├── shared/
-│   │   ├── auth/                # Better Auth, JWT, guards
-│   │   ├── components/          # навигация, темы
-│   │   ├── ui/                  # shadcn/ui
-│   │   ├── hooks/
-│   │   └── lib/                 # API-клиент
-│   ├── entities/user/           # схемы, меню
-│   ├── features/auth/           # формы логина
-│   └── widgets/                 # header, footer
+│   ├── shared/                  # ui (shadcn), components, hooks, lib
+│   └── styles/
 │
 ├── backend/                     # FastAPI
 │   ├── auth/                    # JWT, OAuth, регистрация/удаление
-│   ├── config/                  # Settings, шифрование
+│   ├── config/                  # Settings, загрузка env
 │   ├── courses/                 # CRUD
 │   ├── labs/                    # CRUD (+ создание/удаление для тестов)
 │   ├── progress/                # Прогресс студента
 │   ├── sessions/                # Сессии обучения
-│   ├── models/                  # ORM (10 таблиц, вкл. behavioral_events)
+│   ├── chat/                    # История диалога тьютора
+│   ├── models/                  # ORM (вкл. behavioral_events, platform_events)
 │   ├── agents/                  # Мультиагентная система
 │   │   ├── orchestrator/        # Маршрутизация + проактивные интервенции
 │   │   ├── tutor/               # Ответы на вопросы
@@ -248,7 +240,7 @@ onlinetlabs/
 ├── gns3/                        # GNS3 плагин (отдельный стек)
 │   ├── gns3-service/            # FastAPI — сессии, проекты, история
 │   ├── gns3-mcp/                # MCP-сервер для агентов
-│   ├── docker-compose.yml       # GNS3 + postgres + service + mcp
+│   ├── docker-compose.yml       # GNS3 + postgres + pgbouncer + service + mcp
 │   └── Makefile
 │
 ├── mcp-sdk/                     # MCP SDK
@@ -256,12 +248,13 @@ onlinetlabs/
 ├── autotests/                   # API-автотесты (httpx + pytest)
 │   ├── conftest.py              # Фикстуры: users, tokens, lab, GNS3 project
 │   ├── api/                     # API methods, helpers, data
-│   ├── api_tests/               # smoke + crud тесты
+│   ├── api_tests/               # smoke / crud / e2e тесты
 │   └── Makefile                 # make test / make test ENV=ci
 │
-├── deployment/local/            # Docker Compose (core)
-│   ├── compose.yaml             # db + pgadmin + backend + redis
-│   └── pgadmin/
+├── deployment/                  # окружение по тирам (env + compose)
+│   ├── local/                   # compose.yaml (core-стек) + *.env.aes
+│   ├── development/             # *.env.aes
+│   └── ci/                      # autotests.env.aes
 │
 ├── Makefile
 └── lefthook.yml
@@ -298,7 +291,7 @@ server = OnlinetlabsMCPServer(
 
 ## Автотесты
 
-20 API-тестов, все сервисы. Автоматическая настройка тестовых данных и очистка.
+API-тесты (smoke / crud / e2e) на все сервисы. Автоматическая настройка тестовых данных и очистка.
 
 ```bash
 cd autotests
@@ -322,15 +315,15 @@ Conftest автоматически:
 | `*.env` | Расшифрованный (gitignored, не коммитится) |
 
 ```bash
-# Расшифровка
-CONFIG_PASSWORD=... make decrypt file=backend/.env.aes
+# Расшифровать все env (deployment/<tier>/*.env)
+CONFIG_PASSWORD=... make decrypt
 
 # Зашифровать после изменений
-CONFIG_PASSWORD=... make encrypt file=backend/.env
+CONFIG_PASSWORD=... make encrypt
 ```
 
-Все Makefile поддерживают `ENV=` для выбора окружения:
+Окружения — тиры в `deployment/<tier>/` (`local`, `development`, `ci`); выбор через `ENV=`:
 ```bash
-make serve              # ENV=local (по умолчанию)
-make serve ENV=prod     # prod-окружение
+make serve                  # ENV=local → deployment/local/backend.env
+make serve ENV=development  # deployment/development/backend.env
 ```

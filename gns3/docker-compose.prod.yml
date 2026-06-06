@@ -12,8 +12,8 @@
 #   - HEALTHCHECK already in base file is inherited; this override does not need to redefine.
 #
 # NOTE: this file does not redefine the production KVM/cap_add additions for gns3-server —
-# those live in docker-compose.production.yml and must be layered separately on x86_64 Linux:
-#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.production.yml ...
+# those live in docker-compose.kvm.yml and must be layered separately on x86_64 Linux:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.kvm.yml ...
 
 services:
   gns3-server:

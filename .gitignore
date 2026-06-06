@@ -33,8 +33,8 @@ next-env.d.ts
 .DS_Store
 *.pem
 .env*
+deployment/**/*.env
 !*.env.aes
-!*.env.*.aes
 
 # pgbouncer SCRAM hashes — credential material, regenerate per deploy
 gns3/pgbouncer/userlist.txt

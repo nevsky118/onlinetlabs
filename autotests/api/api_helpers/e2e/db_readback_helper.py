@@ -1,15 +1,16 @@
 # Tier 2: чтение записанных строк напрямую из БД (backend-venv).
 
 import os
-from pathlib import Path
 
 from sqlalchemy import select
 
+from autotests.settings.configuration.env_paths import env_file
+
 # db/session.py читает settings на уровне модуля — нужно загрузить env до импорта.
-_LOCAL_ENV = Path(__file__).parents[4] / "backend" / ".env"
-if _LOCAL_ENV.exists():
+_BACKEND_ENV = env_file("backend")
+if _BACKEND_ENV.exists():
     from dotenv import dotenv_values
-    for _k, _v in dotenv_values(str(_LOCAL_ENV)).items():
+    for _k, _v in dotenv_values(str(_BACKEND_ENV)).items():
         os.environ.setdefault(_k, _v)
 
 
