@@ -37,6 +37,10 @@ export async function getSessionApi(sessionId: string): Promise<Response> {
   return authedFetch(`/users/me/sessions/${sessionId}`)
 }
 
+export async function getSessionListApi(): Promise<Response> {
+  return authedFetch("/users/me/sessions")
+}
+
 export async function controlSessionApi(
   sessionId: string,
   action: "stop" | "restart" | "reset" | "end"

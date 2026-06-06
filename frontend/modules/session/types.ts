@@ -32,6 +32,8 @@ export type Session = {
   labSlug: string
   labTitle: string | null
   status: SessionStatus
+  startedAt: string
+  endedAt: string | null
 }
 
 export type NodeStatus = "started" | "stopped" | "suspended"

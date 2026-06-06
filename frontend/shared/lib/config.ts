@@ -15,6 +15,10 @@ export const siteConfig = {
       href: "/labs",
       label: "Лабы",
     },
+    {
+      href: "/sessions",
+      label: "Мои лабы",
+    },
   ],
   author: "",
 }

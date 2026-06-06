@@ -4,10 +4,7 @@ import { authClient } from "@/auth/client"
 import { SignInButton, UserMenu } from "@/modules/auth"
 import { Skeleton } from "@/ui/skeleton"
 
-// Статус входа читаем на клиенте через useSession. Страницы каталога и лаб
-// рендерятся как force-static, поэтому серверный getSession на них всегда
-// возвращает пусто и шапка показывала бы Войти даже залогиненному. Клиентский
-// useSession читает сессию в браузере и работает одинаково на любой странице.
+// Статус входа читаем на клиенте: каталог/лабы — force-static, серверный getSession там пуст (показал бы Войти залогиненному).
 export function AuthStatus() {
   const { data, isPending } = authClient.useSession()
 

@@ -49,6 +49,8 @@ type SessionWire = {
   lab_slug: string
   lab_title?: string | null
   status: string
+  started_at: string
+  ended_at: string | null
 }
 
 export function mapSession(w: SessionWire): Session {
@@ -57,5 +59,11 @@ export function mapSession(w: SessionWire): Session {
     labSlug: w.lab_slug,
     labTitle: w.lab_title ?? null,
     status: w.status as SessionStatus,
+    startedAt: w.started_at,
+    endedAt: w.ended_at ?? null,
   }
+}
+
+export function mapSessionList(arr: SessionWire[]): Session[] {
+  return arr.map(mapSession)
 }

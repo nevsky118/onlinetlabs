@@ -3,6 +3,7 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.dependencies import get_current_user
@@ -29,14 +30,20 @@ async def list_sessions(
 ):
     """Возвращает список всех учебных сессий текущего пользователя."""
     sessions = await get_user_sessions(db, current_user["id"])
+    slugs = {s.lab_slug for s in sessions}
+    titles: dict[str, str] = {}
+    if slugs:
+        rows = await db.execute(select(Lab.slug, Lab.title).where(Lab.slug.in_(slugs)))
+        titles = dict(rows.all())
     return [
         LearningSessionResponse(
             id=s.id,
             lab_slug=s.lab_slug,
+            lab_title=titles.get(s.lab_slug),
             status=s.status,
             started_at=s.started_at,
             ended_at=s.ended_at,
-            meta=s.meta,
+            meta=None,  # зашифрованные креды не отдаём в списке
         )
         for s in sessions
     ]

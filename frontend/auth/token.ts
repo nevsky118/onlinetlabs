@@ -10,9 +10,7 @@ export async function getBackendToken(): Promise<string | null> {
     if (!session?.user?.id) return null
     return await backendExchangeToken(session.user.id, session.user.email)
   } catch {
-    // Нет сессии (getSession бросает Unauthorized), либо обмен токена не удался —
-    // отдаём null. Вызывающий код получит 401 от бэкенда и обработает штатно
-    // (страница сессии покажет not-found, а не 500).
+    // Нет сессии / обмен не удался → null; вызывающий получит 401 и покажет not-found, а не 500.
     return null
   }
 }

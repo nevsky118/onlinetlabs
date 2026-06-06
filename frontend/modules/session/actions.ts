@@ -14,12 +14,18 @@ import {
   getCredentialsApi,
   getQueueStatusApi,
   getSessionApi,
+  getSessionListApi,
   getSessionStateApi,
   launchSessionApi,
   nodeActionApi,
 } from "./api"
 import { SessionFetchError } from "./lib/errors"
-import { mapCredentials, mapLaunch, mapSession } from "./lib/mappings"
+import {
+  mapCredentials,
+  mapLaunch,
+  mapSession,
+  mapSessionList,
+} from "./lib/mappings"
 
 export async function launchLab(labSlug: string): Promise<LaunchResult> {
   const res = await launchSessionApi(labSlug)
@@ -112,6 +118,12 @@ export async function bulkNodeAction(
 ): Promise<void> {
   const res = await bulkNodeActionApi(sessionId, action)
   if (!res.ok) throw new Error(`bulkNodeAction ${res.status}`)
+}
+
+export async function fetchSessionsList(): Promise<Session[]> {
+  const res = await getSessionListApi()
+  if (!res.ok) throw new SessionFetchError(res.status, "Sessions fetch failed")
+  return mapSessionList(await res.json())
 }
 
 export async function fetchActivity(
