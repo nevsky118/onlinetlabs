@@ -8,7 +8,7 @@
 MCP_DIR = gns3-mcp
 SERVICE_DIR = gns3-service
 ENV ?= local
-ENV_FILE := $(ENV).env
+ENV_FILE := $(if $(filter local,$(ENV)),.env,.env.$(ENV))
 
 DC = docker compose
 

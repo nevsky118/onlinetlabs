@@ -115,7 +115,7 @@ class TestMCPAgentPipelineE2E:
             )
 
         with autotest.step("Вызываем TutorAgent"):
-            config = EnvConfigLoader().load("../backend/local.env")
+            config = EnvConfigLoader().load("../backend/.env")
             tutor = TutorAgent(config, mcp_client=mcp)
             result = await tutor.run(TutorInput(
                 session_id="e2e-test",
@@ -147,7 +147,7 @@ class TestMCPAgentPipelineE2E:
             )
 
         with autotest.step("Вызываем HintAgent"):
-            config = EnvConfigLoader().load("../backend/local.env")
+            config = EnvConfigLoader().load("../backend/.env")
             hint_agent = HintAgent(config)
             result = await hint_agent.run(HintInput(
                 session_id="e2e-test",

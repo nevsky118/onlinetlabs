@@ -136,13 +136,13 @@ make install
 export CONFIG_PASSWORD=...
 
 # backend (путь относительно backend/)
-make decrypt file=local.env.aes
+make decrypt file=.env.aes
 
 # gns3 (оба сервиса)
-cd gns3 && make decrypt file=gns3-service/local.env.aes && make decrypt file=gns3-mcp/local.env.aes && cd ..
+cd gns3 && make decrypt file=gns3-service/.env.aes && make decrypt file=gns3-mcp/.env.aes && cd ..
 
 # autotests
-cd autotests && make decrypt file=settings/configuration/local.env.aes && cd ..
+cd autotests && make decrypt file=settings/configuration/.env.aes && cd ..
 ```
 
 Запуск:
@@ -323,10 +323,10 @@ Conftest автоматически:
 
 ```bash
 # Расшифровка
-CONFIG_PASSWORD=... make decrypt file=backend/local.env.aes
+CONFIG_PASSWORD=... make decrypt file=backend/.env.aes
 
 # Зашифровать после изменений
-CONFIG_PASSWORD=... make encrypt file=backend/local.env
+CONFIG_PASSWORD=... make encrypt file=backend/.env
 ```
 
 Все Makefile поддерживают `ENV=` для выбора окружения:

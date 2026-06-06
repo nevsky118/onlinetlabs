@@ -1,5 +1,5 @@
 ENV ?= local
-ENV_FILE := settings/configuration/$(ENV).env
+ENV_FILE := settings/configuration/$(if $(filter local,$(ENV)),.env,.env.$(ENV))
 
 .PHONY: test encrypt decrypt
 
@@ -16,5 +16,5 @@ decrypt:
 test-e2e:
 	cd ../backend && PYTHONPATH=.:.. poetry run pytest \
 		--rootdir=../autotests \
-		--envFile ../autotests/settings/configuration/local.env \
+		--envFile ../autotests/settings/configuration/.env \
 		../autotests/api_tests/e2e/learning_analytics/ -v
