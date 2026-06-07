@@ -1,6 +1,7 @@
 import "server-only"
 
-import { SessionFetchError } from "./lib/errors"
+import { headers } from "next/headers"
+import { redirect } from "next/navigation"
 import { getBackendToken } from "@/auth/token"
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000"
@@ -10,7 +11,16 @@ async function authedFetch(
   init?: RequestInit
 ): Promise<Response> {
   const token = await getBackendToken()
-  if (!token) throw new SessionFetchError(401, "Unauthorized")
+  if (!token) {
+    // Нет backend-токена: либо нет сессии, либо она осиротела (например, после
+    // сброса БД остался валидный cookie без пользователя). Ведём на вход вместо
+    // непрозрачной 500 в RSC/Server Action.
+    const referer = (await headers()).get("referer")
+    const returnTo = referer
+      ? new URL(referer).pathname + new URL(referer).search
+      : "/"
+    redirect(`/sign-in?redirect=${encodeURIComponent(returnTo)}`)
+  }
   return fetch(`${BACKEND_URL}${path}`, {
     ...init,
     headers: {
