@@ -2,6 +2,7 @@
 
 import type { UIMessage } from "@ai-sdk/react"
 import { useEffect } from "react"
+import { fetchWsToken } from "@/lib/realtime-token"
 
 type SetMessages = (updater: (prev: UIMessage[]) => UIMessage[]) => void
 
@@ -18,9 +19,12 @@ export function useInterventions(
     let retry = 0
 
     async function connect() {
-      const res = await fetch("/api/ws-token")
-      if (!res.ok) return
-      const { token } = (await res.json()) as { token: string }
+      let token: string
+      try {
+        token = await fetchWsToken()
+      } catch {
+        return
+      }
       if (closed) return
 
       ws = new WebSocket(

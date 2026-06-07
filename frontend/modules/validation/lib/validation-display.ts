@@ -1,4 +1,4 @@
-import type { ValidationCheck } from "../hooks/use-validation-run-detail"
+import type { ValidationCheck } from "../types"
 
 export function formatDuration(ms: number | null): string {
   if (ms === null) return ""

@@ -1,10 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import type { Credentials, FullSessionState } from "../types"
+import type { Credentials } from "../types"
 import { ActivityCard } from "../components/activity-card"
 import { CredentialsCard } from "../components/credentials-card"
-import { FloatingChat } from "../components/floating-chat"
 import { NodeDetailDrawer } from "../components/node-detail-drawer"
 import { NodesCard } from "../components/nodes-card"
 import { SessionActions } from "../components/session-actions"
@@ -12,32 +11,32 @@ import { SessionHero } from "../components/session-hero"
 import { SessionPageHeader } from "../components/session-page-header"
 import { StickyMobileActionBar } from "../components/sticky-mobile-action-bar"
 import { StreamStatusBanner } from "../components/stream-status-banner"
-import { ValidationButton } from "../components/validation-button"
 import { useSessionState } from "../hooks/use-session-state"
 import { setAnalyticsContext } from "@/lib/analytics"
+import { FloatingChat } from "@/modules/chat"
+import { ValidationButton } from "@/modules/validation"
 
 export function SessionView({
   sessionId,
-  initialState,
   credentials,
 }: {
   sessionId: string
-  initialState: FullSessionState
   credentials: Credentials
 }) {
-  const { state, streamStatus, actions } = useSessionState(
-    sessionId,
-    initialState
-  )
+  const { state, streamStatus, actions } = useSessionState(sessionId)
   const [openNodeId, setOpenNodeId] = useState<string | null>(null)
-  const isEnded = state.status === "ended"
 
   // Помечаем все фоновые события (page_view, idle, tab) этой сессии её
   // session_id и lab_slug, чтобы путь студента собирался воедино
   useEffect(() => {
+    if (!state) return
     setAnalyticsContext(sessionId, state.lab.slug)
     return () => setAnalyticsContext(null, null)
-  }, [sessionId, state.lab.slug])
+  }, [sessionId, state])
+
+  if (!state) return null
+
+  const isEnded = state.status === "ended"
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-6 pb-24 md:pb-6">

@@ -1,6 +1,7 @@
 "use client"
 
 import type { UIMessage } from "@ai-sdk/react"
+import { useQuery } from "@tanstack/react-query"
 import {
   ArrowLeftIcon,
   HistoryIcon,
@@ -8,8 +9,11 @@ import {
   XIcon,
 } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
+import type { SessionSummary } from "../types"
+import { fetchChatHistory, fetchChatSessions } from "../api"
 import { useChatStream } from "../hooks/use-chat-stream"
 import { useInterventions } from "../hooks/use-interventions"
+import { chatHistoryQuery } from "../query"
 import { ChatInput } from "./chat-input"
 import { ChatMessages } from "./chat-messages"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -26,13 +30,6 @@ type ChatView =
       labSlug: string
       date: string
     }
-
-interface SessionSummary {
-  id: string
-  lab_slug: string
-  started_at: string
-  status: string
-}
 
 function getDomainLabel(labSlug: string): { domain: string; name: string } {
   if (labSlug.includes("docker") || labSlug.includes("container")) {
@@ -68,7 +65,6 @@ export function FloatingChat({
   const [view, setView] = useState<ChatView>({ mode: "active" })
   const [pastSessions, setPastSessions] = useState<SessionSummary[]>([])
   const [pastMessages, setPastMessages] = useState<UIMessage[]>([])
-  const historyLoadedRef = useRef(false)
   const historyFetchAbort = useRef<AbortController | null>(null)
   const isMobile = useIsMobile()
 
@@ -81,23 +77,17 @@ export function FloatingChat({
 
   useInterventions(sessionId, setMessages, onUnread)
 
-  // Грузим историю чата этой сессии при монтировании.
+  // Грузим историю чата этой сессии.
+  const { data: history } = useQuery(chatHistoryQuery(sessionId))
+
   // Функциональный апдейт не затирает интервенции, которые могли прийти
   // раньше, чем загрузилась история
   useEffect(() => {
-    if (historyLoadedRef.current) return
-    historyLoadedRef.current = true
-    fetch(`/api/chat/history/${sessionId}`)
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data: { id: string; role: string; parts: unknown[] }[]) => {
-        if (data.length > 0) {
-          setMessages((prev) =>
-            prev.length === 0 ? data.map(mapToUIMessage) : prev
-          )
-        }
-      })
-      .catch(() => {})
-  }, [sessionId, setMessages])
+    if (!history || history.length === 0) return
+    setMessages((prev) =>
+      prev.length === 0 ? history.map(mapToUIMessage) : prev
+    )
+  }, [history, setMessages])
 
   const onOpen = () => {
     setOpen(true)
@@ -146,9 +136,8 @@ export function FloatingChat({
     historyFetchAbort.current?.abort()
     historyFetchAbort.current = new AbortController()
     setView({ mode: "history_list" })
-    fetch("/api/chat/sessions", { signal: historyFetchAbort.current.signal })
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data: SessionSummary[]) => {
+    fetchChatSessions(historyFetchAbort.current.signal)
+      .then((data) => {
         setPastSessions(data.filter((s) => s.id !== sessionId))
       })
       .catch((e: unknown) => {
@@ -163,16 +152,13 @@ export function FloatingChat({
     setView({
       mode: "history_session",
       sessionId: s.id,
-      labSlug: s.lab_slug,
-      date: new Date(s.started_at).toLocaleDateString("ru-RU"),
+      labSlug: s.labSlug,
+      date: new Date(s.startedAt).toLocaleDateString("ru-RU"),
     })
     historyFetchAbort.current?.abort()
     historyFetchAbort.current = new AbortController()
-    fetch(`/api/chat/history/${s.id}`, {
-      signal: historyFetchAbort.current.signal,
-    })
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data: { id: string; role: string; parts: unknown[] }[]) => {
+    fetchChatHistory(s.id, historyFetchAbort.current.signal)
+      .then((data) => {
         setPastMessages(data.map(mapToUIMessage))
       })
       .catch((e: unknown) => {
@@ -243,7 +229,7 @@ export function FloatingChat({
             </p>
           ) : (
             pastSessions.map((s) => {
-              const { domain: d, name: n } = getDomainLabel(s.lab_slug)
+              const { domain: d, name: n } = getDomainLabel(s.labSlug)
               return (
                 <button
                   key={s.id}
@@ -255,7 +241,7 @@ export function FloatingChat({
                     {d} / {n}
                   </span>
                   <span className="text-muted-foreground text-[10px]">
-                    {new Date(s.started_at).toLocaleDateString("ru-RU")}
+                    {new Date(s.startedAt).toLocaleDateString("ru-RU")}
                   </span>
                 </button>
               )

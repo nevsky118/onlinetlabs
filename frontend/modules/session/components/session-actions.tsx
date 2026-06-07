@@ -1,5 +1,6 @@
 "use client"
 
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import {
   BookOpenIcon,
   MoreVerticalIcon,
@@ -7,10 +8,10 @@ import {
   XIcon,
 } from "lucide-react"
 import Link from "next/link"
-import { useTransition } from "react"
 import { toast } from "sonner"
 import type { SessionStatus } from "../types"
 import { endLab, resetLab } from "../actions"
+import { sessionKeys } from "../query"
 import { track } from "@/lib/analytics"
 import {
   AlertDialog,
@@ -41,34 +42,36 @@ export function SessionActions({
   status: SessionStatus
   labSlug: string
 }) {
-  const [pending, startTransition] = useTransition()
-  const disabled = pending || status === "ended"
+  const qc = useQueryClient()
 
-  const runReset = () =>
-    startTransition(async () => {
-      try {
-        await resetLab(sessionId)
-        track("session_reset", { lab_slug: labSlug, session_id: sessionId })
-        toast.success("Лаба сброшена")
-      } catch (e) {
-        toast.error((e as Error).message)
-      }
-    })
+  const resetM = useMutation({
+    mutationFn: () => resetLab(sessionId),
+    onSuccess: () => {
+      track("session_reset", { lab_slug: labSlug, session_id: sessionId })
+      qc.invalidateQueries({ queryKey: sessionKeys.state(sessionId) })
+      toast.success("Лаба сброшена")
+    },
+    onError: (e) => toast.error((e as Error).message),
+  })
 
-  const runEnd = () =>
-    startTransition(async () => {
-      try {
-        await endLab(sessionId)
-        track("session_ended", {
-          lab_slug: labSlug,
-          session_id: sessionId,
-          reason: "user",
-        })
-        toast.success("Сессия завершена")
-      } catch (e) {
-        toast.error((e as Error).message)
-      }
-    })
+  const endM = useMutation({
+    mutationFn: () => endLab(sessionId),
+    onSuccess: () => {
+      track("session_ended", {
+        lab_slug: labSlug,
+        session_id: sessionId,
+        reason: "user",
+      })
+      qc.invalidateQueries({ queryKey: sessionKeys.state(sessionId) })
+      qc.invalidateQueries({ queryKey: sessionKeys.list() })
+      toast.success("Сессия завершена")
+    },
+    onError: (e) => toast.error((e as Error).message),
+  })
+
+  const disabled = resetM.isPending || endM.isPending || status === "ended"
+  const runReset = () => resetM.mutate()
+  const runEnd = () => endM.mutate()
 
   return (
     <div className="flex shrink-0 items-center gap-2">

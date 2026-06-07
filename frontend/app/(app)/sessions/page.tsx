@@ -4,18 +4,16 @@ import {
   PageHeaderDescription,
   PageHeaderHeading,
 } from "@/components/page-header"
-import { loadSessions, SessionsView } from "@/modules/session/server"
+import { HydrateClient, prefetchQuery } from "@/lib/query-hydration"
+import { SessionsView, sessionsListQuery } from "@/modules/session/server"
 
 const title = "Мои лабы"
 const description = "Запущенные и недавние учебные сессии"
 
-export const metadata: Metadata = {
-  title,
-  description,
-}
+export const metadata: Metadata = { title, description }
 
 export default async function SessionsPage() {
-  const sessions = await loadSessions()
+  await prefetchQuery(sessionsListQuery())
 
   return (
     <div className="flex flex-1 flex-col">
@@ -25,7 +23,9 @@ export default async function SessionsPage() {
       </PageHeader>
       <div className="container-wrapper section-soft flex-1 pb-6">
         <div className="container">
-          <SessionsView initial={sessions} />
+          <HydrateClient>
+            <SessionsView />
+          </HydrateClient>
         </div>
       </div>
     </div>

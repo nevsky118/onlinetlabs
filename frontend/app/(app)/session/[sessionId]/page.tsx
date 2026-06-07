@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation"
+import { HydrateClient, prefetchQuery } from "@/lib/query-hydration"
 import {
-  loadSession,
-  SessionFetchError,
+  loadCredentials,
   SessionView,
+  sessionStateQuery,
 } from "@/modules/session/server"
 
 export default async function SessionPage(props: {
@@ -10,20 +11,16 @@ export default async function SessionPage(props: {
 }) {
   const { sessionId } = await props.params
   try {
-    const { state, credentials } = await loadSession(sessionId)
+    const [credentials] = await Promise.all([
+      loadCredentials(sessionId),
+      prefetchQuery(sessionStateQuery(sessionId)),
+    ])
     return (
-      <SessionView
-        sessionId={sessionId}
-        initialState={state}
-        credentials={credentials}
-      />
+      <HydrateClient>
+        <SessionView sessionId={sessionId} credentials={credentials} />
+      </HydrateClient>
     )
-  } catch (err) {
-    // 5xx пробрасываем в error boundary; клиентские причины (401/403/404) → not-found.
-    if (err instanceof SessionFetchError) {
-      if (err.status >= 500) throw err
-      notFound()
-    }
-    throw err
+  } catch {
+    notFound()
   }
 }
