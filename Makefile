@@ -77,7 +77,7 @@ up:
 	$(DC) up -d --wait
 
 up-db:
-	$(DC) up -d db
+	$(DC) up -d db redis
 
 down:
 	$(DC) down
