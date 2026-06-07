@@ -8,8 +8,6 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/ui/button"
 import { Separator } from "@/ui/separator"
 
-type Props = { initial: Session[] }
-
 function formatRelative(isoString: string): string {
   const diff = Math.max(
     0,
@@ -22,9 +20,9 @@ function formatRelative(isoString: string): string {
   return `${hrs} ч назад`
 }
 
-export function SessionsView({ initial }: Props) {
+export function SessionsView() {
   // tick перерисовывает раз в секунду для живого аптайма
-  const { sessions, tick, refresh } = useSessionsList(initial)
+  const { sessions, tick, refresh } = useSessionsList()
 
   const active = sessions.filter(
     (s) => s.status === "active" || s.status === "provisioning"

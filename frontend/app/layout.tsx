@@ -9,6 +9,7 @@ import "@/styles/globals.css"
 import { Inter } from "next/font/google"
 import { NuqsAdapter } from "nuqs/adapters/next/app"
 import { AnalyticsProvider } from "@/components/analytics-provider"
+import { QueryProvider } from "@/components/query-provider"
 import { LayoutProvider } from "@/hooks/use-layout"
 import { Toaster } from "@/ui/sonner"
 import { TooltipProvider } from "@/ui/tooltip"
@@ -77,16 +78,18 @@ export default function RootLayout({
           fontVariables
         )}
       >
-        <AnalyticsProvider>
-          <ThemeProvider>
-            <NuqsAdapter>
-              <LayoutProvider>
-                <TooltipProvider>{children}</TooltipProvider>
-                <Toaster position="bottom-right" />
-              </LayoutProvider>
-            </NuqsAdapter>
-          </ThemeProvider>
-        </AnalyticsProvider>
+        <QueryProvider>
+          <AnalyticsProvider>
+            <ThemeProvider>
+              <NuqsAdapter>
+                <LayoutProvider>
+                  <TooltipProvider>{children}</TooltipProvider>
+                  <Toaster position="bottom-right" />
+                </LayoutProvider>
+              </NuqsAdapter>
+            </ThemeProvider>
+          </AnalyticsProvider>
+        </QueryProvider>
       </body>
     </html>
   )

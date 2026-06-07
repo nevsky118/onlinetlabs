@@ -8,7 +8,7 @@ import {
   XIcon,
 } from "lucide-react"
 import { useState } from "react"
-import type { ValidationStep } from "../hooks/use-validation-run-detail"
+import type { ValidationStep } from "../types"
 import { ValidationCheckRow } from "./validation-check-row"
 import { cn } from "@/lib/utils"
 import {

@@ -2,7 +2,7 @@
 
 import { CheckIcon, ChevronDownIcon, CircleDashed, XIcon } from "lucide-react"
 import { useState } from "react"
-import type { ValidationRunListItem } from "../hooks/use-validation-runs"
+import type { ValidationRunListItem } from "../types"
 import { useValidationRunDetail } from "../hooks/use-validation-run-detail"
 import { formatDuration } from "../lib/validation-display"
 import { ValidationStepRow } from "./validation-step-row"

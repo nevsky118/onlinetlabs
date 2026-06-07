@@ -1,10 +1,14 @@
 "use client"
 
+import { useQueryClient } from "@tanstack/react-query"
 import { useCallback, useRef, useState } from "react"
 import type {
   ValidationCheck,
   ValidationStep,
-} from "./use-validation-run-detail"
+  ValidationStreamEvent,
+} from "../types"
+import { startValidationStream } from "../api"
+import { validationKeys } from "../query"
 
 export type ValidationStreamStatus =
   | "idle"
@@ -19,33 +23,6 @@ export type ValidationStreamState = {
   steps: ValidationStep[]
 }
 
-type SSEEvent =
-  | { type: "run.start"; totalSteps: number; runId: string }
-  | {
-      type: "step.start"
-      stepId: string
-      title: string
-      totalChecks: number
-    }
-  | {
-      type: "check.start"
-      stepId: string
-      checkIndex: number
-      kind: string
-      params: Record<string, unknown>
-    }
-  | { type: "check.log"; stepId: string; line: string }
-  | {
-      type: "check.result"
-      stepId: string
-      checkIndex: number
-      ok: boolean
-      expected: Record<string, unknown>
-      actual: Record<string, unknown>
-    }
-  | { type: "step.result"; stepId: string; title: string; ok: boolean }
-  | { type: "run.finish"; ok: boolean; runId: string }
-
 const INITIAL_STATE: ValidationStreamState = {
   status: "idle",
   currentRunId: null,
@@ -54,7 +31,7 @@ const INITIAL_STATE: ValidationStreamState = {
 
 function applyEvent(
   state: ValidationStreamState,
-  ev: SSEEvent
+  ev: ValidationStreamEvent
 ): ValidationStreamState {
   switch (ev.type) {
     case "run.start":
@@ -119,11 +96,14 @@ function applyEvent(
   }
 }
 
-function parseSSEBuffer(buffer: string): { events: SSEEvent[]; rest: string } {
-  const events: SSEEvent[] = []
+function parseSSEBuffer(buffer: string): {
+  events: ValidationStreamEvent[]
+  rest: string
+} {
+  const events: ValidationStreamEvent[] = []
   let rest = buffer
-  let idx: number
-  while ((idx = rest.indexOf("\n\n")) !== -1) {
+  let idx = rest.indexOf("\n\n")
+  while (idx !== -1) {
     const chunk = rest.slice(0, idx)
     rest = rest.slice(idx + 2)
     const lines = chunk.split("\n")
@@ -132,11 +112,12 @@ function parseSSEBuffer(buffer: string): { events: SSEEvent[]; rest: string } {
       const payload = line.slice(5).trim()
       if (!payload) continue
       try {
-        events.push(JSON.parse(payload) as SSEEvent)
+        events.push(JSON.parse(payload) as ValidationStreamEvent)
       } catch {
         // ignore malformed frame
       }
     }
+    idx = rest.indexOf("\n\n")
   }
   return { events, rest }
 }
@@ -144,6 +125,7 @@ function parseSSEBuffer(buffer: string): { events: SSEEvent[]; rest: string } {
 export function useValidationStream(sessionId: string) {
   const [state, setState] = useState<ValidationStreamState>(INITIAL_STATE)
   const abortRef = useRef<AbortController | null>(null)
+  const qc = useQueryClient()
 
   const stop = useCallback(() => {
     abortRef.current?.abort()
@@ -160,12 +142,7 @@ export function useValidationStream(sessionId: string) {
 
       ;(async () => {
         try {
-          const res = await fetch(`/api/validation/${sessionId}/stream`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ slug }),
-            signal: ac.signal,
-          })
+          const res = await startValidationStream(sessionId, slug, ac.signal)
           if (!res.ok || !res.body) {
             setState((s) => ({ ...s, status: "error" }))
             return
@@ -181,6 +158,11 @@ export function useValidationStream(sessionId: string) {
             buffer = rest
             if (events.length > 0) {
               setState((prev) => events.reduce(applyEvent, prev))
+              if (events.some((ev) => ev.type === "run.finish")) {
+                qc.invalidateQueries({
+                  queryKey: validationKeys.runs(sessionId),
+                })
+              }
             }
           }
         } catch (e) {
@@ -189,7 +171,7 @@ export function useValidationStream(sessionId: string) {
         }
       })()
     },
-    [sessionId, stop]
+    [sessionId, stop, qc]
   )
 
   return { state, start, stop }

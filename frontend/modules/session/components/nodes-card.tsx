@@ -87,8 +87,8 @@ function NodeRow({
         await onAction(node.id, action)
         track("node_action_triggered", { action, node_id: node.id })
         toast.success(isStarted ? "Узел остановлен" : "Узел запущен")
-      } catch (e) {
-        toast.error((e as Error).message)
+      } catch {
+        /* ошибка показывается через onError мутации */
       }
     })
 

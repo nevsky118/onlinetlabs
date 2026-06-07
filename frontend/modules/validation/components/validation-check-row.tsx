@@ -9,7 +9,7 @@ import {
   XIcon,
 } from "lucide-react"
 import { useState } from "react"
-import type { ValidationCheck } from "../hooks/use-validation-run-detail"
+import type { ValidationCheck } from "../types"
 import { commandFor } from "../lib/validation-display"
 import { ValidationLogBlock } from "./validation-log-block"
 import { cn } from "@/lib/utils"
