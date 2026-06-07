@@ -1,10 +1,10 @@
-# Production overrides for the gns3 stack — MSK-8 (8 vCPU / 16 GB) sizing.
+# Production overrides for the gns3 stack — 4 vCPU / 6 GB sizing.
 # Layered on top of docker-compose.yml:
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d
 #
 # Differences from docker-compose.yml (dev):
 #   - restart: unless-stopped on every service.
-#   - mem_limit + cpus on every service (sums to ~6 vCPU / ~6 GB, leaving headroom for host docker + KVM nodes).
+#   - mem_limit + cpus на каждый сервис.
 #   - postgres switches from tmpfs to a named volume so DB survives restarts.
 #   - All credentials/secrets are required via env-interpolation (:?) — no compose defaults
 #     to prevent shipping with `admin/admin`. See .env.prod.example.
@@ -18,8 +18,8 @@
 services:
   gns3-server:
     restart: unless-stopped
-    mem_limit: 4g
-    cpus: 4.0
+    mem_limit: 1536m
+    cpus: 2.0
     environment:
       GNS3_AUTH: "true"
       GNS3_DEFAULT_ADMIN_USER: ${GNS3_ADMIN_USER:?set GNS3_ADMIN_USER in .env.prod}
@@ -28,8 +28,8 @@ services:
 
   postgres:
     restart: unless-stopped
-    mem_limit: 1g
-    cpus: 1.0
+    mem_limit: 512m
+    cpus: 0.5
     environment:
       POSTGRES_USER: ${GNS3_DB_USER:?set GNS3_DB_USER in .env.prod}
       POSTGRES_PASSWORD: ${GNS3_DB_PASSWORD:?set GNS3_DB_PASSWORD in .env.prod}
@@ -44,7 +44,7 @@ services:
   gns3-service:
     restart: unless-stopped
     mem_limit: 512m
-    cpus: 1.0
+    cpus: 0.5
     environment:
       GNS3_ADMIN_USER: ${GNS3_ADMIN_USER:?set GNS3_ADMIN_USER in .env.prod}
       GNS3_ADMIN_PASSWORD: ${GNS3_ADMIN_PASSWORD:?set GNS3_ADMIN_PASSWORD in .env.prod}
@@ -65,7 +65,7 @@ services:
     image: edoburu/pgbouncer:1.22.1-p0
     restart: unless-stopped
     mem_limit: 128m
-    cpus: 0.5
+    cpus: 0.25
     ports:
       - "6432:6432"
     environment:
@@ -92,8 +92,8 @@ services:
 
   gns3-mcp:
     restart: unless-stopped
-    mem_limit: 512m
-    cpus: 1.0
+    mem_limit: 256m
+    cpus: 0.5
 
 volumes:
   gns3_postgres_data:
