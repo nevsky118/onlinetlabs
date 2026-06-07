@@ -1,5 +1,7 @@
 zebra=yes
-ospfd=yes
+# OSPF не нужен: единственная активная роль GW маршрутизирует два /24 через
+# connected-маршруты zebra. Вернуть ospfd=yes при возврате OSPF-лаб (роли R1/R2).
+ospfd=no
 ospf6d=no
 ripd=no
 ripngd=no

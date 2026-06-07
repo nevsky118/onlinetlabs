@@ -6,7 +6,7 @@ services:
   gns3-server:
     build:
       context: gns3-server
-    # dynamips/ubridge/qemu need raw networking + kernel modules.
+    # dynamips/ubridge need raw networking + kernel modules.
     # pid=host: FRR/docker template nodes run on the host Docker daemon. ubridge
     # (inside gns3-server) must enter the FRR container's netns via its PID,
     # which is a host-level PID — invisible from a container-private pidns.

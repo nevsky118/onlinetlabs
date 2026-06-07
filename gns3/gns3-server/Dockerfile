@@ -1,13 +1,14 @@
-# gns3-server: alpine + dynamips + ubridge + qemu + vpcs + gns3server.
+# gns3-server: alpine + dynamips + ubridge + vpcs + gns3server.
 # Image is intentionally minimal: no IOS images baked in (mounted from host),
 # no template registration (handled by gns3-service on startup).
+# qemu НЕ ставим: активные лабы (lan-static-ip / dhcp-basics / inter-subnet-routing)
+# используют только VPCS, встроенный ethernet_switch (ubridge) и docker-узлы.
 
 FROM alpine:3.21
 
 RUN apk add --no-cache --virtual=build-deps gcc python3-dev musl-dev linux-headers \
  && apk add --no-cache \
       bash python3 curl py3-pip \
-      qemu-img qemu-system-x86_64 \
       util-linux libcap cpulimit iptables \
       busybox-static \
  && echo "https://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories \
@@ -15,6 +16,12 @@ RUN apk add --no-cache --virtual=build-deps gcc python3-dev musl-dev linux-heade
       dynamips ubridge vpcs \
  && pip install --break-system-packages gns3-server==3.0.6 \
  && apk del --purge build-deps
+
+# Без бинарей коммутации образ молча-битый (409 "Could not find ..." на seed).
+# Ловим на сборке, а не в рантайме.
+RUN for bin in dynamips ubridge vpcs; do \
+      command -v "$bin" >/dev/null || { echo "FATAL: $bin отсутствует в образе"; exit 1; }; \
+    done
 
 # Modern Docker daemons (29+) require API client >= 1.40. Upstream gns3server
 # 3.0.2 hardcodes /v1.24/ on the /version probe and DOCKER_MINIMUM_API_VERSION
