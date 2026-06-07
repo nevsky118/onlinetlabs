@@ -139,7 +139,7 @@ export CONFIG_PASSWORD=...
 make decrypt
 
 # gns3 — отдельный сервис, шифруется отдельно
-cd gns3 && make decrypt file=.env.aes && make decrypt file=gns3-service/.env.aes && make decrypt file=gns3-mcp/.env.aes && cd ..
+cd gns3 && make decrypt && cd ..
 ```
 
 Запуск:
@@ -166,12 +166,11 @@ make up-db    # только БД + Redis
 make down     # остановить
 ```
 
-**GNS3 Plugin** (`gns3/docker-compose.yml`) — gns3-server + postgres + pgbouncer + gns3-service + gns3-mcp:
+**GNS3 Plugin** (`gns3/docker-compose.yml`) — gns3-server + postgres + gns3-service + gns3-mcp (изолированный стек, запускается из `gns3/`; pgbouncer — только в prod-overlay):
 ```bash
 cd gns3
-make up       # весь стек
-make gns3-up  # только GNS3 сервер
-make up-db    # только PostgreSQL
+make decrypt  # свои .env.aes
+make up       # весь стек + сборка role-образов (frr-role/dhcp-role)
 make down     # остановить
 ```
 
@@ -240,7 +239,7 @@ onlinetlabs/
 ├── gns3/                        # GNS3 плагин (отдельный стек)
 │   ├── gns3-service/            # FastAPI — сессии, проекты, история
 │   ├── gns3-mcp/                # MCP-сервер для агентов
-│   ├── docker-compose.yml       # GNS3 + postgres + pgbouncer + service + mcp
+│   ├── docker-compose.yml       # GNS3 + postgres + service + mcp (pgbouncer — prod-overlay)
 │   └── Makefile
 │
 ├── mcp-sdk/                     # MCP SDK
@@ -276,16 +275,16 @@ Swagger UI: http://localhost:8000/docs
 | **ActionProvider** | Выполнение действий |
 
 ```python
-from onlinetlabs_mcp_sdk import OnlinetlabsMCPServer
+from mcp_sdk import OnlinetlabsMCPServer
 
-class GNS3StateProvider:
+class GNS3Implementation:
     async def list_components(self, ctx): ...
     async def get_component(self, ctx, component_id): ...
     async def get_system_overview(self, ctx): ...
 
 server = OnlinetlabsMCPServer(
     name="gns3",
-    providers=[GNS3StateProvider()],
+    implementation=GNS3Implementation(),
 )
 ```
 
