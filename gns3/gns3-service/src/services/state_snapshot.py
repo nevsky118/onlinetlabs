@@ -51,7 +51,8 @@ async def fetch_state(
             id=n["node_id"],
             name=n["name"],
             node_type=n["node_type"],
-            status=n["status"],
+            # Закрытый проект отдаёт узлы без runtime-status → считаем stopped.
+            status=n.get("status", "stopped"),
             console=n.get("console"),
             console_type=n.get("console_type"),
             console_host=n.get("console_host", ""),
