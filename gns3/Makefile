@@ -71,6 +71,7 @@ lint:
 
 # ── Docker ───────────────────────────────────────────────────
 up:
+	$(DC) --profile roles build
 	$(DC) up -d --wait
 
 down:

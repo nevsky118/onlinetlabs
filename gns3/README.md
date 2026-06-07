@@ -46,11 +46,10 @@ flowchart TB
 ```bash
 make install
 
-# Расшифровать конфиги (нужен CONFIG_PASSWORD)
-CONFIG_PASSWORD=... make decrypt file=gns3-service/local.env.aes
-CONFIG_PASSWORD=... make decrypt file=gns3-mcp/local.env.aes
+# Расшифровать все конфиги gns3 разом (нужен CONFIG_PASSWORD)
+CONFIG_PASSWORD=... make decrypt
 
-# Docker (GNS3 + PostgreSQL + gns3-service + gns3-mcp)
+# Docker (GNS3 + PostgreSQL + gns3-service + gns3-mcp), role-образы собираются автоматически
 make up
 
 # Локальная разработка (deps в Docker, сервисы на хосте)
@@ -71,7 +70,7 @@ make serve-mcp     # gns3-mcp
 | gns3-mcp | 8100 | MCP-сервер |
 
 ```bash
-make up       # весь стек
+make up       # весь стек + сборка role-образов (frr-role/dhcp-role)
 make gns3-up  # только GNS3 сервер
 make up-db    # только PostgreSQL
 make down     # остановить

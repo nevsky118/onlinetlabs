@@ -36,9 +36,6 @@ next-env.d.ts
 deployment/**/*.env
 !*.env.aes
 
-# pgbouncer SCRAM hashes — credential material, regenerate per deploy
-gns3/pgbouncer/userlist.txt
-
 # === IDE ===
 .idea/
 *.swp

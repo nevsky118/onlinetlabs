@@ -53,14 +53,40 @@ services:
       DB_NAME: ${GNS3_DB_NAME:?set GNS3_DB_NAME in .env.prod}
       REDIS_URL: ${GNS3_REDIS_URL:?set GNS3_REDIS_URL in .env.prod}
       INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?set INTERNAL_API_TOKEN in .env.prod}
+      DB_HOST: pgbouncer
+      DB_PORT: 6432
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
   pgbouncer:
+    image: edoburu/pgbouncer:1.22.1-p0
     restart: unless-stopped
     mem_limit: 128m
     cpus: 0.5
-    # pgbouncer routes onlinetlabs DB via host.docker.internal — required on Linux.
+    ports:
+      - "6432:6432"
+    environment:
+      GNS3_DB_USER: ${GNS3_DB_USER:?set GNS3_DB_USER in .env.prod}
+      GNS3_DB_PASSWORD: ${GNS3_DB_PASSWORD:?set GNS3_DB_PASSWORD in .env.prod}
+    # userlist из env, без committed-секрета
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        printf '"%s" "%s"\n' "$$GNS3_DB_USER" "$$GNS3_DB_PASSWORD" > /tmp/userlist.txt &&
+        exec pgbouncer /etc/pgbouncer/pgbouncer.ini
+    volumes:
+      - ./pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "localhost", "-p", "6432"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
