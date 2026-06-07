@@ -45,7 +45,7 @@ help:
 	@printf "  $(Y)%-20s$(N) %s\n" "migrate-rollback"   "Rollback last migration"
 	@printf "\n  $(B)Utility$(N)\n"
 	@printf "  $(Y)%-20s$(N) %s\n" "encrypt"            "Encrypt .env file"
-	@printf "  $(Y)%-20s$(N) %s\n" "decrypt"            "Decrypt .env.aes file"
+	@printf "  $(Y)%-20s$(N) %s\n" "decrypt"            "Decrypt all .aes files (or file=path for one)"
 	@printf "  $(Y)%-20s$(N) %s\n" "clean"              "Remove caches"
 	@echo ""
 
@@ -100,7 +100,12 @@ encrypt:
 	openssl enc -aes-256-cbc -salt -pbkdf2 -in $(file) -out $(file).aes -pass pass:$(CONFIG_PASSWORD)
 
 decrypt:
-	openssl enc -aes-256-cbc -d -salt -pbkdf2 -in $(file) -out $$(echo $(file) | sed 's/.aes$$//') -pass pass:$(CONFIG_PASSWORD)
+	@if [ -z "$(CONFIG_PASSWORD)" ]; then echo "CONFIG_PASSWORD is required (export it or pass CONFIG_PASSWORD=...)"; exit 1; fi
+	@for f in $(if $(file),$(file),$$(find . -name '*.aes' -not -path './.git/*')); do \
+		out="$${f%.aes}"; \
+		printf "$(G)decrypt$(N) %s -> %s\n" "$$f" "$$out"; \
+		openssl enc -aes-256-cbc -d -salt -pbkdf2 -in "$$f" -out "$$out" -pass pass:$(CONFIG_PASSWORD) || exit 1; \
+	done
 
 # ── Cleanup ──────────────────────────────────────────────────
 clean:
