@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>GNS3 — открываем лабораторию</title>
+</head>
+<body>
+  <p>Открываем лабораторию в GNS3…</p>
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var username = params.get('username');
+      var password = params.get('password');
+      var project = params.get('project');
+
+      // GNS3 Web UI хранит подключение к серверу как "controller-<id>" в
+      // localStorage и падает с "Cannot read properties of null (reading
+      // 'authToken')" на /login и /project, если эта запись отсутствует —
+      // обычно её создаёт мастер «Add Controller» при первом визите.
+      // Регистрируем тем же форматом, что и сам GNS3 (см. controllers.component),
+      // подставляя host/port/protocol текущего origin — так ссылка остаётся
+      // рабочей независимо от домена/порта, на котором опубликован GNS3.
+      if (!localStorage.getItem('controller-1')) {
+        localStorage.setItem('controllerIds', 'controller-1');
+        localStorage.setItem('controller-1', JSON.stringify({
+          name: 'GNS3 server',
+          location: 'remote',
+          path: '',
+          ubridge_path: '',
+          host: window.location.hostname,
+          port: Number(window.location.port) || (window.location.protocol === 'https:' ? 443 : 80),
+          protocol: window.location.protocol,
+          id: 1
+        }));
+      }
+
+      if (username && password) {
+        // Форма входа GNS3 Web UI сама подставляет логин/пароль из этого
+        // ключа localStorage при загрузке (см. компонент логина: ngOnInit
+        // читает isRememberMe и заполняет loginForm). Студенту останется
+        // один клик «Войти» вместо ручного ввода временных доступов.
+        localStorage.setItem('isRememberMe', JSON.stringify({
+          username: username,
+          password: password,
+          isRememberMe: true
+        }));
+      }
+
+      var returnUrl = project ? '/controller/1/project/' + project : '/controller/1/projects';
+      window.location.replace('controller/1/login?returnUrl=' + encodeURIComponent(returnUrl));
+    })();
+  </script>
+</body>
+</html>
