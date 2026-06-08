@@ -44,8 +44,15 @@ services:
       # gns3-стек крутится отдельным compose с портами на хосте, тянемся к нему через host-gateway.
       GNS3_SERVICE_URL: http://host.docker.internal:8101
       MCP_SERVER_URL: http://host.docker.internal:8100
+      # Консольные TCP-порты VPCS/нод не публикуются на хост (диапазон 2001-5000).
+      # Подключаемся напрямую к gns3-server по контейнерному DNS-имени через
+      # общую сеть gns3_default (см. networks ниже).
+      GNS3_NODE_HOST: gns3-server
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - default
+      - gns3
     depends_on:
       db:
         condition: service_healthy
@@ -87,6 +94,12 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+
+networks:
+  default: {}
+  gns3:
+    name: gns3_default
+    external: true
 
 volumes:
   pgdata:
