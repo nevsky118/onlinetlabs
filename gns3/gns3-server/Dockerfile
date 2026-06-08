@@ -34,6 +34,12 @@ COPY start.sh /start.sh
 COPY config.ini /config.ini
 COPY patch_bind.py /patch_bind.py
 
+# Бандл web-ui (gns3-server 3.0.6) не содержит auth-relay.html: deep-link на
+# проект студента ведёт на форму логина, требующую ручного ввода временных
+# доступов. Кладём свою страницу-релей рядом с index.html — она подставляет
+# логин/пароль в форму логина и ведёт студента сразу к returnUrl проекта.
+COPY auth-relay.html /usr/lib/python3.12/site-packages/gns3server/static/web-ui/auth-relay.html
+
 # gns3server passes container-local paths in HostConfig.Mounts.Source. The host
 # Docker daemon only understands host paths, so we translate via env-driven
 # prefix rewrite (see GNS3_BIND_PATH_TRANSLATION in docker-compose).
