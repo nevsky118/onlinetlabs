@@ -46,6 +46,22 @@
         }));
       }
 
+      // Сбрасываем JWT предыдущей сессии GNS3. Если в браузере уже был
+      // залогинен другой пользователь (напр. admin), Angular SPA видит
+      // controller-1.authToken, пропускает форму логина и идёт на /projects,
+      // игнорируя returnUrl со ссылкой на конкретный проект студента.
+      // Удаляем authToken из объекта контроллера — SPA покажет форму логина
+      // с предзаполненными credentials студента из isRememberMe.
+      try {
+        var ctrl = JSON.parse(localStorage.getItem('controller-1') || '{}');
+        delete ctrl.authToken;
+        delete ctrl.username;
+        delete ctrl.password;
+        delete ctrl.tokenExpired;
+        localStorage.setItem('controller-1', JSON.stringify(ctrl));
+      } catch (e) {}
+
+
       var returnUrl = project ? '/controller/1/project/' + project : '/controller/1/projects';
       window.location.replace('controller/1/login?returnUrl=' + encodeURIComponent(returnUrl));
     })();

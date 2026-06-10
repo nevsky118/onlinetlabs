@@ -1,7 +1,9 @@
 """POST /chat/stream — SSE стриминг тьютора (Vercel AI SDK v1)."""
 
+import asyncio
 import json
 import logging
+import re
 import uuid
 from typing import AsyncIterator
 
@@ -17,11 +19,14 @@ from chat.stream_protocol import (
     text_delta, text_end, text_start,
     tool_input_available, tool_input_delta, tool_input_start, tool_output_available,
 )
-from chat.tools import TOOL_DEFINITIONS, execute_tool
+from chat.tools import TOOL_DEFINITIONS, _run_vpcs_show_ip, execute_tool
+from config import settings
+from config.config_model import LlmProvider
 from db.session import get_db
 from deps import get_mcp_client
 from llm.client import default_model, get_llm_client
 from llm.prompts import LANGUAGE_REMINDER, TUTOR_SYSTEM_PROMPT
+from models.lab import Lab
 from sessions.context import build_session_context
 from sessions.service import get_owned_session
 
@@ -29,6 +34,160 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 # Максимум раундов tool-вызовов в одном /chat ответе, защита от бесконечной рекурсии.
 MAX_TOOL_ROUNDS = 5
+
+# Сколько последних сообщений диалога отправлять модели. [Задание] и
+# [Текущее состояние лаб-среды] пересобираются заново на каждый запрос —
+# длинная история не нужна и только усиливает "снежный ком" из повторяющихся
+# (возможно неверных) утверждений модели о состоянии среды.
+MAX_HISTORY_MESSAGES = 6
+
+# Regex для стриппинга thinking-токенов YandexGPT из стримингового контента.
+_THINKING_RE = re.compile(r"\[START_THINKING\].*?\[END_THINKING\]", re.DOTALL)
+
+
+def _supports_tool_calling() -> bool:
+    """Возвращает True для провайдеров с нативным OpenAI-style function calling."""
+    return settings.agents.provider in (LlmProvider.ANTHROPIC, LlmProvider.OPENAI, LlmProvider.YANDEX)
+
+
+async def _fetch_mcp_context(mcp_client, ctx, expected_vpcs: dict | None = None) -> str | None:
+    """Предзагружает состояние среды из MCP и форматирует как текстовый блок.
+
+    Вызывается до первого LLM-раунда, чтобы модель получила реальный контекст
+    даже если не поддерживает нативный tool-calling (например, YandexGPT).
+
+    expected_vpcs: node_name -> {"ip": ..., "gateway": ...} из [Задание] —
+    используется чтобы сразу проставить вердикт «верно/неверно» рядом с
+    фактическим IP, не полагаясь на то, что модель сама сравнит значения
+    (YandexGPT часто игнорирует это и пересказывает ожидаемые значения).
+    """
+    expected_vpcs = expected_vpcs or {}
+    if mcp_client is None:
+        return None
+    try:
+        components, errors = await asyncio.gather(
+            mcp_client.list_components(ctx),
+            mcp_client.list_errors(ctx),
+            return_exceptions=True,
+        )
+        parts = []
+        if isinstance(components, list):
+            if components:
+                lines = [f"  - {c.name} ({c.type}): {c.status} — {c.summary}" for c in components]
+                parts.append("Компоненты среды:\n" + "\n".join(lines))
+            else:
+                parts.append("Компоненты среды: список пуст.")
+
+            # Реальный show ip для запущенных VPCS-узлов — не полагаемся на то,
+            # что модель сама вызовет get_vpcs_ip (часто она этого не делает
+            # и придумывает значения из [Задание]).
+            vpcs_nodes = [c for c in components if c.type == "vpcs" and c.status == "started"]
+            if vpcs_nodes:
+                ip_results = await asyncio.gather(
+                    *(_run_vpcs_show_ip(c.name, ctx, mcp_client) for c in vpcs_nodes),
+                    return_exceptions=True,
+                )
+                lines = []
+                for c, res in zip(vpcs_nodes, ip_results):
+                    if isinstance(res, Exception) or "error" in res:
+                        continue
+                    actual_ip = res.get("ip")
+                    gw = res.get("gateway", "")
+                    line = f"  - {c.name}: IP={actual_ip or '(не настроен)'}"
+                    if gw and gw != "0.0.0.0":
+                        line += f", gateway={gw}"
+                    expected = expected_vpcs.get(c.name)
+                    if expected and expected.get("ip"):
+                        if actual_ip == expected["ip"]:
+                            line += " — ВЕРНО (совпадает с заданием)"
+                        else:
+                            line += f" — ОШИБКА (в задании требуется {expected['ip']})"
+                    lines.append(line)
+                if lines:
+                    parts.append("Текущая конфигурация VPCS (show ip) — снято прямо сейчас:\n" + "\n".join(lines))
+        else:
+            parts.append("Компоненты среды: список пуст.")
+
+        if isinstance(errors, list):
+            recent = [e for e in errors if not isinstance(e, Exception)][:5]
+            if recent:
+                lines = [f"  - [{e.level.value}] {e.component_id or '?'}: {e.message}" for e in recent]
+                parts.append("Последние ошибки:\n" + "\n".join(lines))
+            else:
+                parts.append("Ошибок не обнаружено.")
+        return "\n\n".join(parts) if parts else None
+    except Exception:
+        logger.warning("chat: не удалось предзагрузить MCP-контекст", exc_info=True)
+        return None
+
+
+def _load_lab_spec(lab_slug: str) -> dict | None:
+    """Загружает YAML-спецификацию задания лабы (шаги и ожидаемые значения)."""
+    import yaml
+    from pathlib import Path
+
+    yaml_path = Path(__file__).parent.parent / "validation" / "labs" / f"{lab_slug}.yaml"
+    if not yaml_path.exists():
+        return None
+    return yaml.safe_load(yaml_path.read_text(encoding="utf-8"))
+
+
+def _expected_vpcs_config(spec: dict | None) -> dict[str, dict]:
+    """Извлекает из спецификации ожидаемый IP/gateway по узлам VPCS: node_name -> {ip, gateway}."""
+    result: dict[str, dict] = {}
+    if not spec:
+        return result
+    for step in spec.get("steps", []):
+        for check in step.get("checks", []):
+            if check.get("kind") == "vpcs.show_ip":
+                node = check.get("node")
+                if node:
+                    expect = check.get("expect", {})
+                    result[node] = {"ip": expect.get("ip"), "gateway": expect.get("gateway")}
+    return result
+
+
+async def _fetch_lab_context(db: AsyncSession, lab_slug: str, spec: dict | None) -> str | None:
+    """Загружает описание лабы и ожидаемую конфигурацию из БД и YAML-задания."""
+    try:
+        lab = await db.get(Lab, lab_slug)
+        if lab is None:
+            return None
+        parts = [f"Лабораторная работа: «{lab.title}»"]
+        if lab.description:
+            parts.append(f"Цель: {lab.description}")
+
+        if spec is not None:
+            steps = spec.get("steps", [])
+            if steps:
+                step_lines = []
+                for step in steps:
+                    step_lines.append(f"  Шаг «{step.get('title', step.get('id', '?'))}»:")
+                    for check in step.get("checks", []):
+                        kind = check.get("kind", "")
+                        expect = check.get("expect", {})
+                        if kind == "vpcs.show_ip":
+                            node = check.get("node", "?")
+                            ip = expect.get("ip", "?")
+                            gw = expect.get("gateway", "")
+                            line = f"    - {node}: IP={ip}"
+                            if gw and gw != "0.0.0.0":
+                                line += f", gateway={gw}"
+                            step_lines.append(line)
+                        elif kind == "vpcs.ping":
+                            frm = check.get("from", "?")
+                            to = check.get("to", "?")
+                            step_lines.append(f"    - {frm} ping {to}")
+                        elif kind == "vpcs.ip_in_subnet":
+                            node = check.get("node", "?")
+                            subnet = expect.get("subnet", "?")
+                            step_lines.append(f"    - {node}: адрес в подсети {subnet}")
+                parts.append("Задание (что должен настроить студент):\n" + "\n".join(step_lines))
+
+        return "\n".join(parts)
+    except Exception:
+        logger.warning("chat: не удалось загрузить контекст лабы %s", lab_slug, exc_info=True)
+        return None
 
 
 async def _stream_one_round(
@@ -47,10 +206,12 @@ async def _stream_one_round(
       - usage_info: dict | None
       - has_tool_calls: bool — есть ли tool_calls в этом раунде
     """
-    stream = await client.chat.completions.create(
-        model=model, messages=messages,
-        tools=TOOL_DEFINITIONS, tool_choice="auto", stream=True,
-    )
+    create_kwargs: dict = {"model": model, "messages": messages, "stream": True}
+    if _supports_tool_calling():
+        create_kwargs["tools"] = TOOL_DEFINITIONS
+        create_kwargs["tool_choice"] = "auto"
+
+    stream = await client.chat.completions.create(**create_kwargs)
     text_buffer: list[str] = []
     text_part_id = None
     tool_calls_buffer: dict[int, dict] = {}
@@ -68,11 +229,15 @@ async def _stream_one_round(
         if delta is None:
             continue
         if delta.content:
+            # Стрипаем thinking-токены YandexGPT до передачи в стрим.
+            content = _THINKING_RE.sub("", delta.content).strip()
+            if not content:
+                continue
             if text_part_id is None:
                 text_part_id = str(uuid.uuid4())
                 yield text_start(text_part_id)
-            yield text_delta(text_part_id, delta.content)
-            text_buffer.append(delta.content)
+            yield text_delta(text_part_id, content)
+            text_buffer.append(content)
         if delta.tool_calls:
             has_tool_calls = True
             for tc in delta.tool_calls:
@@ -150,7 +315,21 @@ async def chat_stream(
         """Генератор SSE-событий. Прогоняет раунды LLM и сохраняет итог ассистента."""
         client = get_llm_client()
         model = default_model()
-        messages = [{"role": "system", "content": TUTOR_SYSTEM_PROMPT}, *openai_messages]
+
+        # Параллельно загружаем: описание лабы + состояние среды из MCP.
+        spec = _load_lab_spec(session.lab_slug)
+        expected_vpcs = _expected_vpcs_config(spec)
+        lab_ctx_text, mcp_ctx_text = await asyncio.gather(
+            _fetch_lab_context(db, session.lab_slug, spec),
+            _fetch_mcp_context(mcp_client, ctx, expected_vpcs),
+        )
+        system_content = TUTOR_SYSTEM_PROMPT
+        if lab_ctx_text:
+            system_content += f"\n\n[Задание]\n{lab_ctx_text}"
+        if mcp_ctx_text:
+            system_content += f"\n\n[Текущее состояние лаб-среды]\n{mcp_ctx_text}"
+
+        messages = [{"role": "system", "content": system_content}, *openai_messages[-MAX_HISTORY_MESSAGES:]]
         message_id = str(uuid.uuid4())
         yield start_event(message_id)
 
