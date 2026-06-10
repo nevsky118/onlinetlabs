@@ -25,6 +25,15 @@ export function useChatStream(
     [input, chat]
   )
 
+  const sendText = useCallback(
+    (text: string) => {
+      const trimmed = text.trim()
+      if (!trimmed) return
+      chat.sendMessage({ text: trimmed })
+    },
+    [chat]
+  )
+
   return {
     messages: chat.messages,
     status: chat.status,
@@ -34,5 +43,6 @@ export function useChatStream(
     input,
     setInput,
     handleSubmit,
+    sendText,
   }
 }

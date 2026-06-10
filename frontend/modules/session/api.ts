@@ -1,7 +1,7 @@
 import "server-only"
 
 import { headers } from "next/headers"
-import { redirect } from "next/navigation"
+import { RedirectType, redirect } from "next/navigation"
 import { getBackendToken } from "@/auth/token"
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000"
@@ -14,12 +14,16 @@ async function authedFetch(
   if (!token) {
     // Нет backend-токена: либо нет сессии, либо она осиротела (например, после
     // сброса БД остался валидный cookie без пользователя). Ведём на вход вместо
-    // непрозрачной 500 в RSC/Server Action.
+    // непрозрачной 500 в RSC/Server Action. replace, а не push: незалогиненным
+    // на защищённую страницу всё равно не вернуться, в history её не держим.
     const referer = (await headers()).get("referer")
     const returnTo = referer
       ? new URL(referer).pathname + new URL(referer).search
       : "/"
-    redirect(`/sign-in?redirect=${encodeURIComponent(returnTo)}`)
+    redirect(
+      `/sign-in?redirect=${encodeURIComponent(returnTo)}`,
+      RedirectType.replace
+    )
   }
   return fetch(`${BACKEND_URL}${path}`, {
     ...init,

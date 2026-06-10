@@ -1,12 +1,9 @@
 "use client"
 
 import { ArrowUpIcon, SquareIcon } from "lucide-react"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupTextarea,
-} from "@/ui/input-group"
+import { cn } from "@/lib/utils"
+import { Badge } from "@/ui/badge"
+import { Button } from "@/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/ui/tooltip"
 
 type Props = {
@@ -15,6 +12,9 @@ type Props = {
   handleSubmit: (e: React.FormEvent) => void
   status: string
   stop?: () => void
+  // Крупная форма для полноэкранного режима, как на CF /sphere
+  large?: boolean
+  className?: string
 }
 
 export function ChatInput({
@@ -23,16 +23,28 @@ export function ChatInput({
   handleSubmit,
   status,
   stop,
+  large,
+  className,
 }: Props) {
   const isStreaming = status === "streaming" || status === "submitted"
 
   return (
-    <form className="p-3" onSubmit={handleSubmit}>
-      <InputGroup>
-        <InputGroupTextarea
-          placeholder="Спросите тьютора..."
+    <form className={cn("p-4 pt-2", className)} onSubmit={handleSubmit}>
+      <div className="bg-background focus-within:border-primary/50 focus-within:ring-primary/50 flex w-full flex-col gap-2 border transition-all focus-within:ring-1">
+        <textarea
+          rows={2}
+          placeholder={large ? "Спросите о чём угодно..." : "Чем можем помочь?"}
+          name="promptInput"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          className={cn(
+            "text-foreground placeholder:text-muted-foreground max-h-64 w-full resize-none overflow-y-auto bg-transparent outline-none",
+            large ? "p-5 pb-0 text-base" : "p-3 pb-0 text-sm"
+          )}
+          onChange={(e) => {
+            setInput(e.target.value)
+            e.target.style.height = "auto"
+            e.target.style.height = `${e.target.scrollHeight}px`
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault()
@@ -41,36 +53,42 @@ export function ChatInput({
             }
           }}
         />
-        <InputGroupAddon align="block-end">
+        <div
+          className={cn(
+            "flex cursor-text items-center justify-between gap-1 pt-0",
+            large ? "p-3" : "p-2"
+          )}
+        >
+          <Badge variant="secondary" className="text-muted-foreground">
+            TutorAgent
+          </Badge>
           {isStreaming && stop ? (
             <Tooltip>
               <TooltipTrigger asChild>
-                <InputGroupButton
+                <Button
                   type="button"
-                  aria-label="Остановить"
+                  aria-label="Остановить генерацию"
                   variant="destructive"
-                  size="icon-sm"
-                  className="ml-auto rounded-full"
+                  size={large ? "icon" : "icon-sm"}
                   onClick={stop}
                 >
                   <SquareIcon />
-                </InputGroupButton>
+                </Button>
               </TooltipTrigger>
               <TooltipContent>Остановить генерацию</TooltipContent>
             </Tooltip>
           ) : (
-            <InputGroupButton
+            <Button
               type="submit"
               aria-label="Отправить"
-              size="icon-sm"
-              className="ml-auto rounded-full"
+              size={large ? "icon" : "icon-sm"}
               disabled={!input.trim() || isStreaming}
             >
               <ArrowUpIcon />
-            </InputGroupButton>
+            </Button>
           )}
-        </InputGroupAddon>
-      </InputGroup>
+        </div>
+      </div>
     </form>
   )
 }
