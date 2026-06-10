@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { AuthStatus } from "./auth-status"
 import { CommandMenu } from "@/components/command-menu"
 import { Icons } from "@/components/icons"
 import { MainNav } from "@/components/main-nav"
@@ -9,7 +10,6 @@ import { siteConfig } from "@/lib/config"
 import { course, labs } from "@/lib/source"
 import { Button } from "@/ui/button"
 import { Separator } from "@/ui/separator"
-import { AuthStatus } from "./auth-status"
 
 export function SiteHeader() {
   const coursesPageTree = course.pageTree
@@ -55,10 +55,7 @@ export function SiteHeader() {
           <MainNav items={siteConfig.navItems} className="hidden lg:flex" />
           <div className="ml-auto flex items-center gap-2 md:flex-1 md:justify-end">
             <div className="hidden w-full flex-1 md:flex md:w-auto md:flex-none">
-              <CommandMenu
-                tree={commandTree}
-                navItems={siteConfig.navItems}
-              />
+              <CommandMenu tree={commandTree} navItems={siteConfig.navItems} />
             </div>
             <Separator orientation="vertical" className="3xl:flex hidden" />
             <SiteConfig className="3xl:flex hidden" />
