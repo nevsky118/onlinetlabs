@@ -88,8 +88,18 @@ class SessionService:
             await self._admin.open_project(created_project_id)
 
             user_role = await self._admin.get_builtin_role("User")
-            await self._admin.create_acl(
-                f"/projects/{created_project_id}", user_role["role_id"], created_user_id,
+            auditor_role = await self._admin.get_builtin_role("Auditor")
+            await asyncio.gather(
+                # Доступ к конкретному проекту: полный User-набор (Node.Console и т.д.)
+                self._admin.create_acl(
+                    f"/projects/{created_project_id}", user_role["role_id"], created_user_id,
+                ),
+                # Доступ к глобальному списку проектов: только Project.Audit (Auditor).
+                # GET /v3/projects возвращает проекты только при ACL на "/projects" —
+                # per-project ACL ("/projects/{id}") в список не попадает (GNS3 3.x RBAC).
+                self._admin.create_acl(
+                    "/projects", auditor_role["role_id"], created_user_id,
+                ),
             )
 
             jwt = await self._admin.get_user_token(username, password)

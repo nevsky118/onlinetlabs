@@ -47,12 +47,16 @@ class LogBuffer:
     async def _listen(self, ws_url: str, jwt: str | None = None) -> None:
         """Фоновый WS listener. Фильтрует log.* события."""
         import json
+        from urllib.parse import urlencode, urlparse, urlunparse, parse_qs
         try:
             import websockets
-            headers = {}
+            # GNS3 WebSocket auth требует токен как query-параметр ?token=...
+            # (не заголовок Authorization: Bearer), см. get_current_active_user_from_websocket.
             if jwt:
-                headers["Authorization"] = f"Bearer {jwt}"
-            async with websockets.connect(ws_url, additional_headers=headers) as ws:
+                parsed = urlparse(ws_url)
+                qs = f"token={jwt}"
+                ws_url = urlunparse(parsed._replace(query=qs))
+            async with websockets.connect(ws_url) as ws:
                 async for raw in ws:
                     try:
                         msg = json.loads(raw)
