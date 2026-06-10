@@ -13,15 +13,22 @@ import { StickyMobileActionBar } from "../components/sticky-mobile-action-bar"
 import { StreamStatusBanner } from "../components/stream-status-banner"
 import { useSessionState } from "../hooks/use-session-state"
 import { setAnalyticsContext } from "@/lib/analytics"
-import { FloatingChat } from "@/modules/chat"
+import {
+  ChatPanel,
+  ChatPanelInset,
+  ChatPanelProvider,
+  ChatPanelTrigger,
+} from "@/modules/chat"
 import { ValidationButton } from "@/modules/validation"
 
 export function SessionView({
   sessionId,
   credentials,
+  chatOpen = false,
 }: {
   sessionId: string
   credentials: Credentials
+  chatOpen?: boolean
 }) {
   const { state, streamStatus, actions } = useSessionState(sessionId)
   const [openNodeId, setOpenNodeId] = useState<string | null>(null)
@@ -39,49 +46,59 @@ export function SessionView({
   const isEnded = state.status === "ended"
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-6 pb-24 md:pb-6">
-      <div className="flex items-center justify-between gap-3">
-        <SessionPageHeader lab={state.lab} status={state.status} />
-        <div className="flex shrink-0 items-center gap-2">
-          <ValidationButton sessionId={sessionId} labSlug={state.lab.slug} />
-          <SessionActions
-            sessionId={sessionId}
+    <ChatPanelProvider defaultOpen={chatOpen}>
+      <ChatPanelInset>
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-6 pb-24 md:pb-6">
+          <div className="flex items-center justify-between gap-3">
+            <SessionPageHeader lab={state.lab} status={state.status} />
+            <div className="flex shrink-0 items-center gap-2">
+              <ChatPanelTrigger />
+              <ValidationButton
+                sessionId={sessionId}
+                labSlug={state.lab.slug}
+              />
+              <SessionActions
+                sessionId={sessionId}
+                status={state.status}
+                labSlug={state.lab.slug}
+              />
+            </div>
+          </div>
+          <StreamStatusBanner status={streamStatus} />
+          <SessionHero
+            state={state}
+            credentials={credentials}
+            disabled={isEnded}
+            onStopAll={() => actions.bulkNodeAction("stop")}
+            onRestartAll={() => actions.bulkNodeAction("reload")}
+          />
+          <div className="grid gap-4 md:grid-cols-3">
+            <NodesCard
+              nodes={state.nodes}
+              disabled={isEnded}
+              loading={
+                streamStatus === "connecting" && state.nodes.length === 0
+              }
+              onAction={actions.nodeAction}
+              onOpenDetails={setOpenNodeId}
+            />
+            <ActivityCard sessionId={sessionId} />
+            <CredentialsCard sessionId={sessionId} credentials={credentials} />
+          </div>
+          <StickyMobileActionBar
             status={state.status}
-            labSlug={state.lab.slug}
+            credentials={credentials}
+            onStopAll={() => actions.bulkNodeAction("stop")}
+          />
+          <NodeDetailDrawer
+            nodeId={openNodeId}
+            nodes={state.nodes}
+            onClose={() => setOpenNodeId(null)}
+            onAction={actions.nodeAction}
           />
         </div>
-      </div>
-      <StreamStatusBanner status={streamStatus} />
-      <SessionHero
-        state={state}
-        credentials={credentials}
-        disabled={isEnded}
-        onStopAll={() => actions.bulkNodeAction("stop")}
-        onRestartAll={() => actions.bulkNodeAction("reload")}
-      />
-      <div className="grid gap-4 md:grid-cols-3">
-        <NodesCard
-          nodes={state.nodes}
-          disabled={isEnded}
-          loading={streamStatus === "connecting" && state.nodes.length === 0}
-          onAction={actions.nodeAction}
-          onOpenDetails={setOpenNodeId}
-        />
-        <ActivityCard sessionId={sessionId} />
-        <CredentialsCard sessionId={sessionId} credentials={credentials} />
-      </div>
-      <StickyMobileActionBar
-        status={state.status}
-        credentials={credentials}
-        onStopAll={() => actions.bulkNodeAction("stop")}
-      />
-      <NodeDetailDrawer
-        nodeId={openNodeId}
-        nodes={state.nodes}
-        onClose={() => setOpenNodeId(null)}
-        onAction={actions.nodeAction}
-      />
-      <FloatingChat sessionId={sessionId} labSlug={state.lab.slug} />
-    </div>
+      </ChatPanelInset>
+      <ChatPanel sessionId={sessionId} labSlug={state.lab.slug} />
+    </ChatPanelProvider>
   )
 }
