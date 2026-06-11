@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 from contextlib import asynccontextmanager
 
@@ -41,6 +42,42 @@ from sessions.ws import WebSocketGateway, close_all_connections
 from validation.router import router as validation_router
 from validation.runs_router import router as validation_runs_router
 
+logger = logging.getLogger(__name__)
+
+
+async def _restore_session_monitors(monitor_registry: SessionMonitorRegistry) -> None:
+    """Перезапускает SessionMonitor для активных сессий после рестарта backend.
+
+    Реестр мониторов живёт в памяти (app.state) и теряется при перезапуске
+    контейнера — без восстановления активные сессии остаются без проактивных
+    интервенций до повторного launch.
+    """
+    from sqlalchemy import select
+
+    from models.session import LearningSession
+    from sessions.context import build_session_context
+
+    try:
+        async with async_session() as db:
+            result = await db.execute(
+                select(LearningSession).where(LearningSession.status == "active")
+            )
+            sessions = result.scalars().all()
+    except Exception:
+        logger.warning("Не удалось загрузить активные сессии для мониторинга", exc_info=True)
+        return
+
+    for session in sessions:
+        try:
+            ctx = build_session_context(session)
+            await monitor_registry.start(session.id, session.user_id, session.lab_slug, ctx)
+        except Exception:
+            logger.warning(
+                "Не удалось восстановить SessionMonitor для %s", session.id, exc_info=True
+            )
+    if sessions:
+        logger.info("Восстановлено мониторов сессий: %d", len(sessions))
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -76,7 +113,13 @@ async def lifespan(app: FastAPI):
     app.state.session_queue = session_queue
     app.state.bulk_gns3_semaphore = _BULK_GNS3_SEMAPHORE
     reclaim_task = asyncio.create_task(idle_reclaim_loop(gns3_client))
+    restore_task = asyncio.create_task(_restore_session_monitors(monitor_registry))
     yield
+    restore_task.cancel()
+    try:
+        await restore_task
+    except asyncio.CancelledError:
+        pass
     reclaim_task.cancel()
     try:
         await reclaim_task
