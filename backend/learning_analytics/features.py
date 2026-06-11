@@ -27,7 +27,7 @@ class FeatureExtractor:
 
         latencies = self._inter_action_latencies(sorted_events)
         idle_gap = self._config.idle_gap_seconds
-        max_consec_errors = self._max_consecutive_errors(sorted_events)
+        max_consec_errors = self._current_error_run(sorted_events)
 
         return SessionFeatures(
             avg_inter_action_latency=round(
@@ -139,21 +139,29 @@ class FeatureExtractor:
         return (now - events[0].timestamp).total_seconds()
 
     @staticmethod
-    def _max_consecutive_errors(events: list) -> int:
-        """Макс. длина серии одинаковых ошибок подряд."""
-        best_run = 0
-        current_run = 1
-        previous_message = None
-        for event in events:
+    def _current_error_run(events: list) -> int:
+        """Длина ТЕКУЩЕЙ серии одинаковых ошибок в конце окна.
+
+        Считаем хвост, а не исторический максимум: исправленная студентом
+        ошибка не должна продолжать триггерить интервенции на каждом цикле
+        анализа. Событие config_ok (исправление подтверждено консольной
+        сверкой) обрывает серию.
+        """
+        run = 0
+        last_message = None
+        for event in reversed(events):
+            if event.action == "config_ok":
+                break
             if event.event_type != "error":
                 continue
-            if event.message == previous_message and previous_message is not None:
-                current_run += 1
-                best_run = max(best_run, current_run)
+            if last_message is None:
+                last_message = event.message
+                run = 1
+            elif event.message == last_message:
+                run += 1
             else:
-                current_run = 1
-            previous_message = event.message
-        return best_run
+                break
+        return run if run >= 2 else 0
 
     @staticmethod
     def _action_entropy(events: list) -> float:
