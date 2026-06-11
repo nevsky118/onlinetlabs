@@ -31,6 +31,8 @@ class TopologyMixin:
         response = await self._client.post(
             f"/v3/projects/{project_id}/nodes/{node_id}/{action}",
             headers=self._auth_headers(),
+            # GNS3 v3 требует JSON-тело у node-action POST'ов, иначе 422.
+            json={},
         )
         response.raise_for_status()
 
@@ -41,5 +43,6 @@ class TopologyMixin:
         response = await self._client.post(
             f"/v3/projects/{project_id}/nodes/{action}",
             headers=self._auth_headers(),
+            json={},
         )
         response.raise_for_status()

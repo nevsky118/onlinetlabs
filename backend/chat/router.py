@@ -24,6 +24,7 @@ from config import settings
 from config.config_model import LlmProvider
 from db.session import get_db
 from deps import get_mcp_client
+from labs.spec import expected_vpcs_config, load_lab_spec
 from llm.client import default_model, get_llm_client
 from llm.prompts import LANGUAGE_REMINDER, TUTOR_SYSTEM_PROMPT
 from models.lab import Lab
@@ -119,32 +120,6 @@ async def _fetch_mcp_context(mcp_client, ctx, expected_vpcs: dict | None = None)
     except Exception:
         logger.warning("chat: не удалось предзагрузить MCP-контекст", exc_info=True)
         return None
-
-
-def _load_lab_spec(lab_slug: str) -> dict | None:
-    """Загружает YAML-спецификацию задания лабы (шаги и ожидаемые значения)."""
-    import yaml
-    from pathlib import Path
-
-    yaml_path = Path(__file__).parent.parent / "validation" / "labs" / f"{lab_slug}.yaml"
-    if not yaml_path.exists():
-        return None
-    return yaml.safe_load(yaml_path.read_text(encoding="utf-8"))
-
-
-def _expected_vpcs_config(spec: dict | None) -> dict[str, dict]:
-    """Извлекает из спецификации ожидаемый IP/gateway по узлам VPCS: node_name -> {ip, gateway}."""
-    result: dict[str, dict] = {}
-    if not spec:
-        return result
-    for step in spec.get("steps", []):
-        for check in step.get("checks", []):
-            if check.get("kind") == "vpcs.show_ip":
-                node = check.get("node")
-                if node:
-                    expect = check.get("expect", {})
-                    result[node] = {"ip": expect.get("ip"), "gateway": expect.get("gateway")}
-    return result
 
 
 async def _fetch_lab_context(db: AsyncSession, lab_slug: str, spec: dict | None) -> str | None:
@@ -317,8 +292,8 @@ async def chat_stream(
         model = default_model()
 
         # Параллельно загружаем: описание лабы + состояние среды из MCP.
-        spec = _load_lab_spec(session.lab_slug)
-        expected_vpcs = _expected_vpcs_config(spec)
+        spec = load_lab_spec(session.lab_slug)
+        expected_vpcs = expected_vpcs_config(spec)
         lab_ctx_text, mcp_ctx_text = await asyncio.gather(
             _fetch_lab_context(db, session.lab_slug, spec),
             _fetch_mcp_context(mcp_client, ctx, expected_vpcs),
