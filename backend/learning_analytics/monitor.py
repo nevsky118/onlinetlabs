@@ -17,6 +17,16 @@ from learning_analytics.features import FeatureExtractor
 
 logger = logging.getLogger(__name__)
 
+# Формулировка «вопроса студента» для tutor-интервенций: TutorInput требует
+# question, но проактивная интервенция инициируется без вопроса — формулируем
+# его от лица студента по типу затруднения.
+_STRUGGLE_QUESTIONS = {
+    "stuck_on_step": "Я застрял на текущем шаге и не понимаю, как двигаться дальше. Подскажи направление.",
+    "repeating_errors": "Я повторяю одну и ту же ошибку. Помоги понять, что я делаю не так.",
+    "idle": "Я давно не предпринимаю действий и, похоже, застрял. С чего продолжить?",
+    "trial_and_error": "Я перебираю действия наугад и делаю много ошибок. Помоги разобраться, что не так.",
+}
+
 
 @dataclass
 class PendingIntervention:
@@ -144,12 +154,18 @@ class SessionMonitor:
         )
 
     async def _load_new_events(self, db) -> list:
-        """Загрузить новые поведенческие события по курсору."""
+        """Загрузить новые поведенческие события по курсору.
+
+        Собственные интервенции исключаются: иначе каждая записанная
+        интервенция выглядит как «новое событие», анализ перезапускается
+        и порождает следующую интервенцию — самоподдерживающийся цикл.
+        """
         from sqlalchemy import func, select
         from models.behavioral_event import BehavioralEvent
 
         latest_stmt = select(func.max(BehavioralEvent.timestamp)).where(
-            BehavioralEvent.session_id == self._session_id
+            BehavioralEvent.session_id == self._session_id,
+            BehavioralEvent.event_type != "intervention",
         )
         latest = (await db.execute(latest_stmt)).scalar_one_or_none()
         if latest is None:
@@ -159,7 +175,10 @@ class SessionMonitor:
 
         stmt = (
             select(BehavioralEvent)
-            .where(BehavioralEvent.session_id == self._session_id)
+            .where(
+                BehavioralEvent.session_id == self._session_id,
+                BehavioralEvent.event_type != "intervention",
+            )
             .order_by(BehavioralEvent.timestamp.desc())
             .limit(500)
         )
@@ -182,19 +201,24 @@ class SessionMonitor:
             analysis.struggle_type.value if analysis.struggle_type else None,
             features.dominant_error,
         )
+        struggle_value = analysis.struggle_type.value if analysis.struggle_type else None
+        question = _STRUGGLE_QUESTIONS.get(
+            struggle_value, "Похоже, я застрял. Подскажи, что проверить."
+        )
+        if features.dominant_error:
+            question += f" Последняя ошибка: {features.dominant_error}"
         payload = InterventionInput(
             session_id=self._session_id,
             user_id=self._user_id,
             intervention_type=analysis.suggested_intervention.value,
             context={
-                "struggle_type": analysis.struggle_type.value
-                if analysis.struggle_type
-                else None,
+                "struggle_type": struggle_value,
                 "dominant_error": features.dominant_error,
                 "lab_slug": self._lab_slug,
                 "step_slug": "current",
                 "attempts_count": features.error_repeat_count,
                 "last_error": features.dominant_error,
+                "question": question,
                 "agent_context": context.model_dump(),
             },
         )
