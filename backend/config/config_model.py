@@ -134,6 +134,11 @@ class LearningAnalyticsConfig(BaseModel):
 
     # Циклы
     poll_interval: float = Field(default=5.0, description="Интервал опроса MCP (сек)")
+    console_poll_interval: float = Field(
+        default=30.0,
+        description="Интервал сверки конфигурации VPCS с заданием (сек). Каждая сверка "
+        "шлёт show ip в telnet-консоль узла и видна студенту — не делать слишком частым",
+    )
     analysis_interval: float = Field(default=15.0, description="Интервал анализа (сек)")
     cooldown_period: float = Field(
         default=60.0, description="Мин. пауза между интервенциями (сек)"

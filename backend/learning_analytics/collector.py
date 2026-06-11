@@ -25,12 +25,15 @@ class BehavioralCollector:
         self._task: asyncio.Task | None = None
         self._running = False
         self._last_error_poll: datetime | None = None
+        self._last_console_poll: datetime | None = None
         self._seen: OrderedDict[str, None] = OrderedDict()
         self._component_types: dict[str, str] = {}
         self._session_id: str | None = None
         self._user_id: str | None = None
         self._lab_slug: str | None = None
         self._ctx = None
+        self._expected_vpcs: dict[str, dict] = {}
+        self._console_mismatch: dict[str, bool] = {}
 
     @property
     def is_running(self) -> bool:
@@ -39,10 +42,13 @@ class BehavioralCollector:
 
     async def start(self, session_id: str, user_id: str, lab_slug: str, ctx) -> None:
         """Запуск цикла опроса как asyncio.Task."""
+        from labs.spec import expected_vpcs_config, load_lab_spec
+
         self._session_id = session_id
         self._user_id = user_id
         self._lab_slug = lab_slug
         self._ctx = ctx
+        self._expected_vpcs = expected_vpcs_config(load_lab_spec(lab_slug))
         self._running = True
         self._task = asyncio.create_task(self._poll_loop())
 
@@ -70,11 +76,12 @@ class BehavioralCollector:
             await asyncio.sleep(self._cfg.poll_interval)
 
     async def _poll_cycle(self) -> None:
-        """Один цикл: actions + logs + errors → persist."""
+        """Один цикл: actions + logs + errors + консольная сверка → persist."""
         events: list[dict] = []
         events.extend(await self._fetch_actions())
         events.extend(await self._fetch_logs())
         events.extend(await self._fetch_errors())
+        events.extend(await self._check_console_config())
         if events:
             await self._persist(events)
 
@@ -128,6 +135,96 @@ class BehavioralCollector:
                 ))
         except Exception:
             logger.warning("Не удалось получить ошибки", exc_info=True)
+        return result
+
+    async def _check_console_config(self) -> list[dict]:
+        """Сверить фактический IP запущенных VPCS-узлов с заданием лабы.
+
+        GNS3 не публикует консольный ввод студента (ip/ping в VPCS) ни в actions,
+        ни в логи — без этой сверки аналитика слепа к ошибкам конфигурации и
+        проактивные подсказки никогда не срабатывают. Несовпадение оформляется
+        как синтетическое error-событие со стабильным message: повторы одного и
+        того же несовпадения наращивают error_repeat_count до порога интервенции.
+        """
+        if not self._expected_vpcs:
+            return []
+        now = datetime.now(tz=timezone.utc)
+        if (
+            self._last_console_poll is not None
+            and (now - self._last_console_poll).total_seconds() < self._cfg.console_poll_interval
+        ):
+            return []
+        self._last_console_poll = now
+
+        from chat.tools import _run_vpcs_show_ip
+
+        result: list[dict] = []
+        try:
+            components = await self._mcp.list_components(self._ctx)
+        except Exception:
+            logger.warning("Консольная сверка: не удалось получить компоненты", exc_info=True)
+            return []
+
+        nodes = [
+            c for c in components
+            if c.type == "vpcs" and c.status == "started" and c.name in self._expected_vpcs
+        ]
+        for node in nodes:
+            try:
+                res = await _run_vpcs_show_ip(node.name, self._ctx, self._mcp)
+            except Exception:
+                logger.warning("Консольная сверка: show ip упал для %s", node.name, exc_info=True)
+                continue
+            if "error" in res:
+                continue
+            actual_ip = res.get("ip")
+            expected_ip = self._expected_vpcs[node.name].get("ip")
+            # Ненастроенный узел — не ошибка: студент мог ещё не дойти до шага.
+            # Свежезагруженный VPCS отдаёт 0.0.0.0/0 вместо пустого значения.
+            if not actual_ip or not expected_ip or actual_ip.startswith("0.0.0.0"):
+                continue
+            if actual_ip == expected_ip:
+                # Переход «ошибка → исправлено»: одно config_ok-событие, чтобы
+                # FeatureExtractor оборвал серию повторов и подсказки прекратились.
+                if self._console_mismatch.get(node.name):
+                    self._console_mismatch[node.name] = False
+                    result.append({
+                        "id": str(uuid4()),
+                        "session_id": self._session_id,
+                        "user_id": self._user_id,
+                        "lab_slug": self._lab_slug,
+                        "timestamp": now,
+                        "event_type": "action",
+                        "component_id": node.id,
+                        "component_type": "vpcs",
+                        "action": "config_ok",
+                        "raw_command": None,
+                        "success": True,
+                        "severity": None,
+                        "message": f"{node.name}: IP {actual_ip} совпадает с заданием",
+                        "extra_data": None,
+                    })
+                continue
+            self._console_mismatch[node.name] = True
+            result.append({
+                "id": str(uuid4()),
+                "session_id": self._session_id,
+                "user_id": self._user_id,
+                "lab_slug": self._lab_slug,
+                "timestamp": now,
+                "event_type": "error",
+                "component_id": node.id,
+                "component_type": "vpcs",
+                "action": "config_mismatch",
+                "raw_command": None,
+                "success": False,
+                "severity": "warning",
+                "message": (
+                    f"{node.name}: настроен IP {actual_ip}, "
+                    f"по заданию требуется {expected_ip}"
+                ),
+                "extra_data": {"actual_ip": actual_ip, "expected_ip": expected_ip},
+            })
         return result
 
     # Запись в БД

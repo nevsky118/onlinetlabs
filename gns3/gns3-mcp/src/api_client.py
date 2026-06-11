@@ -68,39 +68,39 @@ class GNS3ApiClient:
 
     async def start_node(self, project_id: str, node_id: str) -> dict:
         return await self._request(
-            "POST", f"/v3/projects/{project_id}/nodes/{node_id}/start"
+            "POST", f"/v3/projects/{project_id}/nodes/{node_id}/start", json={}
         )
 
     async def stop_node(self, project_id: str, node_id: str) -> dict:
         return await self._request(
-            "POST", f"/v3/projects/{project_id}/nodes/{node_id}/stop"
+            "POST", f"/v3/projects/{project_id}/nodes/{node_id}/stop", json={}
         )
 
     async def reload_node(self, project_id: str, node_id: str) -> dict:
         return await self._request(
-            "POST", f"/v3/projects/{project_id}/nodes/{node_id}/reload"
+            "POST", f"/v3/projects/{project_id}/nodes/{node_id}/reload", json={}
         )
 
     async def suspend_node(self, project_id: str, node_id: str) -> dict:
         return await self._request(
-            "POST", f"/v3/projects/{project_id}/nodes/{node_id}/suspend"
+            "POST", f"/v3/projects/{project_id}/nodes/{node_id}/suspend", json={}
         )
 
     async def isolate_node(self, project_id: str, node_id: str) -> dict:
         return await self._request(
-            "POST", f"/v3/projects/{project_id}/nodes/{node_id}/isolate"
+            "POST", f"/v3/projects/{project_id}/nodes/{node_id}/isolate", json={}
         )
 
     async def unisolate_node(self, project_id: str, node_id: str) -> dict:
         return await self._request(
-            "POST", f"/v3/projects/{project_id}/nodes/{node_id}/unisolate"
+            "POST", f"/v3/projects/{project_id}/nodes/{node_id}/unisolate", json={}
         )
 
     async def start_all_nodes(self, project_id: str) -> None:
-        await self._request("POST", f"/v3/projects/{project_id}/nodes/start")
+        await self._request("POST", f"/v3/projects/{project_id}/nodes/start", json={})
 
     async def stop_all_nodes(self, project_id: str) -> None:
-        await self._request("POST", f"/v3/projects/{project_id}/nodes/stop")
+        await self._request("POST", f"/v3/projects/{project_id}/nodes/stop", json={})
 
     async def create_node_from_template(
         self, project_id: str, template_id: str, x: int = 0, y: int = 0
