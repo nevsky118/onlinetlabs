@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gns3_service_client import Gns3ServiceClient
+from progress.service import record_lab_validation
 from sessions.services.query import get_owned_session
 from validation.checks.registry import CheckContext
 from validation.repository import create_run, finish_run
@@ -83,6 +84,7 @@ async def stream_validation(
     db: AsyncSession,
     session_id: str,
     lab_slug: str,
+    user_id: str,
     spec: dict,
     gns3_sid: str,
     settings,
@@ -114,3 +116,8 @@ async def stream_validation(
             yield event
     finally:
         await finish_run(db, run_id, final_status, final_steps)
+        # Прогон валидации — единственный сигнал о прогрессе по лабе: переносим
+        # его итог в LabProgress (оценка + статус), откуда читают ученик и кабинет
+        # преподавателя.
+        if final_steps:
+            await record_lab_validation(db, user_id, lab_slug, final_steps)

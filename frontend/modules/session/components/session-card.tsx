@@ -7,7 +7,7 @@ import { toast } from "sonner"
 import type { Session } from "../types"
 import { endLab } from "../actions"
 import { SessionStatusBadge } from "./session-status-badge"
-import { cn } from "@/lib/utils"
+import { LabProgressBadge, useLabProgress } from "@/modules/progress"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,6 +52,7 @@ function formatRelative(isoString: string): string {
 
 export function SessionCard({ session, uptimeSeconds, onEnded }: Props) {
   const [pending, startTransition] = useTransition()
+  const { progress } = useLabProgress(session.labSlug)
   const title = session.labTitle ?? session.labSlug
   const isActive = session.status === "active"
   const isProvisioning = session.status === "provisioning"
@@ -73,7 +74,10 @@ export function SessionCard({ session, uptimeSeconds, onEnded }: Props) {
     <article className="border bg-card p-4 flex flex-col gap-3">
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-col gap-1 min-w-0">
-          <h3 className="font-medium truncate">{title}</h3>
+          <div className="flex items-center gap-2 min-w-0">
+            <h3 className="font-medium truncate">{title}</h3>
+            <LabProgressBadge progress={progress} className="shrink-0" />
+          </div>
           <p className="text-muted-foreground text-xs">
             {isRunning ? (
               <>
