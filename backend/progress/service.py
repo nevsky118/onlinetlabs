@@ -6,6 +6,63 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.progress import CourseProgress, LabProgress, StepAttempt
 
 
+def score_from_steps(steps: list[dict]) -> tuple[float, bool]:
+    """Оценка по доле пройденных проверок и флаг полного прохождения.
+
+    Возвращает `(score, all_passed)`, где score = passed_checks / total_checks * 100,
+    округлённое до целого. Если проверок нет — score 0.0. all_passed True, когда
+    все шаги пройдены (используется для перевода лабы в статус completed.)
+    """
+    total = 0
+    passed = 0
+    for step in steps:
+        for check in step.get("checks") or []:
+            total += 1
+            if check.get("ok"):
+                passed += 1
+    score = round(passed / total * 100, 1) if total else 0.0
+    all_passed = bool(steps) and all(s.get("ok") for s in steps)
+    return score, all_passed
+
+
+async def record_lab_validation(
+    db: AsyncSession, user_id: str, lab_slug: str, steps: list[dict]
+) -> LabProgress:
+    """Обновить прогресс лабы по итогам прогона валидации.
+
+    Оценка — доля пройденных проверок; берём лучшую из прежней и новой, чтобы
+    неудачный повторный прогон не обнулял достижение. При полном прохождении лаба
+    переводится в completed (необратимо в рамках последующих прогонов).
+    """
+    score, all_passed = score_from_steps(steps)
+    now = datetime.now(timezone.utc)
+
+    result = await db.execute(
+        select(LabProgress).where(
+            LabProgress.user_id == user_id, LabProgress.lab_slug == lab_slug
+        )
+    )
+    lp = result.scalar_one_or_none()
+    if lp is None:
+        lp = LabProgress(user_id=user_id, lab_slug=lab_slug, started_at=now)
+        db.add(lp)
+
+    if lp.started_at is None:
+        lp.started_at = now
+    lp.score = max(lp.score or 0.0, score)
+
+    if all_passed:
+        if lp.status != "completed":
+            lp.status = "completed"
+            lp.completed_at = now
+    elif lp.status != "completed":
+        lp.status = "in_progress"
+
+    await db.commit()
+    await db.refresh(lp)
+    return lp
+
+
 async def start_lab(db: AsyncSession, user_id: str, lab_slug: str) -> LabProgress:
     """Возвращает существующий прогресс по лабораторной или создаёт новый со статусом in_progress."""
     result = await db.execute(

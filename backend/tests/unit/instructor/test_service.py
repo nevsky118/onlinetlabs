@@ -1,0 +1,129 @@
+from datetime import datetime, timezone
+
+import pytest
+from mcp_sdk.testing import autotest
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_is_none
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+from instructor.service import get_student_detail, get_students_overview
+from models.behavioral_event import BehavioralEvent
+from models.lab import Lab
+from models.progress import LabProgress, StepAttempt
+from models.session import LearningSession
+from models.user import User
+
+pytestmark = [pytest.mark.unit]
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+class TestInstructorService:
+    @pytest.fixture(autouse=True)
+    async def setup(self):
+        self.engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+        self.session_factory = async_sessionmaker(self.engine, expire_on_commit=False)
+        # Только нужные таблицы: полная metadata содержит JSONB server_default,
+        # который SQLite не понимает.
+        async with self.engine.begin() as conn:
+            await conn.run_sync(User.__table__.create)
+            await conn.run_sync(Lab.__table__.create)
+            await conn.run_sync(LabProgress.__table__.create)
+            await conn.run_sync(LearningSession.__table__.create)
+            await conn.run_sync(BehavioralEvent.__table__.create)
+            await conn.run_sync(StepAttempt.__table__.create)
+        yield
+        await self.engine.dispose()
+
+    async def _seed(self):
+        async with self.session_factory() as db:
+            db.add_all(
+                [
+                    User(id="stud-1", name="Иван", email="ivan@test.local", role="student"),
+                    User(id="stud-2", name="Пётр", email="petr@test.local", role="student"),
+                    User(id="teacher", name="Препод", email="t@test.local", role="instructor"),
+                    Lab(slug="dhcp-basics", title="DHCP Basics"),
+                    LabProgress(
+                        user_id="stud-1", lab_slug="dhcp-basics",
+                        status="completed", score=90.0, started_at=_now(),
+                        completed_at=_now(),
+                    ),
+                    LearningSession(
+                        id="sess-1", user_id="stud-1", lab_slug="dhcp-basics",
+                        status="completed", started_at=_now(),
+                    ),
+                    # Две подсказки и одно нерелевантное событие для stud-1
+                    BehavioralEvent(
+                        session_id="sess-1", user_id="stud-1", lab_slug="dhcp-basics",
+                        timestamp=_now(), event_type="intervention",
+                        action="intervene_hint", success=True,
+                    ),
+                    BehavioralEvent(
+                        session_id="sess-1", user_id="stud-1", lab_slug="dhcp-basics",
+                        timestamp=_now(), event_type="intervention",
+                        action="intervene_hint", success=True,
+                    ),
+                    BehavioralEvent(
+                        session_id="sess-1", user_id="stud-1", lab_slug="dhcp-basics",
+                        timestamp=_now(), event_type="command",
+                        action="ping", success=True,
+                    ),
+                    StepAttempt(
+                        user_id="stud-1", lab_slug="dhcp-basics",
+                        step_slug="step-1", attempt_number=1, result="pass",
+                    ),
+                ]
+            )
+            await db.commit()
+
+    @autotest.num("743")
+    @autotest.external_id("c1a2b3d4-e5f6-4708-8901-aabbccdd0010")
+    @autotest.name("get_students_overview: только students, подсказки = intervention")
+    async def test_overview_counts_hints_and_excludes_non_students(self):
+        with autotest.step("Arrange: сеем учеников, препода и события"):
+            await self._seed()
+
+        with autotest.step("Act: получаем сводку"):
+            async with self.session_factory() as db:
+                result = await get_students_overview(db)
+
+        with autotest.step("Assert: 2 ученика, препод исключён, подсказки=2"):
+            assert_equal(result["total_students"], 2, "только students")
+            assert_equal(result["total_hints"], 2, "всего подсказок")
+            by_id = {s["user_id"]: s for s in result["students"]}
+            assert_equal(by_id["stud-1"]["total_hints"], 2, "подсказки stud-1")
+            assert_equal(by_id["stud-1"]["labs_completed"], 1, "завершённых лаб")
+            assert_equal(by_id["stud-1"]["avg_score"], 90.0, "средняя оценка")
+            assert_equal(by_id["stud-2"]["total_hints"], 0, "у stud-2 нет подсказок")
+
+    @autotest.num("744")
+    @autotest.external_id("c1a2b3d4-e5f6-4708-8901-aabbccdd0011")
+    @autotest.name("get_student_detail: разбивка по лабам с названием и подсказками")
+    async def test_detail_breaks_down_by_lab(self):
+        with autotest.step("Arrange: сеем данные"):
+            await self._seed()
+
+        with autotest.step("Act: получаем детали stud-1"):
+            async with self.session_factory() as db:
+                detail = await get_student_detail(db, "stud-1")
+
+        with autotest.step("Assert: лаба с названием, подсказками и попытками"):
+            assert_equal(detail["total_hints"], 2, "всего подсказок")
+            assert_equal(len(detail["labs"]), 1, "одна лаба")
+            lab = detail["labs"][0]
+            assert_equal(lab["lab_title"], "DHCP Basics", "название лабы")
+            assert_equal(lab["hints"], 2, "подсказок по лабе")
+            assert_equal(lab["sessions"], 1, "сессий по лабе")
+            assert_equal(lab["attempts"], 1, "попыток по лабе")
+
+    @autotest.num("745")
+    @autotest.external_id("c1a2b3d4-e5f6-4708-8901-aabbccdd0012")
+    @autotest.name("get_student_detail: неизвестный ученик → None")
+    async def test_detail_unknown_user_returns_none(self):
+        with autotest.step("Act: запрашиваем несуществующего ученика"):
+            async with self.session_factory() as db:
+                detail = await get_student_detail(db, "ghost")
+
+        with autotest.step("Assert: None"):
+            assert_is_none(detail, "detail is None")

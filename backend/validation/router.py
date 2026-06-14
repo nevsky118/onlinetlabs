@@ -45,6 +45,7 @@ async def validate_lab(
             db=db,
             session_id=sid,
             lab_slug=slug,
+            user_id=current_user["id"],
             spec=spec,
             gns3_sid=gns3_sid,
             settings=settings,
