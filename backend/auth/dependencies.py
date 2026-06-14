@@ -78,6 +78,19 @@ def require_admin(current_user: dict = Depends(get_current_user)) -> dict:
     return current_user
 
 
+def require_instructor(current_user: dict = Depends(get_current_user)) -> dict:
+    """FastAPI зависимость. Пропускает преподавателя или админа.
+
+    Используется для кабинета преподавателя: просмотр прогресса учеников
+    доступен ролям instructor и admin, но не student.
+    """
+    if current_user.get("role") not in ("instructor", "admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Instructor only"
+        )
+    return current_user
+
+
 def require_internal_caller(
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> None:

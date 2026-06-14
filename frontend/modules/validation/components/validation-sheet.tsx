@@ -6,6 +6,7 @@ import { useValidationRuns } from "../hooks/use-validation-runs"
 import { useValidationStream } from "../hooks/use-validation-stream"
 import { ValidationPastRunRow } from "./validation-past-run-row"
 import { ValidationStepRow } from "./validation-step-row"
+import { LabProgressBadge, useLabProgress } from "@/modules/progress"
 import { Button } from "@/ui/button"
 import { Separator } from "@/ui/separator"
 import {
@@ -25,11 +26,13 @@ type Props = {
 export function ValidationSheet({ sessionId, labSlug }: Props) {
   const { runs, isLoading, mutate } = useValidationRuns(sessionId)
   const { state, start } = useValidationStream(sessionId)
+  const { progress, refresh: refreshProgress } = useLabProgress(labSlug)
   const [expandedStepId, setExpandedStepId] = useState<string | null>(null)
 
   useEffect(() => {
     if (state.status === "passed" || state.status === "failed") {
       void mutate()
+      void refreshProgress()
       if (state.status === "failed") {
         const firstFailed = state.steps.find((s) => !s.ok)
         setExpandedStepId(firstFailed?.id ?? null)
@@ -40,7 +43,7 @@ export function ValidationSheet({ sessionId, labSlug }: Props) {
     if (state.status === "running") {
       setExpandedStepId(null)
     }
-  }, [state.status, mutate, state.steps])
+  }, [state.status, mutate, refreshProgress, state.steps])
 
   const isRunning = state.status === "running"
   const hasActiveRun =
@@ -56,6 +59,9 @@ export function ValidationSheet({ sessionId, labSlug }: Props) {
         <SheetDescription>
           Запускает проверки в живой среде GNS3
         </SheetDescription>
+        {progress ? (
+          <LabProgressBadge progress={progress} className="mt-1" />
+        ) : null}
       </SheetHeader>
 
       <div className="flex flex-1 flex-col overflow-y-auto">

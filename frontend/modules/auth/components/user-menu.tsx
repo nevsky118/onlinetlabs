@@ -1,7 +1,10 @@
 "use client"
 
-import { LogOut } from "lucide-react"
+import { GraduationCap, LogOut } from "lucide-react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { fetchInstructorAccess } from "@/auth/actions"
 import { authClient } from "@/auth/client"
 import { Avatar, AvatarFallback, AvatarImage } from "@/ui/avatar"
 import { Button } from "@/ui/button"
@@ -35,6 +38,14 @@ interface UserMenuProps {
 
 export function UserMenu({ user }: UserMenuProps) {
   const router = useRouter()
+  // Роль достоверна только на backend (better-auth тут на in-memory адаптере),
+  // поэтому доступ к кабинету спрашиваем серверным экшеном.
+  const [isInstructor, setIsInstructor] = useState(false)
+  useEffect(() => {
+    fetchInstructorAccess()
+      .then(setIsInstructor)
+      .catch(() => setIsInstructor(false))
+  }, [])
 
   const handleSignOut = async () => {
     await authClient.signOut({
@@ -85,6 +96,14 @@ export function UserMenu({ user }: UserMenuProps) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
+          {isInstructor ? (
+            <DropdownMenuItem asChild>
+              <Link href="/instructor">
+                Кабинет преподавателя
+                <GraduationCap className="ml-auto" />
+              </Link>
+            </DropdownMenuItem>
+          ) : null}
           <DropdownMenuItem disabled>Аккаунт</DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
