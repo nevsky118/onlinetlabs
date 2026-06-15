@@ -7,7 +7,7 @@ from auth.dependencies import (
     require_admin,
     require_internal_caller,
 )
-from rate_limit import limiter
+from rate_limit import exchange_rate_limit_key, limiter
 from auth.schemas import (
     ExchangeRequest,
     GitHubCallbackRequest,
@@ -81,13 +81,29 @@ async def login(
     )
 
 
+async def _stash_exchange_subject(request: FastAPIRequest) -> None:
+    """Кладёт email из тела в request.state до проверки лимита.
+
+    Читает body через request.json() (Starlette кэширует его, поэтому повторный
+    разбор в ExchangeRequest берёт из кэша). Не объявляем body-параметр, иначе
+    FastAPI завернул бы два body-поля в {req: {...}} и сломал плоский контракт.
+    Нужно для per-user ключа лимита exchange_rate_limit_key.
+    """
+    try:
+        body = await request.json()
+        request.state.exchange_subject = body.get("email")
+    except Exception:
+        request.state.exchange_subject = None
+
+
 @router.post("/exchange", response_model=TokenResponse)
-@limiter.limit("30/minute")
+@limiter.limit("60/minute", key_func=exchange_rate_limit_key)
 async def exchange(
     request: FastAPIRequest,
     req: ExchangeRequest,
     db: AsyncSession = Depends(get_db),
     _: None = Depends(require_internal_caller),
+    __: None = Depends(_stash_exchange_subject),
 ):
     """Обмен Better Auth сессии на backend-JWT.
 
