@@ -33,15 +33,16 @@ class TutorAgent(BaseAgent):
         """Системный промпт наставника."""
         return TUTOR_SYSTEM_PROMPT
 
-    async def run(self, input_data: TutorInput) -> TutorResponse:
+    async def run(self, input_data: TutorInput, model_id: str | None = None) -> TutorResponse:
         """Ответ на вопрос с опциональным MCP-контекстом."""
+        mid = model_id or self.agents_config.intervention_model
         prompt_parts = [f"Вопрос студента: {input_data.question}"]
 
         if input_data.agent_context:
             prompt_parts.append(input_data.agent_context.to_prompt())
 
         try:
-            result = await self.agent.run("\n\n".join(prompt_parts))
+            result = await self._agent_for(mid).run("\n\n".join(prompt_parts))
             return TutorResponse(
                 answer=result.output,
                 follow_up_questions=[],

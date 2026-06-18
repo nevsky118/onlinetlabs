@@ -68,6 +68,7 @@ class SessionMonitor:
         self._user_id: str | None = None
         self._lab_slug: str | None = None
         self._analytics_agent: AnalyticsAgent | None = None
+        self._session_model_id: str | None = None
 
     async def start_session(
         self,
@@ -94,6 +95,11 @@ class SessionMonitor:
             )
             result = await session.execute(stmt)
             self._last_event_at = result.scalar_one_or_none()
+
+            # Загружаем model_id сессии для проброса в context интервенции.
+            from models.session import LearningSession
+            ls = await session.get(LearningSession, session_id)
+            self._session_model_id = ls.model_id if ls else None
 
         self._collector = BehavioralCollector(
             self._mcp, self._db_factory, self._learning_analytics_config
@@ -220,6 +226,7 @@ class SessionMonitor:
                 "last_error": features.dominant_error,
                 "question": question,
                 "agent_context": context.model_dump(),
+                "session_model_id": self._session_model_id,
             },
         )
         return PendingIntervention(analysis=analysis, features=features, payload=payload)
