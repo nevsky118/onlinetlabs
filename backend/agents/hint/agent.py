@@ -35,14 +35,15 @@ class HintAgent(BaseAgent):
         """Системный промпт с инструкциями по уровням."""
         return HINT_SYSTEM_PROMPT
 
-    async def run(self, input_data: HintInput) -> HintResponse:
+    async def run(self, input_data: HintInput, model_id: str | None = None) -> HintResponse:
         """Подсказка нужного уровня. LLM при наличии контекста, шаблон без."""
+        mid = model_id or self.agents_config.intervention_model
         hint_level = self.tools.get_hint_level(input_data.attempts_count)
         remaining = self.tools.get_remaining_hints(hint_level)
 
         if input_data.agent_context:
             try:
-                result = await self.agent.run(
+                result = await self._agent_for(mid).run(
                     f"Уровень подсказки: {hint_level}\n"
                     f"Шаг: {input_data.step_slug}\n"
                     f"Последняя ошибка: {input_data.last_error}\n\n"

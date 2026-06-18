@@ -12,6 +12,7 @@ from agents.orchestrator.models import (
 from agents.orchestrator.router import resolve_agent
 from agents.registry import AGENT_REGISTRY
 from config.config_model import ConfigModel
+from llm.client import resolve_model
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,17 @@ class Orchestrator:
         self._agents[agent_name] = agent
         return agent
 
+    # LLM-агенты, принимающие model_id
+    _LLM_AGENTS = frozenset({"tutor", "hint"})
+
+    def _resolve_intervention_model(self, context: dict) -> str:
+        """Модель интервенций: config-дефолт, либо выбор сессии при follow_session."""
+        cfg = self.config.agents
+        sid = context.get("session_model_id")
+        if cfg.interventions_follow_session and sid and cfg.get_entry(sid) is not None:
+            return sid
+        return cfg.intervention_model
+
     async def run(self, input_data: OrchestratorInput) -> OrchestratorResponse:
         """Маршрутизировать запрос к нужному агенту."""
         agent_name = resolve_agent(input_data.intent)
@@ -68,7 +80,10 @@ class Orchestrator:
 
         try:
             agent_input = self._build_agent_input(agent_name, input_data)
-            result = await agent.run(agent_input)
+            if agent_name in self._LLM_AGENTS:
+                result = await agent.run(agent_input, self._resolve_intervention_model(input_data.payload))
+            else:
+                result = await agent.run(agent_input)
             return OrchestratorResponse(
                 agent_used=agent_name,
                 success=True,
@@ -107,7 +122,21 @@ class Orchestrator:
                 intent=agent_name,
                 payload=input_data.context,
             ))
-            result = await agent.run(agent_input)
+            if resolved in self._LLM_AGENTS:
+                model_id = self._resolve_intervention_model(input_data.context)
+                result = await agent.run(agent_input, model_id)
+                try:
+                    creds, _ = resolve_model(model_id)
+                    llm_meta = {"model": model_id, "provider": creds.provider.value}
+                except Exception:
+                    llm_meta = {"model": model_id}
+                return OrchestratorResponse(
+                    agent_used=resolved, success=True,
+                    data=result.model_dump(),
+                    metadata=llm_meta,
+                )
+            else:
+                result = await agent.run(agent_input)
             return OrchestratorResponse(
                 agent_used=resolved, success=True,
                 data=result.model_dump(),
