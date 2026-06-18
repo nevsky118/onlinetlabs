@@ -1,25 +1,44 @@
-"""AsyncOpenAI клиент под текущего LLM-провайдера (пилот: Yandex)."""
+"""Резолвинг LLM-провайдера и клиента по model_id из каталога."""
 
 from openai import AsyncOpenAI
 
 from config import settings
+from config.config_model import LlmProvider, ModelEntry, ProviderCreds
 
 
-def get_llm_client() -> AsyncOpenAI:
-    """Создаёт AsyncOpenAI-клиент под текущего провайдера, подставляя base_url и заголовки для Yandex."""
+def resolve_model(model_id: str) -> tuple[ProviderCreds, ModelEntry]:
+    """Возвращает (креды провайдера, запись каталога) по model_id. KeyError если нет."""
     cfg = settings.agents
-    headers = {}
-    base_url = cfg.base_url
-    if cfg.provider.value == "yandex":
-        headers["x-folder-id"] = cfg.yandex_folder
+    entry = cfg.get_entry(model_id)
+    if entry is None:
+        raise KeyError(f"Unknown model_id: {model_id}")
+    return cfg.providers[entry.provider_ref], entry
+
+
+def build_client(model_id: str) -> AsyncOpenAI:
+    """AsyncOpenAI под провайдера выбранной модели (base_url + ключ + заголовки)."""
+    creds, _ = resolve_model(model_id)
+    headers = dict(creds.extra_headers or {})
+    base_url = creds.base_url
+    if creds.provider == LlmProvider.YANDEX:
+        headers["x-folder-id"] = creds.yandex_folder
         base_url = base_url or "https://ai.api.cloud.yandex.net/v1"
     return AsyncOpenAI(
-        api_key=cfg.api_key or "ollama",
+        api_key=creds.api_key or "ollama",
         base_url=base_url,
         default_headers=headers or None,
     )
 
 
-def default_model() -> str:
-    """Возвращает URI модели по умолчанию из конфигурации агентов."""
-    return settings.agents.model_uri
+def model_uri(model_id: str) -> str:
+    """Строка модели для API: yandex → gpt://folder/model, иначе слаг."""
+    creds, entry = resolve_model(model_id)
+    if creds.provider == LlmProvider.YANDEX and creds.yandex_folder:
+        return f"gpt://{creds.yandex_folder}/{entry.model}"
+    return entry.model
+
+
+def model_supports_tools(model_id: str) -> bool:
+    """Поддерживает ли модель function calling."""
+    _, entry = resolve_model(model_id)
+    return entry.tools
