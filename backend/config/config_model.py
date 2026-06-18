@@ -90,42 +90,64 @@ class LlmProvider(str, Enum):
     YANDEX = "yandex"
 
 
-class AgentsConfig(BaseModel):
-    """Настройки LLM-провайдера для агентов."""
+class ProviderCreds(BaseModel):
+    """Креды одного LLM-провайдера."""
 
-    provider: LlmProvider = LlmProvider.ANTHROPIC
-    model: str = Field(default="claude-sonnet-4-20250514")
+    provider: LlmProvider
     base_url: str | None = None
     api_key: str | None = None
+    yandex_folder: str | None = None
+    extra_headers: dict[str, str] | None = None
+
+
+class ModelEntry(BaseModel):
+    """Запись каталога: выбираемая модель."""
+
+    id: str
+    label: str
+    provider_ref: str
+    model: str  # базовый слаг; URI строит llm/client.py
+    tools: bool = True
+
+
+class AgentsConfig(BaseModel):
+    """Мульти-провайдерный конфиг агентов: реестр, каталог, посёрфейс-дефолты."""
+
+    providers: dict[str, ProviderCreds]
+    catalog: list[ModelEntry]
+    chat_model: str
+    intervention_model: str
+    interventions_follow_session: bool = False
     temperature: float = Field(default=0.3, ge=0.0, le=2.0)
     max_tokens: int = Field(default=4096, ge=1)
     request_timeout: int = Field(default=30, ge=1)
-    yandex_folder: str | None = Field(
-        default=None, description="ID каталога Yandex Cloud"
+    selectable_roles: set[str] = Field(
+        default_factory=lambda: {"student", "instructor", "admin"}
     )
 
-    @property
-    def model_uri(self) -> str:
-        """URI модели: gpt://folder/model для Yandex, обычное имя модели для остальных."""
-        if self.provider == LlmProvider.YANDEX and self.yandex_folder:
-            return f"gpt://{self.yandex_folder}/{self.model}"
-        return self.model
+    def get_entry(self, model_id: str) -> "ModelEntry | None":
+        """Найти запись каталога по id."""
+        return next((m for m in self.catalog if m.id == model_id), None)
 
     @model_validator(mode="after")
-    def validate_provider_requirements(self) -> Self:
-        """Проверяет обязательные поля под выбранный провайдер и подставляет base_url для Ollama по умолчанию."""
-        if (
-            self.provider in (LlmProvider.ANTHROPIC, LlmProvider.OPENAI)
-            and not self.api_key
-        ):
-            raise ValueError(f"api_key required for provider '{self.provider.value}'")
-        if self.provider == LlmProvider.OLLAMA and not self.base_url:
-            self.base_url = "http://localhost:11434/v1"
-        if self.provider == LlmProvider.YANDEX:
-            if not self.api_key:
-                raise ValueError("api_key required for provider 'yandex'")
-            if not self.yandex_folder:
-                raise ValueError("yandex_folder required for provider 'yandex'")
+    def validate_refs(self) -> Self:
+        """Проверяет ссылки: provider_ref ∈ providers, дефолты ∈ catalog, креды достаточны."""
+        ids = {m.id for m in self.catalog}
+        for entry in self.catalog:
+            if entry.provider_ref not in self.providers:
+                raise ValueError(
+                    f"ModelEntry '{entry.id}' references unknown provider '{entry.provider_ref}'"
+                )
+        for field in ("chat_model", "intervention_model"):
+            if getattr(self, field) not in ids:
+                raise ValueError(f"{field} '{getattr(self, field)}' not in catalog")
+        for ref, creds in self.providers.items():
+            if creds.provider in (LlmProvider.ANTHROPIC, LlmProvider.OPENAI) and not creds.api_key:
+                raise ValueError(f"provider '{ref}' requires api_key")
+            if creds.provider == LlmProvider.YANDEX and (not creds.api_key or not creds.yandex_folder):
+                raise ValueError(f"provider '{ref}' (yandex) requires api_key and yandex_folder")
+            if creds.provider == LlmProvider.OLLAMA and not creds.base_url:
+                creds.base_url = "http://localhost:11434/v1"
         return self
 
 

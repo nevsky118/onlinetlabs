@@ -16,7 +16,10 @@ _TEST_ENV_DEFAULTS = {
     "LOG_LEVEL": "DEBUG",
     "CRED_ENCRYPTION_KEY": "r1juy4ePJMqjrYbqXaCw7kDPq8Gwudckyv0wiIBIwfU=",
     "INTERNAL_API_TOKEN": "test-internal-token",
-    "AGENTS_API_KEY": "sk-test",
+    "YANDEX_API_KEY": "sk-test",
+    "YANDEX_FOLDER": "test-folder",
+    "AGENTS_CHAT_MODEL": "yandex-gpt-5.1",
+    "AGENTS_INTERVENTION_MODEL": "yandex-gpt-5.1",
 }
 for _key, _value in _TEST_ENV_DEFAULTS.items():
     os.environ.setdefault(_key, _value)
@@ -33,6 +36,8 @@ from config.config_model import (
     LlmProvider,
     LogConfig,
     MCPConfig,
+    ModelEntry,
+    ProviderCreds,
     RedisConfig,
     SecurityConfig,
 )
@@ -109,7 +114,13 @@ class FakeFailingMCPClient(FakeMCPClient):
 
 @pytest.fixture()
 def agents_config():
-    return AgentsConfig(api_key="sk-ant-test")
+    return AgentsConfig(
+        providers={"yandex": ProviderCreds(provider=LlmProvider.YANDEX, api_key="k", yandex_folder="f")},
+        catalog=[ModelEntry(id="yandex-gpt-5.1", label="YandexGPT 5.1 Pro",
+                            provider_ref="yandex", model="yandexgpt/latest")],
+        chat_model="yandex-gpt-5.1",
+        intervention_model="yandex-gpt-5.1",
+    )
 
 
 @pytest.fixture()
