@@ -16,10 +16,11 @@ import { fetchChatHistory, fetchChatSessions } from "../api"
 import { ChatSuggestions } from "../components/chat-empty-state"
 import { ChatInput } from "../components/chat-input"
 import { ChatMessages } from "../components/chat-messages"
+import { ModelSelector } from "../components/model-selector"
 import { useChatStream } from "../hooks/use-chat-stream"
 import { useInterventions } from "../hooks/use-interventions"
 import { getDomainLabel, mapToUIMessage } from "../lib/utils"
-import { chatHistoryQuery } from "../query"
+import { chatHistoryQuery, chatModelsQuery } from "../query"
 import { track } from "@/lib/analytics"
 import { cn } from "@/lib/utils"
 import { sessionStateQuery } from "@/modules/session"
@@ -44,6 +45,22 @@ export function ChatView({ sessionId }: { sessionId: string }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const historyFetchAbort = useRef<AbortController | null>(null)
 
+  const [modelId, setModelId] = useState<string>(
+    () =>
+      (typeof window !== "undefined" &&
+        localStorage.getItem(`chat-model:${sessionId}`)) ||
+      ""
+  )
+  const onModelChange = useCallback(
+    (id: string) => {
+      setModelId(id)
+      localStorage.setItem(`chat-model:${sessionId}`, id)
+    },
+    [sessionId]
+  )
+
+  const { data: modelsData } = useQuery(chatModelsQuery())
+
   const {
     messages,
     status,
@@ -53,7 +70,7 @@ export function ChatView({ sessionId }: { sessionId: string }) {
     setInput,
     handleSubmit,
     sendText,
-  } = useChatStream(sessionId)
+  } = useChatStream(sessionId, modelId)
 
   useInterventions(sessionId, setMessages)
 
@@ -221,6 +238,14 @@ export function ChatView({ sessionId }: { sessionId: string }) {
               {headerLabel}
             </p>
             <div className="flex items-center justify-end gap-2">
+              {!archive && modelsData && (
+                <ModelSelector
+                  models={modelsData.models}
+                  canSelect={modelsData.canSelect}
+                  value={modelId || modelsData.defaultModelId || undefined}
+                  onValueChange={onModelChange}
+                />
+              )}
               <Button
                 type="button"
                 variant="outline"
