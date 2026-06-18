@@ -1,3 +1,4 @@
+import logging
 import os
 from functools import lru_cache
 from pathlib import Path
@@ -10,18 +11,110 @@ from config.config_model import (
     ConfigModel,
     DatabaseConfig,
     GNS3Config,
+    LlmProvider,
     LogConfig,
     MCPConfig,
+    ModelEntry,
     OpenClawConfig,
+    ProviderCreds,
     RedisConfig,
     SecurityConfig,
 )
+from config.llm_catalog import default_catalog
 from tools.env_cipher import decrypt_file
+
+logger = logging.getLogger(__name__)
 
 
 def _str2bool(value: str) -> bool:
     """Преобразует строковое значение из env в булево."""
     return value.strip().lower() in ("true", "1", "yes")
+
+
+def build_agents_config(values: dict[str, str | None]) -> AgentsConfig:
+    """Собирает AgentsConfig из env: провайдеры из секретов, каталог из кода, фильтр по кредам."""
+    # Back-compat: старые AGENTS_* без новых ключей → одиночный провайдер.
+    if values.get("AGENTS_PROVIDER") and not values.get("AGENTS_CHAT_MODEL"):
+        provider = LlmProvider(values["AGENTS_PROVIDER"])
+        ref = provider.value
+        if provider == LlmProvider.YANDEX and not values.get("AGENTS_YANDEX_FOLDER"):
+            raise ValueError("AGENTS_YANDEX_FOLDER обязателен для back-compat провайдера yandex")
+        creds = ProviderCreds(
+            provider=provider,
+            base_url=values.get("AGENTS_BASE_URL") or None,
+            api_key=values.get("AGENTS_API_KEY") or None,
+            yandex_folder=values.get("AGENTS_YANDEX_FOLDER") or None,
+        )
+        entry = ModelEntry(
+            id="legacy-default", label=values.get("AGENTS_MODEL", "default"),
+            provider_ref=ref, model=values.get("AGENTS_MODEL", "yandexgpt/latest"),
+        )
+        return AgentsConfig(
+            providers={ref: creds}, catalog=[entry],
+            chat_model="legacy-default", intervention_model="legacy-default",
+            temperature=float(values.get("AGENTS_TEMPERATURE", "0.3")),
+            max_tokens=int(values.get("AGENTS_MAX_TOKENS", "4096")),
+            request_timeout=int(values.get("AGENTS_REQUEST_TIMEOUT", "30")),
+        )
+
+    providers: dict[str, ProviderCreds] = {}
+    if values.get("YANDEX_API_KEY"):
+        providers["yandex"] = ProviderCreds(
+            provider=LlmProvider.YANDEX,
+            api_key=values["YANDEX_API_KEY"],
+            yandex_folder=values.get("YANDEX_FOLDER"),
+            base_url=values.get("YANDEX_BASE_URL") or None,
+        )
+    if values.get("OPENROUTER_API_KEY"):
+        headers: dict[str, str] = {}
+        if values.get("OPENROUTER_HTTP_REFERER"):
+            headers["HTTP-Referer"] = values["OPENROUTER_HTTP_REFERER"]
+        if values.get("OPENROUTER_TITLE"):
+            headers["X-OpenRouter-Title"] = values["OPENROUTER_TITLE"]
+        providers["openrouter"] = ProviderCreds(
+            provider=LlmProvider.OPENAI,
+            api_key=values["OPENROUTER_API_KEY"],
+            base_url=values.get("OPENROUTER_BASE_URL") or "https://openrouter.ai/api/v1",
+            extra_headers=headers or None,
+        )
+
+    if not providers:
+        raise ValueError(
+            "Не заданы креды LLM-провайдера — установите YANDEX_API_KEY или OPENROUTER_API_KEY"
+        )
+
+    catalog = [m for m in default_catalog() if m.provider_ref in providers]
+
+    catalog_ids = {m.id for m in catalog}
+
+    chat_model = values.get("AGENTS_CHAT_MODEL", "yandex-gpt-5.1")
+    if catalog and chat_model not in catalog_ids:
+        fallback = catalog[0].id
+        logger.warning(
+            "AGENTS_CHAT_MODEL '%s' not in filtered catalog; falling back to '%s'",
+            chat_model, fallback,
+        )
+        chat_model = fallback
+
+    intervention_model = values.get("AGENTS_INTERVENTION_MODEL", "yandex-gpt-5.1")
+    if catalog and intervention_model not in catalog_ids:
+        fallback = catalog[0].id
+        logger.warning(
+            "AGENTS_INTERVENTION_MODEL '%s' not in filtered catalog; falling back to '%s'",
+            intervention_model, fallback,
+        )
+        intervention_model = fallback
+
+    return AgentsConfig(
+        providers=providers,
+        catalog=catalog,
+        chat_model=chat_model,
+        intervention_model=intervention_model,
+        interventions_follow_session=_str2bool(values.get("AGENTS_INTERVENTIONS_FOLLOW_SESSION", "false")),
+        temperature=float(values.get("AGENTS_TEMPERATURE", "0.3")),
+        max_tokens=int(values.get("AGENTS_MAX_TOKENS", "4096")),
+        request_timeout=int(values.get("AGENTS_REQUEST_TIMEOUT", "30")),
+    )
 
 
 def _build(values: dict[str, str | None]) -> ConfigModel:
@@ -51,16 +144,7 @@ def _build(values: dict[str, str | None]) -> ConfigModel:
         jwt_secret=_req("JWT_SECRET"),
     )
     log = LogConfig(log_level=_req("LOG_LEVEL"))
-    agents = AgentsConfig(
-        provider=values.get("AGENTS_PROVIDER", "anthropic"),
-        model=values.get("AGENTS_MODEL", "claude-sonnet-4-20250514"),
-        base_url=values.get("AGENTS_BASE_URL") or None,
-        api_key=values.get("AGENTS_API_KEY") or None,
-        temperature=float(values.get("AGENTS_TEMPERATURE", "0.3")),
-        max_tokens=int(values.get("AGENTS_MAX_TOKENS", "4096")),
-        request_timeout=int(values.get("AGENTS_REQUEST_TIMEOUT", "30")),
-        yandex_folder=values.get("AGENTS_YANDEX_FOLDER") or None,
-    )
+    agents = build_agents_config(values)
     openclaw = OpenClawConfig(
         enabled=_str2bool(values.get("OPENCLAW_ENABLED", "false")),
         base_url=values.get("OPENCLAW_BASE_URL", "http://localhost:18789"),
