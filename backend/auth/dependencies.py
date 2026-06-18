@@ -15,13 +15,22 @@ security = HTTPBearer()
 TOKEN_EXPIRE_MINUTES = 5
 
 
-def create_backend_token(user_id: str, role: str) -> str:
-    """Выдать HS256 JWT с claims sub и role, время жизни 5 минут."""
+def may_select_model(role: str, can_select_model: bool | None, selectable_roles: set[str]) -> bool:
+    """Право на выбор модели: per-user тоггл важнее, иначе роль-дефолт."""
+    if can_select_model is not None:
+        return can_select_model
+    return role in selectable_roles
+
+
+def create_backend_token(user_id: str, role: str, can_select: bool = False) -> str:
+    """Выдать HS256 JWT с claims sub, role и can_select, время жизни 5 минут."""
+    now = datetime.now(timezone.utc)
     payload = {
         "sub": user_id,
         "role": role,
-        "exp": datetime.now(timezone.utc) + timedelta(minutes=TOKEN_EXPIRE_MINUTES),
-        "iat": datetime.now(timezone.utc),
+        "can_select": can_select,
+        "exp": now + timedelta(minutes=TOKEN_EXPIRE_MINUTES),
+        "iat": now,
     }
     return jwt.encode(payload, settings.api.jwt_secret, algorithm="HS256")
 
@@ -43,7 +52,7 @@ async def get_current_user(
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
             )
-        return {"id": user_id, "role": role}
+        return {"id": user_id, "role": role, "can_select": bool(payload.get("can_select"))}
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token"
@@ -64,7 +73,7 @@ async def get_current_user_optional(
         role = payload.get("role")
         if user_id is None:
             return None
-        return {"id": user_id, "role": role}
+        return {"id": user_id, "role": role, "can_select": bool(payload.get("can_select"))}
     except JWTError:
         return None
 
@@ -118,7 +127,7 @@ async def verify_jwt_for_ws(token: str | None) -> dict | None:
         role = payload.get("role")
         if user_id is None:
             return None
-        return {"id": user_id, "role": role}
+        return {"id": user_id, "role": role, "can_select": bool(payload.get("can_select"))}
     except JWTError as exc:
         logger.warning("ws jwt verify failed", extra={"error": str(exc)})
         return None
