@@ -21,11 +21,10 @@ from chat.stream_protocol import (
 )
 from chat.tools import TOOL_DEFINITIONS, _run_vpcs_show_ip, execute_tool
 from config import settings
-from config.config_model import LlmProvider
 from db.session import get_db
 from deps import get_mcp_client
 from labs.spec import expected_vpcs_config, load_lab_spec
-from llm.client import default_model, get_llm_client
+from llm.client import build_client, model_supports_tools, model_uri
 from llm.prompts import LANGUAGE_REMINDER, TUTOR_SYSTEM_PROMPT
 from models.lab import Lab
 from sessions.context import build_session_context
@@ -46,9 +45,34 @@ MAX_HISTORY_MESSAGES = 6
 _THINKING_RE = re.compile(r"\[START_THINKING\].*?\[END_THINKING\]", re.DOTALL)
 
 
-def _supports_tool_calling() -> bool:
-    """Возвращает True для провайдеров с нативным OpenAI-style function calling."""
-    return settings.agents.provider in (LlmProvider.ANTHROPIC, LlmProvider.OPENAI, LlmProvider.YANDEX)
+def build_models_response(can_select: bool) -> dict:
+    """Каталог для UI: только tools-capable; список пуст если выбор запрещён."""
+    cfg = settings.agents
+    models = [] if not can_select else [
+        {"id": m.id, "label": m.label} for m in cfg.catalog if m.tools
+    ]
+    return {"can_select": can_select, "default_model_id": cfg.chat_model, "models": models}
+
+
+@router.get("/chat/models")
+async def chat_models(current_user: dict = Depends(get_current_user)):
+    """Доступные для выбора модели текущего пользователя."""
+    return build_models_response(current_user.get("can_select", False))
+
+
+def resolve_chat_model(requested: str | None, session_model_id: str | None, can_select: bool) -> str:
+    """Эффективная модель: запрос(если entitled и в каталоге) → session → config-дефолт."""
+    cfg = settings.agents
+    if can_select and requested and cfg.get_entry(requested) is not None:
+        return requested
+    if session_model_id and cfg.get_entry(session_model_id) is not None:
+        return session_model_id
+    return cfg.chat_model
+
+
+def _supports_tool_calling(model_id: str) -> bool:
+    """Поддерживает ли модель нативный OpenAI-style function calling."""
+    return model_supports_tools(model_id)
 
 
 async def _fetch_mcp_context(mcp_client, ctx, expected_vpcs: dict | None = None) -> str | None:
@@ -173,6 +197,7 @@ async def _stream_one_round(
     ctx,
     mcp_client,
     state: dict,
+    model_id: str = "",
 ) -> AsyncIterator[str]:
     """Один LLM-round: текст + накопление tool_calls. Обновляет state in-place.
 
@@ -182,7 +207,7 @@ async def _stream_one_round(
       - has_tool_calls: bool — есть ли tool_calls в этом раунде
     """
     create_kwargs: dict = {"model": model, "messages": messages, "stream": True}
-    if _supports_tool_calling():
+    if _supports_tool_calling(model_id):
         create_kwargs["tools"] = TOOL_DEFINITIONS
         create_kwargs["tool_choice"] = "auto"
 
@@ -258,11 +283,12 @@ async def _stream_one_round(
 
 
 async def _finalize_assistant_message(
-    db: AsyncSession, session_id: str, parts: list[dict], usage: dict | None
+    db: AsyncSession, session_id: str, parts: list[dict], usage: dict | None, model_id: str
 ) -> None:
     """Сохранить итоговое сообщение ассистента; ошибки логируем, не пробрасываем (finally-блок)."""
     try:
-        await save_assistant_message(db, session_id, parts, usage)
+        merged = {**(usage or {}), "model_id": model_id}
+        await save_assistant_message(db, session_id, parts, merged)
     except Exception:
         logger.exception("chat: не удалось сохранить assistant message session_id=%s", session_id)
 
@@ -288,8 +314,19 @@ async def chat_stream(
 
     async def generate():
         """Генератор SSE-событий. Прогоняет раунды LLM и сохраняет итог ассистента."""
-        client = get_llm_client()
-        model = default_model()
+        effective_model_id = resolve_chat_model(
+            body.model_id, session.model_id, current_user.get("can_select", False)
+        )
+        if body.model_id and effective_model_id != body.model_id:
+            logger.warning(
+                "chat: model_id '%s' отклонён, фолбэк на '%s'", body.model_id, effective_model_id
+            )
+        # Персист выбора модели на сессию.
+        if effective_model_id != session.model_id:
+            session.model_id = effective_model_id
+            await db.commit()
+        client = build_client(effective_model_id)
+        model = model_uri(effective_model_id)
 
         # Параллельно загружаем: описание лабы + состояние среды из MCP.
         spec = load_lab_spec(session.lab_slug)
@@ -315,7 +352,8 @@ async def chat_stream(
                 if await request.is_disconnected():
                     break
                 async for event in _stream_one_round(
-                    request, client, model, messages, ctx, mcp_client, state
+                    request, client, model, messages, ctx, mcp_client, state,
+                    model_id=effective_model_id,
                 ):
                     yield event
                 if not state["has_tool_calls"]:
@@ -330,7 +368,7 @@ async def chat_stream(
                 yield done_event()
         finally:
             await _finalize_assistant_message(
-                db, session.id, state["assistant_parts"], state["usage_info"]
+                db, session.id, state["assistant_parts"], state["usage_info"], effective_model_id
             )
 
     return StreamingResponse(
