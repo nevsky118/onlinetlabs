@@ -10,3 +10,9 @@ export interface SessionSummary {
   startedAt: string
   status: string
 }
+
+export type ChatModelsResponse = {
+  canSelect: boolean
+  defaultModelId: string
+  models: { id: string; label: string }[]
+}

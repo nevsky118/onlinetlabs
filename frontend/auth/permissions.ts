@@ -5,6 +5,7 @@ const statements = {
   lab: ["view", "create", "update", "delete"],
   session: ["view", "join", "manage"],
   user: ["view", "manage"],
+  model: ["select"],
 } as const
 
 export const ac = createAccessControl(statements)
@@ -19,12 +20,14 @@ export const roles = {
     course: ["view", "create", "update"],
     lab: ["view", "create", "update"],
     session: ["view", "join", "manage"],
+    model: ["select"],
   }),
   admin: ac.newRole({
     course: ["view", "create", "update", "delete"],
     lab: ["view", "create", "update", "delete"],
     session: ["view", "join", "manage"],
     user: ["view", "manage"],
+    model: ["select"],
   }),
 }
 

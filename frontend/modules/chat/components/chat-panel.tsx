@@ -10,11 +10,12 @@ import { fetchChatHistory, fetchChatSessions } from "../api"
 import { useChatStream } from "../hooks/use-chat-stream"
 import { useInterventions } from "../hooks/use-interventions"
 import { getDomainLabel, mapToUIMessage } from "../lib/utils"
-import { chatHistoryQuery } from "../query"
+import { chatHistoryQuery, chatModelsQuery } from "../query"
 import { ChatEmptyState } from "./chat-empty-state"
 import { ChatInput } from "./chat-input"
 import { ChatMessages } from "./chat-messages"
 import { CHAT_PANEL_MIN_WIDTH, useChatPanel } from "./chat-panel-provider"
+import { ModelSelector } from "./model-selector"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { track } from "@/lib/analytics"
 import { cn } from "@/lib/utils"
@@ -60,6 +61,22 @@ export function ChatPanel({
   const historyFetchAbort = useRef<AbortController | null>(null)
   const spotlightRef = useRef<HTMLDivElement>(null)
 
+  const [modelId, setModelId] = useState<string>(
+    () =>
+      (typeof window !== "undefined" &&
+        localStorage.getItem(`chat-model:${sessionId}`)) ||
+      ""
+  )
+  const onModelChange = useCallback(
+    (id: string) => {
+      setModelId(id)
+      localStorage.setItem(`chat-model:${sessionId}`, id)
+    },
+    [sessionId]
+  )
+
+  const { data: modelsData } = useQuery(chatModelsQuery())
+
   const {
     messages,
     status,
@@ -69,7 +86,7 @@ export function ChatPanel({
     setInput,
     handleSubmit,
     sendText,
-  } = useChatStream(sessionId)
+  } = useChatStream(sessionId, modelId)
 
   const openRef = useRef(open)
   openRef.current = open
@@ -293,7 +310,15 @@ export function ChatPanel({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-1.5">
+            {!archive && modelsData && (
+              <ModelSelector
+                models={modelsData.models}
+                canSelect={modelsData.canSelect}
+                value={modelId || modelsData.defaultModelId || undefined}
+                onValueChange={onModelChange}
+              />
+            )}
             {!isMobile && (
               <Button
                 type="button"
