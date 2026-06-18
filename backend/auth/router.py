@@ -4,9 +4,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.dependencies import (
     create_backend_token,
+    may_select_model,
     require_admin,
     require_internal_caller,
 )
+from config import settings
 from rate_limit import exchange_rate_limit_key, limiter
 from auth.schemas import (
     ExchangeRequest,
@@ -118,7 +120,8 @@ async def exchange(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
         )
 
-    token = create_backend_token(user_id=user.id, role=user.role)
+    can_select = may_select_model(user.role, user.can_select_model, settings.agents.selectable_roles)
+    token = create_backend_token(user_id=user.id, role=user.role, can_select=can_select)
     return TokenResponse(access_token=token)
 
 
