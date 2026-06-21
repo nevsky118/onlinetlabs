@@ -1,4 +1,9 @@
 {
   "root": true,
-  "pages": ["lan-static-ip", "dhcp-basics", "inter-subnet-routing"]
+  "pages": [
+    "lan-static-ip",
+    "lan-static-ip-b",
+    "dhcp-basics",
+    "inter-subnet-routing"
+  ]
 }
