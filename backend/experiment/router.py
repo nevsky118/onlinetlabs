@@ -10,9 +10,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.dependencies import get_current_user
 from db.session import get_db
-from experiment.analysis import compute_experiment_analysis
+from experiment.analysis import compute_arm_analysis, compute_experiment_analysis
 from experiment.group_assigner import ExperimentGroup
 from experiment.schemas import (
+    ArmAnalysisResponse,
     ExperimentStatusResponse,
     GroupUpdateRequest,
     ParticipantResponse,
@@ -245,3 +246,25 @@ async def get_analysis(
     result = await db.execute(select(ExperimentMetrics))
     metrics = result.scalars().all()
     return compute_experiment_analysis(metrics)
+
+
+@router.get("/arm-analysis", response_model=ArmAnalysisResponse)
+async def get_arm_analysis(
+    db: AsyncSession = Depends(get_db),
+    _: dict = Depends(_require_admin),
+):
+    """Сравнение open vs closed arm по A4-5 метрикам."""
+    from config import settings
+
+    result = await db.execute(select(ExperimentMetrics))
+    metrics = result.scalars().all()
+    mentor_seconds = settings.learning_analytics.mentor_handling_seconds
+    analysis = compute_arm_analysis(metrics, mentor_seconds=mentor_seconds)
+    return ArmAnalysisResponse(
+        l2_pass_rate_open=analysis.l2_pass_rate_open,
+        l2_pass_rate_closed=analysis.l2_pass_rate_closed,
+        escalations_mean_open=analysis.escalations_mean_open,
+        escalations_mean_closed=analysis.escalations_mean_closed,
+        repeated_errors_comparison=analysis.repeated_errors_comparison,
+        mentor_hours_saved=analysis.mentor_hours_saved,
+    )

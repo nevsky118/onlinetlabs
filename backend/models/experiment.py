@@ -35,6 +35,14 @@ class ExperimentMetrics(Base):
     interventions_succeeded: Mapped[int] = mapped_column(Integer, default=0)
     interventions_failed: Mapped[int] = mapped_column(Integer, default=0)
     interventions_accepted: Mapped[int] = mapped_column(Integer, default=0)
+    # Task 8: расширенные метрики эксперимента
+    control_arm: Mapped[str | None] = mapped_column(String(20), default=None)
+    # base_arm = постоянный training-arm пользователя (User.control_arm); control_arm = effective arm сессии
+    base_arm: Mapped[str | None] = mapped_column(String(20), default=None)
+    escalations: Mapped[int] = mapped_column(Integer, default=0)
+    would_interventions: Mapped[int] = mapped_column(Integer, default=0)
+    l1_interventions: Mapped[int] = mapped_column(Integer, default=0)
+    l2_unassisted_pass: Mapped[bool | None] = mapped_column(Boolean, default=None)
     final_score: Mapped[float] = mapped_column(Float)
     completed: Mapped[bool] = mapped_column(Boolean, default=False)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

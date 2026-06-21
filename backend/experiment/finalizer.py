@@ -11,8 +11,16 @@ def compute_session_metrics(
     total_steps: int,
     experiment_group: str,
     agent_backend: str | None = None,
+    control_arm: str | None = None,
+    base_arm: str | None = None,
+    l2_intervention_cap: int = 0,
+    is_l2: bool = False,
 ) -> dict:
-    """События + мета сессии → словарь метрик для ExperimentMetrics."""
+    """События + мета сессии → словарь метрик для ExperimentMetrics.
+
+    is_l2: True если вызывающий код определил это L2-holdout сессией.
+    Только тогда вычисляется l2_unassisted_pass; иначе None.
+    """
     error_events = [e for e in events if e.event_type == "error"]
     intervention_events = [e for e in events if e.event_type == "intervention"]
     successful_interventions = [e for e in intervention_events if e.success]
@@ -25,6 +33,14 @@ def compute_session_metrics(
     interventions_succeeded = len(successful_interventions)
     interventions_failed = interventions_received - interventions_succeeded
     final_score = (steps_completed / total_steps * 100.0) if total_steps > 0 else 0.0
+    completed = steps_completed >= total_steps
+
+    # Task 8: новые метрики
+    escalations = len([e for e in events if e.event_type == "escalation"])
+    would_interventions = len([e for e in events if e.event_type == "would_intervene"])
+    l2_unassisted_pass: bool | None = None
+    if is_l2:
+        l2_unassisted_pass = completed and interventions_received <= l2_intervention_cap
 
     return {
         "experiment_group": experiment_group,
@@ -39,8 +55,15 @@ def compute_session_metrics(
         "interventions_failed": interventions_failed,
         "interventions_accepted": 0,
         "final_score": round(final_score, 1),
-        "completed": steps_completed >= total_steps,
-        "completed_at": ended_at if steps_completed >= total_steps else None,
+        "completed": completed,
+        "completed_at": ended_at if completed else None,
+        # Task 8
+        "control_arm": control_arm,
+        "base_arm": base_arm,
+        "escalations": escalations,
+        "would_interventions": would_interventions,
+        "l1_interventions": interventions_received,
+        "l2_unassisted_pass": l2_unassisted_pass,
     }
 
 

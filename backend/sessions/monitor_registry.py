@@ -4,6 +4,7 @@ import logging
 
 from agents.analytics.agent import AnalyticsAgent
 from config.config_model import ConfigModel
+from experiment.arm_resolver import effective_arm
 from learning_analytics.monitor import SessionMonitor
 
 logger = logging.getLogger(__name__)
@@ -53,6 +54,9 @@ class SessionMonitorRegistry:
                 logger.warning("Не удалось запустить LabProgressObserver для %s", session_id, exc_info=True)
                 observer = None
 
+        async with self._db_factory() as db:
+            arm = await effective_arm(db, user_id, lab_slug)
+
         monitor = SessionMonitor(
             mcp_client=self._mcp_client,
             db_factory=self._db_factory,
@@ -61,6 +65,7 @@ class SessionMonitorRegistry:
             gateway=self._gateway,
             activity_log=self._activity_log,
             observer=observer,
+            control_arm=arm,
         )
         self._monitors[session_id] = monitor
         await monitor.start_session(session_id, user_id, lab_slug, ctx, self._analytics_agent)

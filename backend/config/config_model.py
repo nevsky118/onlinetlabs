@@ -229,6 +229,11 @@ class LearningAnalyticsConfig(BaseModel):
     cost_intervention: float = Field(default=1.0, description="c_возд: стоимость одного воздействия")
     cost_false_intervention: float = Field(default=0.5, description="c_ложн: штраф за ложное вмешательство")
 
+    # A/B и орг-метрики (Задача 4)
+    escalation_max_dwell: float = Field(default=180.0, description="Порог dwell для объективной эскалации (сек)")
+    mentor_handling_seconds: float = Field(default=900.0, description="t_наставника для контрфактуала часов")
+    l2_intervention_cap: int = Field(default=0, description="Макс. воздействий для зачёта автономии на L2")
+
 
 class OpenClawConfig(BaseModel):
     """Конфигурация OpenClaw Gateway для экспериментального бэкенда."""
