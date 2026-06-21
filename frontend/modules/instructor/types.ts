@@ -31,6 +31,30 @@ export interface LabProgressRow {
   lastActiveAt: string | null
 }
 
+export interface SessionSummary {
+  sessionId: string
+  labSlug: string
+  labTitle: string
+  status: string
+  startedAt: string
+  endedAt: string | null
+  messageCount: number
+  hintCount: number
+}
+
+export type TimelinePart = { type: string; text?: string }
+
+export interface TimelineItem {
+  kind: "student" | "tutor" | "intervention"
+  ts: string
+  parts: TimelinePart[] | null
+  text: string | null
+  action: string | null
+  severity: string | null
+  hintLevel: number | null
+  struggleType: string | null
+}
+
 export interface StudentDetail {
   userId: string
   name: string | null
@@ -42,4 +66,5 @@ export interface StudentDetail {
   totalHints: number
   totalSessions: number
   labs: LabProgressRow[]
+  sessions: SessionSummary[]
 }

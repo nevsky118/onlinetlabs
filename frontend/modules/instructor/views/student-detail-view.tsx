@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { SessionDialogueSheet } from "../components/session-dialogue-sheet"
 import { StatCard } from "../components/stat-card"
 import {
   formatRelative,
@@ -141,6 +142,41 @@ export function StudentDetailView({ userId }: { userId: string }) {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-lg font-semibold">Сессии</h2>
+        {data.sessions.length === 0 ? (
+          <p className="text-muted-foreground text-sm">Сессий пока нет.</p>
+        ) : (
+          <div className="flex flex-col gap-px border">
+            {data.sessions.map((s) => (
+              <SessionDialogueSheet
+                key={s.sessionId}
+                userId={userId}
+                session={s}
+              >
+                <button
+                  type="button"
+                  className="hover:bg-muted flex w-full items-center justify-between bg-background px-4 py-3 text-left"
+                >
+                  <span className="flex flex-col gap-1">
+                    <span className="text-sm font-medium">{s.labTitle}</span>
+                    <span className="flex items-center gap-2 text-muted-foreground text-xs">
+                      <Badge variant={statusVariant(s.status)}>
+                        {statusLabel(s.status)}
+                      </Badge>
+                      {new Date(s.startedAt).toLocaleString()}
+                    </span>
+                  </span>
+                  <span className="text-muted-foreground text-xs">
+                    {s.messageCount} сообщ · {s.hintCount} подсказок
+                  </span>
+                </button>
+              </SessionDialogueSheet>
+            ))}
           </div>
         )}
       </section>

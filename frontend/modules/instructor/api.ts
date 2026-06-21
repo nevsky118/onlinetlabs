@@ -3,8 +3,7 @@ import "server-only"
 import { headers } from "next/headers"
 import { RedirectType, redirect } from "next/navigation"
 import { getBackendToken } from "@/auth/token"
-
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000"
+import { serverEnv } from "@/lib/env"
 
 async function authedFetch(
   path: string,
@@ -23,7 +22,7 @@ async function authedFetch(
       RedirectType.replace
     )
   }
-  return fetch(`${BACKEND_URL}${path}`, {
+  return fetch(`${serverEnv.BACKEND_URL}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
@@ -40,4 +39,13 @@ export async function getStudentsOverviewApi(): Promise<Response> {
 
 export async function getStudentDetailApi(userId: string): Promise<Response> {
   return authedFetch(`/instructor/students/${encodeURIComponent(userId)}`)
+}
+
+export async function getSessionTimelineApi(
+  userId: string,
+  sessionId: string
+): Promise<Response> {
+  return authedFetch(
+    `/instructor/students/${encodeURIComponent(userId)}/sessions/${encodeURIComponent(sessionId)}/timeline`
+  )
 }

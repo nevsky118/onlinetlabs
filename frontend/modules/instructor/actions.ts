@@ -1,7 +1,11 @@
 "use server"
 
-import type { StudentDetail, StudentsOverview } from "./types"
-import { getStudentDetailApi, getStudentsOverviewApi } from "./api"
+import type { StudentDetail, StudentsOverview, TimelineItem } from "./types"
+import {
+  getSessionTimelineApi,
+  getStudentDetailApi,
+  getStudentsOverviewApi,
+} from "./api"
 
 export async function fetchStudentsOverview(): Promise<StudentsOverview> {
   const res = await getStudentsOverviewApi()
@@ -44,7 +48,36 @@ export async function fetchStudentDetail(
       completedAt: l.completed_at,
       lastActiveAt: l.last_active_at,
     })),
+    sessions: (d.sessions ?? []).map((s: Record<string, unknown>) => ({
+      sessionId: s.session_id,
+      labSlug: s.lab_slug,
+      labTitle: s.lab_title,
+      status: s.status,
+      startedAt: s.started_at,
+      endedAt: s.ended_at,
+      messageCount: s.message_count,
+      hintCount: s.hint_count,
+    })),
   }
+}
+
+export async function fetchSessionTimeline(
+  userId: string,
+  sessionId: string
+): Promise<TimelineItem[]> {
+  const res = await getSessionTimelineApi(userId, sessionId)
+  if (!res.ok) throw new Error(`fetchSessionTimeline ${res.status}`)
+  const rows = (await res.json()) as Record<string, unknown>[]
+  return rows.map((r) => ({
+    kind: r.kind as TimelineItem["kind"],
+    ts: r.ts as string,
+    parts: (r.parts as TimelineItem["parts"]) ?? null,
+    text: (r.text as string) ?? null,
+    action: (r.action as string) ?? null,
+    severity: (r.severity as string) ?? null,
+    hintLevel: (r.hint_level as number) ?? null,
+    struggleType: (r.struggle_type as string) ?? null,
+  }))
 }
 
 function mapStudentOverview(s: Record<string, unknown>) {

@@ -3,6 +3,19 @@ from datetime import datetime
 from pydantic import BaseModel
 
 
+class SessionSummary(BaseModel):
+    """Сессия ученика для списка в карточке преподавателя."""
+
+    session_id: str
+    lab_slug: str
+    lab_title: str
+    status: str
+    started_at: datetime
+    ended_at: datetime | None
+    message_count: int
+    hint_count: int
+
+
 class StudentOverview(BaseModel):
     """Сводка по одному ученику для общей таблицы кабинета преподавателя."""
 
@@ -55,3 +68,17 @@ class StudentDetailResponse(BaseModel):
     total_hints: int
     total_sessions: int
     labs: list[LabProgressRow]
+    sessions: list[SessionSummary]
+
+
+class TimelineItem(BaseModel):
+    """Элемент таймлайна сессии: реплика чата или проактивная интервенция."""
+
+    kind: str  # student | tutor | intervention
+    ts: datetime
+    parts: list | None = None
+    text: str | None = None
+    action: str | None = None
+    severity: str | None = None
+    hint_level: int | None = None
+    struggle_type: str | None = None

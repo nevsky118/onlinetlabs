@@ -18,19 +18,25 @@ export function formatScore(score: number | null): string {
 }
 
 const STATUS_LABELS: Record<string, string> = {
+  // статусы лаб
   completed: "Завершена",
   in_progress: "В процессе",
   not_started: "Не начата",
+  // статусы сессий
+  active: "Активна",
+  ended: "Завершена",
+  error: "Ошибка",
 }
 
 export function statusLabel(status: string): string {
   return STATUS_LABELS[status] ?? status
 }
 
-export type StatusVariant = "default" | "secondary" | "outline"
+export type StatusVariant = "default" | "secondary" | "outline" | "destructive"
 
 export function statusVariant(status: string): StatusVariant {
   if (status === "completed") return "default"
-  if (status === "in_progress") return "secondary"
-  return "outline"
+  if (status === "in_progress" || status === "active") return "secondary"
+  if (status === "error") return "destructive"
+  return "outline" // not_started, ended
 }
