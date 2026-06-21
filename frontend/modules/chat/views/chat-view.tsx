@@ -17,6 +17,7 @@ import { ChatSuggestions } from "../components/chat-empty-state"
 import { ChatInput } from "../components/chat-input"
 import { ChatMessages } from "../components/chat-messages"
 import { ModelSelector } from "../components/model-selector"
+import { useAgentActivity } from "../hooks/use-agent-activity"
 import { useChatStream } from "../hooks/use-chat-stream"
 import { useInterventions } from "../hooks/use-interventions"
 import { getDomainLabel, mapToUIMessage } from "../lib/utils"
@@ -25,6 +26,7 @@ import { track } from "@/lib/analytics"
 import { cn } from "@/lib/utils"
 import { sessionStateQuery } from "@/modules/session"
 import { Button } from "@/ui/button"
+import { Switch } from "@/ui/switch"
 
 type Archive = {
   sessionId: string
@@ -34,7 +36,13 @@ type Archive = {
 
 // Полноэкранный чат на отдельном URL, как CF /sphere:
 // окно в рамке, слева collapsible-сайдбар истории сессий
-export function ChatView({ sessionId }: { sessionId: string }) {
+export function ChatView({
+  sessionId,
+  canViewLogs = false,
+}: {
+  sessionId: string
+  canViewLogs?: boolean
+}) {
   const router = useRouter()
   const { data: state } = useQuery(sessionStateQuery(sessionId))
   const labSlug = state?.lab.slug ?? ""
@@ -44,6 +52,20 @@ export function ChatView({ sessionId }: { sessionId: string }) {
   const [pastMessages, setPastMessages] = useState<UIMessage[]>([])
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const historyFetchAbort = useRef<AbortController | null>(null)
+
+  // Тогл логов агентов: состояние в localStorage
+  const [logsEnabled, setLogsEnabled] = useState<boolean>(
+    () =>
+      typeof window !== "undefined" &&
+      localStorage.getItem(`agent-logs:${sessionId}`) === "true"
+  )
+  const onLogsToggle = useCallback(
+    (checked: boolean) => {
+      setLogsEnabled(checked)
+      localStorage.setItem(`agent-logs:${sessionId}`, String(checked))
+    },
+    [sessionId]
+  )
 
   const [modelId, setModelId] = useState<string>(
     () =>
@@ -73,6 +95,12 @@ export function ChatView({ sessionId }: { sessionId: string }) {
   } = useChatStream(sessionId, modelId)
 
   useInterventions(sessionId, setMessages)
+
+  // Логи ИИ: события стримятся при включённом тогле; встраиваются в поток чата.
+  const { events: activityEvents } = useAgentActivity(
+    sessionId,
+    canViewLogs && logsEnabled && !archive
+  )
 
   const { data: history } = useQuery(chatHistoryQuery(sessionId))
 
@@ -238,13 +266,16 @@ export function ChatView({ sessionId }: { sessionId: string }) {
               {headerLabel}
             </p>
             <div className="flex items-center justify-end gap-2">
-              {!archive && modelsData && (
-                <ModelSelector
-                  models={modelsData.models}
-                  canSelect={modelsData.canSelect}
-                  value={modelId || modelsData.defaultModelId || undefined}
-                  onValueChange={onModelChange}
-                />
+              {canViewLogs && !archive && (
+                <div className="flex items-center gap-1.5">
+                  <Switch
+                    size="sm"
+                    checked={logsEnabled}
+                    onCheckedChange={onLogsToggle}
+                    aria-label="Логи ИИ"
+                  />
+                  <span className="text-muted-foreground text-xs">Логи ИИ</span>
+                </div>
               )}
               <Button
                 type="button"
@@ -299,13 +330,25 @@ export function ChatView({ sessionId }: { sessionId: string }) {
                   stop={stop}
                   large
                   className="w-full p-0"
+                  modelSelector={
+                    modelsData ? (
+                      <ModelSelector
+                        models={modelsData.models}
+                        canSelect={modelsData.canSelect}
+                        value={
+                          modelId || modelsData.defaultModelId || undefined
+                        }
+                        onValueChange={onModelChange}
+                      />
+                    ) : null
+                  }
                 />
                 <ChatSuggestions horizontal onSuggestion={onSuggestion} />
               </div>
             </div>
           ) : (
             <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col">
-              <ChatMessages messages={messages} />
+              <ChatMessages messages={messages} events={activityEvents} />
               <ChatInput
                 input={input}
                 setInput={setInput}
@@ -313,6 +356,16 @@ export function ChatView({ sessionId }: { sessionId: string }) {
                 status={status}
                 stop={stop}
                 large
+                modelSelector={
+                  modelsData ? (
+                    <ModelSelector
+                      models={modelsData.models}
+                      canSelect={modelsData.canSelect}
+                      value={modelId || modelsData.defaultModelId || undefined}
+                      onValueChange={onModelChange}
+                    />
+                  ) : null
+                }
               />
             </div>
           )}

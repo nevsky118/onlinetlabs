@@ -15,6 +15,8 @@ type Props = {
   // Крупная форма для полноэкранного режима, как на CF /sphere
   large?: boolean
   className?: string
+  // Слот выбора модели — в композере рядом с подписью агента (как в claude.ai).
+  modelSelector?: React.ReactNode
 }
 
 export function ChatInput({
@@ -25,6 +27,7 @@ export function ChatInput({
   stop,
   large,
   className,
+  modelSelector,
 }: Props) {
   const isStreaming = status === "streaming" || status === "submitted"
 
@@ -59,9 +62,12 @@ export function ChatInput({
             large ? "p-3" : "p-2"
           )}
         >
-          <Badge variant="secondary" className="text-muted-foreground">
-            TutorAgent
-          </Badge>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <Badge variant="secondary" className="text-muted-foreground">
+              TutorAgent
+            </Badge>
+            {modelSelector}
+          </div>
           {isStreaming && stop ? (
             <Tooltip>
               <TooltipTrigger asChild>

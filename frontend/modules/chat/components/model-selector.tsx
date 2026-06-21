@@ -24,7 +24,8 @@ export function ModelSelector({
   value,
   onValueChange,
 }: Props) {
-  if (!canSelect || models.length === 0) return null
+  // <2 моделей — выбирать нечего, не показываем дропдаун (нечего тыкать).
+  if (!canSelect || models.length < 2) return null
 
   return (
     <Select value={value} onValueChange={onValueChange}>

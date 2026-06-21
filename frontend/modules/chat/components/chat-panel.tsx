@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useRef, useState } from "react"
 import type { SessionSummary } from "../types"
 import { fetchChatHistory, fetchChatSessions } from "../api"
+import { useAgentActivity } from "../hooks/use-agent-activity"
 import { useChatStream } from "../hooks/use-chat-stream"
 import { useInterventions } from "../hooks/use-interventions"
 import { getDomainLabel, mapToUIMessage } from "../lib/utils"
@@ -29,6 +30,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/ui/dropdown-menu"
+import { Switch } from "@/ui/switch"
 
 type Archive = {
   sessionId: string
@@ -36,15 +38,11 @@ type Archive = {
   date: string
 }
 
-export function ChatPanel({
-  sessionId,
-  labSlug,
-}: {
-  sessionId: string
-  labSlug: string
-}) {
+// Пропсов нет: конфиг сессии берётся из ChatProvider через контекст.
+export function ChatPanel() {
   const router = useRouter()
   const {
+    config: { sessionId, labSlug, canViewLogs },
     open,
     closePanel,
     width,
@@ -75,6 +73,20 @@ export function ChatPanel({
     [sessionId]
   )
 
+  // Тогл логов агентов: состояние в localStorage
+  const [logsEnabled, setLogsEnabled] = useState<boolean>(
+    () =>
+      typeof window !== "undefined" &&
+      localStorage.getItem(`agent-logs:${sessionId}`) === "true"
+  )
+  const onLogsToggle = useCallback(
+    (checked: boolean) => {
+      setLogsEnabled(checked)
+      localStorage.setItem(`agent-logs:${sessionId}`, String(checked))
+    },
+    [sessionId]
+  )
+
   const { data: modelsData } = useQuery(chatModelsQuery())
 
   const {
@@ -95,6 +107,12 @@ export function ChatPanel({
   }, [bumpUnread])
 
   useInterventions(sessionId, setMessages, onUnread)
+
+  // Логи ИИ: события стримятся только при включённом тогле; встраиваются в поток чата.
+  const { events: activityEvents } = useAgentActivity(
+    sessionId,
+    canViewLogs && logsEnabled && !archive
+  )
 
   // Грузим историю чата этой сессии.
   const { data: history } = useQuery(chatHistoryQuery(sessionId))
@@ -311,13 +329,16 @@ export function ChatPanel({
           </DropdownMenu>
 
           <div className="flex items-center gap-1.5">
-            {!archive && modelsData && (
-              <ModelSelector
-                models={modelsData.models}
-                canSelect={modelsData.canSelect}
-                value={modelId || modelsData.defaultModelId || undefined}
-                onValueChange={onModelChange}
-              />
+            {canViewLogs && !archive && (
+              <div className="flex items-center gap-1.5">
+                <Switch
+                  size="sm"
+                  checked={logsEnabled}
+                  onCheckedChange={onLogsToggle}
+                  aria-label="Логи ИИ"
+                />
+                <span className="text-muted-foreground text-xs">Логи ИИ</span>
+              </div>
             )}
             {!isMobile && (
               <Button
@@ -400,17 +421,37 @@ export function ChatPanel({
                 handleSubmit={trackedHandleSubmit}
                 status={status}
                 stop={stop}
+                modelSelector={
+                  modelsData ? (
+                    <ModelSelector
+                      models={modelsData.models}
+                      canSelect={modelsData.canSelect}
+                      value={modelId || modelsData.defaultModelId || undefined}
+                      onValueChange={onModelChange}
+                    />
+                  ) : null
+                }
               />
             </>
           ) : (
             <>
-              <ChatMessages messages={messages} />
+              <ChatMessages messages={messages} events={activityEvents} />
               <ChatInput
                 input={input}
                 setInput={setInput}
                 handleSubmit={trackedHandleSubmit}
                 status={status}
                 stop={stop}
+                modelSelector={
+                  modelsData ? (
+                    <ModelSelector
+                      models={modelsData.models}
+                      canSelect={modelsData.canSelect}
+                      value={modelId || modelsData.defaultModelId || undefined}
+                      onValueChange={onModelChange}
+                    />
+                  ) : null
+                }
               />
             </>
           )}
