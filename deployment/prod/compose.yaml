@@ -1,0 +1,83 @@
+# PROD: образы тянутся из ghcr.io (собраны в CI). Переменные IMAGE_*/IMAGE_TAG
+# экспортирует workflow при деплое; для ручного запуска на сервере задать их же.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD required}
+      POSTGRES_DB: ${DB_NAME:-onlinetlabs}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # порт наружу НЕ публикуется
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # порт наружу НЕ публикуется
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 2s
+      retries: 5
+
+  backend:
+    image: ${IMAGE_BACKEND:-ghcr.io/nevsky118/onlinetlabs-backend}:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file:
+      - ./backend.env
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      REDIS_URL: redis://redis:6379/0
+      ENVIRONMENT: production
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  frontend:
+    image: ${IMAGE_FRONTEND:-ghcr.io/nevsky118/onlinetlabs-frontend}:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file:
+      - ./frontend.env
+    environment:
+      BACKEND_URL: http://backend:8000
+      NODE_ENV: production
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?APP_DOMAIN required}   # домен из env, не из репо
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./certs:/etc/caddy/certs:ro      # Cloudflare Origin Certificate (origin.pem + origin-key.pem)
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

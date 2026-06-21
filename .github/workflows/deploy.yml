@@ -1,0 +1,116 @@
+name: Deploy (prod)
+
+# Ручной запуск: Actions → "Deploy (prod)" → Run workflow.
+# CI собирает образы → пушит в ghcr.io → сервер делает pull + up (без исходника на сервере).
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref для сборки"
+        required: true
+        default: main
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_BACKEND: ghcr.io/${{ github.repository }}-backend
+  IMAGE_FRONTEND: ghcr.io/${{ github.repository }}-frontend
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Login to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: backend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_BACKEND }}:${{ github.sha }}
+            ${{ env.IMAGE_BACKEND }}:latest
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+
+      - name: Build & push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          file: frontend/Dockerfile
+          push: true
+          # NEXT_PUBLIC_* инлайнятся на build-time. Домен — из Actions Variable (не в репо).
+          build-args: |
+            NEXT_PUBLIC_APP_URL=https://${{ vars.APP_DOMAIN }}
+            NEXT_PUBLIC_WS_BASE_URL=wss://${{ vars.APP_DOMAIN }}
+          tags: |
+            ${{ env.IMAGE_FRONTEND }}:${{ github.sha }}
+            ${{ env.IMAGE_FRONTEND }}:latest
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,scope=frontend,mode=max
+
+  deploy:
+    needs: build-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref }}
+
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Known hosts
+        run: ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Decrypt prod env (.aes → .env) и доставить на сервер
+        run: |
+          for svc in backend frontend; do
+            openssl enc -aes-256-cbc -d -salt -pbkdf2 \
+              -in "deployment/prod/$svc.env.aes" -out "deployment/prod/$svc.env" \
+              -pass pass:"${{ secrets.CONFIG_PASSWORD }}"
+          done
+          ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" 'mkdir -p /opt/onlinetlabs/deployment/prod'
+          scp deployment/prod/compose.yaml deployment/prod/Caddyfile \
+            deployment/prod/backend.env deployment/prod/frontend.env \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/onlinetlabs/deployment/prod/"
+
+      - name: Pull images + up + migrate
+        run: |
+          ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" "
+            set -e
+            echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin
+            cd /opt/onlinetlabs/deployment/prod
+            export IMAGE_BACKEND=${{ env.IMAGE_BACKEND }}
+            export IMAGE_FRONTEND=${{ env.IMAGE_FRONTEND }}
+            export IMAGE_TAG=${{ github.sha }}
+            export APP_DOMAIN='${{ vars.APP_DOMAIN }}'
+            dc='docker compose --env-file backend.env -f compose.yaml'
+            \$dc pull
+            \$dc up -d
+            \$dc run --rm backend alembic upgrade head
+            \$dc ps
+            docker image prune -f
+          "
