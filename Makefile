@@ -148,6 +148,9 @@ sync-content:
 seed-lab-templates:
 	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=.. poetry run python -m scripts.seed_lab_templates
 
+export-cohort:
+	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=.. poetry run python -m scripts.export_cohort_metrics
+
 # ── Cleanup ──────────────────────────────────────────────────
 clean:
 	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true

@@ -234,6 +234,10 @@ class LearningAnalyticsConfig(BaseModel):
     mentor_handling_seconds: float = Field(default=900.0, description="t_наставника для контрфактуала часов")
     l2_intervention_cap: int = Field(default=0, description="Макс. воздействий для зачёта автономии на L2")
 
+    # Задача 3: когортные орг-метрики
+    cohort_horizon_days: float = Field(default=30.0, description="Горизонт T наблюдения для reach-rate@T и RMST (дни)")
+    autonomy_intervention_threshold: int = Field(default=0, description="Порог воздействий, ниже которого L2 считается автономным")
+
 
 class OpenClawConfig(BaseModel):
     """Конфигурация OpenClaw Gateway для экспериментального бэкенда."""

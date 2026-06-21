@@ -3,19 +3,35 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.dependencies import require_instructor
+from cohort.service import compute_cohort_metrics
+from config import settings
 from db.session import get_db
 from instructor.schemas import (
+    CohortMetricsResponse,
     LabProgressRow,
     SessionSummary,
     StudentDetailResponse,
     StudentOverview,
     StudentsOverviewResponse,
     TimelineItem,
+    cohort_response_from_result,
 )
 from instructor.service import build_session_timeline, get_student_detail, get_students_overview
 from models.session import LearningSession
 
 router = APIRouter()
+
+
+@router.get("/cohort-metrics", response_model=CohortMetricsResponse)
+async def cohort_metrics(
+    by_arm: bool = False,
+    _: dict = Depends(require_instructor),
+    db: AsyncSession = Depends(get_db),
+):
+    """Когортные орг-метрики D3/D4. headline=closed; open+pooled рядом."""
+    horizon = settings.learning_analytics.cohort_horizon_days * 86400.0
+    out = await compute_cohort_metrics(db, horizon_seconds=horizon, by_arm=by_arm)
+    return cohort_response_from_result(out)
 
 
 @router.get("/students", response_model=StudentsOverviewResponse)
