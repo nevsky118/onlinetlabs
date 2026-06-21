@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.behavioral_event import BehavioralEvent
+from models.chat_message import ChatMessage
 from models.lab import Lab
 from models.progress import LabProgress, StepAttempt
 from models.session import LearningSession
@@ -154,8 +155,33 @@ async def get_student_detail(db: AsyncSession, user_id: str) -> dict | None:
     )
     attempts_by_lab = {lab_slug: count for lab_slug, count in attempts_result.all()}
 
-    # Названия лаб
-    lab_slugs = {p.lab_slug for p in progress_rows}
+    # Счётчики сообщений на сессию
+    msg_counts_result = await db.execute(
+        select(ChatMessage.session_id, func.count())
+        .join(LearningSession, ChatMessage.session_id == LearningSession.id)
+        .where(LearningSession.user_id == user_id)
+        .group_by(ChatMessage.session_id)
+    )
+    msg_counts = {sid: c for sid, c in msg_counts_result.all()}
+
+    # Подсказки на сессию
+    hint_counts_result = await db.execute(
+        select(BehavioralEvent.session_id, func.count())
+        .where(BehavioralEvent.user_id == user_id, BehavioralEvent.event_type == HINT_EVENT_TYPE)
+        .group_by(BehavioralEvent.session_id)
+    )
+    hint_counts = {sid: c for sid, c in hint_counts_result.all()}
+
+    # Сами сессии (desc)
+    session_rows_result = await db.execute(
+        select(LearningSession)
+        .where(LearningSession.user_id == user_id)
+        .order_by(LearningSession.started_at.desc())
+    )
+    session_rows = list(session_rows_result.scalars().all())
+
+    # Названия лаб — расширяем слугами из сессий
+    lab_slugs = {p.lab_slug for p in progress_rows} | {s.lab_slug for s in session_rows}
     titles: dict[str, str] = {}
     if lab_slugs:
         titles_result = await db.execute(
@@ -180,6 +206,20 @@ async def get_student_detail(db: AsyncSession, user_id: str) -> dict | None:
         for p in progress_rows
     ]
 
+    sessions = [
+        {
+            "session_id": s.id,
+            "lab_slug": s.lab_slug,
+            "lab_title": titles.get(s.lab_slug, s.lab_slug),
+            "status": s.status,
+            "started_at": s.started_at,
+            "ended_at": s.ended_at,
+            "message_count": msg_counts.get(s.id, 0),
+            "hint_count": hint_counts.get(s.id, 0),
+        }
+        for s in session_rows
+    ]
+
     completed = sum(1 for p in progress_rows if p.status == "completed")
     in_progress = sum(1 for p in progress_rows if p.status == "in_progress")
     scores = [p.score for p in progress_rows if p.score is not None]
@@ -195,4 +235,41 @@ async def get_student_detail(db: AsyncSession, user_id: str) -> dict | None:
         "total_hints": sum(hints_by_lab.values()),
         "total_sessions": sum(sessions_by_lab.values()),
         "labs": labs,
+        "sessions": sessions,
     }
+
+
+async def build_session_timeline(db: AsyncSession, session_id: str) -> list[dict]:
+    """Слить реплики чата и интервенции сессии в один таймлайн по времени."""
+    items: list[dict] = []
+
+    msgs = await db.execute(
+        select(ChatMessage).where(ChatMessage.session_id == session_id)
+    )
+    for m in msgs.scalars().all():
+        items.append({
+            "kind": "student" if m.role == "user" else "tutor",
+            "ts": m.created_at,
+            "parts": m.parts,
+        })
+
+    evs = await db.execute(
+        select(BehavioralEvent).where(
+            BehavioralEvent.session_id == session_id,
+            BehavioralEvent.event_type == HINT_EVENT_TYPE,
+        )
+    )
+    for e in evs.scalars().all():
+        ed = e.extra_data or {}
+        items.append({
+            "kind": "intervention",
+            "ts": e.timestamp,
+            "text": e.message,
+            "action": e.action,
+            "severity": e.severity,
+            "hint_level": ed.get("hint_level"),
+            "struggle_type": ed.get("struggle_type"),
+        })
+
+    items.sort(key=lambda x: x["ts"])
+    return items

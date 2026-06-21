@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from instructor.service import get_student_detail, get_students_overview
 from models.behavioral_event import BehavioralEvent
+from models.chat_message import ChatMessage
 from models.lab import Lab
 from models.progress import LabProgress, StepAttempt
 from models.session import LearningSession
@@ -33,8 +34,37 @@ class TestInstructorService:
             await conn.run_sync(LearningSession.__table__.create)
             await conn.run_sync(BehavioralEvent.__table__.create)
             await conn.run_sync(StepAttempt.__table__.create)
+            await conn.run_sync(ChatMessage.__table__.create)
         yield
         await self.engine.dispose()
+
+    async def _seed_with_chat(self):
+        """Студент с 1 сессией, 2 сообщениями и 1 интервенцией."""
+        async with self.session_factory() as db:
+            db.add_all(
+                [
+                    User(id="stud-c", name="Чат", email="chat@test.local", role="student"),
+                    Lab(slug="chat-lab", title="Chat Lab"),
+                    LearningSession(
+                        id="sess-c", user_id="stud-c", lab_slug="chat-lab",
+                        status="in_progress", started_at=_now(),
+                    ),
+                    ChatMessage(
+                        id="msg-1", session_id="sess-c", role="user",
+                        parts=[{"type": "text", "text": "вопрос"}],
+                    ),
+                    ChatMessage(
+                        id="msg-2", session_id="sess-c", role="assistant",
+                        parts=[{"type": "text", "text": "ответ"}],
+                    ),
+                    BehavioralEvent(
+                        session_id="sess-c", user_id="stud-c", lab_slug="chat-lab",
+                        timestamp=_now(), event_type="intervention",
+                        action="intervene_hint", success=True,
+                    ),
+                ]
+            )
+            await db.commit()
 
     async def _seed(self):
         async with self.session_factory() as db:
@@ -127,3 +157,21 @@ class TestInstructorService:
 
         with autotest.step("Assert: None"):
             assert_is_none(detail, "detail is None")
+
+    @autotest.num("746")
+    @autotest.external_id("c1a2b3d4-e5f6-4708-8901-aabbccdd0013")
+    @autotest.name("get_student_detail: sessions с message_count и hint_count")
+    async def test_detail_sessions_message_and_hint_counts(self):
+        with autotest.step("Arrange: студент с сессией, 2 сообщениями, 1 интервенцией"):
+            await self._seed_with_chat()
+
+        with autotest.step("Act"):
+            async with self.session_factory() as db:
+                detail = await get_student_detail(db, "stud-c")
+
+        with autotest.step("Assert"):
+            assert "sessions" in detail, "sessions есть в детали"
+            assert_equal(len(detail["sessions"]), 1, "одна сессия")
+            s = detail["sessions"][0]
+            assert_equal(s["message_count"], 2, "два сообщения")
+            assert_equal(s["hint_count"], 1, "одна подсказка")

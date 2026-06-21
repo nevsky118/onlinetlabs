@@ -1,5 +1,9 @@
 import { queryOptions } from "@tanstack/react-query"
-import { fetchStudentDetail, fetchStudentsOverview } from "./actions"
+import {
+  fetchSessionTimeline,
+  fetchStudentDetail,
+  fetchStudentsOverview,
+} from "./actions"
 
 export const instructorKeys = {
   all: ["instructor"] as const,
@@ -18,5 +22,16 @@ export function studentDetailQuery(userId: string) {
   return queryOptions({
     queryKey: instructorKeys.student(userId),
     queryFn: () => fetchStudentDetail(userId),
+  })
+}
+
+export function sessionTimelineQuery(userId: string, sessionId: string) {
+  return queryOptions({
+    queryKey: [
+      ...instructorKeys.student(userId),
+      "timeline",
+      sessionId,
+    ] as const,
+    queryFn: () => fetchSessionTimeline(userId, sessionId),
   })
 }
