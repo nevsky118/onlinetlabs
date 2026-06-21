@@ -27,11 +27,22 @@ from labs.spec import expected_vpcs_config, load_lab_spec
 from llm.client import build_client, model_supports_tools, model_uri
 from llm.prompts import LANGUAGE_REMINDER, TUTOR_SYSTEM_PROMPT
 from models.lab import Lab
+from observability.models import (
+    event_fallback, event_mcp_context_fetched, event_model_selected,
+    event_response_finished, event_tool_call, event_tool_result,
+)
 from sessions.context import build_session_context
 from sessions.service import get_owned_session
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+def _activity_emit(app_state, event) -> None:
+    """Безопасно эмитит событие активности, если лог-сервис есть."""
+    log = getattr(app_state, "activity_log", None)
+    if log is not None:
+        log.emit(event)
 # Максимум раундов tool-вызовов в одном /chat ответе, защита от бесконечной рекурсии.
 MAX_TOOL_ROUNDS = 5
 
@@ -198,6 +209,9 @@ async def _stream_one_round(
     mcp_client,
     state: dict,
     model_id: str = "",
+    app_state=None,
+    session_id: str = "",
+    user_id: str = "",
 ) -> AsyncIterator[str]:
     """Один LLM-round: текст + накопление tool_calls. Обновляет state in-place.
 
@@ -277,7 +291,20 @@ async def _stream_one_round(
         except json.JSONDecodeError:
             parsed = {}
         yield tool_input_available(tc_id, tc_name, parsed)
+        # Эмит: инструмент вызывается.
+        _activity_emit(app_state, event_tool_call(
+            session_id, user_id,
+            name=tc_name,
+            args_preview=str(parsed)[:200],
+        ))
         result = await execute_tool(tc_name, parsed, ctx, mcp_client)
+        # Эмит: результат инструмента.
+        _activity_emit(app_state, event_tool_result(
+            session_id, user_id,
+            name=tc_name,
+            result_preview=str(result)[:200],
+            success="error" not in str(result).lower(),
+        ))
         yield tool_output_available(tc_id, result)
         messages.append({"role": "tool", "tool_call_id": tc_id, "content": f"{result}\n\n[{LANGUAGE_REMINDER}]"})
 
@@ -321,12 +348,26 @@ async def chat_stream(
             logger.warning(
                 "chat: model_id '%s' отклонён, фолбэк на '%s'", body.model_id, effective_model_id
             )
+            # Эмит: фолбэк на другую модель.
+            _activity_emit(request.app.state, event_fallback(
+                session.id, current_user["id"],
+                original_model=body.model_id,
+                fallback_model=effective_model_id,
+                reason="не в каталоге или нет права выбора",
+            ))
         # Персист выбора модели на сессию.
         if effective_model_id != session.model_id:
             session.model_id = effective_model_id
             await db.commit()
         client = build_client(effective_model_id)
         model = model_uri(effective_model_id)
+        # Эмит: модель выбрана.
+        entry = settings.agents.get_entry(effective_model_id)
+        _activity_emit(request.app.state, event_model_selected(
+            session.id, current_user["id"],
+            model_id=effective_model_id,
+            provider=entry.provider_ref if entry else "unknown",
+        ))
 
         # Параллельно загружаем: описание лабы + состояние среды из MCP.
         spec = load_lab_spec(session.lab_slug)
@@ -335,6 +376,13 @@ async def chat_stream(
             _fetch_lab_context(db, session.lab_slug, spec),
             _fetch_mcp_context(mcp_client, ctx, expected_vpcs),
         )
+        # Эмит: контекст MCP получен.
+        _activity_emit(request.app.state, event_mcp_context_fetched(
+            session.id, current_user["id"],
+            component_count=mcp_ctx_text.count("\n  - ") if mcp_ctx_text else 0,
+            error_count=1 if mcp_ctx_text and "ошибок" in mcp_ctx_text.lower() and "не обнаружено" not in mcp_ctx_text.lower() else 0,
+            verdict_summary=("ok" if mcp_ctx_text else "no_context"),
+        ))
         system_content = TUTOR_SYSTEM_PROMPT
         if lab_ctx_text:
             system_content += f"\n\n[Задание]\n{lab_ctx_text}"
@@ -354,12 +402,23 @@ async def chat_stream(
                 async for event in _stream_one_round(
                     request, client, model, messages, ctx, mcp_client, state,
                     model_id=effective_model_id,
+                    app_state=request.app.state,
+                    session_id=session.id,
+                    user_id=current_user["id"],
                 ):
                     yield event
                 if not state["has_tool_calls"]:
                     break
                 tool_round += 1
 
+            # Эмит: ответ завершён.
+            usage = state.get("usage_info") or {}
+            _activity_emit(request.app.state, event_response_finished(
+                session.id, current_user["id"],
+                model_id=effective_model_id,
+                total_tokens=usage.get("total_tokens", 0),
+                stop_reason="stop",
+            ))
             yield finish_event()
             yield done_event()
         except (Exception, GeneratorExit) as exc:

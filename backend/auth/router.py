@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth.dependencies import (
     create_backend_token,
     may_select_model,
+    may_view_agent_logs,
     require_admin,
     require_internal_caller,
 )
@@ -121,7 +122,8 @@ async def exchange(
         )
 
     can_select = may_select_model(user.role, user.can_select_model, settings.agents.selectable_roles)
-    token = create_backend_token(user_id=user.id, role=user.role, can_select=can_select)
+    can_view_logs = may_view_agent_logs(user.role, user.can_view_agent_logs, settings.observability.viewer_roles)
+    token = create_backend_token(user_id=user.id, role=user.role, can_select=can_select, can_view_logs=can_view_logs)
     return TokenResponse(access_token=token)
 
 

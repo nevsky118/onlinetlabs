@@ -31,3 +31,8 @@ def get_monitor_registry(request: Request):
 def get_state_cache(request: Request):
     """Отдаёт кэш состояния сессий из app.state."""
     return request.app.state.state_cache
+
+
+def get_activity_log(request: Request):
+    """Отдаёт лог активности агентов из app.state."""
+    return request.app.state.activity_log

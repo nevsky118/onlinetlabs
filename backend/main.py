@@ -31,12 +31,14 @@ from instructor.router import router as instructor_router
 from labs.router import router as labs_router
 from mcp_client.client import MCPClient
 from middleware.request_id import RequestIDMiddleware
+from observability.activity import AgentActivityLog
 from progress.router import router as progress_router
 from rate_limit import limiter
 from sessions.idle_reclaim import idle_reclaim_loop
 from sessions.monitor_registry import SessionMonitorRegistry
 from sessions.queue import SessionQueueService
 from sessions.router import router as sessions_router
+from sessions.routers.agent_activity import router as agent_activity_router
 from sessions.services.proxy import _BULK_GNS3_SEMAPHORE
 from sessions.state_cache import StateCache
 from sessions.ws import WebSocketGateway, close_all_connections
@@ -94,14 +96,17 @@ async def lifespan(app: FastAPI):
         settings.gns3.service_url,
         internal_token=settings.security.internal_api_token,
     )
+    activity_log = AgentActivityLog(async_session, settings.observability.retention_per_session)
     monitor_registry = SessionMonitorRegistry(
         config=settings,
         mcp_client=mcp_client,
         db_factory=async_session,
         orchestrator=orchestrator,
         gateway=gateway,
+        activity_log=activity_log,
+        gns3_client=gns3_client,
     )
-    redis_url = getattr(getattr(settings, "redis", None), "url", None) or "redis://localhost:6379"
+    redis_url = settings.redis.url
     redis_client = aioredis.from_url(redis_url, decode_responses=True)
     state_cache = StateCache(redis_client, ttl_seconds=5)
     session_queue = SessionQueueService()
@@ -110,6 +115,7 @@ async def lifespan(app: FastAPI):
     app.state.orchestrator = orchestrator
     app.state.gns3_client = gns3_client
     app.state.monitor_registry = monitor_registry
+    app.state.activity_log = activity_log
     app.state.state_cache = state_cache
     app.state.session_queue = session_queue
     app.state.bulk_gns3_semaphore = _BULK_GNS3_SEMAPHORE
@@ -165,6 +171,7 @@ app.include_router(sessions_router, prefix="/users/me/sessions", tags=["sessions
 app.include_router(experiment_router, prefix="/experiment", tags=["experiment"])
 app.include_router(validation_router, prefix="/labs", tags=["validation"])
 app.include_router(validation_runs_router, prefix="/sessions", tags=["validation"])
+app.include_router(agent_activity_router, prefix="/sessions", tags=["observability"])
 app.include_router(chat_router, tags=["chat"])
 
 
@@ -199,8 +206,7 @@ async def health_deep():
         overall_ok = False
 
     try:
-        redis_url = getattr(getattr(settings, "redis", None), "url", None) or "redis://localhost:6379"
-        client = aioredis.from_url(redis_url)
+        client = aioredis.from_url(settings.redis.url)
         try:
             await client.ping()
         finally:

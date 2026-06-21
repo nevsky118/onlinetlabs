@@ -39,11 +39,12 @@ async def close_all_connections(timeout: float = 5.0) -> None:
 
 
 class WebSocketGateway:
-    """Управление WebSocket-соединениями по session_id для интервенций."""
+    """Управление WebSocket-соединениями по session_id для интервенций и наблюдений."""
 
     def __init__(self):
         """Хранит словарь активных WebSocket-соединений по идентификатору сессии."""
         self._connections: dict[str, WebSocket] = {}
+        self._observers: dict[str, set[WebSocket]] = {}
 
     async def connect(self, session_id: str, websocket: WebSocket) -> None:
         """Зарегистрировать WebSocket для сессии."""
@@ -76,6 +77,24 @@ class WebSocketGateway:
                 "Не удалось отправить интервенцию в сессию %s", session_id, exc_info=True
             )
             self.disconnect(session_id)
+
+    def connect_observer(self, session_id: str, websocket: WebSocket) -> None:
+        """Подключить наблюдателя для события активности сессии."""
+        self._observers.setdefault(session_id, set()).add(websocket)
+        register_connection(websocket)
+
+    def disconnect_observer(self, session_id: str, websocket: WebSocket) -> None:
+        """Отключить наблюдателя от сессии."""
+        observers = self._observers.get(session_id)
+        if observers:
+            observers.discard(websocket)
+            if not observers:
+                self._observers.pop(session_id, None)
+        unregister_connection(websocket)
+
+    def observers(self, session_id: str) -> set[WebSocket]:
+        """Вернуть множество наблюдателей сессии (пусто, если никого)."""
+        return self._observers.get(session_id, set())
 
     @property
     def active_sessions(self) -> list[str]:
