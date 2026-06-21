@@ -43,6 +43,20 @@ STRUGGLE_RULES: list[StruggleRule] = [
         SuggestedIntervention.HINT,
         lambda f, c: min(f.error_repeat_count / (c.error_repeat_threshold + 2), 1.0),
     ),
+    # Прямой сигнал: много уникальных неверных ответов → trial-and-error (Table 1)
+    (
+        lambda f, c: f.distinct_failing_actuals > c.distinct_actuals_threshold,
+        StruggleType.TRIAL_AND_ERROR,
+        SuggestedIntervention.TUTOR,
+        lambda f, c: min(f.distinct_failing_actuals / 4, 1.0),
+    ),
+    # Прямой сигнал: цикли без изменений → stuck (Table 1)
+    (
+        lambda f, c: f.cycles_failing_unchanged >= c.unchanged_cycles_threshold,
+        StruggleType.STUCK_ON_STEP,
+        SuggestedIntervention.HINT,
+        lambda f, c: 0.7,
+    ),
     (
         lambda f, c: (
             f.action_sequence_entropy > c.entropy_threshold

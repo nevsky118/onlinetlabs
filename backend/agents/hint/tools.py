@@ -19,21 +19,3 @@ class HintTools:
         """Сколько уровней подсказок осталось."""
         return max(0, MAX_HINTS - current_level)
 
-    def generate_hint(
-        self, step_slug: str, hint_level: int, last_error: str | None
-    ) -> str:
-        """Сгенерировать подсказку нужного уровня."""
-        if hint_level == 1:
-            return f"Подсказка уровня 1 для {step_slug}: проверь основные настройки."
-        elif hint_level == 2:
-            error_ctx = f" Последняя ошибка: {last_error}." if last_error else ""
-            return (
-                f"Подсказка уровня 2 для {step_slug}: "
-                f"обрати внимание на конфигурацию компонентов.{error_ctx}"
-            )
-        else:
-            error_ctx = f" Ошибка: {last_error}." if last_error else ""
-            return (
-                f"Подсказка уровня 3 для {step_slug}: "
-                f"конкретный шаг — проверь связность и статусы.{error_ctx}"
-            )

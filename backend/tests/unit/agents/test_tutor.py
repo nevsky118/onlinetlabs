@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import AsyncMock
 
 from agents.tutor.models import TutorInput, TutorResponse
 from agents.tutor.tools import TutorTools
@@ -79,10 +80,13 @@ class TestTutorAgent:
 
     @autotest.num("445")
     @autotest.external_id("f6a7b8c9-d0e1-4f2a-3b4c-d5e6f7a8b9c0")
-    @autotest.name("TutorAgent: run обрабатывает вопрос")
-    async def test_f6a7b8c9_run_basic(self, config_model):
-        with autotest.step("Задаём вопрос"):
+    @autotest.name("TutorAgent: run возвращает TutorResponse при успешном LLM")
+    async def test_f6a7b8c9_run_basic(self, config_model, monkeypatch):
+        with autotest.step("Мок LLM и запрос"):
             agent = TutorAgent(config_model)
+            fake_result = AsyncMock()
+            fake_result.output = "Ответ тьютора"
+            monkeypatch.setattr(agent, "_agent_for", lambda mid: AsyncMock(run=AsyncMock(return_value=fake_result)))
             result = await agent.run(_make_tutor_input())
 
         with autotest.step("Проверяем TutorResponse"):
@@ -92,12 +96,12 @@ class TestTutorAgent:
 
     @autotest.num("446")
     @autotest.external_id("a7b8c9d0-e1f2-4a3b-4c5d-e6f7a8b9c0d1")
-    @autotest.name("TutorAgent: run с lab_slug включает контекст")
-    async def test_a7b8c9d0_run_with_lab_context(self, config_model):
-        with autotest.step("Задаём вопрос с lab_slug"):
+    @autotest.name("TutorAgent: LLM failure — re-raise, без шаблона")
+    async def test_a7b8c9d0_run_llm_failure_raises(self, config_model, monkeypatch):
+        with autotest.step("Мок LLM выбрасывает"):
             agent = TutorAgent(config_model)
-            inp = _make_tutor_input(lab_slug="lab-ospf", step_slug="step-1")
-            result = await agent.run(inp)
+            monkeypatch.setattr(agent, "_agent_for", lambda mid: AsyncMock(run=AsyncMock(side_effect=RuntimeError("llm down"))))
 
-        with autotest.step("Проверяем что контекст включён"):
-            assert_true("lab-ospf" in result.answer, "ответ содержит lab slug")
+        with autotest.step("Ожидаем re-raise"):
+            with pytest.raises(Exception):
+                await agent.run(_make_tutor_input())

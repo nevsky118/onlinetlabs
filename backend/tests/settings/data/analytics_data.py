@@ -91,6 +91,7 @@ class SessionFeaturesData:
             error_frequency=0.0, error_frequency_slope=0.0,
             unique_error_types=0, dominant_error=None,
             components_touched=5, action_diversity=0.5, events_total=30,
+            distinct_failing_actuals=0, cycles_failing_unchanged=0,
             session_id="s1", computed_at=datetime.now(tz=timezone.utc),
         )
         self.data = defaults | overrides

@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import AsyncMock
 
 from agents.tutor.agent import TutorAgent
 from agents.tutor.models import TutorInput, TutorResponse
@@ -12,29 +13,30 @@ pytestmark = [pytest.mark.unit, pytest.mark.agents]
 class TestTutorAgentLLM:
     @autotest.num("560")
     @autotest.external_id("a1b2c3d4-e5f6-4789-abcd-560000000001")
-    @autotest.name("TutorAgent: run без agent_context — fallback ответ")
-    async def test_a1b2c3d4_run_without_context(self, config_model):
-        with autotest.step("Создаём агент и вход без контекста"):
+    @autotest.name("TutorAgent: LLM failure re-raise, шаблонного ответа нет")
+    async def test_a1b2c3d4_run_llm_failure_raises(self, config_model, monkeypatch):
+        with autotest.step("Мок LLM выбрасывает"):
             agent = TutorAgent(config_model, mcp_client=None)
+            monkeypatch.setattr(agent, "_agent_for", lambda mid: AsyncMock(run=AsyncMock(side_effect=RuntimeError("llm down"))))
             inp = TutorInput(
                 session_id="s1", user_id="u1",
                 question="Что такое OSPF?",
             )
 
-        with autotest.step("Вызываем run"):
-            result = await agent.run(inp)
-
-        with autotest.step("Ответ не пустой"):
-            assert_true(isinstance(result, TutorResponse), f"тип: {type(result)}")
-            assert_true(len(result.answer) > 0, "ответ не пустой")
+        with autotest.step("Ожидаем re-raise"):
+            with pytest.raises(Exception):
+                await agent.run(inp)
 
     @autotest.num("561")
     @autotest.external_id("b2c3d4e5-f6a7-4890-bcde-561000000002")
     @autotest.name("TutorAgent: run с agent_context — ответ не пустой")
-    async def test_b2c3d4e5_run_with_context(self, config_model):
+    async def test_b2c3d4e5_run_with_context(self, config_model, monkeypatch):
         with autotest.step("Создаём агент с контекстом"):
             agent = TutorAgent(config_model, mcp_client=None)
             context = AgentContextData().context
+            fake_result = AsyncMock()
+            fake_result.output = "OSPF сессия не поднимается из-за неверной маски"
+            monkeypatch.setattr(agent, "_agent_for", lambda mid: AsyncMock(run=AsyncMock(return_value=fake_result)))
             inp = TutorInput(
                 session_id="s1", user_id="u1",
                 question="Почему OSPF не работает?",

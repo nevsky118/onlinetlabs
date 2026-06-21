@@ -60,24 +60,16 @@ class TestHintTools:
 
     @autotest.num("454")
     @autotest.external_id("5e6f7a8b-c9d0-4123-ef01-234567890123")
-    @autotest.name("HintTools.generate_hint: генерация на каждом уровне")
-    def test_5e6f7a8b_generate_hint(self):
+    @autotest.name("HintTools: generate_hint удалён, get_hint_level/get_remaining_hints живы")
+    def test_5e6f7a8b_no_generate_hint(self):
         tools = HintTools()
 
-        with autotest.step("Уровень 1 без ошибки — непустая подсказка с шагом"):
-            h1 = tools.generate_hint("step-1", 1, None)
-            assert_true(bool(h1.strip()), "непустая подсказка")
-            assert_true("step-1" in h1, "содержит идентификатор шага")
+        with autotest.step("generate_hint не существует"):
+            assert_true(not hasattr(tools, "generate_hint"), "generate_hint удалён")
 
-        with autotest.step("Уровень 2 с ошибкой — last_error попадает в текст"):
-            h2 = tools.generate_hint("step-1", 2, "timeout")
-            assert_true(bool(h2.strip()), "непустая подсказка")
-            assert_true("timeout" in h2, "last_error попадает в текст")
-
-        with autotest.step("Уровень 3 с ошибкой — last_error попадает в текст"):
-            h3 = tools.generate_hint("step-1", 3, "timeout")
-            assert_true(bool(h3.strip()), "непустая подсказка")
-            assert_true("timeout" in h3, "last_error попадает в текст")
+        with autotest.step("get_hint_level и get_remaining_hints доступны"):
+            assert_equal(tools.get_hint_level(2), 2, "уровень 2")
+            assert_equal(tools.get_remaining_hints(2), 1, "остался 1")
 
 
 # HintAgent
@@ -106,26 +98,18 @@ class TestHintAgent:
 
     @autotest.num("457")
     @autotest.external_id("8b9c0d1e-f2a3-4456-1234-567890123456")
-    @autotest.name("HintAgent: run возвращает подсказку уровня 1")
-    async def test_8b9c0d1e_run_level1(self, config_model):
-        with autotest.step("Запрашиваем подсказку при 0 попытках"):
+    @autotest.name("HintAgent: run без agent_context бросает ValueError")
+    async def test_8b9c0d1e_run_no_context_raises(self, config_model):
+        with autotest.step("Запрашиваем подсказку без контекста"):
             agent = HintAgent(config_model)
-            result = await agent.run(_make_hint_input(attempts_count=0))
-
-        with autotest.step("Проверяем HintResponse"):
-            assert_true(isinstance(result, HintResponse), f"тип: {type(result)}")
-            assert_equal(result.hint_level, 1, "уровень 1")
-            assert_greater(result.remaining_hints, 0, "есть ещё подсказки")
+            with pytest.raises(ValueError, match="hint requires agent_context"):
+                await agent.run(_make_hint_input(attempts_count=0))
 
     @autotest.num("458")
     @autotest.external_id("9c0d1e2f-a3b4-4567-2345-678901234567")
-    @autotest.name("HintAgent: run возвращает подсказку уровня 3")
-    async def test_9c0d1e2f_run_level3(self, config_model):
-        with autotest.step("Запрашиваем подсказку при 5 попытках"):
+    @autotest.name("HintAgent: уровень подсказки определяется по кол-ву попыток")
+    def test_9c0d1e2f_hint_level_by_attempts(self, config_model):
+        with autotest.step("Проверяем уровень при 5 попытках"):
             agent = HintAgent(config_model)
-            result = await agent.run(_make_hint_input(attempts_count=5, last_error="timeout"))
-
-        with autotest.step("Проверяем HintResponse"):
-            assert_equal(result.hint_level, 3, "уровень 3")
-            assert_equal(result.remaining_hints, 0, "подсказок не осталось")
-            assert_true("timeout" in result.hint, "содержит ошибку")
+            assert_equal(agent.tools.get_hint_level(5), 3, "уровень 3")
+            assert_equal(agent.tools.get_remaining_hints(3), 0, "подсказок не осталось")

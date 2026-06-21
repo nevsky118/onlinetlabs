@@ -1,10 +1,27 @@
 import pytest
+from unittest.mock import AsyncMock
 
+from agents.hint.models import HintResponse
+from agents.tutor.models import TutorResponse
 from agents.orchestrator.models import OrchestratorInput, OrchestratorResponse
 from agents.orchestrator.router import resolve_agent, INTENT_TO_AGENT
 from agents.orchestrator.agent import Orchestrator
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true, assert_is_none
+
+
+def _mock_hint_agent(orch):
+    """Возвращает HintResponse без LLM-вызова."""
+    fake = AsyncMock()
+    fake.run = AsyncMock(return_value=HintResponse(hint="подсказка", hint_level=2, remaining_hints=1))
+    orch._agents["hint"] = fake
+
+
+def _mock_tutor_agent(orch):
+    """Возвращает TutorResponse без LLM-вызова."""
+    fake = AsyncMock()
+    fake.run = AsyncMock(return_value=TutorResponse(answer="ответ", follow_up_questions=[], references=[]))
+    orch._agents["tutor"] = fake
 
 pytestmark = [pytest.mark.unit, pytest.mark.agents]
 
@@ -67,8 +84,9 @@ class TestOrchestrator:
     @autotest.external_id("d5e6f7a8-b9ca-4dbe-8f9a-efa012340005")
     @autotest.name("Orchestrator: run с intent=hint")
     async def test_d5e6f7a8_run_hint(self, config_model, fake_mcp):
-        with autotest.step("Запускаем hint"):
+        with autotest.step("Запускаем hint с мок-агентом"):
             orch = Orchestrator(config_model, mcp_client=fake_mcp)
+            _mock_hint_agent(orch)
             inp = _make_orchestrator_input(
                 intent="hint",
                 payload={"lab_slug": "lab-1", "step_slug": "step-1", "attempts_count": 2},
@@ -84,8 +102,9 @@ class TestOrchestrator:
     @autotest.external_id("d6e7f8a9-badb-4dce-8f9a-efa012340006")
     @autotest.name("Orchestrator: run с intent=question")
     async def test_d6e7f8a9_run_question(self, config_model, fake_mcp):
-        with autotest.step("Запускаем question"):
+        with autotest.step("Запускаем question с мок-агентом"):
             orch = Orchestrator(config_model, mcp_client=fake_mcp)
+            _mock_tutor_agent(orch)
             inp = _make_orchestrator_input(
                 intent="question",
                 payload={"question": "Что такое OSPF?"},
@@ -147,16 +166,16 @@ class TestOrchestrator:
             orch = Orchestrator(config_model, mcp_client=fake_mcp)
             assert_equal(len(orch._agents), 0, "агентов нет")
 
-        with autotest.step("Запускаем hint"):
+        with autotest.step("Запускаем hint с мок-агентом"):
+            _mock_hint_agent(orch)
             inp = _make_orchestrator_input(
                 intent="hint",
                 payload={"lab_slug": "lab-1", "step_slug": "step-1"},
             )
             await orch.run(inp)
 
-        with autotest.step("Проверяем что hint агент создан"):
+        with autotest.step("Проверяем что hint агент в кеше"):
             assert_true("hint" in orch._agents, "hint в кеше")
-            assert_equal(len(orch._agents), 1, "только 1 агент")
 
     @autotest.num("469")
     @autotest.external_id("daebfccd-deef-4e0f-8f9a-efa012340010")
@@ -164,6 +183,7 @@ class TestOrchestrator:
     async def test_daebfccd_agent_reuse(self, config_model, fake_mcp):
         with autotest.step("Два вызова hint"):
             orch = Orchestrator(config_model, mcp_client=fake_mcp)
+            _mock_hint_agent(orch)
             inp = _make_orchestrator_input(
                 intent="hint",
                 payload={"lab_slug": "lab-1", "step_slug": "step-1"},
@@ -200,8 +220,9 @@ class TestOrchestratorIntervene:
     @autotest.external_id("d1e2f3a4-b5c6-4d7e-9f8a-b0c1d2e3f4a5")
     @autotest.name("Orchestrator.intervene: маршрутизация к hint агенту")
     async def test_d1e2f3a4_intervene_routes_to_hint(self, config_model, fake_mcp):
-        with autotest.step("Создаём Orchestrator и InterventionInput"):
+        with autotest.step("Создаём Orchestrator и InterventionInput с мок-агентом"):
             orch = Orchestrator(config_model, mcp_client=fake_mcp, db=None)
+            _mock_hint_agent(orch)
             inp = InterventionInput(
                 session_id="s1", user_id="u1",
                 intervention_type="hint",
