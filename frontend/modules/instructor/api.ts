@@ -49,3 +49,7 @@ export async function getSessionTimelineApi(
     `/instructor/students/${encodeURIComponent(userId)}/sessions/${encodeURIComponent(sessionId)}/timeline`
   )
 }
+
+export async function getCohortMetricsApi(byArm = false): Promise<Response> {
+  return authedFetch(`/instructor/cohort-metrics?by_arm=${byArm}`)
+}

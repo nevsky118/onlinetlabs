@@ -42,6 +42,47 @@ export interface SessionSummary {
   hintCount: number
 }
 
+// Cohort metrics types
+export interface TimeToCompetence {
+  medianCalendarSeconds: number | null
+  medianActiveSeconds: number | null
+  reachRate: number | null
+  reachRateAtHorizon: number | null
+  restrictedMeanCalendarSeconds: number | null
+  n: number
+  censored: number
+}
+
+export interface Autonomy {
+  meanL1Interventions: number | null
+  meanL2Interventions: number | null
+  meanSessionsToL2: number | null
+}
+
+export interface OrgEffect {
+  l1EscalationsMean: number | null
+  l2EscalationsMean: number | null
+  l1RepeatedErrorsMean: number | null
+  l2RepeatedErrorsMean: number | null
+  note: string | null
+}
+
+export interface CohortCell {
+  skill: string | null
+  arm: string | null
+  n: number
+  timeToCompetence: TimeToCompetence
+  autonomy: Autonomy
+  orgEffect: OrgEffect
+}
+
+export interface CohortMetrics {
+  bySkill: CohortCell[]
+  pooled: CohortCell
+  byArm: CohortCell[] | null
+  headlineArm: string | null
+}
+
 export type TimelinePart = { type: string; text?: string }
 
 export interface TimelineItem {
