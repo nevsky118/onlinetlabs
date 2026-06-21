@@ -1,0 +1,8 @@
+# Реальные секреты и серты — НИКОГДА в git
+backend.env
+frontend.env
+certs/
+*.pem
+*.key
+.deploy_key
+.deploy_key.pub

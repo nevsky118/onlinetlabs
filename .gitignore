@@ -69,6 +69,10 @@ yarn-error.log*
 **/.vscode
 
 **/.github
+# но workflow'ы CI/CD трекаем (нужны GitHub Actions)
+!/.github
+!/.github/workflows
+!/.github/workflows/**
 
 docs/
 
