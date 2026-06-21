@@ -238,6 +238,10 @@ class LearningAnalyticsConfig(BaseModel):
     cohort_horizon_days: float = Field(default=30.0, description="Горизонт T наблюдения для reach-rate@T и RMST (дни)")
     autonomy_intervention_threshold: int = Field(default=0, description="Порог воздействий, ниже которого L2 считается автономным")
 
+    # Задача 5: оценка идентификатора П1
+    eval_t_k_grid: list[float] = Field(default=[0.0, 15.0, 30.0, 60.0, 120.0, 180.0], description="Сетка порогов dwell T_k для рабочей кривой")
+    eval_onset_window_seconds: float = Field(default=30.0, description="Окно допуска ±Δ вокруг онсета струггла")
+
 
 class OpenClawConfig(BaseModel):
     """Конфигурация OpenClaw Gateway для экспериментального бэкенда."""

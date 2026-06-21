@@ -151,6 +151,9 @@ seed-lab-templates:
 export-cohort:
 	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=.. poetry run python -m scripts.export_cohort_metrics
 
+eval-identifier:
+	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=.. poetry run python -m scripts.eval_identifier
+
 # ── Cleanup ──────────────────────────────────────────────────
 clean:
 	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
