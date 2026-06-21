@@ -1,7 +1,17 @@
 "use server"
 
-import type { StudentDetail, StudentsOverview, TimelineItem } from "./types"
+import type {
+  Autonomy,
+  CohortCell,
+  CohortMetrics,
+  OrgEffect,
+  StudentDetail,
+  StudentsOverview,
+  TimelineItem,
+  TimeToCompetence,
+} from "./types"
 import {
+  getCohortMetricsApi,
   getSessionTimelineApi,
   getStudentDetailApi,
   getStudentsOverviewApi,
@@ -78,6 +88,66 @@ export async function fetchSessionTimeline(
     hintLevel: (r.hint_level as number) ?? null,
     struggleType: (r.struggle_type as string) ?? null,
   }))
+}
+
+export async function fetchCohortMetrics(
+  byArm = false
+): Promise<CohortMetrics> {
+  const res = await getCohortMetricsApi(byArm)
+  if (!res.ok) throw new Error(`fetchCohortMetrics ${res.status}`)
+  const d = await res.json()
+  return {
+    bySkill: (d.by_skill ?? []).map(mapCohortCell),
+    pooled: mapCohortCell(d.pooled),
+    byArm: d.by_arm
+      ? (d.by_arm as Record<string, unknown>[]).map(mapCohortCell)
+      : null,
+    headlineArm: (d.headline_arm as string) ?? null,
+  }
+}
+
+function mapTimeToCompetence(t: Record<string, unknown>): TimeToCompetence {
+  return {
+    medianCalendarSeconds: (t.median_calendar_seconds as number) ?? null,
+    medianActiveSeconds: (t.median_active_seconds as number) ?? null,
+    reachRate: (t.reach_rate as number) ?? null,
+    reachRateAtHorizon: (t.reach_rate_at_horizon as number) ?? null,
+    restrictedMeanCalendarSeconds:
+      (t.restricted_mean_calendar_seconds as number) ?? null,
+    n: (t.n as number) ?? 0,
+    censored: (t.censored as number) ?? 0,
+  }
+}
+
+function mapAutonomy(a: Record<string, unknown>): Autonomy {
+  return {
+    meanL1Interventions: (a.mean_l1_interventions as number) ?? null,
+    meanL2Interventions: (a.mean_l2_interventions as number) ?? null,
+    meanSessionsToL2: (a.mean_sessions_to_l2 as number) ?? null,
+  }
+}
+
+function mapOrgEffect(o: Record<string, unknown>): OrgEffect {
+  return {
+    l1EscalationsMean: (o.l1_escalations_mean as number) ?? null,
+    l2EscalationsMean: (o.l2_escalations_mean as number) ?? null,
+    l1RepeatedErrorsMean: (o.l1_repeated_errors_mean as number) ?? null,
+    l2RepeatedErrorsMean: (o.l2_repeated_errors_mean as number) ?? null,
+    note: (o.note as string) ?? null,
+  }
+}
+
+function mapCohortCell(c: Record<string, unknown>): CohortCell {
+  return {
+    skill: (c.skill as string | null) ?? null,
+    arm: (c.arm as string | null) ?? null,
+    n: c.n as number,
+    timeToCompetence: mapTimeToCompetence(
+      (c.time_to_competence as Record<string, unknown>) ?? {}
+    ),
+    autonomy: mapAutonomy((c.autonomy as Record<string, unknown>) ?? {}),
+    orgEffect: mapOrgEffect((c.org_effect as Record<string, unknown>) ?? {}),
+  }
 }
 
 function mapStudentOverview(s: Record<string, unknown>) {
