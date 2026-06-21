@@ -14,6 +14,8 @@ from models.behavioral_event import BehavioralEvent  # noqa: F401
 from models.platform_event import PlatformEvent  # noqa: F401
 from models.chat_message import ChatMessage  # noqa: F401
 from models.experiment import ExperimentMetrics  # noqa: F401
+from models.agent_activity_event import AgentActivityEventRow  # noqa: F401
+from models.process_state_sample import ProcessStateSample  # noqa: F401
 from models.validation_run import ValidationRun
 from models.user import Account, Session, User, UserRole, VerificationToken
 
@@ -34,6 +36,7 @@ __all__ = [
     "BehavioralEvent",
     "PlatformEvent",
     "ChatMessage",
+    "ProcessStateSample",
     "ValidationRun",
     "Difficulty",
     "ProgressStatus",
