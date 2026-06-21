@@ -45,7 +45,7 @@ def _make_full_config(**overrides):
     defaults = dict(
         database=_make_database(),
         redis=RedisConfig(url="redis://localhost:6379/0"),
-        api=ApiConfig(environment="test", jwt_secret="s"),
+        api=ApiConfig(environment="test", jwt_secret="s", frontend_url="http://localhost:3000"),
         log=LogConfig(log_level="DEBUG"),
         agents=_agents(),
         gns3=GNS3Config(

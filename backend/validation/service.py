@@ -39,7 +39,7 @@ class GNS3SessionMissing(ValidationError):
 
 
 def _gns3_host_from_settings(settings) -> str:
-    """Определить хост GNS3 для исходящих соединений из настроек. По умолчанию localhost."""
+    """Определить хост GNS3 для исходящих соединений из настроек."""
     gns3 = getattr(settings, "gns3", None)
     if gns3 is not None:
         node_host = getattr(gns3, "node_host", "") or ""
@@ -51,7 +51,7 @@ def _gns3_host_from_settings(settings) -> str:
                 host = urlparse(url).hostname or ""
                 if host and host not in ("gns3-server",):
                     return host
-    return "localhost"
+    raise ValueError("cannot derive GNS3 node host from settings")
 
 
 async def prepare_validation(
@@ -80,6 +80,19 @@ async def prepare_validation(
     return spec, gns3_sid
 
 
+async def build_check_context(gns3_client, gns3_sid: str, settings) -> CheckContext:
+    """Состояние GNS3-сессии → CheckContext для прогона проверок."""
+    state = await gns3_client.get_state(gns3_sid)
+    nodes = state.get("nodes") or []
+    nodes_by_name = {n.get("name"): n for n in nodes if n.get("name")}
+    return CheckContext(
+        gns3_host=_gns3_host_from_settings(settings),
+        nodes_by_name=nodes_by_name,
+        gns3_project_id=state.get("project_id", ""),
+        frr_client=gns3_client,
+    )
+
+
 async def stream_validation(
     db: AsyncSession,
     session_id: str,
@@ -91,15 +104,7 @@ async def stream_validation(
     gns3_client: Gns3ServiceClient,
 ) -> AsyncIterator[Event]:
     """Гонит runner и пишет финальный результат в БД."""
-    state = await gns3_client.get_state(gns3_sid)
-    nodes = state.get("nodes") or []
-    nodes_by_name = {n.get("name"): n for n in nodes if n.get("name")}
-    ctx = CheckContext(
-        gns3_host=_gns3_host_from_settings(settings),
-        nodes_by_name=nodes_by_name,
-        gns3_project_id=state.get("project_id", ""),
-        frr_client=gns3_client,
-    )
+    ctx = await build_check_context(gns3_client, gns3_sid, settings)
 
     run_id = await create_run(db, session_id, lab_slug)
 

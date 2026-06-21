@@ -1,6 +1,5 @@
 import { getBackendToken } from "@/auth/token"
-
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000"
+import { serverEnv } from "@/lib/env"
 
 /** SSE-прокси: проброс на backend POST /labs/{slug}/sessions/{sid}/validate с Bearer. */
 export async function POST(
@@ -18,7 +17,7 @@ export async function POST(
   if (!slug) return new Response("Missing slug", { status: 400 })
 
   const upstream = await fetch(
-    `${BACKEND_URL}/labs/${slug}/sessions/${sessionId}/validate`,
+    `${serverEnv.BACKEND_URL}/labs/${slug}/sessions/${sessionId}/validate`,
     {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },

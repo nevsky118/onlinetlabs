@@ -1,6 +1,5 @@
 import { getBackendToken } from "@/auth/token"
-
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000"
+import { serverEnv } from "@/lib/env"
 
 type CheckWire = {
   kind: string
@@ -36,7 +35,7 @@ export async function GET(
   if (!token) return new Response("Unauthorized", { status: 401 })
 
   const upstream = await fetch(
-    `${BACKEND_URL}/sessions/${sessionId}/validation-runs/${runId}`,
+    `${serverEnv.BACKEND_URL}/sessions/${sessionId}/validation-runs/${runId}`,
     {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",

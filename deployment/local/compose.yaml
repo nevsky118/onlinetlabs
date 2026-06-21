@@ -82,7 +82,6 @@ services:
         # NEXT_PUBLIC_* инлайнятся на build-time. Адреса браузерные, браузер открыт на хосте.
         NEXT_PUBLIC_APP_URL: http://localhost:3000
         NEXT_PUBLIC_WS_BASE_URL: ws://localhost:8000
-        NEXT_PUBLIC_BACKEND_WS_URL: ws://localhost:8000
     ports:
       - "3000:3000"
     env_file:

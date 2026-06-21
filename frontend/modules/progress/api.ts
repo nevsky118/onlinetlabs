@@ -1,8 +1,7 @@
 import "server-only"
 
 import { getBackendToken } from "@/auth/token"
-
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000"
+import { serverEnv } from "@/lib/env"
 
 async function authedFetch(
   path: string,
@@ -14,7 +13,7 @@ async function authedFetch(
     // трактует это как «нет данных» и не падает.
     return new Response(null, { status: 401 })
   }
-  return fetch(`${BACKEND_URL}${path}`, {
+  return fetch(`${serverEnv.BACKEND_URL}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",

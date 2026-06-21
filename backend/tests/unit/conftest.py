@@ -20,6 +20,11 @@ _TEST_ENV_DEFAULTS = {
     "YANDEX_FOLDER": "test-folder",
     "AGENTS_CHAT_MODEL": "yandex-gpt-5.1",
     "AGENTS_INTERVENTION_MODEL": "yandex-gpt-5.1",
+    "FRONTEND_URL": "http://localhost:3000",
+    "GNS3_SERVICE_URL": "http://localhost:8101",
+    "GNS3_PUBLIC_URL": "http://localhost:3080",
+    "GNS3_INTERNAL_URL": "http://localhost:3080",
+    "MCP_SERVER_URL": "http://localhost:8100",
 }
 for _key, _value in _TEST_ENV_DEFAULTS.items():
     os.environ.setdefault(_key, _value)
@@ -128,7 +133,7 @@ def config_model(agents_config):
     return ConfigModel(
         database=DatabaseConfig(user="u", password="p", host="h", port=5432, db="d"),
         redis=RedisConfig(url="redis://localhost:6379/0"),
-        api=ApiConfig(environment="test", jwt_secret="test-secret"),
+        api=ApiConfig(environment="test", jwt_secret="test-secret", frontend_url="http://localhost:3000"),
         log=LogConfig(log_level="DEBUG"),
         agents=agents_config,
         gns3=GNS3Config(
