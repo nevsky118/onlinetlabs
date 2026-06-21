@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import type { Credentials } from "../types"
 import { ActivityCard } from "../components/activity-card"
 import { CredentialsCard } from "../components/credentials-card"
+import { EscalateButton } from "../components/escalate-button"
 import { NodeDetailDrawer } from "../components/node-detail-drawer"
 import { NodesCard } from "../components/nodes-card"
 import { SessionActions } from "../components/session-actions"
@@ -55,6 +56,7 @@ export function SessionView({
             <SessionPageHeader lab={state.lab} status={state.status} />
             <div className="flex shrink-0 items-center gap-2">
               <ChatTrigger />
+              <EscalateButton sessionId={sessionId} />
               <ValidationButton
                 sessionId={sessionId}
                 labSlug={state.lab.slug}
