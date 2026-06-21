@@ -1,3 +1,4 @@
+import dataclasses
 from datetime import datetime
 
 from pydantic import BaseModel
@@ -82,3 +83,79 @@ class TimelineItem(BaseModel):
     severity: str | None = None
     hint_level: int | None = None
     struggle_type: str | None = None
+
+
+# --- Когортные орг-метрики Task 8 ---
+
+
+class TimeToCompetenceSchema(BaseModel):
+    """Зеркало dataclass TimeToCompetence."""
+
+    median_calendar_seconds: float | None
+    median_active_seconds: float | None
+    reach_rate: float
+    reach_rate_at_horizon: float
+    restricted_mean_calendar_seconds: float
+    n: int
+    censored: int
+
+
+class AutonomySchema(BaseModel):
+    """Зеркало dataclass AutonomyMetrics."""
+
+    mean_l1_interventions: float
+    mean_l2_interventions: float | None
+    mean_sessions_to_l2: float | None
+
+
+class OrgEffectSchema(BaseModel):
+    """Зеркало dataclass OrgEffectTrend; note-строка передаётся как есть."""
+
+    l1_escalations_mean: float
+    l2_escalations_mean: float | None
+    l1_repeated_errors_mean: float
+    l2_repeated_errors_mean: float | None
+    note: str
+
+
+class CohortCellSchema(BaseModel):
+    """Зеркало dataclass CohortCell."""
+
+    skill: str | None
+    arm: str | None
+    n: int
+    time_to_competence: TimeToCompetenceSchema
+    autonomy: AutonomySchema
+    org_effect: OrgEffectSchema
+
+
+class CohortMetricsResponse(BaseModel):
+    """Ответ GET /instructor/cohort-metrics."""
+
+    by_skill: list[CohortCellSchema]
+    pooled: CohortCellSchema
+    by_arm: list[CohortCellSchema] | None
+    headline_arm: str
+
+
+def _cell_schema(cell) -> CohortCellSchema:
+    """Конвертирует CohortCell dataclass → CohortCellSchema."""
+    d = dataclasses.asdict(cell)
+    return CohortCellSchema(
+        skill=d["skill"],
+        arm=d["arm"],
+        n=d["n"],
+        time_to_competence=TimeToCompetenceSchema(**d["time_to_competence"]),
+        autonomy=AutonomySchema(**d["autonomy"]),
+        org_effect=OrgEffectSchema(**d["org_effect"]),
+    )
+
+
+def cohort_response_from_result(out: dict) -> CohortMetricsResponse:
+    """Маппит результат aggregate_cohort → CohortMetricsResponse."""
+    return CohortMetricsResponse(
+        by_skill=[_cell_schema(c) for c in out["by_skill"]],
+        pooled=_cell_schema(out["pooled"]),
+        by_arm=[_cell_schema(c) for c in out["by_arm"]] if out["by_arm"] is not None else None,
+        headline_arm=out["headline_arm"],
+    )
