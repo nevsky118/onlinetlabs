@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import type { Credentials } from "../types"
 import { ActivityCard } from "../components/activity-card"
+import { ConsentGate } from "../components/consent-gate"
 import { CredentialsCard } from "../components/credentials-card"
 import { EscalateButton } from "../components/escalate-button"
 import { NodeDetailDrawer } from "../components/node-detail-drawer"
@@ -52,6 +53,7 @@ export function SessionView({
     >
       <ChatInset>
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-6 pb-24 md:pb-6">
+          <ConsentGate />
           <div className="flex items-center justify-between gap-3">
             <SessionPageHeader lab={state.lab} status={state.status} />
             <div className="flex shrink-0 items-center gap-2">
