@@ -62,7 +62,8 @@ def _features(ts_index: int, regime: ProcessRegime, fired: bool) -> SessionFeatu
         elif regime == ProcessRegime.STUCK_ON_STEP:
             base.update(cycles_failing_unchanged=4)
         elif regime == ProcessRegime.IDLE:
-            base.update(idle_periods=4, avg_inter_action_latency=120.0)
+            # IDLE-правило: idle_periods>порог И action_rate_slope<rate_slope_threshold(-0.5)
+            base.update(idle_periods=4, avg_inter_action_latency=120.0, action_rate_slope=-1.0)
     return SessionFeatures(**base)
 
 
