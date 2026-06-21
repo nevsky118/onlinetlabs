@@ -70,7 +70,7 @@ async def sync_labs(db: AsyncSession) -> int:
         lab.title = fm.get("title", slug)
         lab.description = fm.get("description")
         lab.difficulty = fm.get("difficulty", "beginner")
-        lab.meta = {"tags": fm.get("tags", []), "tasks": fm.get("tasks")}
+        lab.meta = {"tags": fm.get("tags", []), "tasks": fm.get("tasks"), "skill": fm.get("skill")}
         count += 1
     await db.commit()
     return count
