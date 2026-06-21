@@ -2,7 +2,7 @@
         migrate migrate-create migrate-rollback \
         test lint format check \
         encrypt decrypt clean sync-content seed-lab-templates openclaw \
-        export-cohort export-audit
+        export-cohort export-audit export-defense
 
 # ── Paths ────────────────────────────────────────────────────
 BE := backend
@@ -154,6 +154,9 @@ export-cohort:
 
 export-audit:
 	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=.. poetry run python -m scripts.export_mcp_audit
+
+export-defense:
+	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=.. poetry run python -m scripts.export_defense_metrics
 
 eval-identifier:
 	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=.. poetry run python -m scripts.eval_identifier

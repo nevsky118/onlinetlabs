@@ -20,6 +20,7 @@ configure_logging("backend", level=getattr(getattr(settings, "log", None), "log_
 configure_sentry("backend", environment=os.getenv("ENVIRONMENT", "dev"))
 
 from agents.orchestrator.agent import Orchestrator
+from admin.router import router as admin_router
 from analytics.router import router as analytics_router
 from auth.router import router as auth_router
 from control_interface.router import router as consent_router
@@ -163,6 +164,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(admin_router, prefix="/admin", tags=["admin"])
 app.include_router(analytics_router, prefix="/analytics", tags=["analytics"])
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(consent_router, prefix="/users/me", tags=["consent"])
