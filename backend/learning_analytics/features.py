@@ -1,5 +1,6 @@
 """FeatureExtractor — вычисление поведенческих фич из событий сессии."""
 
+import json
 import math
 from collections import Counter
 from datetime import datetime, timezone
@@ -69,6 +70,8 @@ class FeatureExtractor:
                 len({e.action for e in sorted_events}) / len(sorted_events), 4
             ),
             events_total=len(sorted_events),
+            distinct_failing_actuals=self._distinct_failing_actuals(sorted_events),
+            cycles_failing_unchanged=self._cycles_failing_unchanged(sorted_events),
             session_id=session_id,
             computed_at=now,
         )
@@ -85,6 +88,7 @@ class FeatureExtractor:
             error_frequency=0.0, error_frequency_slope=0.0,
             unique_error_types=0, dominant_error=None,
             components_touched=0, action_diversity=0.0, events_total=0,
+            distinct_failing_actuals=0, cycles_failing_unchanged=0,
             session_id=session_id, computed_at=now,
         )
 
@@ -144,13 +148,12 @@ class FeatureExtractor:
 
         Считаем хвост, а не исторический максимум: исправленная студентом
         ошибка не должна продолжать триггерить интервенции на каждом цикле
-        анализа. Событие config_ok (исправление подтверждено консольной
-        сверкой) обрывает серию.
+        анализа. Событие check_passed (переход fail→ok) обрывает серию.
         """
         run = 0
         last_message = None
         for event in reversed(events):
-            if event.action == "config_ok":
+            if event.action == "check_passed":
                 break
             if event.event_type != "error":
                 continue
@@ -230,6 +233,40 @@ class FeatureExtractor:
             1.0,
         )
         return len(second_half) / second_span - len(first_half) / first_span
+
+    @staticmethod
+    def _distinct_failing_actuals(events: list) -> int:
+        """Кол-во уникальных actual у доминирующего failing-компонента."""
+        failing = [e for e in events if getattr(e, "action", None) in {"check_failing", "check_retry"}]
+        if not failing:
+            return 0
+        # доминирующий component_id среди failing-событий
+        dominant_cid = Counter(e.component_id for e in failing if e.component_id).most_common(1)
+        if not dominant_cid:
+            return 0
+        cid = dominant_cid[0][0]
+        actuals = {
+            json.dumps((e.extra_data or {}).get("actual"), sort_keys=True)
+            for e in failing
+            if e.component_id == cid
+        }
+        return len(actuals)
+
+    @staticmethod
+    def _cycles_failing_unchanged(events: list) -> int:
+        """Длина хвостовой серии check_failing на одном component_id."""
+        run = 0
+        ref_cid = None
+        for e in reversed(events):
+            action = getattr(e, "action", None)
+            if action != "check_failing":
+                break
+            if ref_cid is None:
+                ref_cid = e.component_id
+            elif e.component_id != ref_cid:
+                break
+            run += 1
+        return run
 
     @staticmethod
     def _dominant_error(error_events: list) -> str | None:

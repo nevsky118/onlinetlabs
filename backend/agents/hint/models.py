@@ -14,6 +14,7 @@ class HintInput(BaseModel):
     step_slug: str
     attempts_count: int = Field(default=0, ge=0)
     last_error: str | None = None
+    failing_check: dict | None = None
     agent_context: AgentContext | None = None
 
 

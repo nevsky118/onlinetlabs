@@ -24,7 +24,7 @@ HINT_SYSTEM_PROMPT = (
 
 
 class HintAgent(BaseAgent):
-    """Прогрессивные подсказки: шаблон без контекста, LLM с контекстом."""
+    """Прогрессивные подсказки через LLM; без контекста — ошибка."""
 
     def __init__(self, config: ConfigModel):
         """Инициализация с конфигом."""
@@ -36,29 +36,36 @@ class HintAgent(BaseAgent):
         return HINT_SYSTEM_PROMPT
 
     async def run(self, input_data: HintInput, model_id: str | None = None) -> HintResponse:
-        """Подсказка нужного уровня. LLM при наличии контекста, шаблон без."""
+        """Подсказка нужного уровня через LLM. agent_context обязателен."""
+        if not input_data.agent_context:
+            raise ValueError("hint requires agent_context")
+
         mid = model_id or self.agents_config.intervention_model
         hint_level = self.tools.get_hint_level(input_data.attempts_count)
         remaining = self.tools.get_remaining_hints(hint_level)
 
-        if input_data.agent_context:
-            try:
-                result = await self._agent_for(mid).run(
-                    f"Уровень подсказки: {hint_level}\n"
-                    f"Шаг: {input_data.step_slug}\n"
-                    f"Последняя ошибка: {input_data.last_error}\n\n"
-                    f"{input_data.agent_context.to_prompt()}",
-                )
-                hint_text = result.output
-            except Exception:
-                logger.warning("LLM недоступен, fallback на шаблон", exc_info=True)
-                hint_text = self.tools.generate_hint(
-                    input_data.step_slug, hint_level, input_data.last_error
-                )
-        else:
-            hint_text = self.tools.generate_hint(
-                input_data.step_slug, hint_level, input_data.last_error
+        check_line = ""
+        if input_data.failing_check:
+            fc = input_data.failing_check
+            node = fc.get("params", {}).get("node") if isinstance(fc.get("params"), dict) else None
+            node_str = f" на {node}" if node else ""
+            check_line = (
+                f"Провалившаяся проверка {fc.get('kind')}{node_str}: "
+                f"ожидалось {fc.get('expected')}, получено {fc.get('actual')}.\n"
             )
+
+        try:
+            result = await self._agent_for(mid).run(
+                f"{check_line}"
+                f"Уровень подсказки: {hint_level}\n"
+                f"Шаг: {input_data.step_slug}\n"
+                f"Последняя ошибка: {input_data.last_error}\n\n"
+                f"{input_data.agent_context.to_prompt()}",
+            )
+            hint_text = result.output
+        except Exception:
+            logger.warning("LLM hint failed", exc_info=True)
+            raise
 
         return HintResponse(
             hint=hint_text,

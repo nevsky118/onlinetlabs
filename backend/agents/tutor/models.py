@@ -14,6 +14,7 @@ class TutorInput(BaseModel):
     context: str = Field(default="", description="Контекст лабы/курса")
     lab_slug: str | None = None
     step_slug: str | None = None
+    failing_check: dict | None = None
     agent_context: AgentContext | None = None
 
 

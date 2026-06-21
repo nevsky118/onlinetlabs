@@ -76,6 +76,9 @@ class SessionFeatures(BaseModel):
     components_touched: int
     action_diversity: float
     events_total: int
+    # Признаки spec-проверок
+    distinct_failing_actuals: int = 0
+    cycles_failing_unchanged: int = 0
     # Мета
     session_id: str
     computed_at: datetime

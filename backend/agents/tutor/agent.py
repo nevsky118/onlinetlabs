@@ -38,6 +38,15 @@ class TutorAgent(BaseAgent):
         mid = model_id or self.agents_config.intervention_model
         prompt_parts = [f"Вопрос студента: {input_data.question}"]
 
+        if input_data.failing_check:
+            fc = input_data.failing_check
+            node = fc.get("params", {}).get("node") if isinstance(fc.get("params"), dict) else None
+            node_str = f" на {node}" if node else ""
+            prompt_parts.insert(0,
+                f"Провалившаяся проверка {fc.get('kind')}{node_str}: "
+                f"ожидалось {fc.get('expected')}, получено {fc.get('actual')}."
+            )
+
         if input_data.agent_context:
             prompt_parts.append(input_data.agent_context.to_prompt())
 
@@ -49,15 +58,5 @@ class TutorAgent(BaseAgent):
                 references=[],
             )
         except Exception:
-            logger.warning("LLM недоступен, fallback на шаблон", exc_info=True)
-            context_parts = []
-            if input_data.lab_slug:
-                context_parts.append(await self.tools.get_lab_context(input_data.lab_slug))
-            if input_data.context:
-                context_parts.append(input_data.context)
-            full_context = "; ".join(context_parts) if context_parts else "Общий вопрос"
-            return TutorResponse(
-                answer=f"Ответ на вопрос: {input_data.question} (контекст: {full_context})",
-                follow_up_questions=["Можешь объяснить подробнее?"],
-                references=[],
-            )
+            logger.warning("LLM tutor failed", exc_info=True)
+            raise
