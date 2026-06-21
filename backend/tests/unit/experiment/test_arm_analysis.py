@@ -32,10 +32,10 @@ def _make_dataset() -> list:
 
 
 class TestArmAnalysis:
-    @autotest.num("630")
-    @autotest.external_id("a1b2c3d4-e5f6-4789-abcd-630000000001")
+    @autotest.num("1092")
+    @autotest.external_id("fb22080e-7c17-4b6d-abf6-165896b9c075")
     @autotest.name("compute_arm_analysis: mentor_hours_saved > 0 когда open эскалирует больше")
-    def test_a1b2c3d4_mentor_hours_saved_positive(self):
+    def test_fb22080e_mentor_hours_saved_positive(self):
         with autotest.step("Создаём датасет"):
             metrics = _make_dataset()
 
@@ -45,10 +45,10 @@ class TestArmAnalysis:
         with autotest.step("mentor_hours_saved > 0"):
             assert_greater(result.mentor_hours_saved, 0, "closed сохраняет часы ментора")
 
-    @autotest.num("631")
-    @autotest.external_id("b2c3d4e5-f6a7-4890-bcde-631000000002")
+    @autotest.num("1093")
+    @autotest.external_id("3a04493e-33c6-48e3-89ff-803d66905cca")
     @autotest.name("compute_arm_analysis: l2_pass_rate_closed >= l2_pass_rate_open")
-    def test_b2c3d4e5_l2_pass_rate_closed_higher(self):
+    def test_3a04493e_l2_pass_rate_closed_higher(self):
         with autotest.step("Создаём датасет"):
             metrics = _make_dataset()
 
@@ -61,10 +61,10 @@ class TestArmAnalysis:
                 "closed arm проходит L2 лучше",
             )
 
-    @autotest.num("632")
-    @autotest.external_id("c3d4e5f6-a7b8-4901-cdef-632000000003")
+    @autotest.num("1094")
+    @autotest.external_id("3367a7c1-07fc-4369-a4b2-a389ba4d03ab")
     @autotest.name("compute_arm_analysis: escalations_mean_open > escalations_mean_closed")
-    def test_c3d4e5f6_escalations_open_higher(self):
+    def test_3367a7c1_escalations_open_higher(self):
         with autotest.step("Создаём датасет"):
             metrics = _make_dataset()
 
@@ -78,10 +78,10 @@ class TestArmAnalysis:
                 "open arm mean escalations выше",
             )
 
-    @autotest.num("633")
-    @autotest.external_id("d4e5f6a7-b8c9-4012-defa-633000000004")
+    @autotest.num("1095")
+    @autotest.external_id("2de2ecef-c4df-4cf8-8b87-5bd82670c47d")
     @autotest.name("compute_arm_analysis: repeated_errors comparison содержит t-тест")
-    def test_d4e5f6a7_repeated_errors_comparison(self):
+    def test_2de2ecef_repeated_errors_comparison(self):
         with autotest.step("Создаём датасет"):
             metrics = _make_dataset()
 
@@ -94,10 +94,10 @@ class TestArmAnalysis:
             assert_true("p_value" in cmp, "есть p_value")
             assert_true("cohens_d" in cmp, "есть cohens_d")
 
-    @autotest.num("634")
-    @autotest.external_id("e5f6a7b8-c9d0-4123-efab-634000000005")
+    @autotest.num("1096")
+    @autotest.external_id("aec72172-d3f2-43da-b805-7a6218aab6e1")
     @autotest.name("compute_arm_analysis: пустой вход не падает")
-    def test_e5f6a7b8_empty_input_no_crash(self):
+    def test_aec72172_empty_input_no_crash(self):
         with autotest.step("Пустой список"):
             result = compute_arm_analysis([])
 
@@ -108,10 +108,10 @@ class TestArmAnalysis:
             assert_equal(result.escalations_mean_closed, 0.0, "closed esc mean = 0")
             assert_equal(result.mentor_hours_saved, 0.0, "0 часов сохранено")
 
-    @autotest.num("635")
-    @autotest.external_id("f6a7b8c9-d0e1-4234-fabc-635000000006")
+    @autotest.num("1097")
+    @autotest.external_id("b17ee300-bedc-4843-9208-4065d2596dd4")
     @autotest.name("compute_arm_analysis: только один arm не падает")
-    def test_f6a7b8c9_single_arm_no_crash(self):
+    def test_b17ee300_single_arm_no_crash(self):
         with autotest.step("Только open arm"):
             metrics = [_m("open", esc=3, l2_pass=True, repeated=4) for _ in range(5)]
             result = compute_arm_analysis(metrics)

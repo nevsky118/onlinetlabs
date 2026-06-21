@@ -8,9 +8,9 @@ pytestmark = [pytest.mark.unit]
 
 
 @autotest.num("210")
-@autotest.external_id("c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f")
+@autotest.external_id("19f2f06a-c71f-4cc2-ad1d-1991dc0b2366")
 @autotest.name("build_agents_config: новые env-ключи, оба провайдера")
-def test_build_agents_from_new_env():
+def test_19f2f06a_build_agents_from_new_env():
     with autotest.step("Собираем конфиг из env-словаря"):
         cfg = build_agents_config({
             "YANDEX_API_KEY": "yk", "YANDEX_FOLDER": "fld",
@@ -25,9 +25,9 @@ def test_build_agents_from_new_env():
 
 
 @autotest.num("211")
-@autotest.external_id("d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a")
+@autotest.external_id("b8b87ba4-04cd-4c32-b369-0859bb3f5f7e")
 @autotest.name("build_agents_config: без openrouter-ключа фильтрует модели")
-def test_openrouter_models_filtered_when_no_key():
+def test_b8b87ba4_openrouter_models_filtered_when_no_key():
     with autotest.step("Собираем конфиг без OPENROUTER_API_KEY"):
         cfg = build_agents_config({
             "YANDEX_API_KEY": "yk", "YANDEX_FOLDER": "fld",
@@ -41,9 +41,9 @@ def test_openrouter_models_filtered_when_no_key():
 
 
 @autotest.num("213")
-@autotest.external_id("f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c")
+@autotest.external_id("e7a24847-3394-464b-ba0c-a54237a4d0ea")
 @autotest.name("build_agents_config: openrouter-only, дефолт yandex-gpt-5.1 → fallback на первый catalog entry")
-def test_openrouter_only_fallback_when_default_model_missing():
+def test_e7a24847_openrouter_only_fallback_when_default_model_missing():
     with autotest.step("Собираем конфиг только с OPENROUTER_API_KEY, AGENTS_CHAT_MODEL не задан"):
         cfg = build_agents_config({
             "OPENROUTER_API_KEY": "ork",
@@ -55,9 +55,9 @@ def test_openrouter_only_fallback_when_default_model_missing():
 
 
 @autotest.num("212")
-@autotest.external_id("e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b")
+@autotest.external_id("8382ecb4-4b02-409f-8dc4-b481208dc350")
 @autotest.name("build_agents_config: back-compat AGENTS_PROVIDER")
-def test_back_compat_old_agents_env():
+def test_8382ecb4_back_compat_old_agents_env():
     with autotest.step("Собираем конфиг через старые AGENTS_* переменные"):
         cfg = build_agents_config({
             "AGENTS_PROVIDER": "yandex", "AGENTS_MODEL": "yandexgpt/latest",

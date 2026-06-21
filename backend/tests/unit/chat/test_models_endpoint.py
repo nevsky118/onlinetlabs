@@ -36,9 +36,9 @@ _CATALOG = [
 class TestBuildModelsResponse:
 
     @autotest.num("790")
-    @autotest.external_id("b2c3d4e5-0001-4000-8000-000000000001")
+    @autotest.external_id("a88e6991-1166-4f5f-a99e-9e399f0fd9b6")
     @autotest.name("build_models_response: can_select=True → только tools-capable модели")
-    def test_b2c3d4e5_can_select_returns_tools_models(self, monkeypatch):
+    def test_a88e6991_can_select_returns_tools_models(self, monkeypatch):
         monkeypatch.setattr(
             "chat.router.settings",
             _FakeSettings("yandex-gpt-5.1", _CATALOG),
@@ -58,9 +58,9 @@ class TestBuildModelsResponse:
                 assert "label" in m
 
     @autotest.num("791")
-    @autotest.external_id("b2c3d4e5-0002-4000-8000-000000000002")
+    @autotest.external_id("708e1b78-2ba9-4ab5-bcd1-b87a735de6a5")
     @autotest.name("build_models_response: can_select=False → models пустой список")
-    def test_b2c3d4e5_cannot_select_returns_empty(self, monkeypatch):
+    def test_708e1b78_cannot_select_returns_empty(self, monkeypatch):
         monkeypatch.setattr(
             "chat.router.settings",
             _FakeSettings("yandex-gpt-5.1", _CATALOG),

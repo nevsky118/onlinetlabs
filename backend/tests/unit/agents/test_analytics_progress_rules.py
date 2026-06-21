@@ -12,7 +12,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.agents]
 
 
 class TestProgressRules:
-    @autotest.num("508")
+    @autotest.num("1760")
     @autotest.external_id("c8d9e0f1-a2b3-4c5d-8e6f-7a8b9c0d1e2f")
     @autotest.name("distinct_failing_actuals > threshold → TRIAL_AND_ERROR")
     def test_c8d9e0f1_distinct_actuals_triggers_trial_and_error(self, config_model):
@@ -29,7 +29,7 @@ class TestProgressRules:
             assert_equal(result.struggle_type, StruggleType.TRIAL_AND_ERROR, "тип: trial_and_error")
             assert_equal(result.suggested_intervention, SuggestedIntervention.TUTOR, "интервенция: tutor")
 
-    @autotest.num("509")
+    @autotest.num("1761")
     @autotest.external_id("d9e0f1a2-b3c4-4d5e-9f6a-8b9c0d1e2f3a")
     @autotest.name("cycles_failing_unchanged >= threshold → STUCK_ON_STEP")
     def test_d9e0f1a2_cycles_unchanged_triggers_stuck(self, config_model):
@@ -46,7 +46,7 @@ class TestProgressRules:
             assert_equal(result.struggle_type, StruggleType.STUCK_ON_STEP, "тип: stuck_on_step")
             assert_equal(result.suggested_intervention, SuggestedIntervention.HINT, "интервенция: hint")
 
-    @autotest.num("510")
+    @autotest.num("1762")
     @autotest.external_id("e0f1a2b3-c4d5-4e6f-af7b-9c0d1e2f3a4b")
     @autotest.name("distinct_actuals confidence = min(n/4, 1.0)")
     def test_e0f1a2b3_distinct_actuals_confidence(self, config_model):

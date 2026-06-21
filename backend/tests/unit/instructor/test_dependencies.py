@@ -9,7 +9,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.auth]
 
 
 class TestRequireInstructor:
-    @autotest.num("740")
+    @autotest.num("1850")
     @autotest.external_id("c1a2b3d4-e5f6-4708-8901-aabbccdd0001")
     @autotest.name("require_instructor: instructor проходит")
     def test_c1a2b3d4_instructor_passes(self):
@@ -22,7 +22,7 @@ class TestRequireInstructor:
         with autotest.step("Assert: возвращает тот же объект"):
             assert_equal(result, user, "returns the same user dict")
 
-    @autotest.num("741")
+    @autotest.num("1851")
     @autotest.external_id("c1a2b3d4-e5f6-4708-8901-aabbccdd0002")
     @autotest.name("require_instructor: admin проходит")
     def test_c1a2b3d4_admin_passes(self):
@@ -35,7 +35,7 @@ class TestRequireInstructor:
         with autotest.step("Assert: возвращает тот же объект"):
             assert_equal(result, user, "returns the same user dict")
 
-    @autotest.num("742")
+    @autotest.num("1852")
     @autotest.external_id("c1a2b3d4-e5f6-4708-8901-aabbccdd0003")
     @autotest.name("require_instructor: student → HTTPException 403")
     def test_c1a2b3d4_student_raises_403(self):

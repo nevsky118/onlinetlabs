@@ -21,7 +21,7 @@ pytestmark = [pytest.mark.unit]
 class TestToOpenAIMessages:
     """Чистая (sync) функция конверсии sdk-сообщений в openai-формат."""
 
-    @autotest.num("760")
+    @autotest.num("1910")
     @autotest.external_id("c1f25a02-2f6a-4f70-9ad9-3ab9f4a01a30")
     @autotest.name("to_openai_messages: multi-part user → склейка text через \\n")
     def test_c1f25a02_joins_multipart_text(self):
@@ -44,7 +44,7 @@ class TestToOpenAIMessages:
             assert_equal(result[0]["role"], "user", "role")
             assert_equal(result[0]["content"], "hello\nworld", "content")
 
-    @autotest.num("761")
+    @autotest.num("1911")
     @autotest.external_id("4cc1c0db-49f8-4f23-9d80-1d65bb0a3c7c")
     @autotest.name("to_openai_messages: только content (без parts) → берёт content")
     def test_4cc1c0db_uses_content_when_no_parts(self):
@@ -59,7 +59,7 @@ class TestToOpenAIMessages:
             assert_equal(result[0]["content"], "plain answer", "content")
             assert_equal(result[0]["role"], "assistant", "role")
 
-    @autotest.num("762")
+    @autotest.num("1912")
     @autotest.external_id("3a9d6a72-2b8a-4a82-b89f-bf3a4d3b5b3c")
     @autotest.name("to_openai_messages: пустые parts → пропускаются")
     def test_3a9d6a72_skips_empty_parts(self):
@@ -77,7 +77,7 @@ class TestToOpenAIMessages:
             assert_equal(len(result), 1, "len(result)")
             assert_equal(result[0]["content"], "kept", "content")
 
-    @autotest.num("763")
+    @autotest.num("1913")
     @autotest.external_id("88c1bb5d-2c7b-4c80-8c4e-2e6f8f5d2d11")
     @autotest.name("to_openai_messages: non-text parts → игнор")
     def test_88c1bb5d_ignores_non_text_parts(self):
@@ -117,7 +117,7 @@ class _DBTestBase:
 
 class TestSaveUserMessage(_DBTestBase):
 
-    @autotest.num("764")
+    @autotest.num("1914")
     @autotest.external_id("a7b1f8d3-8d2e-4c91-9b7e-2f4a6c1d8e0a")
     @autotest.name("save_user_message: последнее user-сообщение → INSERT с теми же parts")
     async def test_a7b1f8d3_inserts_user_row(self):
@@ -140,7 +140,7 @@ class TestSaveUserMessage(_DBTestBase):
             assert_equal(rows[0].session_id, "sess-1", "session_id")
             assert_equal(rows[0].parts, parts, "parts")
 
-    @autotest.num("765")
+    @autotest.num("1915")
     @autotest.external_id("d2e8b1c4-9f3a-4b88-8d12-5b9c0e2f1a33")
     @autotest.name("save_user_message: последнее сообщение assistant → не сохраняем")
     async def test_d2e8b1c4_skips_when_last_is_assistant(self):
@@ -159,7 +159,7 @@ class TestSaveUserMessage(_DBTestBase):
                 rows = await get_chat_history(db, "sess-2")
             assert_equal(len(rows), 0, "rows count")
 
-    @autotest.num("766")
+    @autotest.num("1916")
     @autotest.external_id("8f4c3a91-7b2d-4e6f-9c01-3a8b5d7e9f12")
     @autotest.name("save_user_message: пустой список → no-op")
     async def test_8f4c3a91_skips_when_empty(self):
@@ -175,7 +175,7 @@ class TestSaveUserMessage(_DBTestBase):
 
 class TestSaveAssistantMessage(_DBTestBase):
 
-    @autotest.num("767")
+    @autotest.num("1917")
     @autotest.external_id("e6c2a489-4d72-49f3-b2c8-1f0e7d4b8a5c")
     @autotest.name("save_assistant_message: parts + usage → INSERT")
     async def test_e6c2a489_inserts_assistant_row_with_usage(self):
@@ -195,7 +195,7 @@ class TestSaveAssistantMessage(_DBTestBase):
             assert_equal(rows[0].parts, parts, "parts")
             assert_equal(rows[0].usage, usage, "usage")
 
-    @autotest.num("768")
+    @autotest.num("1918")
     @autotest.external_id("9a1d7e34-3b8c-4f5a-b6d2-8e0f1c2a3b4d")
     @autotest.name("save_assistant_message: пустые parts → no-op")
     async def test_9a1d7e34_skips_when_empty_parts(self):
@@ -211,7 +211,7 @@ class TestSaveAssistantMessage(_DBTestBase):
 
 class TestGetChatHistory(_DBTestBase):
 
-    @autotest.num("769")
+    @autotest.num("1919")
     @autotest.external_id("b4e7c8a2-5f9d-4a1b-c3d6-7e8f9a0b1c2d")
     @autotest.name("get_chat_history: порядок по created_at ASC")
     async def test_b4e7c8a2_orders_by_created_at_asc(self):
