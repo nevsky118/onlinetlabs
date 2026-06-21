@@ -7,10 +7,10 @@ from mcp_sdk.testing import autotest
 pytestmark = [pytest.mark.unit]
 
 
-@autotest.num("200")
-@autotest.external_id("a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d")
+@autotest.num("1730")
+@autotest.external_id("7646757f-c563-4116-879c-ea34b32144e4")
 @autotest.name("default_catalog: содержит yandex и openrouter модели")
-def test_default_catalog_has_yandex_and_openrouter():
+def test_7646757f_has_yandex_and_openrouter():
     with autotest.step("Получаем каталог"):
         cat = default_catalog()
     with autotest.step("Проверяем наличие ключевых id"):
@@ -20,10 +20,10 @@ def test_default_catalog_has_yandex_and_openrouter():
         assert all(isinstance(m, ModelEntry) for m in cat)
 
 
-@autotest.num("201")
-@autotest.external_id("b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e")
+@autotest.num("1731")
+@autotest.external_id("a31f27c3-2c8a-4f4e-b7d6-1388440f0c93")
 @autotest.name("default_catalog: все provider_ref из разрешённого набора")
-def test_default_catalog_provider_refs():
+def test_a31f27c3_provider_refs():
     with autotest.step("Получаем provider_ref из каталога"):
         refs = {m.provider_ref for m in default_catalog()}
     with autotest.step("Проверяем допустимые провайдеры"):

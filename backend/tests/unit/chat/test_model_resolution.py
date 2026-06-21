@@ -33,9 +33,9 @@ def _fake(chat_default: str, ids: set[str]) -> _FakeSettings:
 class TestResolveChatModel:
 
     @autotest.num("780")
-    @autotest.external_id("a1b2c3d4-0001-4000-8000-000000000001")
+    @autotest.external_id("64d6a80d-2756-463d-a0b0-ab55ac873e44")
     @autotest.name("resolve_chat_model: entitled + valid id → берёт запрошенную модель")
-    def test_a1b2c3d4_entitled_explicit_model(self, monkeypatch):
+    def test_64d6a80d_entitled_explicit_model(self, monkeypatch):
         monkeypatch.setattr(
             "chat.router.settings",
             _fake(chat_default="yandex-gpt-5.1", ids={"yandex-gpt-5.1", "claude-opus-4.8"}),
@@ -46,9 +46,9 @@ class TestResolveChatModel:
             assert result == "claude-opus-4.8"
 
     @autotest.num("781")
-    @autotest.external_id("a1b2c3d4-0002-4000-8000-000000000002")
+    @autotest.external_id("9c18bd1e-c77c-4606-8736-8ef943773314")
     @autotest.name("resolve_chat_model: not entitled → фолбэк на config-дефолт")
-    def test_a1b2c3d4_not_entitled_falls_back(self, monkeypatch):
+    def test_9c18bd1e_not_entitled_falls_back(self, monkeypatch):
         monkeypatch.setattr(
             "chat.router.settings",
             _fake(chat_default="yandex-gpt-5.1", ids={"yandex-gpt-5.1", "claude-opus-4.8"}),
@@ -59,9 +59,9 @@ class TestResolveChatModel:
             assert result == "yandex-gpt-5.1"
 
     @autotest.num("782")
-    @autotest.external_id("a1b2c3d4-0003-4000-8000-000000000003")
+    @autotest.external_id("cebf8804-ba03-4290-a2b1-cf0e66fe5467")
     @autotest.name("resolve_chat_model: invalid id → session_model_id → config-дефолт")
-    def test_a1b2c3d4_invalid_id_falls_back_to_session_then_default(self, monkeypatch):
+    def test_cebf8804_invalid_id_falls_back_to_session_then_default(self, monkeypatch):
         monkeypatch.setattr(
             "chat.router.settings",
             _fake(chat_default="yandex-gpt-5.1", ids={"yandex-gpt-5.1"}),
@@ -72,9 +72,9 @@ class TestResolveChatModel:
             assert result == "yandex-gpt-5.1"
 
     @autotest.num("783")
-    @autotest.external_id("a1b2c3d4-0004-4000-8000-000000000004")
+    @autotest.external_id("35c8ecfe-224f-4368-9b1a-5608549fbc8a")
     @autotest.name("resolve_chat_model: no request, valid session_model_id → берёт сессию")
-    def test_a1b2c3d4_no_request_uses_session_model(self, monkeypatch):
+    def test_35c8ecfe_no_request_uses_session_model(self, monkeypatch):
         monkeypatch.setattr(
             "chat.router.settings",
             _fake(chat_default="yandex-gpt-5.1", ids={"yandex-gpt-5.1"}),
@@ -85,9 +85,9 @@ class TestResolveChatModel:
             assert result == "yandex-gpt-5.1"
 
     @autotest.num("784")
-    @autotest.external_id("a1b2c3d4-0005-4000-8000-000000000005")
+    @autotest.external_id("e0246f48-9ef0-4b25-9326-3ea039a51f3c")
     @autotest.name("resolve_chat_model: все None → config-дефолт")
-    def test_a1b2c3d4_all_none_returns_default(self, monkeypatch):
+    def test_e0246f48_all_none_returns_default(self, monkeypatch):
         monkeypatch.setattr(
             "chat.router.settings",
             _fake(chat_default="yandex-gpt-5.1", ids={"yandex-gpt-5.1"}),
@@ -98,9 +98,9 @@ class TestResolveChatModel:
             assert result == "yandex-gpt-5.1"
 
     @autotest.num("785")
-    @autotest.external_id("a1b2c3d4-0006-4000-8000-000000000006")
+    @autotest.external_id("7159ebe9-e40d-45f0-bf58-53cda663e741")
     @autotest.name("resolve_chat_model: оба invalid → config-дефолт (двойной фолбэк)")
-    def test_a1b2c3d4_both_invalid_returns_default(self, monkeypatch):
+    def test_7159ebe9_both_invalid_returns_default(self, monkeypatch):
         monkeypatch.setattr(
             "chat.router.settings",
             _fake(chat_default="yandex-gpt-5.1", ids={"yandex-gpt-5.1"}),

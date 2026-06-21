@@ -14,9 +14,9 @@ class _Dummy(BaseAgent):
 
 class TestBaseAgent:
     @autotest.num("400")
-    @autotest.external_id("b3f1a2c4-d5e6-4f7a-8b9c-0d1e2f3a4b5c")
+    @autotest.external_id("587f52f4-94c3-451d-8c11-a3b46cded32d")
     @autotest.name("BaseAgent: инициализация с ConfigModel")
-    def test_b3f1a2c4_init(self, config_model):
+    def test_587f52f4_init(self, config_model):
         with autotest.step("Создаём BaseAgent"):
             agent = BaseAgent(config_model)
 
@@ -26,9 +26,9 @@ class TestBaseAgent:
             assert_equal(agent._agents_by_model, {}, "кэш агентов пуст")
 
     @autotest.num("401")
-    @autotest.external_id("c4e2b3d5-f6a7-4b8c-9d0e-1f2a3b4c5d6e")
+    @autotest.external_id("2883db9b-dd6b-4bb1-9b29-7373034ad968")
     @autotest.name("BaseAgent: _agent_for кэширует по model_id")
-    def test_c4e2b3d5_agent_for_caches(self, config_model):
+    def test_2883db9b_agent_for_caches(self, config_model):
         with autotest.step("Создаём _Dummy агент"):
             agent = _Dummy(config_model)
 
@@ -40,9 +40,9 @@ class TestBaseAgent:
             assert_true(m1 is m2, "_agent_for должен возвращать тот же объект")
 
     @autotest.num("402")
-    @autotest.external_id("d5f3c4e6-a7b8-4c9d-0e1f-2a3b4c5d6e7f")
+    @autotest.external_id("06f105f1-959d-4ec3-a324-14e25f802ba3")
     @autotest.name("BaseAgent: _build_model возвращает OpenAIModel для yandex")
-    def test_d5f3c4e6_build_model_yandex(self, config_model):
+    def test_06f105f1_build_model_yandex(self, config_model):
         from pydantic_ai.models.openai import OpenAIModel
 
         with autotest.step("Создаём _Dummy агент"):
@@ -59,9 +59,9 @@ class TestBaseAgent:
             assert_equal(model.model_name, "gpt://test-folder/yandexgpt/latest", "model_name должен быть gpt:// URI")
 
     @autotest.num("405")
-    @autotest.external_id("a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d")
+    @autotest.external_id("637256be-7d8b-4fb3-9da8-401877afbab9")
     @autotest.name("BaseAgent: _build_model raises ValueError если yandex_folder=None")
-    def test_a1b2c3d4_build_model_yandex_no_folder(self, config_model):
+    def test_637256be_build_model_yandex_no_folder(self, config_model):
         with autotest.step("Патчим глобальный settings.agents: yandex_folder=None через model_construct"):
             from config.config_model import LlmProvider, ProviderCreds
             from config.env_config_loader import settings
@@ -85,9 +85,9 @@ class TestBaseAgent:
             settings.agents.providers.update(original_providers)
 
     @autotest.num("403")
-    @autotest.external_id("e6a4d5f7-b8c9-4d0e-1f2a-3b4c5d6e7f8a")
+    @autotest.external_id("201db06b-9f48-4415-959a-0afe0c63842a")
     @autotest.name("BaseAgent: system_prompt бросает NotImplementedError")
-    def test_e6a4d5f7_system_prompt_raises(self, config_model):
+    def test_201db06b_system_prompt_raises(self, config_model):
         with autotest.step("Создаём BaseAgent"):
             agent = BaseAgent(config_model)
 
@@ -96,9 +96,9 @@ class TestBaseAgent:
                 agent.system_prompt()
 
     @autotest.num("404")
-    @autotest.external_id("f7b5e6a8-c9d0-4e1f-2a3b-4c5d6e7f8a9b")
+    @autotest.external_id("2aaa5fea-ec64-41a1-b524-e5abb2cc168f")
     @autotest.name("BaseAgent: run бросает NotImplementedError")
-    async def test_f7b5e6a8_run_raises(self, config_model):
+    async def test_2aaa5fea_run_raises(self, config_model):
         with autotest.step("Создаём BaseAgent"):
             agent = BaseAgent(config_model)
 

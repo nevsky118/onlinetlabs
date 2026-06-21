@@ -69,9 +69,9 @@ def _make_monitor(activity_log, config_model) -> SessionMonitor:
 
 class TestMonitorEmits:
     @autotest.num("580")
-    @autotest.external_id("a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d")
+    @autotest.external_id("75ce6cbf-cfe9-4ebd-bb92-0b2fdf6f99ee")
     @autotest.name("SessionMonitor: emit STRUGGLE_DETECTED при обнаружении затруднения")
-    async def test_a1b2c3d4_emits_struggle_detected(self, config_model):
+    async def test_75ce6cbf_emits_struggle_detected(self, config_model):
         # Arrange
         with autotest.step("Создаём монитор с activity_log mock и struggle-фичами"):
             activity = MagicMock()
@@ -92,9 +92,9 @@ class TestMonitorEmits:
             )
 
     @autotest.num("581")
-    @autotest.external_id("b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e")
+    @autotest.external_id("724254ea-7e51-4a4d-be40-da53a6c3d690")
     @autotest.name("SessionMonitor: emit COOLDOWN_SKIP когда cooldown ещё не прошёл")
-    async def test_b2c3d4e5_emits_cooldown_skip(self, config_model):
+    async def test_724254ea_emits_cooldown_skip(self, config_model):
         # Arrange
         with autotest.step("Создаём монитор с недавней интервенцией"):
             activity = MagicMock()
@@ -115,9 +115,9 @@ class TestMonitorEmits:
             assert ActivityKind.COOLDOWN_SKIP in emitted_kinds, "нет COOLDOWN_SKIP"
 
     @autotest.num("582")
-    @autotest.external_id("c3d4e5f6-a7b8-4c9d-8e0f-2a3b4c5d6e7f")
+    @autotest.external_id("7ac4d323-14f7-42fa-a58c-ca90594eaf17")
     @autotest.name("SessionMonitor: без activity_log emit не бросает исключение")
-    async def test_c3d4e5f6_no_emit_without_activity_log(self, config_model):
+    async def test_7ac4d323_no_emit_without_activity_log(self, config_model):
         # Arrange
         with autotest.step("Создаём монитор без activity_log"):
             monitor = _make_monitor(None, config_model)

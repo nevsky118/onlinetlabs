@@ -8,7 +8,7 @@ from learning_analytics.progress_observer import LabProgressObserver, ProgressSt
 pytestmark = [pytest.mark.unit]
 
 
-@autotest.num("200")
+@autotest.num("1700")
 @autotest.external_id("a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d")
 @autotest.name("derive_current_step: первый провальный шаг — текущий")
 def test_derive_current_step_first_failing():
@@ -36,7 +36,7 @@ def test_derive_current_step_first_failing():
     assert st.failing_checks[0]["actual"] == {"ip": "y"}
 
 
-@autotest.num("201")
+@autotest.num("1701")
 @autotest.external_id("b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e")
 @autotest.name("derive_current_step: все шаги пройдены — current_step_id None")
 def test_derive_current_step_all_passed():
@@ -47,14 +47,14 @@ def test_derive_current_step_all_passed():
     assert st.failing_checks == []
 
 
-@autotest.num("202")
+@autotest.num("1702")
 @autotest.external_id("c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f")
 @autotest.name("derive_current_step: пустой снапшот → None")
 def test_derive_current_step_empty():
     assert derive_current_step([]).current_step_id is None
 
 
-@autotest.num("203")
+@autotest.num("1703")
 @autotest.external_id("d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a")
 @autotest.name("derive_current_step: failing_checks фильтрует только упавшие проверки")
 def test_derive_current_step_filters_failing_checks():

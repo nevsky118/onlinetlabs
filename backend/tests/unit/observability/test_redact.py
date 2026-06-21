@@ -7,9 +7,9 @@ pytestmark = [pytest.mark.unit]
 
 
 @autotest.num("303")
-@autotest.external_id("f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c")
+@autotest.external_id("8012810e-a673-42a5-90cb-74c11c14bf8e")
 @autotest.name("redact: маскирует секреты и обрезает строки")
-def test_redacts_secrets_and_truncates():
+def test_8012810e_redacts_secrets_and_truncates():
     with autotest.step("Редактируем dict с секретом и длинной строкой"):
         out = redact({"api_key": "sk-secret", "note": "x" * 1000, "ok": 5})
     with autotest.step("Проверяем маскирование api_key"):
@@ -21,8 +21,8 @@ def test_redacts_secrets_and_truncates():
 
 
 @autotest.num("304")
-@autotest.external_id("a7b8c9d0-e1f2-4a3b-5c6d-7e8f9a0b1c2d")
+@autotest.external_id("df26fa4e-d747-407f-81bd-51d6b1e7d940")
 @autotest.name("redact: passthrough None")
-def test_none_passthrough():
+def test_df26fa4e_none_passthrough():
     with autotest.step("Проверяем None passthrough"):
         assert redact(None) is None

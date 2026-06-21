@@ -5,13 +5,16 @@ from datetime import datetime, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from mcp_sdk.testing import autotest
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_true, assert_is_not_none
+
 from agents.analytics.models import StruggleType
 from agents.orchestrator.models import OrchestratorResponse
 from config.config_model import LearningAnalyticsConfig
 from experiment.control_arm import ControlArm
 from learning_analytics.monitor import SessionMonitor
 
-pytestmark = [pytest.mark.unit, pytest.mark.asyncio]
+pytestmark = [pytest.mark.unit]
 
 
 class _Cap:
@@ -95,114 +98,124 @@ def _make_monitor(arm: ControlArm, cap: _Cap) -> SessionMonitor:
     return m
 
 
-@pytest.mark.asyncio
-async def test_open_arm_logs_would_intervene():
-    """Arm A: _log_would_intervene пишет событие would_intervene в БД."""
-    cap = _Cap()
-    m = _make_monitor(ControlArm.OPEN, cap)
-    analysis = _make_analysis()
+class TestOpenLoop:
+    @autotest.num("1362")
+    @autotest.external_id("378372bd-17f6-430b-9bd5-01bad8a73284")
+    @autotest.name("OpenLoop arm A: _log_would_intervene пишет событие would_intervene в БД")
+    async def test_378372bd_open_arm_logs_would_intervene(self):
+        with autotest.step("Arrange: монитор arm=OPEN, пустая cap"):
+            cap = _Cap()
+            m = _make_monitor(ControlArm.OPEN, cap)
+            analysis = _make_analysis()
 
-    await m._log_would_intervene(analysis)
+        with autotest.step("Act: вызвать _log_would_intervene"):
+            await m._log_would_intervene(analysis)
 
-    # orchestrator не вызывался
-    m._orchestrator.intervene.assert_not_called()
+        with autotest.step("Assert: orchestrator не вызван, would_intervene записан"):
+            m._orchestrator.intervene.assert_not_called()
+            types = [getattr(o, "event_type", None) for o in cap.added]
+            assert_true("would_intervene" in types, f"would_intervene не записан; types: {types}")
+            wi = next(o for o in cap.added if getattr(o, "event_type", None) == "would_intervene")
+            assert_equal(wi.action, "hint", "action == hint")
+            assert_equal(wi.session_id, "s1", "session_id == s1")
+            assert_equal(wi.user_id, "u1", "user_id == u1")
+            assert_equal(wi.extra_data["control_arm"], "open", "control_arm == open")
+            assert_equal(wi.success, False, "success == False")
 
-    types = [getattr(o, "event_type", None) for o in cap.added]
-    assert "would_intervene" in types, f"would_intervene не записан; types: {types}"
+    @autotest.num("1363")
+    @autotest.external_id("d67dd9a7-1f18-4a51-a829-9fc04519df24")
+    @autotest.name("OpenLoop arm A: _run_analysis после dwell_ready → log, без dispatch")
+    async def test_d67dd9a7_open_arm_run_analysis_no_dispatch(self):
+        with autotest.step("Arrange: монитор arm=OPEN, фейковые аналитика и событие"):
+            cap = _Cap()
+            m = _make_monitor(ControlArm.OPEN, cap)
+            analysis = _make_analysis()
+            fake_event = SimpleNamespace(
+                timestamp=datetime(2026, 6, 21, 12, 0, tzinfo=timezone.utc),
+            )
+            m._analytics_agent = MagicMock()
+            m._analytics_agent.analyze_session = MagicMock(return_value=analysis)
+            m._feature_extractor = MagicMock()
+            m._feature_extractor.compute = MagicMock(return_value=_make_features())
 
-    wi = next(o for o in cap.added if getattr(o, "event_type", None) == "would_intervene")
-    assert wi.action == "hint"
-    assert wi.session_id == "s1"
-    assert wi.user_id == "u1"
-    assert wi.extra_data["control_arm"] == "open"
-    assert wi.success is False
+        with autotest.step("Act: _run_analysis с одним событием"):
+            with patch.object(m, "_load_new_events", AsyncMock(return_value=[fake_event])):
+                await m._run_analysis()
 
+        with autotest.step("Assert: orchestrator не вызван, would_intervene записан"):
+            m._orchestrator.intervene.assert_not_called()
+            types = [getattr(o, "event_type", None) for o in cap.added]
+            assert_true("would_intervene" in types, f"would_intervene не записан; types: {types}")
 
-@pytest.mark.asyncio
-async def test_open_arm_run_analysis_no_dispatch():
-    """Arm A: после dwell_ready → _log_would_intervene, без dispatch."""
-    cap = _Cap()
-    m = _make_monitor(ControlArm.OPEN, cap)
-    analysis = _make_analysis()
+    @autotest.num("1364")
+    @autotest.external_id("a4837de3-8bd9-4ffe-ae54-b256bb8049da")
+    @autotest.name("OpenLoop arm B: _decide_intervention + _dispatch_intervention вызывает orchestrator")
+    async def test_a4837de3_closed_arm_dispatches_intervention(self):
+        with autotest.step("Arrange: монитор arm=CLOSED, мок контекста"):
+            cap = _Cap()
+            m = _make_monitor(ControlArm.CLOSED, cap)
+            analysis = _make_analysis()
 
-    fake_event = SimpleNamespace(
-        timestamp=datetime(2026, 6, 21, 12, 0, tzinfo=timezone.utc),
-    )
+            from learning_analytics.context import AgentContext
+            m._context_builder.build = AsyncMock(return_value=AgentContext(
+                topology_summary="1 router",
+                recent_errors=[],
+                recent_actions=[],
+                struggle_type="idle",
+                dominant_error=None,
+                features_summary="",
+            ))
 
-    m._analytics_agent = MagicMock()
-    m._analytics_agent.analyze_session = MagicMock(return_value=analysis)
-    m._feature_extractor = MagicMock()
-    m._feature_extractor.compute = MagicMock(return_value=_make_features())
+            features = MagicMock()
+            features.dominant_error = None
+            features.error_repeat_count = 0
 
-    with patch.object(m, "_load_new_events", AsyncMock(return_value=[fake_event])):
-        # dwell=0 >= T_k=0 → dwell_ready=True → arm OPEN → _log_would_intervene
-        await m._run_analysis()
+        with autotest.step("Act: _decide_intervention и _dispatch_intervention"):
+            pending = await m._decide_intervention(analysis, features)
+            await m._dispatch_intervention(pending)
 
-    m._orchestrator.intervene.assert_not_called()
-    types = [getattr(o, "event_type", None) for o in cap.added]
-    assert "would_intervene" in types, f"would_intervene не записан; types: {types}"
+        with autotest.step("Assert: pending не None, orchestrator вызван"):
+            assert_is_not_none(pending, "pending должен быть не None")
+            m._orchestrator.intervene.assert_called_once()
 
+    @autotest.num("1365")
+    @autotest.external_id("1349493d-89e9-43f4-aa89-3ec2c537fc60")
+    @autotest.name("OpenLoop arm A: второй вызов в cooldown не пишет would_intervene")
+    async def test_1349493d_would_intervene_respects_cooldown(self):
+        with autotest.step("Arrange: монитор arm=OPEN, cooldown=60с"):
+            cap = _Cap()
+            m = _make_monitor(ControlArm.OPEN, cap)
+            m._learning_analytics_config.cooldown_period = 60
+            analysis = _make_analysis()
+            fake_event = SimpleNamespace(
+                timestamp=datetime(2026, 6, 21, 12, 0, tzinfo=timezone.utc),
+            )
+            m._analytics_agent = MagicMock()
+            m._analytics_agent.analyze_session = MagicMock(return_value=analysis)
+            m._feature_extractor = MagicMock()
+            m._feature_extractor.compute = MagicMock(return_value=_make_features())
 
-@pytest.mark.asyncio
-async def test_closed_arm_dispatches_intervention():
-    """Arm B: _decide_intervention + _dispatch_intervention вызывает orchestrator."""
-    cap = _Cap()
-    m = _make_monitor(ControlArm.CLOSED, cap)
-    analysis = _make_analysis()
+        with autotest.step("Act: два вызова _run_analysis подряд"):
+            with patch.object(m, "_load_new_events", AsyncMock(return_value=[fake_event])):
+                await m._run_analysis()
+                await m._run_analysis()
 
-    from learning_analytics.context import AgentContext
-    m._context_builder.build = AsyncMock(return_value=AgentContext(
-        topology_summary="1 router",
-        recent_errors=[],
-        recent_actions=[],
-        struggle_type="idle",
-        dominant_error=None,
-        features_summary="",
-    ))
+        with autotest.step("Assert: ровно одно событие would_intervene"):
+            wi_events = [o for o in cap.added if getattr(o, "event_type", None) == "would_intervene"]
+            assert_equal(len(wi_events), 1, f"ожидался 1 would_intervene, получено {len(wi_events)}")
 
-    features = MagicMock()
-    features.dominant_error = None
-    features.error_repeat_count = 0
+    @autotest.num("1366")
+    @autotest.external_id("ef66a54c-9eb0-4248-9ade-84f216510e51")
+    @autotest.name("OpenLoop: дефолтный control_arm=CLOSED не ломает существующее поведение")
+    def test_ef66a54c_closed_arm_default(self):
+        with autotest.step("Arrange: SessionMonitor без явного control_arm"):
+            cfg = LearningAnalyticsConfig()
+            m = SessionMonitor(
+                mcp_client=MagicMock(),
+                db_factory=MagicMock(),
+                orchestrator=MagicMock(),
+                learning_analytics_config=cfg,
+            )
 
-    pending = await m._decide_intervention(analysis, features)
-    assert pending is not None
-
-    await m._dispatch_intervention(pending)
-    m._orchestrator.intervene.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_would_intervene_respects_cooldown():
-    """Arm A: второй вызов в период cooldown не пишет would_intervene."""
-    cap = _Cap()
-    m = _make_monitor(ControlArm.OPEN, cap)
-    m._learning_analytics_config.cooldown_period = 60  # 60 сек cooldown
-    analysis = _make_analysis()
-
-    fake_event = SimpleNamespace(
-        timestamp=datetime(2026, 6, 21, 12, 0, tzinfo=timezone.utc),
-    )
-
-    m._analytics_agent = MagicMock()
-    m._analytics_agent.analyze_session = MagicMock(return_value=analysis)
-    m._feature_extractor = MagicMock()
-    m._feature_extractor.compute = MagicMock(return_value=_make_features())
-
-    with patch.object(m, "_load_new_events", AsyncMock(return_value=[fake_event])):
-        await m._run_analysis()  # первый цикл — должен записать
-        await m._run_analysis()  # второй цикл — cooldown ещё не истёк → пропуск
-
-    wi_events = [o for o in cap.added if getattr(o, "event_type", None) == "would_intervene"]
-    assert len(wi_events) == 1, f"ожидался 1 would_intervene, получено {len(wi_events)}"
-
-
-def test_closed_arm_default():
-    """Дефолтный control_arm=CLOSED — не ломает существующее поведение."""
-    cfg = LearningAnalyticsConfig()
-    m = SessionMonitor(
-        mcp_client=MagicMock(),
-        db_factory=MagicMock(),
-        orchestrator=MagicMock(),
-        learning_analytics_config=cfg,
-    )
-    assert m._control_arm == ControlArm.CLOSED
+        with autotest.step("Assert: _control_arm == CLOSED"):
+            assert_equal(m._control_arm, ControlArm.CLOSED, "дефолт — CLOSED")

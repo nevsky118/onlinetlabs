@@ -47,9 +47,9 @@ def _multi_agents() -> AgentsConfig:
 @pytest.mark.unit
 class TestResolveModel:
     @autotest.num("200")
-    @autotest.external_id("a1b2c3d4-0001-4000-8000-000000000001")
+    @autotest.external_id("66ac44a1-cc93-45db-b1d0-54cce63df7a5")
     @autotest.name("resolve_model: возвращает (creds, entry) по model_id")
-    def test_resolve_model_returns_creds_and_entry(self, monkeypatch):
+    def test_66ac44a1_resolve_model_returns_creds_and_entry(self, monkeypatch):
         import llm.client as client_mod
         monkeypatch.setattr(client_mod, "settings", _FakeSettings(_yandex_agents()))
 
@@ -63,9 +63,9 @@ class TestResolveModel:
             assert_equal(entry.id, "yandex-gpt-5.1", "entry.id")
 
     @autotest.num("201")
-    @autotest.external_id("a1b2c3d4-0001-4000-8000-000000000002")
+    @autotest.external_id("b7ffe61d-fe62-4263-8a51-bc6e7fd24ed6")
     @autotest.name("resolve_model: неизвестный model_id → KeyError")
-    def test_resolve_model_unknown_raises(self, monkeypatch):
+    def test_b7ffe61d_resolve_model_unknown_raises(self, monkeypatch):
         import llm.client as client_mod
         monkeypatch.setattr(client_mod, "settings", _FakeSettings(_yandex_agents()))
 
@@ -78,9 +78,9 @@ class TestResolveModel:
 @pytest.mark.unit
 class TestModelUri:
     @autotest.num("202")
-    @autotest.external_id("a1b2c3d4-0001-4000-8000-000000000003")
+    @autotest.external_id("0d3311cf-fe45-4dd6-a669-0d24779fdb6e")
     @autotest.name("model_uri: yandex → gpt://<folder>/<model>")
-    def test_model_uri_yandex(self, monkeypatch):
+    def test_0d3311cf_model_uri_yandex(self, monkeypatch):
         import llm.client as client_mod
         monkeypatch.setattr(client_mod, "settings", _FakeSettings(_yandex_agents()))
 
@@ -92,9 +92,9 @@ class TestModelUri:
             assert_equal(uri, "gpt://my-folder/yandexgpt/latest", "полный URI")
 
     @autotest.num("203")
-    @autotest.external_id("a1b2c3d4-0001-4000-8000-000000000004")
+    @autotest.external_id("cc3ff501-ea4c-4c3e-8b77-e64a1346ea44")
     @autotest.name("model_uri: openrouter → слаг модели")
-    def test_model_uri_openrouter(self, monkeypatch):
+    def test_cc3ff501_model_uri_openrouter(self, monkeypatch):
         import llm.client as client_mod
         monkeypatch.setattr(client_mod, "settings", _FakeSettings(_multi_agents()))
 
@@ -108,9 +108,9 @@ class TestModelUri:
 @pytest.mark.unit
 class TestModelSupportsTools:
     @autotest.num("204")
-    @autotest.external_id("a1b2c3d4-0001-4000-8000-000000000005")
+    @autotest.external_id("91b00c8b-9ce2-48a1-81f1-ca7d1cf68096")
     @autotest.name("model_supports_tools: читает ModelEntry.tools")
-    def test_model_supports_tools_true(self, monkeypatch):
+    def test_91b00c8b_model_supports_tools_true(self, monkeypatch):
         import llm.client as client_mod
         monkeypatch.setattr(client_mod, "settings", _FakeSettings(_multi_agents()))
 
@@ -119,9 +119,9 @@ class TestModelSupportsTools:
             assert_true(model_supports_tools("yandex-gpt-5.1"), "yandex-gpt-5.1 поддерживает tools")
 
     @autotest.num("205")
-    @autotest.external_id("a1b2c3d4-0001-4000-8000-000000000006")
+    @autotest.external_id("38adec45-a845-45d3-8f21-e0012063ba6b")
     @autotest.name("model_supports_tools: tools=False → False")
-    def test_model_supports_tools_false(self, monkeypatch):
+    def test_38adec45_model_supports_tools_false(self, monkeypatch):
         import llm.client as client_mod
         monkeypatch.setattr(client_mod, "settings", _FakeSettings(_multi_agents()))
 
@@ -151,9 +151,9 @@ def _openrouter_with_headers_agents() -> AgentsConfig:
 @pytest.mark.unit
 class TestBuildClient:
     @autotest.num("206")
-    @autotest.external_id("a1b2c3d4-0001-4000-8000-000000000007")
+    @autotest.external_id("ae2f409a-4e3b-43af-8243-ec8c81a27335")
     @autotest.name("build_client: возвращает AsyncOpenAI для yandex")
-    def test_build_client_yandex(self, monkeypatch):
+    def test_ae2f409a_build_client_yandex(self, monkeypatch):
         import llm.client as client_mod
         monkeypatch.setattr(client_mod, "settings", _FakeSettings(_yandex_agents()))
 
@@ -164,9 +164,9 @@ class TestBuildClient:
             assert_true(isinstance(client, AsyncOpenAI), "результат — AsyncOpenAI")
 
     @autotest.num("207")
-    @autotest.external_id("a1b2c3d4-0001-4000-8000-000000000008")
+    @autotest.external_id("f7aa1cb2-46b9-4142-83b7-db0607f79104")
     @autotest.name("build_client: extra_headers провайдера попадают в AsyncOpenAI (openrouter)")
-    def test_build_client_propagates_extra_headers(self, monkeypatch):
+    def test_f7aa1cb2_build_client_propagates_extra_headers(self, monkeypatch):
         import llm.client as client_mod
         monkeypatch.setattr(client_mod, "settings", _FakeSettings(_openrouter_with_headers_agents()))
 

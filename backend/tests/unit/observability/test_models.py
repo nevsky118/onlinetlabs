@@ -14,9 +14,9 @@ pytestmark = [pytest.mark.unit]
 
 
 @autotest.num("300")
-@autotest.external_id("c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f")
+@autotest.external_id("d8f8a39f-ecb0-451c-bd04-42a14c6862e3")
 @autotest.name("struggle_detected: форма события с правильными полями")
-def test_struggle_event_shape():
+def test_d8f8a39f_struggle_event_shape():
     with autotest.step("Создаём событие затруднения"):
         e = event_struggle_detected(
             "s1", "u1", struggle_type="repeating_errors", confidence=0.8, crossed=["error_repeat_count>=3"]
@@ -36,9 +36,9 @@ def test_struggle_event_shape():
 
 
 @autotest.num("301")
-@autotest.external_id("d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a")
+@autotest.external_id("ed2c4224-35bd-474c-a129-f3bdc9bcaee4")
 @autotest.name("model_selected: событие выбора модели")
-def test_model_selected_event_shape():
+def test_ed2c4224_model_selected_event_shape():
     with autotest.step("Создаём событие выбора модели"):
         e = event_model_selected("s1", "u1", model_id="yandex-gpt-5.1", provider="yandex")
     with autotest.step("Проверяем source и kind"):
@@ -51,9 +51,9 @@ def test_model_selected_event_shape():
 
 
 @autotest.num("302")
-@autotest.external_id("e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b")
+@autotest.external_id("3d9406cb-c4ac-495d-9bd8-2b74fc1736fc")
 @autotest.name("tool_call: событие вызова инструмента")
-def test_tool_call_event_shape():
+def test_3d9406cb_tool_call_event_shape():
     with autotest.step("Создаём событие вызова инструмента"):
         e = event_tool_call("s1", "u1", name="gns3_get_nodes", args_preview='{"project_id": "abc"}')
     with autotest.step("Проверяем source и kind"):
