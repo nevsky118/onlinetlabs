@@ -1,7 +1,8 @@
 .PHONY: help install serve dev up up-db down logs ps psql \
         migrate migrate-create migrate-rollback \
         test lint format check \
-        encrypt decrypt clean sync-content seed-lab-templates openclaw
+        encrypt decrypt clean sync-content seed-lab-templates openclaw \
+        export-cohort export-audit
 
 # ── Paths ────────────────────────────────────────────────────
 BE := backend
@@ -150,6 +151,9 @@ seed-lab-templates:
 
 export-cohort:
 	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=.. poetry run python -m scripts.export_cohort_metrics
+
+export-audit:
+	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=.. poetry run python -m scripts.export_mcp_audit
 
 eval-identifier:
 	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=.. poetry run python -m scripts.eval_identifier

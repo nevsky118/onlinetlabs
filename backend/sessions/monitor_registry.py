@@ -4,6 +4,7 @@ import logging
 
 from agents.analytics.agent import AnalyticsAgent
 from config.config_model import ConfigModel
+from control_interface.interface import ControlInterface
 from experiment.arm_resolver import effective_arm
 from learning_analytics.monitor import SessionMonitor
 
@@ -57,6 +58,8 @@ class SessionMonitorRegistry:
         async with self._db_factory() as db:
             arm = await effective_arm(db, user_id, lab_slug)
 
+        # Шов контура: один экземпляр на сессию, переиспользует те же зависимости
+        control_interface = ControlInterface(self._mcp_client, self._db_factory, self._config.learning_analytics)
         monitor = SessionMonitor(
             mcp_client=self._mcp_client,
             db_factory=self._db_factory,
@@ -66,6 +69,7 @@ class SessionMonitorRegistry:
             activity_log=self._activity_log,
             observer=observer,
             control_arm=arm,
+            control_interface=control_interface,
         )
         self._monitors[session_id] = monitor
         await monitor.start_session(session_id, user_id, lab_slug, ctx, self._analytics_agent)

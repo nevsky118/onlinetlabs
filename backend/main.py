@@ -22,6 +22,7 @@ configure_sentry("backend", environment=os.getenv("ENVIRONMENT", "dev"))
 from agents.orchestrator.agent import Orchestrator
 from analytics.router import router as analytics_router
 from auth.router import router as auth_router
+from control_interface.router import router as consent_router
 from chat.router import router as chat_router
 from courses.router import router as courses_router
 from db.session import async_session
@@ -164,6 +165,7 @@ app.add_middleware(
 
 app.include_router(analytics_router, prefix="/analytics", tags=["analytics"])
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
+app.include_router(consent_router, prefix="/users/me", tags=["consent"])
 app.include_router(courses_router, prefix="/courses", tags=["courses"])
 app.include_router(labs_router, prefix="/labs", tags=["labs"])
 app.include_router(progress_router, prefix="/users/me/progress", tags=["progress"])
