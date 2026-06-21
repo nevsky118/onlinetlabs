@@ -1,7 +1,8 @@
 import axios from "axios"
+import { serverEnv } from "@/lib/env"
 
 export const api = axios.create({
-  baseURL: process.env.BACKEND_URL || "http://localhost:8000",
+  baseURL: serverEnv.BACKEND_URL,
   headers: { "Content-Type": "application/json" },
   timeout: 10000,
 })

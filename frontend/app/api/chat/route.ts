@@ -1,6 +1,5 @@
 import { getBackendToken } from "@/auth/token"
-
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000"
+import { serverEnv } from "@/lib/env"
 
 /** SSE-прокси: проброс тела на backend /chat/stream + Bearer. Проброс Content-Type критичен для парсинга стрима AI SDK. */
 export async function POST(req: Request) {
@@ -11,7 +10,7 @@ export async function POST(req: Request) {
   if (!token) return new Response("Unauthorized", { status: 401 })
 
   const body = await bodyPromise
-  const upstream = await fetch(`${BACKEND_URL}/chat/stream`, {
+  const upstream = await fetch(`${serverEnv.BACKEND_URL}/chat/stream`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

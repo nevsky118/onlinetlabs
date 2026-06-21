@@ -1,12 +1,11 @@
 import { getBackendToken } from "@/auth/token"
-
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000"
+import { serverEnv } from "@/lib/env"
 
 export async function GET() {
   const token = await getBackendToken().catch(() => null)
   if (!token) return new Response("Unauthorized", { status: 401 })
 
-  const upstream = await fetch(`${BACKEND_URL}/chat/models`, {
+  const upstream = await fetch(`${serverEnv.BACKEND_URL}/chat/models`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
   })

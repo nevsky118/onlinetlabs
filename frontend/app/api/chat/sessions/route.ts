@@ -1,12 +1,11 @@
 import { getBackendToken } from "@/auth/token"
-
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000"
+import { serverEnv } from "@/lib/env"
 
 export async function GET() {
   const token = await getBackendToken().catch(() => null)
   if (!token) return Response.json([], { status: 401 })
 
-  const r = await fetch(`${BACKEND_URL}/users/me/sessions`, {
+  const r = await fetch(`${serverEnv.BACKEND_URL}/users/me/sessions`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
   })

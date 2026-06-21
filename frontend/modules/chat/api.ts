@@ -1,9 +1,11 @@
 import type {
+  AgentActivityEvent,
   ChatHistoryMessage,
   ChatModelsResponse,
   SessionSummary,
 } from "./types"
-import { mapSessionSummaryList } from "./lib/mappings"
+import { mapAgentActivityEvent, mapSessionSummaryList } from "./lib/mappings"
+import { clientEnv } from "@/lib/env.client"
 
 export async function fetchChatHistory(
   sessionId: string,
@@ -33,4 +35,22 @@ export async function fetchChatModels(
     defaultModelId: d.default_model_id ?? "",
     models: d.models ?? [],
   }
+}
+
+export async function fetchAgentActivity(
+  sessionId: string,
+  since?: string,
+  signal?: AbortSignal
+): Promise<AgentActivityEvent[]> {
+  const url = new URL(
+    `/api/chat/agent-activity/${sessionId}`,
+    typeof window !== "undefined"
+      ? window.location.origin
+      : clientEnv.NEXT_PUBLIC_APP_URL
+  )
+  if (since) url.searchParams.set("since", since)
+  const r = await fetch(url.toString(), { signal })
+  if (!r.ok) return []
+  const data: unknown[] = await r.json()
+  return data.map(mapAgentActivityEvent)
 }

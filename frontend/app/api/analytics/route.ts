@@ -1,6 +1,5 @@
 import { getBackendToken } from "@/auth/token"
-
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000"
+import { serverEnv } from "@/lib/env"
 
 export async function POST(req: Request) {
   const body = await req.text()
@@ -10,7 +9,7 @@ export async function POST(req: Request) {
   if (token) headers["Authorization"] = `Bearer ${token}`
 
   try {
-    const upstream = await fetch(`${BACKEND_URL}/analytics/events`, {
+    const upstream = await fetch(`${serverEnv.BACKEND_URL}/analytics/events`, {
       method: "POST",
       headers,
       body,

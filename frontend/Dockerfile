@@ -18,10 +18,8 @@ COPY . .
 
 ARG NEXT_PUBLIC_APP_URL
 ARG NEXT_PUBLIC_WS_BASE_URL
-ARG NEXT_PUBLIC_BACKEND_WS_URL
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL \
     NEXT_PUBLIC_WS_BASE_URL=$NEXT_PUBLIC_WS_BASE_URL \
-    NEXT_PUBLIC_BACKEND_WS_URL=$NEXT_PUBLIC_BACKEND_WS_URL \
     NEXT_TELEMETRY_DISABLED=1 \
     NODE_ENV=production
 
@@ -29,7 +27,7 @@ ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL \
 # На runtime env_file из compose перебивает эти значения реальными.
 ENV BETTER_AUTH_SECRET=build-time-placeholder \
     BETTER_AUTH_URL=http://localhost:3000 \
-    BACKEND_URL=http://localhost:8000
+    BACKEND_URL=http://build-time-placeholder.invalid
 
 RUN pnpm build
 

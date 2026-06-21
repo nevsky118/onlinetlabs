@@ -15,6 +15,7 @@ from config.config_model import (
     LogConfig,
     MCPConfig,
     ModelEntry,
+    ObservabilityConfig,
     OpenClawConfig,
     ProviderCreds,
     RedisConfig,
@@ -24,6 +25,15 @@ from config.llm_catalog import default_catalog
 from tools.env_cipher import decrypt_file
 
 logger = logging.getLogger(__name__)
+
+# Обязательные URL-ключи — без них запуск невозможен.
+_REQUIRED_URL_KEYS = (
+    "FRONTEND_URL",
+    "GNS3_SERVICE_URL",
+    "GNS3_PUBLIC_URL",
+    "GNS3_INTERNAL_URL",
+    "MCP_SERVER_URL",
+)
 
 
 def _str2bool(value: str) -> bool:
@@ -119,6 +129,10 @@ def build_agents_config(values: dict[str, str | None]) -> AgentsConfig:
 
 def _build(values: dict[str, str | None]) -> ConfigModel:
     """Собирает и валидирует корневую конфигурацию из словаря переменных окружения."""
+    # Fail-fast: проверяем все обязательные URL-ключи сразу.
+    missing = [k for k in _REQUIRED_URL_KEYS if not values.get(k)]
+    if missing:
+        raise ValueError(f"Missing required env vars: {', '.join(missing)}")
 
     def _req(key: str) -> str:
         """Возвращает обязательную переменную окружения или падает с KeyError, если её нет."""
@@ -140,30 +154,33 @@ def _build(values: dict[str, str | None]) -> ConfigModel:
         environment=_req("ENVIRONMENT"),
         debug=_str2bool(values.get("DEBUG", "false")),
         api_port=int(values.get("API_PORT", "8000")),
-        frontend_url=values.get("FRONTEND_URL", "http://localhost:3000"),
+        frontend_url=values["FRONTEND_URL"],
         jwt_secret=_req("JWT_SECRET"),
     )
     log = LogConfig(log_level=_req("LOG_LEVEL"))
     agents = build_agents_config(values)
     openclaw = OpenClawConfig(
         enabled=_str2bool(values.get("OPENCLAW_ENABLED", "false")),
-        base_url=values.get("OPENCLAW_BASE_URL", "http://localhost:18789"),
+        base_url=values.get("OPENCLAW_BASE_URL") or "",  # Task 2: поле станет str|None
         token=values.get("OPENCLAW_TOKEN") or None,
         model=values.get("OPENCLAW_MODEL", "openclaw"),
         timeout_seconds=float(values.get("OPENCLAW_TIMEOUT_SECONDS", "30")),
     )
     gns3 = GNS3Config(
-        service_url=values.get("GNS3_SERVICE_URL", "http://localhost:8101"),
-        public_url=values.get("GNS3_PUBLIC_URL", "http://localhost:3080"),
-        internal_url=values.get("GNS3_INTERNAL_URL", "http://localhost:3080"),
+        service_url=values["GNS3_SERVICE_URL"],
+        public_url=values["GNS3_PUBLIC_URL"],
+        internal_url=values["GNS3_INTERNAL_URL"],
         node_host=values.get("GNS3_NODE_HOST", ""),
     )
     mcp = MCPConfig(
-        server_url=values.get("MCP_SERVER_URL", "http://localhost:8100"),
+        server_url=values["MCP_SERVER_URL"],
     )
     security = SecurityConfig(
         cred_encryption_key=_req("CRED_ENCRYPTION_KEY"),
         internal_api_token=_req("INTERNAL_API_TOKEN"),
+    )
+    observability = ObservabilityConfig(
+        retention_per_session=int(values.get("OBSERVABILITY_RETENTION_PER_SESSION", "2000")),
     )
     return ConfigModel(
         database=database,
@@ -175,6 +192,7 @@ def _build(values: dict[str, str | None]) -> ConfigModel:
         gns3=gns3,
         mcp=mcp,
         security=security,
+        observability=observability,
     )
 
 

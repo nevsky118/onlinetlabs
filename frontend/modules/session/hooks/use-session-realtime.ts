@@ -4,10 +4,10 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useEffect, useRef, useState } from "react"
 import type { FullSessionState, StreamStatus, WSEvent } from "../types"
 import { sessionKeys } from "../query"
+import { clientEnv } from "@/lib/env.client"
 import { fetchBackendToken } from "@/lib/realtime-token"
 
-const BASE_WS_URL =
-  process.env.NEXT_PUBLIC_BACKEND_WS_URL ?? "ws://localhost:8000"
+const BASE_WS_URL = clientEnv.NEXT_PUBLIC_WS_BASE_URL
 
 function backoffMs(attempt: number): number {
   if (attempt === 0) return 1000

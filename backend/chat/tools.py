@@ -85,7 +85,10 @@ async def _run_vpcs_show_ip(node_name: str, ctx, mcp_client) -> dict:
 
     # GNS3 отдаёт 0.0.0.0 как listening-адрес — используем хост из URL
     if not console_host or console_host in ("0.0.0.0", "::"):
-        console_host = urlparse(ctx.environment_url).hostname or "localhost"
+        derived = urlparse(ctx.environment_url).hostname
+        if not derived:
+            raise ValueError("environment_url has no host")
+        console_host = derived
 
     try:
         reader, writer = await asyncio.wait_for(

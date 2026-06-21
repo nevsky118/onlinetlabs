@@ -2,11 +2,12 @@
 
 import type { UIMessage } from "@ai-sdk/react"
 import { useEffect } from "react"
+import { clientEnv } from "@/lib/env.client"
 import { fetchWsToken } from "@/lib/realtime-token"
 
 type SetMessages = (updater: (prev: UIMessage[]) => UIMessage[]) => void
 
-const WS_BASE = process.env.NEXT_PUBLIC_WS_BASE_URL || "ws://localhost:8000"
+const WS_BASE = clientEnv.NEXT_PUBLIC_WS_BASE_URL
 
 export function useInterventions(
   sessionId: string,
