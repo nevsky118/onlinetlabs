@@ -48,9 +48,7 @@ class ApiConfig(BaseModel):
     )
     debug: bool = Field(default=False, description="Debug mode")
     api_port: int = Field(default=8000, description="API port")
-    frontend_url: str = Field(
-        default="http://localhost:3000", description="Frontend URL for CORS"
-    )
+    frontend_url: str = Field(description="Frontend URL for CORS")
     jwt_secret: str = Field(description="JWT secret for auth verification")
 
     @field_validator("environment")
@@ -147,7 +145,7 @@ class AgentsConfig(BaseModel):
             if creds.provider == LlmProvider.YANDEX and (not creds.api_key or not creds.yandex_folder):
                 raise ValueError(f"provider '{ref}' (yandex) requires api_key and yandex_folder")
             if creds.provider == LlmProvider.OLLAMA and not creds.base_url:
-                creds.base_url = "http://localhost:11434/v1"
+                creds.base_url = "http://localhost:11434/v1"  # Ollama — локальный LLM-сервер, localhost канонический
         return self
 
 
@@ -156,11 +154,6 @@ class LearningAnalyticsConfig(BaseModel):
 
     # Циклы
     poll_interval: float = Field(default=5.0, description="Интервал опроса MCP (сек)")
-    console_poll_interval: float = Field(
-        default=30.0,
-        description="Интервал сверки конфигурации VPCS с заданием (сек). Каждая сверка "
-        "шлёт show ip в telnet-консоль узла и видна студенту — не делать слишком частым",
-    )
     analysis_interval: float = Field(default=15.0, description="Интервал анализа (сек)")
     cooldown_period: float = Field(
         default=60.0, description="Мин. пауза между интервенциями (сек)"
@@ -177,10 +170,16 @@ class LearningAnalyticsConfig(BaseModel):
         default=3, description="Кол-во idle-периодов для детекции"
     )
     entropy_threshold: float = Field(
-        default=0.9, description="Порог энтропии действий (trial-and-error)"
+        default=0.7, description="Порог энтропии действий (trial-and-error)"
     )
     error_freq_threshold: float = Field(
-        default=2.0, description="Ошибок/мин для детекции flailing"
+        default=0.4, description="Ошибок/мин для детекции flailing"
+    )
+    distinct_actuals_threshold: int = Field(
+        default=2, description="Мин. уникальных неверных ответов для trial-and-error (Table 1)"
+    )
+    unchanged_cycles_threshold: int = Field(
+        default=3, description="Мин. циклов без изменений для stuck (Table 1)"
     )
     stuck_time_multiplier: float = Field(
         default=2.0, description="Множитель avg_latency для детекции stuck"
@@ -207,22 +206,45 @@ class LearningAnalyticsConfig(BaseModel):
         default=5.0, description="Окно частоты ошибок (мин)"
     )
 
+    # Наблюдатель прогресса
+    progress_poll_interval: float = Field(default=25.0, description="Интервал опроса spec-проверок (сек)")
+
     # Коллектор
     dedup_max_size: int = Field(default=10_000, description="Макс. размер dedup-кэша")
     mcp_actions_limit: int = Field(default=50, description="Лимит list_user_actions")
     mcp_logs_limit: int = Field(default=100, description="Лимит get_logs")
+
+    # Закон управления: порог времени пребывания в плохом режиме T_k (сек) на тип.
+    # Дефолт 0 = baseline (срабатывает сразу, как ручные пороги STRUGGLE_RULES);
+    # боевые значения выводятся минимизацией J (control/derive_thresholds.py).
+    dwell_thresholds: dict[str, float] = Field(
+        default_factory=lambda: {
+            "stuck_on_step": 0.0, "repeating_errors": 0.0,
+            "idle": 0.0, "trial_and_error": 0.0,
+        },
+        description="T_k: порог dwell-time по режиму (сек), выводится из J",
+    )
+    # Стоимости для критерия J (единые единицы; отношение обосновано экономикой).
+    cost_stuck: float = Field(default=1.0, description="c_застр: стоимость единицы длительности затруднения")
+    cost_intervention: float = Field(default=1.0, description="c_возд: стоимость одного воздействия")
+    cost_false_intervention: float = Field(default=0.5, description="c_ложн: штраф за ложное вмешательство")
 
 
 class OpenClawConfig(BaseModel):
     """Конфигурация OpenClaw Gateway для экспериментального бэкенда."""
 
     enabled: bool = Field(default=False, description="Включить бэкенд OpenClaw")
-    base_url: str = Field(
-        default="http://localhost:18789", description="OpenClaw Gateway URL"
-    )
+    base_url: str | None = Field(default=None, description="OpenClaw Gateway URL")
     token: str | None = Field(default=None, description="Bearer token для Gateway")
     model: str = Field(default="openclaw", description="Имя модели OpenClaw")
     timeout_seconds: float = Field(default=30.0, ge=1.0, description="Таймаут запроса")
+
+    @model_validator(mode="after")
+    def validate_enabled(self) -> "OpenClawConfig":
+        """Если OpenClaw включён — base_url обязателен."""
+        if self.enabled and not self.base_url:
+            raise ValueError("OPENCLAW_BASE_URL required when OpenClaw enabled")
+        return self
 
 
 class GNS3Config(BaseModel):
@@ -249,6 +271,13 @@ class SecurityConfig(BaseModel):
     )
 
 
+class ObservabilityConfig(BaseModel):
+    """Конфигурация observability: ретенция событий, роли наблюдателей."""
+
+    retention_per_session: int = Field(default=2000, ge=1)
+    viewer_roles: set[str] = Field(default_factory=lambda: {"instructor", "admin"})
+
+
 class ConfigModel(BaseModel):
     """Корневая конфигурация приложения."""
 
@@ -264,3 +293,4 @@ class ConfigModel(BaseModel):
     gns3: GNS3Config
     mcp: MCPConfig
     security: SecurityConfig
+    observability: ObservabilityConfig = Field(default_factory=ObservabilityConfig)
