@@ -33,6 +33,7 @@ class User(Base):
     password_hash: Mapped[str | None] = mapped_column(Text)
     role: Mapped[str] = mapped_column(String(50), default=UserRole.STUDENT.value)
     experiment_group: Mapped[str | None] = mapped_column(String(20), default=None)
+    control_arm: Mapped[str | None] = mapped_column(String(20), default=None)
     can_select_model: Mapped[bool | None] = mapped_column(default=None)
     can_view_agent_logs: Mapped[bool | None] = mapped_column(default=None)
 

@@ -1,8 +1,61 @@
 """Встроенный статистический анализ эксперимента."""
 
 import math
+from dataclasses import dataclass
 
 from experiment.group_assigner import ExperimentGroup
+
+
+@dataclass
+class ArmAnalysisResult:
+    """Результат сравнения open vs closed arm."""
+
+    l2_pass_rate_open: float
+    l2_pass_rate_closed: float
+    escalations_mean_open: float
+    escalations_mean_closed: float
+    repeated_errors_comparison: dict
+    mentor_hours_saved: float
+
+
+def compute_arm_analysis(all_metrics: list, mentor_seconds: float = 900.0) -> ArmAnalysisResult:
+    """Сравнение arm open vs closed по A4-5 метрикам."""
+    # группируем по base_arm (постоянный training-arm), не по effective arm сессии
+    open_arm = [m for m in all_metrics if getattr(m, "base_arm", None) == "open"]
+    closed_arm = [m for m in all_metrics if getattr(m, "base_arm", None) == "closed"]
+
+    def _l2_pass_rate(metrics: list) -> float:
+        eligible = [m for m in metrics if m.l2_unassisted_pass is not None]
+        if not eligible:
+            return 0.0
+        return sum(1 for m in eligible if m.l2_unassisted_pass) / len(eligible)
+
+    def _esc_mean(metrics: list) -> float:
+        if not metrics:
+            return 0.0
+        return sum(m.escalations for m in metrics) / len(metrics)
+
+    # repeated_errors Welch t-test + Cohen's d (reuse existing helpers)
+    open_errors = [m.repeated_errors for m in open_arm]
+    closed_errors = [m.repeated_errors for m in closed_arm]
+    if len(open_errors) >= 2 and len(closed_errors) >= 2:
+        errors_cmp = _compare_groups(open_errors, closed_errors)
+    else:
+        errors_cmp = _insufficient_data()
+
+    esc_open_total = sum(m.escalations for m in open_arm)
+    esc_closed_total = sum(m.escalations for m in closed_arm)
+    # Закрытый arm эскалирует меньше → closed сохраняет часы ментора
+    mentor_hours_saved = (esc_open_total - esc_closed_total) * mentor_seconds / 3600.0
+
+    return ArmAnalysisResult(
+        l2_pass_rate_open=_l2_pass_rate(open_arm),
+        l2_pass_rate_closed=_l2_pass_rate(closed_arm),
+        escalations_mean_open=_esc_mean(open_arm),
+        escalations_mean_closed=_esc_mean(closed_arm),
+        repeated_errors_comparison=errors_cmp,
+        mentor_hours_saved=mentor_hours_saved,
+    )
 
 
 def compute_experiment_analysis(all_metrics: list) -> dict:

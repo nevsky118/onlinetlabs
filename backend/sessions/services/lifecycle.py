@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timezone
+from uuid import uuid4
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,6 +11,77 @@ from sessions.context import build_session_context
 from sessions.services.query import get_owned_session
 
 logger = logging.getLogger(__name__)
+
+
+async def _finalize_experiment_metrics(db: AsyncSession, session: LearningSession) -> None:
+    """Вычисляет и сохраняет ExperimentMetrics по итогам сессии (best-effort)."""
+    from config import settings
+    from experiment.arm_resolver import effective_arm, is_l2_session
+    from experiment.finalizer import compute_session_metrics
+    from models.behavioral_event import BehavioralEvent
+    from models.experiment import ExperimentMetrics
+    from models.progress import LabProgress
+    from models.user import User
+
+    session_id = session.id
+    user_id = session.user_id
+    lab_slug = session.lab_slug
+
+    # события сессии
+    events_result = await db.execute(
+        select(BehavioralEvent).where(BehavioralEvent.session_id == session_id)
+    )
+    events = events_result.scalars().all()
+
+    arm = await effective_arm(db, user_id, lab_slug)
+    l2 = await is_l2_session(db, user_id, lab_slug)
+
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    experiment_group = (user.experiment_group or "unknown") if user else "unknown"
+
+    # шаги из LabProgress
+    lp = (await db.execute(
+        select(LabProgress).where(
+            LabProgress.user_id == user_id,
+            LabProgress.lab_slug == lab_slug,
+        )
+    )).scalar_one_or_none()
+    steps_completed = (lp.current_step or 0) if lp else 0
+
+    # total_steps из YAML-спеки (авторитетный источник); fallback → LabStep count или 1
+    from validation.runner import load_lab_spec
+    spec = load_lab_spec(lab_slug)
+    total_steps = len(spec.get("steps", [])) if spec else 0
+    if total_steps == 0:
+        from models.lab import LabStep
+        total_steps_result = await db.execute(
+            select(LabStep).where(LabStep.lab_slug == lab_slug)
+        )
+        total_steps = len(total_steps_result.scalars().all()) or 1
+
+    la_cfg = settings.learning_analytics
+    metrics_dict = compute_session_metrics(
+        events=events,
+        started_at=session.started_at,
+        ended_at=session.ended_at or datetime.now(timezone.utc),
+        steps_completed=steps_completed,
+        total_steps=total_steps,
+        experiment_group=experiment_group,
+        control_arm=arm.value,
+        # base_arm = постоянный training-arm пользователя, не effective arm сессии
+        base_arm=user.control_arm if user else None,
+        l2_intervention_cap=la_cfg.l2_intervention_cap,
+        is_l2=l2,
+    )
+
+    db.add(ExperimentMetrics(
+        id=str(uuid4()),
+        session_id=session_id,
+        user_id=user_id,
+        lab_slug=lab_slug,
+        **metrics_dict,
+    ))
+    await db.commit()
 
 
 async def end_session(
@@ -29,6 +101,13 @@ async def end_session(
     session.ended_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(session)
+
+    # best-effort: ошибка финализации не ломает завершение сессии
+    try:
+        await _finalize_experiment_metrics(db, session)
+    except Exception:
+        logger.exception("Финализация метрик эксперимента упала для сессии %s", session_id)
+
     return session
 
 

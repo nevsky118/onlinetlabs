@@ -11,6 +11,7 @@ from agents.analytics.agent import AnalyticsAgent
 from agents.analytics.models import AnalyticsResult, SessionFeatures
 from agents.orchestrator.models import InterventionInput
 from config.config_model import LearningAnalyticsConfig
+from experiment.control_arm import ControlArm
 from learning_analytics.collector import BehavioralCollector
 from learning_analytics.context import MCPContextBuilder
 from learning_analytics.features import FeatureExtractor
@@ -61,6 +62,7 @@ class SessionMonitor:
         intervention_router=None,
         activity_log=None,
         observer=None,
+        control_arm: ControlArm = ControlArm.CLOSED,
     ):
         """Инициализация с MCP-клиентом, фабрикой БД, оркестратором и конфигом."""
         self._mcp = mcp_client
@@ -71,6 +73,7 @@ class SessionMonitor:
         self._gateway = gateway
         self._activity = activity_log
         self._observer = observer
+        self._control_arm = control_arm
         self._collector: BehavioralCollector | None = None
         self._feature_extractor = FeatureExtractor(learning_analytics_config)
         self._context_builder = MCPContextBuilder(mcp_client)
@@ -84,6 +87,7 @@ class SessionMonitor:
         self._analytics_agent: AnalyticsAgent | None = None
         self._session_model_id: str | None = None
         self._dwell = DwellTracker()
+        self._escalated_in_spell: bool = False
 
     async def start_session(
         self,
@@ -163,8 +167,34 @@ class SessionMonitor:
         )
         regime, dwell = await self._log_process_state(analysis, datetime.now(tz=timezone.utc))
 
+        # Объективная эскалация — arm-нейтрально, до ветки интервенций
+        from learning_analytics.process_state import is_bad
+        if is_bad(regime):
+            if self._is_escalation(dwell) and not self._escalated_in_spell:
+                self._escalated_in_spell = True
+                from escalation.service import record_escalation
+                try:
+                    async with self._db_factory() as db:
+                        await record_escalation(
+                            db, self._session_id, self._user_id, self._lab_slug,
+                            source="objective",
+                        )
+                except Exception:
+                    logger.warning("Не удалось записать объективную эскалацию", exc_info=True)
+        else:
+            self._escalated_in_spell = False
+
         if not self._dwell_ready(regime.value, dwell):
             return
+
+        # Ветка A (open): те же ворота cooldown, что и у закрытой ветки
+        if self._control_arm == ControlArm.OPEN:
+            if not self._should_trigger_intervention():
+                return
+            await self._log_would_intervene(analysis)
+            self._last_intervention_at = datetime.now(tz=timezone.utc)
+            return
+
         pending = await self._decide_intervention(analysis, features)
         if pending is None:
             return
@@ -349,6 +379,36 @@ class SessionMonitor:
 
     # Логирование интервенций
 
+    async def _log_would_intervene(self, analysis: AnalyticsResult) -> None:
+        """Arm A: записываем would_intervene вместо реальной интервенции."""
+        from models.behavioral_event import BehavioralEvent
+
+        action = (
+            analysis.suggested_intervention.value
+            if analysis.suggested_intervention else "none"
+        )
+        try:
+            async with self._db_factory() as db:
+                db.add(BehavioralEvent(
+                    id=str(uuid4()),
+                    session_id=self._session_id,
+                    user_id=self._user_id,
+                    lab_slug=self._lab_slug,
+                    timestamp=datetime.now(tz=timezone.utc),
+                    event_type="would_intervene",
+                    action=action,
+                    success=False,
+                    extra_data={
+                        "struggle_type": analysis.struggle_type.value if analysis.struggle_type else None,
+                        "confidence": analysis.confidence,
+                        "control_arm": ControlArm.OPEN.value,
+                    },
+                ))
+                await db.commit()
+            logger.debug("Arm A: would_intervene action=%s", action)
+        except Exception:
+            logger.warning("Не удалось записать would_intervene", exc_info=True)
+
     async def _log_intervention_in(self, db, analysis, response) -> None:
         """Записать интервенцию как поведенческое событие для анализа эффекта."""
         from models.behavioral_event import BehavioralEvent
@@ -402,6 +462,10 @@ class SessionMonitor:
             return False
         t_k = self._learning_analytics_config.dwell_thresholds.get(regime_value, 0.0)
         return dwell >= t_k
+
+    def _is_escalation(self, dwell: float) -> bool:
+        """Объективная эскалация: плохой режим дольше порога."""
+        return dwell >= self._learning_analytics_config.escalation_max_dwell
 
     def _should_trigger_intervention(self) -> bool:
         """Интервенции включены и период охлаждения прошёл."""

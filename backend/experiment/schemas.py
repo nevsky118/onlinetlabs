@@ -5,6 +5,17 @@ from datetime import datetime
 from pydantic import BaseModel
 
 
+class ArmAnalysisResponse(BaseModel):
+    """Результат сравнения open vs closed arm."""
+
+    l2_pass_rate_open: float
+    l2_pass_rate_closed: float
+    escalations_mean_open: float
+    escalations_mean_closed: float
+    repeated_errors_comparison: dict
+    mentor_hours_saved: float
+
+
 class ExperimentStatusResponse(BaseModel):
     """Статус эксперимента."""
 
