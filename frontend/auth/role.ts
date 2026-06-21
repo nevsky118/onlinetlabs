@@ -21,3 +21,14 @@ export async function hasInstructorAccess(): Promise<boolean> {
   const role = await getBackendUserRole()
   return role === "instructor" || role === "admin"
 }
+
+export async function canViewAgentLogs(): Promise<boolean> {
+  const token = await getBackendToken()
+  if (!token) return false
+  try {
+    const payload = decodeJwt(token) as { can_view_logs?: boolean }
+    return payload.can_view_logs === true
+  } catch {
+    return false
+  }
+}

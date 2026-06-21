@@ -4,7 +4,7 @@ import logging
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
-from auth.dependencies import decode_backend_token, verify_jwt_for_ws
+from auth.dependencies import can_view_session_activity, decode_backend_token, verify_jwt_for_ws
 from config import settings
 from db.session import async_session
 from sessions.service import get_session
@@ -89,3 +89,34 @@ async def session_events_ws(
             pass
     finally:
         unregister_connection(websocket)
+
+
+@router.websocket("/ws/observe/{session_id}")
+async def session_activity_observe_ws(
+    websocket: WebSocket, session_id: str, token: str = Query(...)
+):
+    """Поток активности агентов для наблюдателя (препод/админ)."""
+    user = await verify_jwt_for_ws(token)
+    if user is None:
+        await websocket.close(code=4401)
+        return
+    async with async_session() as db:
+        from models.session import LearningSession
+        session = await db.get(LearningSession, session_id)
+    if session is None or not can_view_session_activity(user, session):
+        await websocket.close(code=4403)
+        return
+    activity = websocket.app.state.activity_log
+    gateway = websocket.app.state.gateway
+    await websocket.accept()
+    gateway.connect_observer(session_id, websocket)
+    q = activity.subscribe(session_id)
+    try:
+        while True:
+            event = await q.get()
+            await websocket.send_json({"type": "agent_activity", **event.model_dump(mode="json")})
+    except WebSocketDisconnect:
+        pass
+    finally:
+        activity.unsubscribe(session_id, q)
+        gateway.disconnect_observer(session_id, websocket)
