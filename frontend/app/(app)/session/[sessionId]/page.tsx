@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation"
+import { canViewAgentLogs } from "@/auth/role"
 import { HydrateClient, prefetchQuery } from "@/lib/query-hydration"
 import {
   loadCredentials,
@@ -15,8 +16,9 @@ export default async function SessionPage(props: {
     props.searchParams,
   ])
   try {
-    const [credentials] = await Promise.all([
+    const [credentials, canViewLogs] = await Promise.all([
       loadCredentials(sessionId),
+      canViewAgentLogs(),
       prefetchQuery(sessionStateQuery(sessionId)),
     ])
     return (
@@ -25,6 +27,7 @@ export default async function SessionPage(props: {
           sessionId={sessionId}
           credentials={credentials}
           chatOpen={chat === "1"}
+          canViewLogs={canViewLogs}
         />
       </HydrateClient>
     )

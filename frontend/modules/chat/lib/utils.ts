@@ -17,10 +17,13 @@ export function mapToUIMessage(m: {
   id: string
   role: string
   parts: unknown[]
+  created_at?: string
 }): UIMessage {
+  // created_at кладём в metadata — нужен для встраивания логов в поток по времени.
   return {
     id: m.id,
     role: m.role as "user" | "assistant",
     parts: m.parts as UIMessage["parts"],
-  }
+    ...(m.created_at ? { metadata: { createdAt: m.created_at } } : {}),
+  } as UIMessage
 }

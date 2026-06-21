@@ -13,22 +13,19 @@ import { StickyMobileActionBar } from "../components/sticky-mobile-action-bar"
 import { StreamStatusBanner } from "../components/stream-status-banner"
 import { useSessionState } from "../hooks/use-session-state"
 import { setAnalyticsContext } from "@/lib/analytics"
-import {
-  ChatPanel,
-  ChatPanelInset,
-  ChatPanelProvider,
-  ChatPanelTrigger,
-} from "@/modules/chat"
+import { ChatInset, ChatPanel, ChatProvider, ChatTrigger } from "@/modules/chat"
 import { ValidationButton } from "@/modules/validation"
 
 export function SessionView({
   sessionId,
   credentials,
   chatOpen = false,
+  canViewLogs = false,
 }: {
   sessionId: string
   credentials: Credentials
   chatOpen?: boolean
+  canViewLogs?: boolean
 }) {
   const { state, streamStatus, actions } = useSessionState(sessionId)
   const [openNodeId, setOpenNodeId] = useState<string | null>(null)
@@ -46,13 +43,18 @@ export function SessionView({
   const isEnded = state.status === "ended"
 
   return (
-    <ChatPanelProvider defaultOpen={chatOpen}>
-      <ChatPanelInset>
+    <ChatProvider
+      sessionId={sessionId}
+      labSlug={state.lab.slug}
+      canViewLogs={canViewLogs}
+      defaultOpen={chatOpen}
+    >
+      <ChatInset>
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-6 pb-24 md:pb-6">
           <div className="flex items-center justify-between gap-3">
             <SessionPageHeader lab={state.lab} status={state.status} />
             <div className="flex shrink-0 items-center gap-2">
-              <ChatPanelTrigger />
+              <ChatTrigger />
               <ValidationButton
                 sessionId={sessionId}
                 labSlug={state.lab.slug}
@@ -97,8 +99,8 @@ export function SessionView({
             onAction={actions.nodeAction}
           />
         </div>
-      </ChatPanelInset>
-      <ChatPanel sessionId={sessionId} labSlug={state.lab.slug} />
-    </ChatPanelProvider>
+      </ChatInset>
+      <ChatPanel />
+    </ChatProvider>
   )
 }

@@ -1,13 +1,7 @@
 "use client"
 
 import { SparklesIcon } from "lucide-react"
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-} from "react"
+import { createContext, use, useCallback, useMemo, useState } from "react"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 import { Button } from "@/ui/button"
@@ -15,7 +9,16 @@ import { Button } from "@/ui/button"
 export const CHAT_PANEL_DEFAULT_WIDTH = 450
 export const CHAT_PANEL_MIN_WIDTH = 360
 
+// Конфиг сессии — единственный набор пропсов, который страница передаёт чату.
+// Дальше панель/триггер берут его из контекста, без prop-drilling.
+export type ChatConfig = {
+  sessionId: string
+  labSlug: string
+  canViewLogs: boolean
+}
+
 type ChatPanelContextValue = {
+  config: ChatConfig
   open: boolean
   openPanel: () => void
   closePanel: () => void
@@ -30,16 +33,22 @@ type ChatPanelContextValue = {
 const ChatPanelContext = createContext<ChatPanelContextValue | null>(null)
 
 export function useChatPanel() {
-  const ctx = useContext(ChatPanelContext)
-  if (!ctx) throw new Error("useChatPanel вне ChatPanelProvider")
+  const ctx = use(ChatPanelContext)
+  if (!ctx) throw new Error("useChatPanel вне ChatProvider")
   return ctx
 }
 
-export function ChatPanelProvider({
+export function ChatProvider({
   children,
+  sessionId,
+  labSlug,
+  canViewLogs = false,
   defaultOpen = false,
 }: {
   children: React.ReactNode
+  sessionId: string
+  labSlug: string
+  canViewLogs?: boolean
   defaultOpen?: boolean
 }) {
   const [open, setOpen] = useState(defaultOpen)
@@ -54,8 +63,14 @@ export function ChatPanelProvider({
   const closePanel = useCallback(() => setOpen(false), [])
   const bumpUnread = useCallback(() => setUnread((n) => n + 1), [])
 
+  const config = useMemo<ChatConfig>(
+    () => ({ sessionId, labSlug, canViewLogs }),
+    [sessionId, labSlug, canViewLogs]
+  )
+
   const value = useMemo(
     () => ({
+      config,
       open,
       openPanel,
       closePanel,
@@ -66,18 +81,14 @@ export function ChatPanelProvider({
       unread,
       bumpUnread,
     }),
-    [open, openPanel, closePanel, width, resizing, unread, bumpUnread]
+    [config, open, openPanel, closePanel, width, resizing, unread, bumpUnread]
   )
 
-  return (
-    <ChatPanelContext.Provider value={value}>
-      {children}
-    </ChatPanelContext.Provider>
-  )
+  return <ChatPanelContext value={value}>{children}</ChatPanelContext>
 }
 
 // Сдвигает контент влево при открытой панели, как в Cloudflare dash
-export function ChatPanelInset({ children }: { children: React.ReactNode }) {
+export function ChatInset({ children }: { children: React.ReactNode }) {
   const { open, width, resizing } = useChatPanel()
   const isMobile = useIsMobile()
 
@@ -94,7 +105,7 @@ export function ChatPanelInset({ children }: { children: React.ReactNode }) {
   )
 }
 
-export function ChatPanelTrigger({ onOpen }: { onOpen?: () => void }) {
+export function ChatTrigger({ onOpen }: { onOpen?: () => void }) {
   const { open, openPanel, closePanel, unread } = useChatPanel()
 
   return (
