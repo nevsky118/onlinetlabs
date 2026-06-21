@@ -4,6 +4,22 @@ from datetime import datetime
 from pydantic import BaseModel
 
 
+class MCPAuditRow(BaseModel):
+    """Одна запись аудита MCP-вызовов через контур."""
+    id: str
+    user_id: str
+    session_id: str
+    tool: str
+    kind: str
+    ts: datetime
+    success: bool
+    error: str | None
+    consent_ref: str | None
+    lab_slug: str | None
+
+    model_config = {"from_attributes": True}
+
+
 class SessionSummary(BaseModel):
     """Сессия ученика для списка в карточке преподавателя."""
 

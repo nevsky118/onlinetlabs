@@ -9,6 +9,7 @@ from db.session import get_db
 from instructor.schemas import (
     CohortMetricsResponse,
     LabProgressRow,
+    MCPAuditRow,
     SessionSummary,
     StudentDetailResponse,
     StudentOverview,
@@ -17,6 +18,7 @@ from instructor.schemas import (
     cohort_response_from_result,
 )
 from instructor.service import build_session_timeline, get_student_detail, get_students_overview
+from models.mcp_audit import MCPAudit
 from models.session import LearningSession
 
 router = APIRouter()
@@ -65,6 +67,23 @@ async def student_detail(
         labs=[LabProgressRow(**lab) for lab in detail["labs"]],
         sessions=[SessionSummary(**s) for s in detail["sessions"]],
     )
+
+
+@router.get("/mcp-audit", response_model=list[MCPAuditRow])
+async def list_mcp_audit(
+    session_id: str | None = None,
+    kind: str | None = None,
+    _: dict = Depends(require_instructor),
+    db: AsyncSession = Depends(get_db),
+):
+    """Журнал MCP-вызовов через контур с фильтрами по сессии и виду (observe/act)."""
+    q = select(MCPAudit).order_by(MCPAudit.ts.desc())
+    if session_id is not None:
+        q = q.where(MCPAudit.session_id == session_id)
+    if kind is not None:
+        q = q.where(MCPAudit.kind == kind)
+    rows = (await db.execute(q)).scalars().all()
+    return [MCPAuditRow.model_validate(r) for r in rows]
 
 
 @router.get(

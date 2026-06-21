@@ -17,11 +17,12 @@ logger = logging.getLogger(__name__)
 class BehavioralCollector:
     """Периодический опрос MCP, нормализация, дедупликация, запись в DB."""
 
-    def __init__(self, mcp_client, db_factory, learning_analytics_config: LearningAnalyticsConfig):
-        """Инициализация с MCP-клиентом, фабрикой сессий БД и конфигом."""
+    def __init__(self, mcp_client, db_factory, learning_analytics_config: LearningAnalyticsConfig, control_interface=None):
+        """Инициализация. control_interface — необязательный шов (Task 7); None → прямые вызовы mcp_client."""
         self._mcp = mcp_client
         self._db_factory = db_factory
         self._cfg = learning_analytics_config
+        self._control_interface = control_interface  # шов П1; None = backward-compat fallback
         self._task: asyncio.Task | None = None
         self._running = False
         self._last_error_poll: datetime | None = None
@@ -78,12 +79,32 @@ class BehavioralCollector:
         if events:
             await self._persist(events)
 
+    async def _call_observe(self, tool: str, arguments: dict):
+        """Наблюдение через шов или напрямую (fallback)."""
+        from control_interface.interface import InterfaceDenied
+        if self._control_interface is not None:
+            return await self._control_interface.observe(
+                tool, self._ctx, arguments,
+                user_id=self._user_id,
+                session_id=self._session_id,
+                lab_slug=self._lab_slug,
+            )
+        # fallback: прямой вызов mcp_client
+        if tool == "list_user_actions":
+            return await self._mcp.list_user_actions(self._ctx, **arguments)
+        if tool == "get_logs":
+            return await self._mcp.get_logs(self._ctx, **arguments)
+        if tool == "list_errors":
+            return await self._mcp.list_errors(self._ctx, **arguments)
+        raise ValueError(f"Неизвестный observe-инструмент: {tool}")
+
     async def _fetch_actions(self) -> list[dict]:
         """Получить UserAction из MCP, дедуплицировать, нормализовать."""
         result: list[dict] = []
         try:
-            actions = await self._mcp.list_user_actions(
-                self._ctx, limit=self._cfg.mcp_actions_limit
+            from control_interface.interface import InterfaceDenied
+            actions = await self._call_observe(
+                "list_user_actions", {"limit": self._cfg.mcp_actions_limit}
             )
             for a in actions:
                 key = self._dedup_key(a.timestamp, a.action, a.component_id)
@@ -93,16 +114,20 @@ class BehavioralCollector:
                         a, self._session_id, self._user_id, self._lab_slug,
                         self._component_types,
                     ))
-        except Exception:
-            logger.warning("Не удалось получить user actions", exc_info=True)
+        except Exception as exc:
+            from control_interface.interface import InterfaceDenied
+            if isinstance(exc, InterfaceDenied):
+                logger.warning("observe list_user_actions отклонён швом: %s", exc.reason)
+            else:
+                logger.warning("Не удалось получить user actions", exc_info=True)
         return result
 
     async def _fetch_logs(self) -> list[dict]:
         """Получить LogEntry из MCP, дедуплицировать, нормализовать."""
         result: list[dict] = []
         try:
-            logs = await self._mcp.get_logs(
-                self._ctx, level=LogLevel.ALL, limit=self._cfg.mcp_logs_limit
+            logs = await self._call_observe(
+                "get_logs", {"level": LogLevel.ALL, "limit": self._cfg.mcp_logs_limit}
             )
             for log in logs:
                 key = self._dedup_key(log.timestamp, "log", log.source)
@@ -110,24 +135,32 @@ class BehavioralCollector:
                     result.append(self.normalize_log_entry(
                         log, self._session_id, self._user_id, self._lab_slug,
                     ))
-        except Exception:
-            logger.warning("Не удалось получить логи", exc_info=True)
+        except Exception as exc:
+            from control_interface.interface import InterfaceDenied
+            if isinstance(exc, InterfaceDenied):
+                logger.warning("observe get_logs отклонён швом: %s", exc.reason)
+            else:
+                logger.warning("Не удалось получить логи", exc_info=True)
         return result
 
     async def _fetch_errors(self) -> list[dict]:
         """Получить ErrorEntry из MCP (с since), нормализовать."""
         result: list[dict] = []
         try:
-            errors = await self._mcp.list_errors(
-                self._ctx, since=self._last_error_poll
+            errors = await self._call_observe(
+                "list_errors", {"since": self._last_error_poll}
             )
             self._last_error_poll = datetime.now(tz=timezone.utc)
             for err in errors:
                 result.append(self.normalize_error_entry(
                     err, self._session_id, self._user_id, self._lab_slug,
                 ))
-        except Exception:
-            logger.warning("Не удалось получить ошибки", exc_info=True)
+        except Exception as exc:
+            from control_interface.interface import InterfaceDenied
+            if isinstance(exc, InterfaceDenied):
+                logger.warning("observe list_errors отклонён швом: %s", exc.reason)
+            else:
+                logger.warning("Не удалось получить ошибки", exc_info=True)
         return result
 
     # Запись в БД

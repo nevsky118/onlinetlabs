@@ -7,6 +7,8 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
+from control_interface.audit import record as audit_record
+
 from agents.analytics.agent import AnalyticsAgent
 from agents.analytics.models import AnalyticsResult, SessionFeatures
 from agents.orchestrator.models import InterventionInput
@@ -63,6 +65,7 @@ class SessionMonitor:
         activity_log=None,
         observer=None,
         control_arm: ControlArm = ControlArm.CLOSED,
+        control_interface=None,
     ):
         """Инициализация с MCP-клиентом, фабрикой БД, оркестратором и конфигом."""
         self._mcp = mcp_client
@@ -74,6 +77,7 @@ class SessionMonitor:
         self._activity = activity_log
         self._observer = observer
         self._control_arm = control_arm
+        self._control_interface = control_interface  # шов П1 (Task 7)
         self._collector: BehavioralCollector | None = None
         self._feature_extractor = FeatureExtractor(learning_analytics_config)
         self._context_builder = MCPContextBuilder(mcp_client)
@@ -121,7 +125,8 @@ class SessionMonitor:
             self._session_model_id = ls.model_id if ls else None
 
         self._collector = BehavioralCollector(
-            self._mcp, self._db_factory, self._learning_analytics_config
+            self._mcp, self._db_factory, self._learning_analytics_config,
+            control_interface=self._control_interface,
         )
         await self._collector.start(session_id, user_id, lab_slug, ctx)
         self._analysis_task = asyncio.create_task(self._analysis_loop())
@@ -202,6 +207,21 @@ class SessionMonitor:
         await self._dispatch_intervention(pending)
         async with self._db_factory() as db:
             await self._persist_intervention(db, pending)
+
+        # act-аудит: best-effort, не ломает dispatch при ошибке
+        try:
+            async with self._db_factory() as db:
+                await audit_record(
+                    db,
+                    user_id=self._user_id,
+                    session_id=self._session_id,
+                    tool="intervention",
+                    kind="act",
+                    success=pending.response.success if pending.response else False,
+                    lab_slug=self._lab_slug,
+                )
+        except Exception:
+            logger.warning("Не удалось записать act-аудит интервенции", exc_info=True)
 
         logger.info(
             "Интервенция: type=%s struggle=%s success=%s",
