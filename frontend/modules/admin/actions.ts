@@ -2,18 +2,25 @@
 
 import type {
   AdminCohortMetrics,
+  AdminUser,
+  AdminUserPatch,
+  AdminUsersPage,
+  AdminUsersParams,
   ArmAnalysis,
   CohortMetricsRow,
   IdentifierEval,
   Overview,
   TkSensitivity,
+  UserRole,
 } from "./types"
 import {
+  getAdminUsersApi,
   getArmAnalysisApi,
   getCohortMetricsApi,
   getIdentifierEvalApi,
   getOverviewApi,
   getTkSensitivityApi,
+  updateAdminUserApi,
 } from "./api"
 
 export async function fetchOverview(): Promise<Overview> {
@@ -96,6 +103,59 @@ export async function fetchArmAnalysis(): Promise<ArmAnalysis> {
       unknown
     >,
     mentorHoursSaved: d.mentor_hours_saved as number,
+  }
+}
+
+function mapAdminUser(d: Record<string, unknown>): AdminUser {
+  return {
+    id: d.id as string,
+    name: d.name as string,
+    email: d.email as string,
+    image: (d.image as string) ?? null,
+    role: d.role as UserRole,
+    canSelectModel: Boolean(d.can_select_model),
+    canViewAgentLogs: Boolean(d.can_view_agent_logs),
+  }
+}
+
+export async function fetchAdminUsers(
+  params: AdminUsersParams
+): Promise<AdminUsersPage> {
+  const res = await getAdminUsersApi(params)
+  if (!res.ok) throw new Error(`fetchAdminUsers ${res.status}`)
+  const d = await res.json()
+  return {
+    items: (d.items as Record<string, unknown>[]).map(mapAdminUser),
+    total: d.total as number,
+    page: d.page as number,
+    pageSize: d.page_size as number,
+  }
+}
+
+export async function updateAdminUser(
+  id: string,
+  patch: AdminUserPatch
+): Promise<{ ok: true; user: AdminUser } | { ok: false; error: string }> {
+  const body: Record<string, unknown> = {}
+  if (patch.role !== undefined) body.role = patch.role
+  if (patch.canSelectModel !== undefined)
+    body.can_select_model = patch.canSelectModel
+  if (patch.canViewAgentLogs !== undefined)
+    body.can_view_agent_logs = patch.canViewAgentLogs
+
+  try {
+    const res = await updateAdminUserApi(id, body)
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      return {
+        ok: false,
+        error: (err as { detail?: string }).detail ?? `Ошибка ${res.status}`,
+      }
+    }
+    const d = await res.json()
+    return { ok: true, user: mapAdminUser(d as Record<string, unknown>) }
+  } catch {
+    return { ok: false, error: "Сетевая ошибка" }
   }
 }
 

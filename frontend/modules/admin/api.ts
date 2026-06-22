@@ -50,3 +50,36 @@ export async function getArmAnalysisApi(): Promise<Response> {
 export async function getCohortMetricsApi(byArm = false): Promise<Response> {
   return authedFetch(`/instructor/cohort-metrics?by_arm=${byArm}`)
 }
+
+export async function getAdminUsersApi(params: {
+  page: number
+  pageSize: number
+  sort: string
+  order: string
+  search: string
+  role: string | null
+}): Promise<Response> {
+  const qs = new URLSearchParams({
+    page: String(params.page),
+    page_size: String(params.pageSize),
+    sort: params.sort,
+    order: params.order,
+    search: params.search,
+  })
+  if (params.role) qs.set("role", params.role)
+  return authedFetch(`/admin/users?${qs.toString()}`)
+}
+
+export async function updateAdminUserApi(
+  id: string,
+  patch: {
+    role?: string
+    can_select_model?: boolean
+    can_view_agent_logs?: boolean
+  }
+): Promise<Response> {
+  return authedFetch(`/admin/users/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  })
+}

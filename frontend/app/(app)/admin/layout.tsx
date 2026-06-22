@@ -20,6 +20,7 @@ const navItems = [
   { href: "/admin/cohort", label: "Когорта" },
   { href: "/admin/identifier", label: "Идентификатор" },
   { href: "/admin/tk", label: "Закон T_k" },
+  { href: "/admin/users", label: "Пользователи" },
 ]
 
 export default async function AdminLayout({
