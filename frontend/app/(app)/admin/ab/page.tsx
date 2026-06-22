@@ -22,7 +22,6 @@ export default async function AbPage() {
 
   let data = null
   let error: string | null = null
-
   try {
     data = await fetchArmAnalysis()
   } catch (e) {

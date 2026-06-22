@@ -22,7 +22,6 @@ export default async function IdentifierPage() {
 
   let data = null
   let error: string | null = null
-
   try {
     data = await fetchIdentifierEval()
   } catch (e) {
