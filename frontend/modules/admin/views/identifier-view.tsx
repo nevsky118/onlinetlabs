@@ -100,7 +100,7 @@ export function IdentifierView({ data, error }: Props) {
           <ChartContainer config={curveConfig} height={280}>
             <LineChart
               data={chartData}
-              margin={{ top: 8, right: 16, bottom: 8, left: 8 }}
+              margin={{ top: 24, right: 16, bottom: 8, left: 8 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis
@@ -133,8 +133,9 @@ export function IdentifierView({ data, error }: Props) {
                   stroke="var(--foreground)"
                   strokeDasharray="2 2"
                   label={{
-                    value: `J-opt T_k=${fmtNum(data.jOptimalTk, 0)}`,
-                    position: "top",
+                    value: `T_k=${fmtNum(data.jOptimalTk, 0)}`,
+                    position: "insideTopRight",
+                    offset: 10,
                     fontSize: 10,
                     fill: "var(--foreground)",
                   }}
