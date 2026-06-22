@@ -26,6 +26,9 @@ services:
       interval: 3s
       timeout: 2s
       retries: 5
+    networks:
+      - default
+      - shared          # gns3-service берёт redis по имени через общую сеть
 
   backend:
     image: ${IMAGE_BACKEND:-ghcr.io/nevsky118/onlinetlabs-backend}:${IMAGE_TAG:-latest}
@@ -47,6 +50,9 @@ services:
       interval: 10s
       timeout: 3s
       retries: 10
+    networks:
+      - default
+      - shared          # общая сеть с gns3-стеком (gns3-service/server/mcp по имени)
 
   frontend:
     image: ${IMAGE_FRONTEND:-ghcr.io/nevsky118/onlinetlabs-frontend}:${IMAGE_TAG:-latest}
@@ -76,6 +82,11 @@ services:
     depends_on:
       - frontend
       - backend
+
+networks:
+  shared:
+    external: true
+    name: onlinetlabs_net      # создаётся один раз: docker network create onlinetlabs_net
 
 volumes:
   pgdata:
