@@ -27,7 +27,8 @@ ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL \
 # На runtime env_file из compose перебивает эти значения реальными.
 ENV BETTER_AUTH_SECRET=build-time-placeholder \
     BETTER_AUTH_URL=http://localhost:3000 \
-    BACKEND_URL=http://build-time-placeholder.invalid
+    BACKEND_URL=http://build-time-placeholder.invalid \
+    INTERNAL_API_TOKEN=build-time-placeholder
 
 RUN pnpm build
 
