@@ -110,6 +110,8 @@ jobs:
             dc='docker compose --env-file backend.env -f compose.yaml'
             \$dc pull
             \$dc up -d
+            # Caddyfile в bind-mount: up -d не пересоздаёт caddy → применяем конфиг явно
+            \$dc exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile 2>/dev/null || \$dc restart caddy
             \$dc run --rm backend alembic upgrade head
             \$dc ps
             docker image prune -f
