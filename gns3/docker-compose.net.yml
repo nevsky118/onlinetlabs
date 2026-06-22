@@ -1,0 +1,17 @@
+# Overlay: подключает gns3-сервисы к ВНЕШНЕЙ общей сети onlinetlabs_net,
+# чтобы backend основного стека видел gns3-service/server/mcp по имени,
+# а gns3-service брал redis основного стека (redis://redis:6379/0).
+# Сеть создаётся один раз: docker network create onlinetlabs_net
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.kvm.yml -f docker-compose.net.yml ...
+services:
+  gns3-server:
+    networks: [default, shared]
+  gns3-service:
+    networks: [default, shared]
+  gns3-mcp:
+    networks: [default, shared]
+
+networks:
+  shared:
+    external: true
+    name: onlinetlabs_net

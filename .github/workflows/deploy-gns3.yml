@@ -1,0 +1,59 @@
+name: Deploy GNS3
+
+# Ручной запуск: Actions → "Deploy GNS3" → Run workflow.
+# gns3-стек собирается НА СЕРВЕРЕ (нужны bind-mounts runtime/images + privileged + KVM).
+# Образы нод (images/) и runtime/ живут на сервере и rsync'ом НЕ перезаписываются.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref"
+        required: true
+        default: main
+
+concurrency:
+  group: deploy-gns3
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref }}
+
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Known hosts
+        run: ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Decrypt gns3 .env.prod
+        run: |
+          openssl enc -aes-256-cbc -d -salt -pbkdf2 \
+            -in gns3/.env.prod.aes -out gns3/.env.prod \
+            -pass pass:"${{ secrets.CONFIG_PASSWORD }}"
+
+      - name: Sync gns3 source (images/ и runtime/ — на сервере, не трогаем)
+        run: |
+          ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" 'mkdir -p /opt/onlinetlabs/gns3'
+          rsync -az --delete \
+            --exclude '.git' --exclude '**/__pycache__' --exclude '**/.pytest_cache' \
+            --exclude '**/.venv' --exclude '**/node_modules' \
+            --exclude 'images/' --exclude 'runtime/' \
+            gns3/ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/onlinetlabs/gns3/"
+
+      - name: Build + up (layered compose, KVM, общая сеть)
+        run: |
+          ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" '
+            set -e
+            docker network create onlinetlabs_net 2>/dev/null || true
+            cd /opt/onlinetlabs/gns3
+            mkdir -p runtime/data runtime/gns3-resources images/IOS images/IOU images/QEMU
+            dc="docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.kvm.yml -f docker-compose.net.yml --env-file .env.prod"
+            $dc --profile roles build
+            $dc up -d --wait --wait-timeout 240
+            $dc ps
+          '
