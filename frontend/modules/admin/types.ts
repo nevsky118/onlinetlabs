@@ -1,5 +1,42 @@
 // Admin dashboard domain types (camelCase — mapped from snake_case backend)
 
+export type UserRole = "student" | "instructor" | "admin"
+
+export interface AdminUser {
+  id: string
+  name: string
+  email: string
+  image: string | null
+  role: UserRole
+  canSelectModel: boolean
+  canViewAgentLogs: boolean
+}
+
+export interface AdminUsersPage {
+  items: AdminUser[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+export type AdminUsersSort = "name" | "email" | "role"
+export type AdminUsersOrder = "asc" | "desc"
+
+export interface AdminUsersParams {
+  page: number
+  pageSize: number
+  sort: AdminUsersSort
+  order: AdminUsersOrder
+  search: string
+  role: UserRole | null
+}
+
+export interface AdminUserPatch {
+  role?: UserRole
+  canSelectModel?: boolean
+  canViewAgentLogs?: boolean
+}
+
 export interface Overview {
   ab: {
     l2PassClosed: number

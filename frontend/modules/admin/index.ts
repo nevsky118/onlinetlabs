@@ -1,8 +1,15 @@
 export type {
   AdminCohortMetrics,
+  AdminUser,
+  AdminUserPatch,
+  AdminUsersOrder,
+  AdminUsersPage,
+  AdminUsersParams,
+  AdminUsersSort,
   ArmAnalysis,
   CohortMetricsRow,
   IdentifierEval,
   Overview,
   TkSensitivity,
+  UserRole,
 } from "./types"
