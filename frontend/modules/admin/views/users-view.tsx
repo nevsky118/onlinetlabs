@@ -203,9 +203,9 @@ export function UsersView({ data, error, currentUserId }: UsersViewProps) {
           className="max-w-xs"
         />
         <Select
-          value={params.role ?? ""}
+          value={params.role ?? "all"}
           onValueChange={(v) =>
-            setParams({ role: (v as UserRole) || null, page: 1 })
+            setParams({ role: v === "all" ? null : (v as UserRole), page: 1 })
           }
         >
           <SelectTrigger size="sm" className="w-44">
@@ -213,7 +213,7 @@ export function UsersView({ data, error, currentUserId }: UsersViewProps) {
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectItem value="">Все роли</SelectItem>
+              <SelectItem value="all">Все роли</SelectItem>
               {ROLE_OPTIONS.map((o) => (
                 <SelectItem key={o.value} value={o.value}>
                   {o.label}
