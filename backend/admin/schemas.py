@@ -1,6 +1,8 @@
 """Схемы ответов admin-эндпоинтов."""
 from pydantic import BaseModel
 
+from models.user import UserRole
+
 
 class OverviewAb(BaseModel):
     l2_pass_closed: float
@@ -58,3 +60,26 @@ class TkPoint(BaseModel):
 class TkSensitivityResponse(BaseModel):
     points: list[TkPoint]
     costs: dict[str, float]
+
+
+class UserListItem(BaseModel):
+    id: str
+    name: str | None
+    email: str | None
+    image: str | None
+    role: str
+    can_select_model: bool | None
+    can_view_agent_logs: bool | None
+
+
+class UserListResponse(BaseModel):
+    items: list[UserListItem]
+    total: int
+    page: int
+    page_size: int
+
+
+class UserUpdate(BaseModel):
+    role: UserRole | None = None
+    can_select_model: bool | None = None
+    can_view_agent_logs: bool | None = None

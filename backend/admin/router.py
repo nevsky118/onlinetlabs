@@ -1,6 +1,8 @@
-"""Admin-роутер: /admin/overview, /admin/identifier-eval, /admin/tk-sensitivity."""
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import func, select
+"""Admin-роутер: /admin/overview, /admin/identifier-eval, /admin/tk-sensitivity, /admin/users."""
+from typing import Literal
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from admin.schemas import (
@@ -13,9 +15,13 @@ from admin.schemas import (
     OverviewResponse,
     TkPoint,
     TkSensitivityResponse,
+    UserListItem,
+    UserListResponse,
+    UserUpdate,
 )
 from auth.dependencies import get_current_user
 from config.config_model import LearningAnalyticsConfig
+from models.user import User, UserRole
 from control.criterion import Costs
 from control.derive_thresholds import sensitivity_curve
 from db.session import get_db
@@ -263,4 +269,91 @@ def get_tk_sensitivity(_: dict = Depends(require_admin)):
     return TkSensitivityResponse(
         points=[TkPoint(**p) for p in data["points"]],
         costs=data["costs"],
+    )
+
+
+@router.get("/users", response_model=UserListResponse)
+async def list_users(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    sort: Literal["name", "email", "role"] = "name",
+    order: Literal["asc", "desc"] = "asc",
+    search: str | None = None,
+    role: UserRole | None = None,
+    db: AsyncSession = Depends(get_db),
+    _: dict = Depends(require_admin),
+) -> UserListResponse:
+    """Список пользователей с пагинацией, сортировкой, поиском и фильтром по роли."""
+    col = getattr(User, sort)
+    order_col = col.asc() if order == "asc" else col.desc()
+
+    base_q = select(User)
+    if search:
+        pattern = f"%{search}%"
+        base_q = base_q.where(or_(User.name.ilike(pattern), User.email.ilike(pattern)))
+    if role is not None:
+        base_q = base_q.where(User.role == role.value)
+
+    total = (await db.execute(select(func.count()).select_from(base_q.subquery()))).scalar() or 0
+
+    offset = (page - 1) * page_size
+    rows = (
+        await db.execute(base_q.order_by(order_col).offset(offset).limit(page_size))
+    ).scalars().all()
+
+    return UserListResponse(
+        items=[
+            UserListItem(
+                id=u.id,
+                name=u.name,
+                email=u.email,
+                image=u.image,
+                role=u.role,
+                can_select_model=u.can_select_model,
+                can_view_agent_logs=u.can_view_agent_logs,
+            )
+            for u in rows
+        ],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
+
+
+@router.patch("/users/{user_id}", response_model=UserListItem)
+async def update_user(
+    user_id: str,
+    body: UserUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(require_admin),
+) -> UserListItem:
+    """Обновить роль/флаги пользователя. Нельзя менять собственную роль."""
+    user = await db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
+
+    if body.role is not None and user_id == current_user["id"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Нельзя менять собственную роль",
+        )
+
+    if body.role is not None:
+        user.role = body.role.value
+    if body.can_select_model is not None:
+        user.can_select_model = body.can_select_model
+    if body.can_view_agent_logs is not None:
+        user.can_view_agent_logs = body.can_view_agent_logs
+
+    await db.commit()
+    await db.refresh(user)
+
+    return UserListItem(
+        id=user.id,
+        name=user.name,
+        email=user.email,
+        image=user.image,
+        role=user.role,
+        can_select_model=user.can_select_model,
+        can_view_agent_logs=user.can_view_agent_logs,
     )

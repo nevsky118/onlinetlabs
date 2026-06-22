@@ -1,7 +1,15 @@
 """Task 2: тесты чистых сборщиков admin-роутера (без подъёма FastAPI)."""
 import pytest
+from fastapi import FastAPI
+from httpx import ASGITransport, AsyncClient
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_in, assert_true, assert_equal
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+from admin.router import require_admin, router as admin_router
+from auth.dependencies import get_current_user
+from db.session import get_db
+from models.user import User
 
 pytestmark = [pytest.mark.unit]
 
@@ -123,3 +131,168 @@ class TestAdminEndpoints:
 
         with autotest.step("Assert: исключение было поднято"):
             assert_true(raised, "HTTPException был поднят для non-admin")
+
+
+_ADMIN_USER = {"id": "admin-001", "role": "admin"}
+_STUDENT_USER = {"id": "student-001", "role": "student"}
+
+
+class TestAdminUsersEndpoints:
+    """HTTP-тесты GET /admin/users и PATCH /admin/users/{id}."""
+
+    @pytest.fixture(autouse=True)
+    async def setup(self):
+        self.engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+        self.session_factory = async_sessionmaker(self.engine, expire_on_commit=False)
+        async with self.engine.begin() as conn:
+            await conn.run_sync(User.__table__.create)
+
+        app = FastAPI()
+        app.include_router(admin_router, prefix="/admin")
+
+        async def _override_db():
+            async with self.session_factory() as db:
+                yield db
+
+        def _override_admin():
+            return _ADMIN_USER
+
+        def _override_student():
+            return _STUDENT_USER
+
+        app.dependency_overrides[get_db] = _override_db
+        app.dependency_overrides[get_current_user] = _override_admin
+        self.app = app
+        self.student_app = FastAPI()
+        self.student_app.include_router(admin_router, prefix="/admin")
+        self.student_app.dependency_overrides[get_db] = _override_db
+        self.student_app.dependency_overrides[get_current_user] = _override_student
+
+        # Сеять тестовых пользователей.
+        async with self.session_factory() as db:
+            db.add_all([
+                User(id="u1", name="Alice", email="alice@test.local", role="student"),
+                User(id="u2", name="Bob", email="bob@test.local", role="instructor"),
+                User(id="u3", name="Charlie", email="charlie@test.local", role="admin"),
+                User(id="admin-001", name="AdminSelf", email="adminself@test.local", role="admin"),
+                User(id="student-001", name="Stu", email="stu@test.local", role="student"),
+            ])
+            await db.commit()
+
+        yield
+        await self.engine.dispose()
+
+    def _client(self) -> AsyncClient:
+        return AsyncClient(transport=ASGITransport(app=self.app), base_url="http://testserver")
+
+    def _student_client(self) -> AsyncClient:
+        return AsyncClient(transport=ASGITransport(app=self.student_app), base_url="http://testserver")
+
+    @autotest.num("1816")
+    @autotest.external_id("550e8400-e29b-41d4-a716-446655440001")
+    @autotest.name("GET /admin/users: пагинация и total")
+    async def test_550e8400_list_pagination_and_total(self):
+        with autotest.step("Act: запросить страницу 1 из 2 пользователей"):
+            async with self._client() as client:
+                resp = await client.get("/admin/users?page=1&page_size=2")
+
+        with autotest.step("Assert: 200, items=2, total=5"):
+            assert_equal(resp.status_code, 200, "status 200")
+            body = resp.json()
+            assert_equal(body["page"], 1, "page=1")
+            assert_equal(body["page_size"], 2, "page_size=2")
+            assert_equal(body["total"], 5, "total=5")
+            assert_equal(len(body["items"]), 2, "items len=2")
+
+    @autotest.num("1817")
+    @autotest.external_id("550e8400-e29b-41d4-a716-446655440002")
+    @autotest.name("GET /admin/users: сортировка по email desc")
+    async def test_550e8400_list_sort_email_desc(self):
+        with autotest.step("Act: сортировать по email desc"):
+            async with self._client() as client:
+                resp = await client.get("/admin/users?sort=email&order=desc&page_size=100")
+
+        with autotest.step("Assert: 200, первый email лексически наибольший"):
+            assert_equal(resp.status_code, 200, "status 200")
+            emails = [item["email"] for item in resp.json()["items"]]
+            assert_true(emails == sorted(emails, reverse=True), "desc order")
+
+    @autotest.num("1818")
+    @autotest.external_id("550e8400-e29b-41d4-a716-446655440003")
+    @autotest.name("GET /admin/users: поиск по имени")
+    async def test_550e8400_list_search_by_name(self):
+        with autotest.step("Act: поиск search=Alice"):
+            async with self._client() as client:
+                resp = await client.get("/admin/users?search=Alice")
+
+        with autotest.step("Assert: возвращает только Alice"):
+            assert_equal(resp.status_code, 200, "status 200")
+            body = resp.json()
+            assert_equal(body["total"], 1, "total=1")
+            assert_equal(body["items"][0]["name"], "Alice", "name=Alice")
+
+    @autotest.num("1819")
+    @autotest.external_id("550e8400-e29b-41d4-a716-446655440004")
+    @autotest.name("GET /admin/users: фильтр по роли")
+    async def test_550e8400_list_filter_by_role(self):
+        with autotest.step("Act: filter role=instructor"):
+            async with self._client() as client:
+                resp = await client.get("/admin/users?role=instructor")
+
+        with autotest.step("Assert: только instructor-пользователи"):
+            assert_equal(resp.status_code, 200, "status 200")
+            body = resp.json()
+            assert_equal(body["total"], 1, "total=1")
+            assert_equal(body["items"][0]["role"], "instructor", "role=instructor")
+
+    @autotest.num("1820")
+    @autotest.external_id("550e8400-e29b-41d4-a716-446655440005")
+    @autotest.name("PATCH /admin/users/{id}: смена роли — успех")
+    async def test_550e8400_patch_role_success(self):
+        with autotest.step("Act: сменить роль u1 на instructor"):
+            async with self._client() as client:
+                resp = await client.patch("/admin/users/u1", json={"role": "instructor"})
+
+        with autotest.step("Assert: 200, role=instructor в ответе"):
+            assert_equal(resp.status_code, 200, "status 200")
+            body = resp.json()
+            assert_equal(body["id"], "u1", "id=u1")
+            assert_equal(body["role"], "instructor", "role=instructor")
+
+    @autotest.num("1821")
+    @autotest.external_id("550e8400-e29b-41d4-a716-446655440006")
+    @autotest.name("PATCH /admin/users/{id}: смена собственной роли — 400")
+    async def test_550e8400_patch_own_role_rejected(self):
+        with autotest.step("Act: admin-001 пытается сменить свою роль"):
+            async with self._client() as client:
+                resp = await client.patch("/admin/users/admin-001", json={"role": "student"})
+
+        with autotest.step("Assert: 400"):
+            assert_equal(resp.status_code, 400, "status 400")
+            assert_in("detail", resp.json(), "detail в ответе")
+
+    @autotest.num("1822")
+    @autotest.external_id("550e8400-e29b-41d4-a716-446655440007")
+    @autotest.name("PATCH /admin/users/{id}: смена флагов на себе — разрешено")
+    async def test_550e8400_patch_flags_on_self_allowed(self):
+        with autotest.step("Act: admin-001 ставит can_select_model=true себе"):
+            async with self._client() as client:
+                resp = await client.patch(
+                    "/admin/users/admin-001",
+                    json={"can_select_model": True},
+                )
+
+        with autotest.step("Assert: 200, can_select_model=true"):
+            assert_equal(resp.status_code, 200, "status 200")
+            assert_equal(resp.json()["can_select_model"], True, "can_select_model=True")
+
+    @autotest.num("1823")
+    @autotest.external_id("550e8400-e29b-41d4-a716-446655440008")
+    @autotest.name("GET /admin/users: не-admin получает 403")
+    async def test_550e8400_non_admin_gets_403(self):
+        with autotest.step("Act: student запрашивает /admin/users"):
+            async with self._student_client() as client:
+                resp = await client.get("/admin/users")
+
+        with autotest.step("Assert: 403"):
+            assert_equal(resp.status_code, 403, "status 403")
