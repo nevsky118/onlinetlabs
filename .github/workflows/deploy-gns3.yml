@@ -36,14 +36,19 @@ jobs:
             -in gns3/.env.prod.aes -out gns3/.env.prod \
             -pass pass:"${{ secrets.CONFIG_PASSWORD }}"
 
-      - name: Sync gns3 source (images/ и runtime/ — на сервере, не трогаем)
+      - name: Sync gns3 + mcp-sdk + .dockerignore (images/ и runtime/ на сервере — не трогаем)
         run: |
-          ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" 'mkdir -p /opt/onlinetlabs/gns3'
+          DST="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
+          ssh "$DST" 'mkdir -p /opt/onlinetlabs/gns3'
           rsync -az --delete \
             --exclude '.git' --exclude '**/__pycache__' --exclude '**/.pytest_cache' \
             --exclude '**/.venv' --exclude '**/node_modules' \
             --exclude 'images/' --exclude 'runtime/' \
-            gns3/ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/onlinetlabs/gns3/"
+            gns3/ "$DST:/opt/onlinetlabs/gns3/"
+          # gns3-service/gns3-mcp собираются с контекстом=корень репо → нужны mcp-sdk/ + .dockerignore
+          rsync -az --delete --exclude '**/__pycache__' --exclude '**/.pytest_cache' \
+            mcp-sdk/ "$DST:/opt/onlinetlabs/mcp-sdk/"
+          scp .dockerignore "$DST:/opt/onlinetlabs/.dockerignore"
 
       - name: Build + up (layered compose, KVM, общая сеть)
         run: |
