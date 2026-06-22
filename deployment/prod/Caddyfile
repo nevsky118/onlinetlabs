@@ -1,10 +1,14 @@
-# Caddy: реверс-прокси + TLS через Cloudflare Origin Certificate.
-# Домен — из env APP_DOMAIN (подставляется при старте; в репо не хранится).
-# Cloudflare проксирует (orange) и держит публичный серт (зелёный замок),
-# до origin шифрует Origin-сертом; режим SSL/TLS = Full (strict).
+# Caddy: реверс-прокси + автоматический TLS (Let's Encrypt).
+# Cloudflare-прокси отключён (DNS only) → домен резолвится прямо на сервер,
+# Caddy сам берёт публично-доверенный серт по ACME (порты 80/443 открыты).
+# Домен — из env APP_DOMAIN (в репо не хранится). ACME-email не задаём
+# (необязателен; при желании — через env, чтобы не светить в репо).
 
 {$APP_DOMAIN}, www.{$APP_DOMAIN} {
-	tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin-key.pem
+	# Let's Encrypt — автоматически (proxy off, домен указывает на сервер).
+	# Прежний Cloudflare Origin Certificate (для режима proxied / SSL Full strict)
+	# оставлен закомментированным — вернуть при включении прокси Cloudflare:
+	# tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin-key.pem
 
 	# WebSocket-эндпоинты сессии → backend (wss://<домен>/ws/...)
 	@ws path /ws/*
