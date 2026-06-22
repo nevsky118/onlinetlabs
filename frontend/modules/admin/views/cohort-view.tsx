@@ -1,3 +1,5 @@
+"use client"
+
 import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from "recharts"
 import type { CohortCell, CohortMetrics } from "@/modules/instructor/types"
 import { Alert, AlertDescription, AlertTitle } from "@/ui/alert"
