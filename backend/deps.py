@@ -23,6 +23,12 @@ def get_gns3_client(request: Request):
     return request.app.state.gns3_client
 
 
+def get_session_factory():
+    """Отдаёт фабрику сессий БД (переопределяется в тестах)."""
+    from db.session import async_session
+    return async_session
+
+
 def get_monitor_registry(request: Request):
     """Отдаёт реестр мониторов сессий из app.state."""
     return request.app.state.monitor_registry

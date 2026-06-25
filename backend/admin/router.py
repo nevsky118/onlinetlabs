@@ -1,11 +1,15 @@
 """Admin-роутер: /admin/overview, /admin/identifier-eval, /admin/tk-sensitivity, /admin/users."""
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, or_, select
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from sqlalchemy import String, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from admin.data_registry import ADMIN_TABLES, serialize_row
 from admin.schemas import (
+    AdminDataResponse,
+    AdminLab,
+    AdminLabUpdate,
     CurvePoint,
     IdentifierEvalResponse,
     OverviewAb,
@@ -19,7 +23,10 @@ from admin.schemas import (
     UserListResponse,
     UserUpdate,
 )
+from labs.service import get_all_labs, get_lab_by_slug, update_lab
 from auth.dependencies import get_current_user
+from db.session import async_session
+from deps import get_gns3_client, get_session_factory
 from config.config_model import LearningAnalyticsConfig
 from models.user import User, UserRole
 from control.criterion import Costs
@@ -356,4 +363,134 @@ async def update_user(
         role=user.role,
         can_select_model=user.can_select_model,
         can_view_agent_logs=user.can_view_agent_logs,
+    )
+
+
+def _to_admin_lab(lab) -> AdminLab:
+    """Serialize Lab ORM object to AdminLab schema."""
+    template_status = (lab.meta or {}).get("template_status", "unknown")
+    if lab.environment_type != "gns3":
+        template_ready = True
+    else:
+        template_ready = bool(lab.gns3_template_project_id)
+    return AdminLab(
+        slug=lab.slug,
+        title=lab.title,
+        enabled=lab.enabled,
+        environment_type=lab.environment_type,
+        course_slug=lab.course_slug,
+        gns3_template_project_id=lab.gns3_template_project_id,
+        gns3_template_project_id_frr=lab.gns3_template_project_id_frr,
+        gns3_template_project_id_iosvl2=lab.gns3_template_project_id_iosvl2,
+        template_ready=template_ready,
+        template_status=template_status,
+    )
+
+
+@router.get("/labs", response_model=list[AdminLab])
+async def list_admin_labs(
+    db: AsyncSession = Depends(get_db),
+    _: dict = Depends(require_admin),
+) -> list[AdminLab]:
+    """Список лаб для администратора."""
+    labs = await get_all_labs(db)
+    return [_to_admin_lab(lab) for lab in labs]
+
+
+@router.patch("/labs/{slug}", response_model=AdminLab)
+async def patch_admin_lab(
+    slug: str,
+    body: AdminLabUpdate,
+    db: AsyncSession = Depends(get_db),
+    _: dict = Depends(require_admin),
+) -> AdminLab:
+    """Обновить enabled/gns3_template_project_id* лабы."""
+    fields = body.model_dump(exclude_unset=True)
+    lab = await update_lab(db, slug, fields)
+    if lab is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Лаба не найдена")
+    return _to_admin_lab(lab)
+
+
+async def _rebuild_worker(slug: str, gns3_client, session_factory=async_session) -> None:
+    """Фоновая задача: строит шаблон и обновляет статус лабы в БД."""
+    try:
+        template_id = await gns3_client.build_template(slug)
+        new_status, tid = "ready", template_id
+    except Exception:
+        new_status, tid = "error", None
+    async with session_factory() as session:
+        lab = await get_lab_by_slug(session, slug)
+        if lab is None:
+            return
+        if tid:
+            lab.gns3_template_project_id = tid
+        lab.meta = {**(lab.meta or {}), "template_status": new_status}
+        await session.commit()
+
+
+@router.post("/labs/{slug}/rebuild-template", status_code=202)
+async def rebuild_lab_template(
+    slug: str,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+    gns3_client=Depends(get_gns3_client),
+    session_factory=Depends(get_session_factory),
+    _: dict = Depends(require_admin),
+) -> dict:
+    """Запустить пересборку GNS3-шаблона для лабы. Idempotent, возвращает 202."""
+    lab = await get_lab_by_slug(db, slug)
+    if lab is None:
+        raise HTTPException(404, "Лаба не найдена")
+    if lab.environment_type != "gns3":
+        raise HTTPException(400, "Лаба не использует GNS3")
+    if (lab.meta or {}).get("template_status") == "building":
+        return {"status": "building"}
+    lab.meta = {**(lab.meta or {}), "template_status": "building"}
+    await db.commit()
+    background_tasks.add_task(_rebuild_worker, slug, gns3_client, session_factory)
+    return {"status": "building"}
+
+
+@router.get("/data/{table}", response_model=AdminDataResponse)
+async def get_admin_data(
+    table: str,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=100),
+    sort: str | None = None,
+    order: Literal["asc", "desc"] = "desc",
+    search: str | None = None,
+    db: AsyncSession = Depends(get_db),
+    _: dict = Depends(require_admin),
+) -> AdminDataResponse:
+    """Универсальный эндпоинт для чтения whitelisted log-таблиц."""
+    spec = ADMIN_TABLES.get(table)
+    if spec is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown table")
+
+    sort_col = sort if sort in spec.sortable else spec.default_sort
+    model = spec.model
+    col = getattr(model, sort_col)
+    order_col = col.asc() if order == "asc" else col.desc()
+
+    base_q = select(model)
+    if search:
+        pattern = f"%{search}%"
+        base_q = base_q.where(
+            or_(*[cast(getattr(model, c), String).ilike(pattern) for c in spec.searchable])
+        )
+
+    total = (await db.execute(select(func.count()).select_from(base_q.subquery()))).scalar() or 0
+
+    rows = (
+        await db.execute(base_q.order_by(order_col).offset((page - 1) * page_size).limit(page_size))
+    ).scalars().all()
+
+    return AdminDataResponse(
+        items=[serialize_row(spec, r) for r in rows],
+        total=total,
+        page=page,
+        page_size=page_size,
+        columns=spec.columns,
+        sortable=sorted(spec.sortable),
     )

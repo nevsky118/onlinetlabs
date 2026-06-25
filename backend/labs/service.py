@@ -48,6 +48,27 @@ async def get_lab_by_slug(db: AsyncSession, slug: str) -> Lab | None:
     return result.scalar_one_or_none()
 
 
+_UPDATE_SAFELIST = {
+    "enabled",
+    "gns3_template_project_id",
+    "gns3_template_project_id_frr",
+    "gns3_template_project_id_iosvl2",
+}
+
+
+async def update_lab(db: AsyncSession, slug: str, fields: dict) -> Lab | None:
+    """Apply given Lab column fields and commit. None if missing."""
+    lab = await get_lab_by_slug(db, slug)
+    if lab is None:
+        return None
+    for key, value in fields.items():
+        if key in _UPDATE_SAFELIST:
+            setattr(lab, key, value)
+    await db.commit()
+    await db.refresh(lab)
+    return lab
+
+
 _VARIANT_COLUMN: dict[str, str] = {
     "default": "gns3_template_project_id",
     "frr": "gns3_template_project_id_frr",
