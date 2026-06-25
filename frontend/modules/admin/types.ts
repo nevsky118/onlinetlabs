@@ -96,6 +96,24 @@ export interface ArmAnalysis {
   mentorHoursSaved: number
 }
 
+export type AdminDataRow = Record<string, unknown>
+export type AdminDataOrder = "asc" | "desc"
+export interface AdminDataPage {
+  items: AdminDataRow[]
+  total: number
+  page: number
+  pageSize: number
+  columns: string[]
+  sortable: string[]
+}
+export interface AdminDataParams {
+  page: number
+  pageSize: number
+  sort: string
+  order: AdminDataOrder
+  search: string
+}
+
 // Cohort types — correct, do not change
 export interface CohortMetricsRow {
   arm: string | null
@@ -110,4 +128,24 @@ export interface CohortMetricsRow {
 export interface AdminCohortMetrics {
   rows: CohortMetricsRow[]
   headlineArm: string | null
+}
+
+export interface AdminLab {
+  slug: string
+  title: string
+  enabled: boolean
+  environmentType: string
+  courseSlug: string | null
+  gns3TemplateProjectId: string | null
+  gns3TemplateProjectIdFrr: string | null
+  gns3TemplateProjectIdIosvl2: string | null
+  templateReady: boolean
+  templateStatus: string
+}
+
+export interface AdminLabPatch {
+  enabled?: boolean
+  gns3TemplateProjectId?: string | null
+  gns3TemplateProjectIdFrr?: string | null
+  gns3TemplateProjectIdIosvl2?: string | null
 }

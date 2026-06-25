@@ -70,6 +70,28 @@ export async function getAdminUsersApi(params: {
   return authedFetch(`/admin/users?${qs.toString()}`)
 }
 
+export async function getAdminDataApi(
+  table: string,
+  params: {
+    page: number
+    pageSize: number
+    sort: string
+    order: string
+    search: string
+  }
+): Promise<Response> {
+  const qs = new URLSearchParams({
+    page: String(params.page),
+    page_size: String(params.pageSize),
+    order: params.order,
+    search: params.search,
+  })
+  if (params.sort) qs.set("sort", params.sort)
+  return authedFetch(
+    `/admin/data/${encodeURIComponent(table)}?${qs.toString()}`
+  )
+}
+
 export async function updateAdminUserApi(
   id: string,
   patch: {
@@ -81,5 +103,25 @@ export async function updateAdminUserApi(
   return authedFetch(`/admin/users/${id}`, {
     method: "PATCH",
     body: JSON.stringify(patch),
+  })
+}
+
+export async function getAdminLabsApi(): Promise<Response> {
+  return authedFetch("/admin/labs")
+}
+
+export async function updateAdminLabApi(
+  slug: string,
+  body: Record<string, unknown>
+): Promise<Response> {
+  return authedFetch(`/admin/labs/${slug}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  })
+}
+
+export async function rebuildLabTemplateApi(slug: string): Promise<Response> {
+  return authedFetch(`/admin/labs/${slug}/rebuild-template`, {
+    method: "POST",
   })
 }

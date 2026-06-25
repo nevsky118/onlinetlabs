@@ -1,5 +1,11 @@
 export type {
   AdminCohortMetrics,
+  AdminDataOrder,
+  AdminDataPage,
+  AdminDataParams,
+  AdminDataRow,
+  AdminLab,
+  AdminLabPatch,
   AdminUser,
   AdminUserPatch,
   AdminUsersOrder,
