@@ -30,6 +30,7 @@ from src.routers import (
     history_router,
     projects_router,
     sessions_router,
+    templates_router,
     ws_router,
 )
 from src.service import SessionService
@@ -140,6 +141,7 @@ app.include_router(history_router)
 app.include_router(health_router)
 app.include_router(ws_router)
 app.include_router(exec_router)
+app.include_router(templates_router)
 
 
 def main() -> None:
