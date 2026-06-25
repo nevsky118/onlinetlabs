@@ -2,6 +2,10 @@
 
 import type {
   AdminCohortMetrics,
+  AdminDataPage,
+  AdminDataParams,
+  AdminLab,
+  AdminLabPatch,
   AdminUser,
   AdminUserPatch,
   AdminUsersPage,
@@ -14,12 +18,16 @@ import type {
   UserRole,
 } from "./types"
 import {
+  getAdminDataApi,
+  getAdminLabsApi,
   getAdminUsersApi,
   getArmAnalysisApi,
   getCohortMetricsApi,
   getIdentifierEvalApi,
   getOverviewApi,
   getTkSensitivityApi,
+  rebuildLabTemplateApi,
+  updateAdminLabApi,
   updateAdminUserApi,
 } from "./api"
 
@@ -132,6 +140,23 @@ export async function fetchAdminUsers(
   }
 }
 
+export async function fetchAdminData(
+  table: string,
+  params: AdminDataParams
+): Promise<AdminDataPage> {
+  const res = await getAdminDataApi(table, params)
+  if (!res.ok) throw new Error(`fetchAdminData ${res.status}`)
+  const d = await res.json()
+  return {
+    items: d.items as AdminDataPage["items"],
+    total: d.total as number,
+    page: d.page as number,
+    pageSize: d.page_size as number,
+    columns: d.columns as string[],
+    sortable: d.sortable as string[],
+  }
+}
+
 export async function updateAdminUser(
   id: string,
   patch: AdminUserPatch
@@ -154,6 +179,77 @@ export async function updateAdminUser(
     }
     const d = await res.json()
     return { ok: true, user: mapAdminUser(d as Record<string, unknown>) }
+  } catch {
+    return { ok: false, error: "Сетевая ошибка" }
+  }
+}
+
+function mapAdminLab(d: Record<string, unknown>): AdminLab {
+  return {
+    slug: d.slug as string,
+    title: d.title as string,
+    enabled: Boolean(d.enabled),
+    environmentType: d.environment_type as string,
+    courseSlug: (d.course_slug as string) ?? null,
+    gns3TemplateProjectId: (d.gns3_template_project_id as string) ?? null,
+    gns3TemplateProjectIdFrr:
+      (d.gns3_template_project_id_frr as string) ?? null,
+    gns3TemplateProjectIdIosvl2:
+      (d.gns3_template_project_id_iosvl2 as string) ?? null,
+    templateReady: Boolean(d.template_ready),
+    templateStatus: (d.template_status as string) ?? "unknown",
+  }
+}
+
+export async function fetchAdminLabs(): Promise<AdminLab[]> {
+  const res = await getAdminLabsApi()
+  if (!res.ok) throw new Error(`fetchAdminLabs ${res.status}`)
+  const d = await res.json()
+  return (d as Record<string, unknown>[]).map(mapAdminLab)
+}
+
+export async function updateAdminLab(
+  slug: string,
+  patch: AdminLabPatch
+): Promise<{ ok: true; lab: AdminLab } | { ok: false; error: string }> {
+  const body: Record<string, unknown> = {}
+  if (patch.enabled !== undefined) body.enabled = patch.enabled
+  if (patch.gns3TemplateProjectId !== undefined)
+    body.gns3_template_project_id = patch.gns3TemplateProjectId
+  if (patch.gns3TemplateProjectIdFrr !== undefined)
+    body.gns3_template_project_id_frr = patch.gns3TemplateProjectIdFrr
+  if (patch.gns3TemplateProjectIdIosvl2 !== undefined)
+    body.gns3_template_project_id_iosvl2 = patch.gns3TemplateProjectIdIosvl2
+
+  try {
+    const res = await updateAdminLabApi(slug, body)
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      return {
+        ok: false,
+        error: (err as { detail?: string }).detail ?? `Ошибка ${res.status}`,
+      }
+    }
+    const d = await res.json()
+    return { ok: true, lab: mapAdminLab(d as Record<string, unknown>) }
+  } catch {
+    return { ok: false, error: "Сетевая ошибка" }
+  }
+}
+
+export async function rebuildLabTemplate(
+  slug: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const res = await rebuildLabTemplateApi(slug)
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      return {
+        ok: false,
+        error: (err as { detail?: string }).detail ?? `Ошибка ${res.status}`,
+      }
+    }
+    return { ok: true }
   } catch {
     return { ok: false, error: "Сетевая ошибка" }
   }

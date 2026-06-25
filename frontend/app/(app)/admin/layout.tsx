@@ -1,5 +1,5 @@
 import { forbidden, unauthorized } from "next/navigation"
-import { AdminTabs } from "./_components/admin-tabs"
+import { AdminNavBar } from "./_components/admin-nav-bar"
 import { getBackendUserRole } from "@/auth/role"
 
 export default async function AdminLayout({
@@ -13,11 +13,7 @@ export default async function AdminLayout({
 
   return (
     <div className="flex flex-1 flex-col">
-      <div className="container-wrapper">
-        <div className="container pt-4">
-          <AdminTabs />
-        </div>
-      </div>
+      <AdminNavBar />
       {children}
     </div>
   )
