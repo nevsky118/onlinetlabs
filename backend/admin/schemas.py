@@ -83,3 +83,32 @@ class UserUpdate(BaseModel):
     role: UserRole | None = None
     can_select_model: bool | None = None
     can_view_agent_logs: bool | None = None
+
+
+class AdminLab(BaseModel):
+    slug: str
+    title: str
+    enabled: bool
+    environment_type: str
+    course_slug: str | None
+    gns3_template_project_id: str | None
+    gns3_template_project_id_frr: str | None
+    gns3_template_project_id_iosvl2: str | None
+    template_ready: bool
+    template_status: str
+
+
+class AdminLabUpdate(BaseModel):
+    enabled: bool | None = None
+    gns3_template_project_id: str | None = None
+    gns3_template_project_id_frr: str | None = None
+    gns3_template_project_id_iosvl2: str | None = None
+
+
+class AdminDataResponse(BaseModel):
+    items: list[dict]
+    total: int
+    page: int
+    page_size: int
+    columns: list[str]
+    sortable: list[str]

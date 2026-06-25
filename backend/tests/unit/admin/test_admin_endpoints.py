@@ -1,4 +1,7 @@
 """Task 2: тесты чистых сборщиков admin-роутера (без подъёма FastAPI)."""
+import datetime
+import uuid
+
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
@@ -6,9 +9,11 @@ from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_in, assert_true, assert_equal
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from admin.router import require_admin, router as admin_router
+from admin.data_registry import ADMIN_TABLES
+from admin.router import router as admin_router
 from auth.dependencies import get_current_user
 from db.session import get_db
+from models.mcp_audit import MCPAudit
 from models.user import User
 
 pytestmark = [pytest.mark.unit]
@@ -296,3 +301,146 @@ class TestAdminUsersEndpoints:
 
         with autotest.step("Assert: 403"):
             assert_equal(resp.status_code, 403, "status 403")
+
+
+class TestAdminDataEndpoints:
+    """HTTP-тесты GET /admin/data/{table}."""
+
+    @pytest.fixture(autouse=True)
+    async def setup(self):
+        self.engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+        self.session_factory = async_sessionmaker(self.engine, expire_on_commit=False)
+        async with self.engine.begin() as conn:
+            await conn.run_sync(MCPAudit.__table__.create)
+
+        app = FastAPI()
+        app.include_router(admin_router, prefix="/admin")
+
+        async def _override_db():
+            async with self.session_factory() as db:
+                yield db
+
+        def _override_admin():
+            return _ADMIN_USER
+
+        def _override_student():
+            return _STUDENT_USER
+
+        app.dependency_overrides[get_db] = _override_db
+        app.dependency_overrides[get_current_user] = _override_admin
+        self.app = app
+
+        self.student_app = FastAPI()
+        self.student_app.include_router(admin_router, prefix="/admin")
+        self.student_app.dependency_overrides[get_db] = _override_db
+        self.student_app.dependency_overrides[get_current_user] = _override_student
+
+        yield
+        await self.engine.dispose()
+
+    def _client(self) -> AsyncClient:
+        return AsyncClient(transport=ASGITransport(app=self.app), base_url="http://testserver")
+
+    def _student_client(self) -> AsyncClient:
+        return AsyncClient(transport=ASGITransport(app=self.student_app), base_url="http://testserver")
+
+    async def _seed_audit_rows(self, rows: list[MCPAudit]) -> None:
+        async with self.session_factory() as db:
+            db.add_all(rows)
+            await db.commit()
+
+    @autotest.num("1927")
+    @autotest.external_id("00bc7af4-e5d0-42bb-b16a-46244508c1e9")
+    @autotest.name("GET /admin/data/{table}: не-admin получает 403")
+    async def test_00bc7af4_non_admin_403(self):
+        with autotest.step("Act: student запрашивает /admin/data/mcp_audit"):
+            async with self._student_client() as client:
+                resp = await client.get("/admin/data/mcp_audit")
+
+        with autotest.step("Assert: 403"):
+            assert_equal(resp.status_code, 403, "status 403")
+
+    @autotest.num("1928")
+    @autotest.external_id("1284e471-a594-4ab6-9d47-7bd58895e24e")
+    @autotest.name("GET /admin/data/{table}: неизвестная таблица → 404")
+    async def test_1284e471_unknown_table_404(self):
+        with autotest.step("Act: запросить несуществующую таблицу"):
+            async with self._client() as client:
+                resp = await client.get("/admin/data/not_a_table")
+
+        with autotest.step("Assert: 404, detail=Unknown table"):
+            assert_equal(resp.status_code, 404, "status 404")
+            assert_equal(resp.json()["detail"], "Unknown table", "detail")
+
+    @autotest.num("1929")
+    @autotest.external_id("d797ce5c-1aca-41f5-9862-d693b3d0bd05")
+    @autotest.name("GET /admin/data/mcp_audit: пагинация и total")
+    async def test_d797ce5c_pagination_and_total(self):
+        now = datetime.datetime.now(datetime.timezone.utc)
+        rows = [
+            MCPAudit(id=str(uuid.uuid4()), user_id="u1", session_id="s1", tool="ping", kind="observe", ts=now, success=True),
+            MCPAudit(id=str(uuid.uuid4()), user_id="u2", session_id="s2", tool="pong", kind="act", ts=now, success=False),
+        ]
+        await self._seed_audit_rows(rows)
+
+        with autotest.step("Act: page_size=1, page=1"):
+            async with self._client() as client:
+                resp = await client.get("/admin/data/mcp_audit?page=1&page_size=1")
+
+        with autotest.step("Assert: 200, total=2, items=1, columns совпадают со spec"):
+            assert_equal(resp.status_code, 200, "status 200")
+            body = resp.json()
+            assert_equal(body["total"], 2, "total=2")
+            assert_equal(len(body["items"]), 1, "items len=1")
+            assert_equal(body["page"], 1, "page=1")
+            assert_equal(body["page_size"], 1, "page_size=1")
+            spec_cols = ADMIN_TABLES["mcp_audit"].columns
+            assert_equal(body["columns"], spec_cols, "columns == spec.columns")
+
+    @autotest.num("1930")
+    @autotest.external_id("103b8e07-0ab4-467c-b6e7-f0f8c1b8869f")
+    @autotest.name("GET /admin/data/mcp_audit: search сужает результаты")
+    async def test_103b8e07_search_narrows(self):
+        now = datetime.datetime.now(datetime.timezone.utc)
+        rows = [
+            MCPAudit(id=str(uuid.uuid4()), user_id="u1", session_id="s1", tool="gns3.list_nodes", kind="observe", ts=now, success=True),
+            MCPAudit(id=str(uuid.uuid4()), user_id="u2", session_id="s2", tool="docker.run", kind="act", ts=now, success=True),
+        ]
+        await self._seed_audit_rows(rows)
+
+        with autotest.step("Act: search=gns3"):
+            async with self._client() as client:
+                resp = await client.get("/admin/data/mcp_audit?search=gns3")
+
+        with autotest.step("Assert: возвращает только строку с gns3"):
+            assert_equal(resp.status_code, 200, "status 200")
+            body = resp.json()
+            assert_equal(body["total"], 1, "total=1 после поиска")
+            assert_true("gns3" in body["items"][0]["tool"], "tool содержит gns3")
+
+    @autotest.num("1931")
+    @autotest.external_id("d998c922-fc26-4596-b3a3-627797bd7ff7")
+    @autotest.name("GET /admin/data/mcp_audit: сортировка asc vs desc по ts")
+    async def test_d998c922_sort_asc_vs_desc(self):
+        t1 = datetime.datetime(2025, 1, 1, tzinfo=datetime.timezone.utc)
+        t2 = datetime.datetime(2025, 6, 1, tzinfo=datetime.timezone.utc)
+        rows = [
+            MCPAudit(id=str(uuid.uuid4()), user_id="u1", session_id="s1", tool="a", kind="observe", ts=t1, success=True),
+            MCPAudit(id=str(uuid.uuid4()), user_id="u2", session_id="s2", tool="b", kind="observe", ts=t2, success=True),
+        ]
+        await self._seed_audit_rows(rows)
+
+        with autotest.step("Act: order=asc"):
+            async with self._client() as client:
+                resp_asc = await client.get("/admin/data/mcp_audit?sort=ts&order=asc")
+
+        with autotest.step("Act: order=desc"):
+            async with self._client() as client:
+                resp_desc = await client.get("/admin/data/mcp_audit?sort=ts&order=desc")
+
+        with autotest.step("Assert: asc первый ts < desc первый ts"):
+            assert_equal(resp_asc.status_code, 200, "asc 200")
+            assert_equal(resp_desc.status_code, 200, "desc 200")
+            first_asc = resp_asc.json()["items"][0]["ts"]
+            first_desc = resp_desc.json()["items"][0]["ts"]
+            assert_true(first_asc < first_desc, "asc первый раньше desc первого")

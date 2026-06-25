@@ -99,6 +99,12 @@ class Gns3ServiceClient:
         resp.raise_for_status()
         return resp.json()
 
+    async def build_template(self, lab_slug: str) -> str:
+        """Построить GNS3-шаблон для лабы в gns3-service. Возвращает template_project_id."""
+        resp = await self._client.post(f"/v1/templates/{lab_slug}/build", timeout=600.0)
+        resp.raise_for_status()
+        return resp.json()["template_project_id"]
+
     async def close(self) -> None:
         """Закрыть HTTP-клиент и его соединения."""
         await self._client.aclose()
