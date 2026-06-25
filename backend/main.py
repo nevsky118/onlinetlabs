@@ -31,6 +31,7 @@ from escalation.router import router as escalation_router
 from experiment.router import router as experiment_router
 from gns3_service_client import Gns3ServiceClient
 from instructor.router import router as instructor_router
+from labs.router import internal_router as labs_internal_router
 from labs.router import router as labs_router
 from mcp_client.client import MCPClient
 from middleware.request_id import RequestIDMiddleware
@@ -170,6 +171,7 @@ app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(consent_router, prefix="/users/me", tags=["consent"])
 app.include_router(courses_router, prefix="/courses", tags=["courses"])
 app.include_router(labs_router, prefix="/labs", tags=["labs"])
+app.include_router(labs_internal_router, prefix="/internal", tags=["internal"])
 app.include_router(progress_router, prefix="/users/me/progress", tags=["progress"])
 app.include_router(instructor_router, prefix="/instructor", tags=["instructor"])
 app.include_router(sessions_router, prefix="/users/me/sessions", tags=["sessions"])

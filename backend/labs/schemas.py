@@ -1,4 +1,22 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
+
+
+class SetLabTemplateRequest(BaseModel):
+    """Тело запроса привязки GNS3 template_project_id к лабе."""
+
+    template_project_id: str
+    variant: Literal["default", "frr", "iosvl2"] = "default"
+
+
+class LabTemplateResponse(BaseModel):
+    """Поля лабы, относящиеся к GNS3-шаблонам."""
+
+    slug: str
+    gns3_template_project_id: str | None
+    gns3_template_project_id_frr: str | None
+    gns3_template_project_id_iosvl2: str | None
 
 
 class LabCreate(BaseModel):

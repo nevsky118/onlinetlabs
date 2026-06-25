@@ -46,3 +46,30 @@ async def get_lab_by_slug(db: AsyncSession, slug: str) -> Lab | None:
         select(Lab).options(selectinload(Lab.steps)).where(Lab.slug == slug)
     )
     return result.scalar_one_or_none()
+
+
+_VARIANT_COLUMN: dict[str, str] = {
+    "default": "gns3_template_project_id",
+    "frr": "gns3_template_project_id_frr",
+    "iosvl2": "gns3_template_project_id_iosvl2",
+}
+
+
+async def set_lab_template(
+    db: AsyncSession, slug: str, template_project_id: str, variant: str = "default"
+) -> Lab:
+    """Привязывает GNS3 template_project_id к лабе по варианту среды.
+
+    variant: "default" | "frr" | "iosvl2"
+    Возвращает обновлённую Lab. Поднимает HTTPException(404) при неизвестном slug.
+    """
+    from fastapi import HTTPException, status
+
+    lab = await db.get(Lab, slug)
+    if lab is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lab not found")
+    column = _VARIANT_COLUMN[variant]
+    setattr(lab, column, template_project_id)
+    await db.commit()
+    await db.refresh(lab)
+    return lab
