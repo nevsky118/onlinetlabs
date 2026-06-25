@@ -40,7 +40,7 @@ def _build_call_tool_result(payload: str = '{"ok": true}'):
 
 
 class TestMCPClientRetry:
-    @autotest.num("1820")
+    @autotest.num("1830")
     @autotest.external_id("a0b1c2d3-e4f5-4a6b-8c7d-720000000001")
     @autotest.name("MCPClient._call_tool: успех со второй попытки после RequestError")
     async def test_a0b1c2d3_retry_succeeds_on_second_attempt(self):
@@ -79,7 +79,7 @@ class TestMCPClientRetry:
         with autotest.step("Проверяем, что вернулся распарсенный JSON-результат"):
             assert_equal(result, {"ok": True}, "результат должен быть распарсенным JSON")
 
-    @autotest.num("1821")
+    @autotest.num("1831")
     @autotest.external_id("b1c2d3e4-f5a6-4b7c-9d8e-720000000002")
     @autotest.name(
         "MCPClient._call_tool: три падения RequestError → reraise после 3 попыток"
@@ -108,7 +108,7 @@ class TestMCPClientRetry:
         with autotest.step("Проверяем число попыток"):
             assert_equal(call_count, 3, "должно быть ровно 3 попытки")
 
-    @autotest.num("1822")
+    @autotest.num("1832")
     @autotest.external_id("c2d3e4f5-a6b7-4c8d-9e8f-720000000003")
     @autotest.name("MCPClient._call_tool: конфиг tenacity (stop_after_attempt=3)")
     def test_c2d3e4f5_retry_config_stop_after_attempt(self):
@@ -122,7 +122,7 @@ class TestMCPClientRetry:
                 "должно быть 3 попытки",
             )
 
-    @autotest.num("1823")
+    @autotest.num("1833")
     @autotest.external_id("d3e4f5a6-b7c8-4d9e-8a0f-720000000004")
     @autotest.name(
         "MCPClient._call_tool: wait_exponential(multiplier=0.3, max=2.0)"
