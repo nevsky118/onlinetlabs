@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth.dependencies import require_admin
+from auth.dependencies import require_admin, require_internal_caller
 from db.session import get_db
-from labs.schemas import LabCreate, LabDetailResponse, LabResponse, LabStepResponse
-from labs.service import create_lab, delete_lab, get_all_labs, get_lab_by_slug
+from labs.schemas import LabCreate, LabDetailResponse, LabResponse, LabStepResponse, LabTemplateResponse, SetLabTemplateRequest
+from labs.service import create_lab, delete_lab, get_all_labs, get_lab_by_slug, set_lab_template
 
 router = APIRouter()
+internal_router = APIRouter()
 
 
 @router.get("", response_model=list[LabResponse])
@@ -93,4 +94,25 @@ async def get_lab(slug: str, db: AsyncSession = Depends(get_db)):
             )
             for s in lab.steps
         ],
+    )
+
+
+@internal_router.post(
+    "/labs/{slug}/gns3-template",
+    response_model=LabTemplateResponse,
+    tags=["internal"],
+)
+async def set_gns3_template(
+    slug: str,
+    body: SetLabTemplateRequest,
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(require_internal_caller),
+):
+    """Привязывает GNS3 template_project_id к лабе. Только server-to-server."""
+    lab = await set_lab_template(db, slug, body.template_project_id, body.variant)
+    return LabTemplateResponse(
+        slug=lab.slug,
+        gns3_template_project_id=lab.gns3_template_project_id,
+        gns3_template_project_id_frr=lab.gns3_template_project_id_frr,
+        gns3_template_project_id_iosvl2=lab.gns3_template_project_id_iosvl2,
     )

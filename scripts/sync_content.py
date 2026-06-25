@@ -5,6 +5,7 @@ Or:    make sync-content
 """
 
 import asyncio
+import os
 import re
 from pathlib import Path
 
@@ -17,7 +18,7 @@ from models.course import Course
 from models.lab import Lab
 
 
-CONTENT_DIR = Path(__file__).resolve().parent.parent / "frontend" / "content"
+CONTENT_DIR = Path(os.environ["CONTENT_DIR"]) if os.environ.get("CONTENT_DIR") else Path(__file__).resolve().parent.parent / "frontend" / "content"
 
 
 def parse_frontmatter(file_path: Path) -> dict | None:
@@ -70,6 +71,7 @@ async def sync_labs(db: AsyncSession) -> int:
         lab.title = fm.get("title", slug)
         lab.description = fm.get("description")
         lab.difficulty = fm.get("difficulty", "beginner")
+        lab.environment_type = fm.get("environment", "none")
         lab.meta = {"tags": fm.get("tags", []), "tasks": fm.get("tasks"), "skill": fm.get("skill")}
         count += 1
     await db.commit()

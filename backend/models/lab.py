@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -22,6 +22,7 @@ class Lab(Base):
     title: Mapped[str] = mapped_column(String(500))
     description: Mapped[str | None] = mapped_column(Text)
     difficulty: Mapped[str] = mapped_column(String(50), default="beginner")
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     course_slug: Mapped[str | None] = mapped_column(
         String(255), ForeignKey("courses.slug", ondelete="SET NULL"), nullable=True
     )

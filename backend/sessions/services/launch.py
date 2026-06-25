@@ -96,6 +96,9 @@ async def launch_session(
     if lab is None:
         raise ValueError("Lab не найдена")
 
+    if not lab.enabled:
+        raise ValueError("Лаба отключена")
+
     if lab_slug.endswith("-ccna"):
         template_pid = lab.gns3_template_project_id_iosvl2
         if not template_pid:

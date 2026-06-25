@@ -1,0 +1,74 @@
+name: Provision GNS3 templates
+
+# Ручной запуск: Actions → "Provision GNS3 templates" → Run workflow.
+# Строит GNS3-шаблоны в gns3-service и привязывает их id к лабам через /internal API.
+on:
+  workflow_dispatch:
+    inputs:
+      lab:
+        description: "Slug лабы (или 'all' для всех)"
+        required: false
+        default: all
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Known hosts
+        run: ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Build templates + bind ids
+        run: |
+          ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" "
+            set -e
+            cd /opt/onlinetlabs/gns3
+            dc='docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.kvm.yml -f docker-compose.net.yml --env-file .env.prod'
+            TOKEN=\$(grep '^INTERNAL_API_TOKEN=' /opt/onlinetlabs/deployment/prod/backend.env | cut -d= -f2)
+
+            provision_lab() {
+              SLUG=\$1
+              SCRIPT=\$2
+              echo \">>> \$SLUG: running \$SCRIPT\"
+              OUT=\$(\$dc exec -T gns3-service python scripts/\$SCRIPT)
+              PID=\$(printf '%s' \"\$OUT\" | grep -oiE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' | tail -1)
+              echo \">>> \$SLUG: template_project_id=\$PID\"
+              printf '{\"template_project_id\":\"%s\"}' \"\$PID\" | \
+                docker exec -i prod-backend-1 curl -fsS -X POST \
+                  http://localhost:8000/internal/labs/\$SLUG/gns3-template \
+                  -H \"Authorization: Bearer \$TOKEN\" \
+                  -H 'Content-Type: application/json' \
+                  --data @-
+              echo \">>> \$SLUG: bound OK\"
+            }
+
+            case '${{ github.event.inputs.lab }}' in
+              lan-static-ip)
+                provision_lab lan-static-ip build_lan_static_ip_template.py
+                ;;
+              lan-static-ip-b)
+                provision_lab lan-static-ip-b build_lan_static_ip_template.py
+                ;;
+              dhcp-basics)
+                provision_lab dhcp-basics build_dhcp_template.py
+                ;;
+              inter-subnet-routing)
+                provision_lab inter-subnet-routing build_inter_subnet_routing_template.py
+                ;;
+              all)
+                provision_lab lan-static-ip       build_lan_static_ip_template.py
+                provision_lab lan-static-ip-b     build_lan_static_ip_template.py
+                provision_lab dhcp-basics         build_dhcp_template.py
+                provision_lab inter-subnet-routing build_inter_subnet_routing_template.py
+                ;;
+              *)
+                echo \"Unknown lab: '${{ github.event.inputs.lab }}'\"
+                exit 1
+                ;;
+            esac
+          "

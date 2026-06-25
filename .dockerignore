@@ -9,6 +9,8 @@
 **/.next-docs
 .git
 frontend
+!frontend/content
+!frontend/content/**
 gns3
 !gns3/gns3-service
 !gns3/gns3-mcp

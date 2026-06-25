@@ -113,6 +113,7 @@ jobs:
             # Caddyfile в bind-mount: up -d не пересоздаёт caddy → применяем конфиг явно
             \$dc exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile 2>/dev/null || \$dc restart caddy
             \$dc run --rm backend alembic upgrade head
+            \$dc run --rm backend python -m scripts.sync_content
             \$dc ps
             docker image prune -f
           "
