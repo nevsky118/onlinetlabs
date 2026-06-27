@@ -29,3 +29,12 @@ class ConsentResponse(BaseModel):
 class ConsentRevokeResponse(BaseModel):
     """Ответ DELETE /users/me/consent."""
     revoked: int
+
+
+class ConsentItem(BaseModel):
+    """Элемент списка GET /users/me/consent."""
+    scope: str
+    observe: bool
+    act: bool
+    granted_at: datetime
+    model_config = {"from_attributes": True}
