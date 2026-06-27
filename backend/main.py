@@ -24,6 +24,7 @@ from admin.router import router as admin_router
 from analytics.router import router as analytics_router
 from auth.router import router as auth_router
 from control_interface.router import router as consent_router
+from users.router import router as users_router
 from chat.router import router as chat_router
 from courses.router import router as courses_router
 from db.session import async_session
@@ -169,6 +170,7 @@ app.include_router(admin_router, prefix="/admin", tags=["admin"])
 app.include_router(analytics_router, prefix="/analytics", tags=["analytics"])
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(consent_router, prefix="/users/me", tags=["consent"])
+app.include_router(users_router, prefix="/users/me", tags=["users"])
 app.include_router(courses_router, prefix="/courses", tags=["courses"])
 app.include_router(labs_router, prefix="/labs", tags=["labs"])
 app.include_router(labs_internal_router, prefix="/internal", tags=["internal"])

@@ -1,6 +1,6 @@
 "use client"
 
-import { GraduationCap, LogOut } from "lucide-react"
+import { GraduationCap, LogOut, Settings } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -104,7 +104,12 @@ export function UserMenu({ user }: UserMenuProps) {
               </Link>
             </DropdownMenuItem>
           ) : null}
-          <DropdownMenuItem disabled>Аккаунт</DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/settings">
+              Настройки
+              <Settings className="ml-auto" />
+            </Link>
+          </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={handleSignOut}>
