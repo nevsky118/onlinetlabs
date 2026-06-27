@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import Enum
 from uuid import uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.base import Base
@@ -37,6 +37,7 @@ class User(Base):
     can_select_model: Mapped[bool | None] = mapped_column(default=None)
     can_view_agent_logs: Mapped[bool | None] = mapped_column(default=None)
     default_model_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true", default=False)
 
     accounts: Mapped[list["Account"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"

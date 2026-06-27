@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth.dependencies import get_current_user
+from auth.dependencies import get_current_user, require_active_user
 from chat.persistence import save_assistant_message, save_user_message, to_openai_messages
 from chat.schemas import ChatStreamRequest
 from chat.stream_protocol import (
@@ -325,6 +325,7 @@ async def chat_stream(
     body: ChatStreamRequest,
     request: Request,
     current_user: dict = Depends(get_current_user),
+    _active: dict = Depends(require_active_user),
     db: AsyncSession = Depends(get_db),
     mcp_client=Depends(get_mcp_client),
 ):

@@ -50,7 +50,12 @@ async def create_user(
     role: UserRole = UserRole.STUDENT,
 ) -> User:
     """Создаёт пользователя в БД. При дубле email бросает UserAlreadyExistsError."""
-    user = User(email=email, password_hash=password_hash, name=name, role=role.value)
+    # Credential-регистрация (тесты/внутренний путь) — сразу активна. Реальные
+    # пользователи заходят через GitHub OAuth (upsert_github_user) и создаются
+    # НЕактивными: их активирует админ в админке.
+    user = User(
+        email=email, password_hash=password_hash, name=name, role=role.value, is_active=True
+    )
     db.add(user)
     try:
         await db.commit()

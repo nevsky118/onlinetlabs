@@ -48,7 +48,10 @@ function UserRow({
   onUpdate: (
     id: string,
     patch: Partial<
-      Pick<AdminUser, "role" | "canSelectModel" | "canViewAgentLogs">
+      Pick<
+        AdminUser,
+        "role" | "isActive" | "canSelectModel" | "canViewAgentLogs"
+      >
     >
   ) => Promise<void>
 }) {
@@ -56,7 +59,10 @@ function UserRow({
 
   const handle = async (
     patch: Partial<
-      Pick<AdminUser, "role" | "canSelectModel" | "canViewAgentLogs">
+      Pick<
+        AdminUser,
+        "role" | "isActive" | "canSelectModel" | "canViewAgentLogs"
+      >
     >
   ) => {
     setPending(true)
@@ -111,6 +117,15 @@ function UserRow({
             </SelectGroup>
           </SelectContent>
         </Select>
+      </td>
+      <td className="py-3 pr-4">
+        <Switch
+          size="sm"
+          checked={user.isActive}
+          onCheckedChange={(v) => handle({ isActive: v })}
+          disabled={pending}
+          aria-label="Активен"
+        />
       </td>
       <td className="py-3 pr-4">
         <Switch
@@ -172,7 +187,10 @@ export function UsersView({ data, error, currentUserId }: UsersViewProps) {
     async (
       id: string,
       patch: Partial<
-        Pick<AdminUser, "role" | "canSelectModel" | "canViewAgentLogs">
+        Pick<
+          AdminUser,
+          "role" | "isActive" | "canSelectModel" | "canViewAgentLogs"
+        >
       >
     ) => {
       const result = await updateAdminUser(id, patch)
@@ -292,6 +310,7 @@ export function UsersView({ data, error, currentUserId }: UsersViewProps) {
                         />
                       </button>
                     </th>
+                    <th className="py-2 pr-4 text-left font-medium">Активен</th>
                     <th className="py-2 pr-4 text-left font-medium">
                       Выбор модели
                     </th>

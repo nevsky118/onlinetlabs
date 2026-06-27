@@ -121,6 +121,7 @@ function mapAdminUser(d: Record<string, unknown>): AdminUser {
     email: d.email as string,
     image: (d.image as string) ?? null,
     role: d.role as UserRole,
+    isActive: Boolean(d.is_active),
     canSelectModel: Boolean(d.can_select_model),
     canViewAgentLogs: Boolean(d.can_view_agent_logs),
   }
@@ -163,6 +164,7 @@ export async function updateAdminUser(
 ): Promise<{ ok: true; user: AdminUser } | { ok: false; error: string }> {
   const body: Record<string, unknown> = {}
   if (patch.role !== undefined) body.role = patch.role
+  if (patch.isActive !== undefined) body.is_active = patch.isActive
   if (patch.canSelectModel !== undefined)
     body.can_select_model = patch.canSelectModel
   if (patch.canViewAgentLogs !== undefined)

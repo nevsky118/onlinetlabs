@@ -36,14 +36,15 @@ def can_view_session_activity(user: dict, session) -> bool:
     return session.user_id == user["id"] or user.get("role") in ("instructor", "admin")
 
 
-def create_backend_token(user_id: str, role: str, can_select: bool = False, can_view_logs: bool = False) -> str:
-    """Выдать HS256 JWT с claims sub, role, can_select, can_view_logs, время жизни 5 минут."""
+def create_backend_token(user_id: str, role: str, can_select: bool = False, can_view_logs: bool = False, is_active: bool = False) -> str:
+    """Выдать HS256 JWT с claims sub, role, can_select, can_view_logs, is_active, время жизни 5 минут."""
     now = datetime.now(timezone.utc)
     payload = {
         "sub": user_id,
         "role": role,
         "can_select": can_select,
         "can_view_logs": can_view_logs,
+        "is_active": is_active,
         "exp": now + timedelta(minutes=TOKEN_EXPIRE_MINUTES),
         "iat": now,
     }
@@ -67,7 +68,7 @@ async def get_current_user(
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
             )
-        return {"id": user_id, "role": role, "can_select": bool(payload.get("can_select")), "can_view_logs": bool(payload.get("can_view_logs"))}
+        return {"id": user_id, "role": role, "can_select": bool(payload.get("can_select")), "can_view_logs": bool(payload.get("can_view_logs")), "is_active": bool(payload.get("is_active"))}
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token"
@@ -88,7 +89,7 @@ async def get_current_user_optional(
         role = payload.get("role")
         if user_id is None:
             return None
-        return {"id": user_id, "role": role, "can_select": bool(payload.get("can_select")), "can_view_logs": bool(payload.get("can_view_logs"))}
+        return {"id": user_id, "role": role, "can_select": bool(payload.get("can_select")), "can_view_logs": bool(payload.get("can_view_logs")), "is_active": bool(payload.get("is_active"))}
     except JWTError:
         return None
 
@@ -112,6 +113,13 @@ def require_instructor(current_user: dict = Depends(get_current_user)) -> dict:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Instructor only"
         )
+    return current_user
+
+
+def require_active_user(current_user: dict = Depends(get_current_user)) -> dict:
+    """Пропускает только активированных пользователей. Иначе 403."""
+    if not current_user.get("is_active"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Аккаунт не активирован")
     return current_user
 
 
@@ -142,7 +150,7 @@ async def verify_jwt_for_ws(token: str | None) -> dict | None:
         role = payload.get("role")
         if user_id is None:
             return None
-        return {"id": user_id, "role": role, "can_select": bool(payload.get("can_select")), "can_view_logs": bool(payload.get("can_view_logs"))}
+        return {"id": user_id, "role": role, "can_select": bool(payload.get("can_select")), "can_view_logs": bool(payload.get("can_view_logs")), "is_active": bool(payload.get("is_active"))}
     except JWTError as exc:
         logger.warning("ws jwt verify failed", extra={"error": str(exc)})
         return None

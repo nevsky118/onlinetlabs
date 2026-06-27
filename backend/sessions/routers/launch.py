@@ -8,7 +8,7 @@ from fastapi import Request as FastAPIRequest
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth.dependencies import get_current_user
+from auth.dependencies import get_current_user, require_active_user
 from db.session import get_db, get_db_factory
 from deps import get_gns3_client, get_monitor_registry
 from rate_limit import limiter
@@ -29,6 +29,7 @@ async def launch_endpoint(
     request: FastAPIRequest,
     body: LearningSessionCreate,
     current_user: dict = Depends(get_current_user),
+    _active: dict = Depends(require_active_user),
     db: AsyncSession = Depends(get_db),
     db_factory=Depends(get_db_factory),
     gns3_client=Depends(get_gns3_client),
