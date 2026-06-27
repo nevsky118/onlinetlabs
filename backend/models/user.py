@@ -36,6 +36,7 @@ class User(Base):
     control_arm: Mapped[str | None] = mapped_column(String(20), default=None)
     can_select_model: Mapped[bool | None] = mapped_column(default=None)
     can_view_agent_logs: Mapped[bool | None] = mapped_column(default=None)
+    default_model_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     accounts: Mapped[list["Account"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
