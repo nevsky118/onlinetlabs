@@ -1,11 +1,6 @@
 import type { Metadata } from "next"
 import { forbidden, notFound, unauthorized } from "next/navigation"
 import { getBackendUserRole } from "@/auth/role"
-import {
-  PageHeader,
-  PageHeaderDescription,
-  PageHeaderHeading,
-} from "@/components/page-header"
 import { fetchAdminData } from "@/modules/admin/actions"
 import { AdminDataTable } from "@/modules/admin/components/admin-data-table"
 import { searchParamsCache } from "@/modules/admin/lib/data-table-params"
@@ -53,13 +48,22 @@ export default async function AdminLogTablePage({
   }
 
   return (
-    <div className="flex flex-1 flex-col">
-      <PageHeader>
-        <PageHeaderHeading>{meta.label}</PageHeaderHeading>
-        <PageHeaderDescription>Таблица: {table}</PageHeaderDescription>
-      </PageHeader>
-      <div className="container-wrapper section-soft flex-1 pb-6">
-        <div className="container">
+    <div className="flex h-[calc(100svh-var(--header-height)-var(--footer-height)-3rem)] flex-col">
+      {/* Compact header — keeps the data table in the viewport instead of a full-page hero */}
+      <div className="border-grid shrink-0 border-b">
+        <div className="container-wrapper">
+          <div className="container flex flex-wrap items-baseline gap-x-3 gap-y-1 py-4">
+            <h1 className="text-xl font-semibold tracking-tight">
+              {meta.label}
+            </h1>
+            <span className="font-mono text-xs text-muted-foreground">
+              {table}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="container-wrapper flex min-h-0 flex-1 flex-col">
+        <div className="container flex min-h-0 flex-1 flex-col py-4">
           <AdminDataTable data={data} error={error} />
         </div>
       </div>
