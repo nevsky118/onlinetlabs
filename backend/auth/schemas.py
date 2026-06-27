@@ -47,3 +47,9 @@ class UserResponse(BaseModel):
     name: str | None
     image: str | None
     role: str
+
+
+class ActivateRequest(BaseModel):
+    """Тело запроса на активацию аккаунта по email."""
+
+    email: str

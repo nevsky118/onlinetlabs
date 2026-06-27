@@ -8,6 +8,7 @@ export interface AdminUser {
   email: string
   image: string | null
   role: UserRole
+  isActive: boolean
   canSelectModel: boolean
   canViewAgentLogs: boolean
 }
@@ -33,6 +34,7 @@ export interface AdminUsersParams {
 
 export interface AdminUserPatch {
   role?: UserRole
+  isActive?: boolean
   canSelectModel?: boolean
   canViewAgentLogs?: boolean
 }

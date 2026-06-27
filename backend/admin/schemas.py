@@ -70,6 +70,7 @@ class UserListItem(BaseModel):
     role: str
     can_select_model: bool | None
     can_view_agent_logs: bool | None
+    is_active: bool
 
 
 class UserListResponse(BaseModel):
@@ -83,6 +84,7 @@ class UserUpdate(BaseModel):
     role: UserRole | None = None
     can_select_model: bool | None = None
     can_view_agent_logs: bool | None = None
+    is_active: bool | None = None
 
 
 class AdminLab(BaseModel):

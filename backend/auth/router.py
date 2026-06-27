@@ -12,6 +12,7 @@ from auth.dependencies import (
 from config import settings
 from rate_limit import exchange_rate_limit_key, limiter
 from auth.schemas import (
+    ActivateRequest,
     ExchangeRequest,
     GitHubCallbackRequest,
     LoginRequest,
@@ -123,7 +124,7 @@ async def exchange(
 
     can_select = may_select_model(user.role, user.can_select_model, settings.agents.selectable_roles)
     can_view_logs = may_view_agent_logs(user.role, user.can_view_agent_logs, settings.observability.viewer_roles)
-    token = create_backend_token(user_id=user.id, role=user.role, can_select=can_select, can_view_logs=can_view_logs)
+    token = create_backend_token(user_id=user.id, role=user.role, can_select=can_select, can_view_logs=can_view_logs, is_active=user.is_active)
     return TokenResponse(access_token=token)
 
 
@@ -162,3 +163,18 @@ async def github_callback(
     return UserResponse(
         id=user.id, email=user.email, name=user.name, image=user.image, role=user.role
     )
+
+
+@router.post("/activate", status_code=200)
+async def activate(
+    req: ActivateRequest,
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(require_internal_caller),
+):
+    """Активирует аккаунт пользователя по email. Только server-to-server."""
+    user = await get_user_by_email(db, req.email)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.is_active = True
+    await db.commit()
+    return {"email": req.email, "is_active": True}

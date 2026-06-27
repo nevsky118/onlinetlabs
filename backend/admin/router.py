@@ -318,6 +318,7 @@ async def list_users(
                 role=u.role,
                 can_select_model=u.can_select_model,
                 can_view_agent_logs=u.can_view_agent_logs,
+                is_active=u.is_active,
             )
             for u in rows
         ],
@@ -351,6 +352,8 @@ async def update_user(
         user.can_select_model = body.can_select_model
     if body.can_view_agent_logs is not None:
         user.can_view_agent_logs = body.can_view_agent_logs
+    if body.is_active is not None:
+        user.is_active = body.is_active
 
     await db.commit()
     await db.refresh(user)
@@ -363,6 +366,7 @@ async def update_user(
         role=user.role,
         can_select_model=user.can_select_model,
         can_view_agent_logs=user.can_view_agent_logs,
+        is_active=user.is_active,
     )
 
 

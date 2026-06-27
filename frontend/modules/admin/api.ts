@@ -96,6 +96,7 @@ export async function updateAdminUserApi(
   id: string,
   patch: {
     role?: string
+    is_active?: boolean
     can_select_model?: boolean
     can_view_agent_logs?: boolean
   }
