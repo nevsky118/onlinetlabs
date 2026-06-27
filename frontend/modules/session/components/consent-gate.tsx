@@ -1,18 +1,44 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/ui/button"
+
+// Локальная отметка решения (принял/отклонил) — чтобы баннер не появлялся
+// повторно при каждом hard refresh. Сервер — источник правды для «принял».
+const DISMISS_KEY = "study_consent_dismissed"
 
 interface ConsentGateProps {
   onConsented?: () => void
 }
 
 export function ConsentGate({ onConsented }: ConsentGateProps) {
+  const [show, setShow] = useState(false)
   const [pending, setPending] = useState(false)
-  const [dismissed, setDismissed] = useState(false)
 
-  if (dismissed) return null
+  useEffect(() => {
+    let cancelled = false
+    async function check() {
+      // Уже решено локально — не показываем.
+      if (localStorage.getItem(DISMISS_KEY)) return
+      try {
+        const r = await fetch("/api/users/consent", { cache: "no-store" })
+        if (!r.ok) return
+        const items: { scope: string }[] = await r.json()
+        const granted = items.some((c) => c.scope === "study")
+        if (granted) localStorage.setItem(DISMISS_KEY, "1")
+        if (!cancelled && !granted) setShow(true)
+      } catch {
+        // Сетевая ошибка — не блокируем сессию баннером.
+      }
+    }
+    check()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  if (!show) return null
 
   async function handleAccept() {
     setPending(true)
@@ -23,7 +49,8 @@ export function ConsentGate({ onConsented }: ConsentGateProps) {
         body: JSON.stringify({ scope: "study", observe: true, act: true }),
       })
       if (!r.ok) throw new Error(`${r.status}`)
-      setDismissed(true)
+      localStorage.setItem(DISMISS_KEY, "1")
+      setShow(false)
       toast.success("Согласие получено")
       onConsented?.()
     } catch {
@@ -34,7 +61,8 @@ export function ConsentGate({ onConsented }: ConsentGateProps) {
   }
 
   function handleDecline() {
-    setDismissed(true)
+    localStorage.setItem(DISMISS_KEY, "1")
+    setShow(false)
   }
 
   return (
@@ -43,14 +71,17 @@ export function ConsentGate({ onConsented }: ConsentGateProps) {
       <p className="mt-1 text-sm text-muted-foreground">
         Платформа собирает данные о действиях в лабораторной среде для адаптации
         обучения. Данные обезличены и используются только для исследовательских
-        целей.
+        целей. Изменить решение можно в{" "}
+        <a href="/settings" className="underline underline-offset-2">
+          настройках
+        </a>
+        .
       </p>
       <div className="mt-3 flex gap-2">
         <Button
           type="button"
           size="sm"
           disabled={pending}
-          className="rounded-none"
           onClick={handleAccept}
         >
           {pending ? "…" : "Принять"}
@@ -60,7 +91,6 @@ export function ConsentGate({ onConsented }: ConsentGateProps) {
           variant="outline"
           size="sm"
           disabled={pending}
-          className="rounded-none"
           onClick={handleDecline}
         >
           Отклонить

@@ -3,8 +3,8 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.dependencies import get_current_user
-from control_interface.consent import grant, revoke
-from control_interface.schemas import ConsentGrantRequest, ConsentResponse, ConsentRevokeResponse
+from control_interface.consent import grant, revoke, list_active
+from control_interface.schemas import ConsentGrantRequest, ConsentItem, ConsentResponse, ConsentRevokeResponse
 from db.session import get_db
 
 router = APIRouter()
@@ -19,6 +19,15 @@ async def grant_consent(
     """Выдаёт или обновляет согласие текущего пользователя."""
     c = await grant(db, current_user["id"], req.scope, req.observe, req.act, req.data_policy)
     return ConsentResponse.model_validate(c)
+
+
+@router.get("/consent", response_model=list[ConsentItem])
+async def list_consent(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Возвращает активные согласия текущего пользователя."""
+    return await list_active(db, current_user["id"])
 
 
 @router.delete("/consent", response_model=ConsentRevokeResponse)
