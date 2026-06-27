@@ -1,14 +1,14 @@
 """add users.is_active column
 
 Revision ID: 78dc1fecb74e
-Revises: 310618cd8071
+Revises: 482644690a75
 Create Date: 2026-06-27
 """
 from alembic import op
 import sqlalchemy as sa
 
 revision = "78dc1fecb74e"
-down_revision = "310618cd8071"
+down_revision = "482644690a75"
 branch_labels = None
 depends_on = None
 
