@@ -14,6 +14,11 @@
 	@ws path /ws/*
 	reverse_proxy @ws backend:8000
 
+	# GNS3 Web UI студента: SPA + ассеты (/static/web-ui/*) и API/websockets (/v3/*)
+	# → gns3-server. Без этого ссылка auth-relay упирается в Next.js 404.
+	@gns3 path /static/web-ui/* /v3/*
+	reverse_proxy @gns3 gns3-server:3080
+
 	# Всё остальное → Next.js фронт (он сам проксирует /api/* на backend внутри сети)
 	reverse_proxy frontend:3000
 

@@ -82,6 +82,9 @@ services:
     depends_on:
       - frontend
       - backend
+    networks:
+      - default
+      - shared          # общая сеть с gns3-стеком: проксируем GNS3 Web UI на gns3-server
 
 networks:
   shared:
