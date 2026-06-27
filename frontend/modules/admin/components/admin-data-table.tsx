@@ -40,7 +40,7 @@ function formatCell(value: unknown): React.ReactNode {
   }
   const s = String(value)
   return (
-    <span title={s} className="max-w-[260px] truncate block">
+    <span title={s} className="block max-w-[260px] truncate">
       {s}
     </span>
   )
@@ -78,9 +78,9 @@ export function AdminDataTable({ data, error }: AdminDataTableProps) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Search */}
-      <div className="flex flex-wrap gap-3">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
+      {/* Search (pinned) */}
+      <div className="flex shrink-0 flex-wrap gap-3">
         <Input
           type="search"
           placeholder="Поиск..."
@@ -90,7 +90,6 @@ export function AdminDataTable({ data, error }: AdminDataTableProps) {
         />
       </div>
 
-      {/* Error */}
       {error && (
         <Alert variant="destructive">
           <AlertTitle>Ошибка</AlertTitle>
@@ -98,31 +97,30 @@ export function AdminDataTable({ data, error }: AdminDataTableProps) {
         </Alert>
       )}
 
-      {/* Skeleton */}
       {!data && !error && (
         <div className="flex flex-col gap-2">
-          {Array.from({ length: 6 }, (_, i) => (
+          {Array.from({ length: 8 }, (_, i) => (
             <Skeleton key={`skel-${i}`} className="h-12 w-full" />
           ))}
         </div>
       )}
 
-      {/* Table */}
       {data && (
         <>
-          {data.items.length === 0 ? (
-            <p className="py-8 text-center text-muted-foreground text-sm">
-              Нет записей
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
+          {/* Scroll region: table body scrolls, header sticks, max height = remaining viewport */}
+          <div className="min-h-0 flex-1 overflow-auto border-y border-border">
+            {data.items.length === 0 ? (
+              <p className="py-8 text-center text-muted-foreground text-sm">
+                Нет записей
+              </p>
+            ) : (
               <table className="w-full text-sm">
-                <thead>
+                <thead className="sticky top-0 z-10 bg-background">
                   <tr className="border-b border-border">
                     {data.columns.map((col) => (
                       <th
                         key={col}
-                        className="py-2 pr-4 text-left font-medium whitespace-nowrap"
+                        className="whitespace-nowrap bg-background px-3 py-2 text-left font-medium"
                       >
                         {data.sortable.includes(col) ? (
                           <button
@@ -147,7 +145,7 @@ export function AdminDataTable({ data, error }: AdminDataTableProps) {
                   {data.items.map((row: AdminDataRow, ri) => (
                     <tr key={ri} className="border-b border-border">
                       {data.columns.map((col) => (
-                        <td key={col} className="py-3 pr-4 align-top">
+                        <td key={col} className="px-3 py-3 align-top">
                           {formatCell(row[col])}
                         </td>
                       ))}
@@ -155,17 +153,17 @@ export function AdminDataTable({ data, error }: AdminDataTableProps) {
                   ))}
                 </tbody>
               </table>
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* Pagination */}
-          <div className="flex items-center justify-between text-sm tabular-nums">
+          {/* Pagination (pinned) */}
+          <div className="flex shrink-0 items-center justify-between text-sm tabular-nums">
             <span className="text-muted-foreground">Всего: {total}</span>
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 className={cn(
-                  "px-2 py-1 border border-border",
+                  "border border-border px-2 py-1",
                   params.page <= 1 && "opacity-40"
                 )}
                 disabled={params.page <= 1}
@@ -179,7 +177,7 @@ export function AdminDataTable({ data, error }: AdminDataTableProps) {
               <button
                 type="button"
                 className={cn(
-                  "px-2 py-1 border border-border",
+                  "border border-border px-2 py-1",
                   params.page >= totalPages && "opacity-40"
                 )}
                 disabled={params.page >= totalPages}
