@@ -242,7 +242,13 @@ function ModelControl() {
     return <span className="text-sm text-muted-foreground">Недоступно</span>
 
   return (
-    <Select value={value || undefined} disabled={pending} onValueChange={save}>
+    <Select
+      value={value || undefined}
+      disabled={pending}
+      onValueChange={(v) => {
+        if (v !== null) void save(v)
+      }}
+    >
       <SelectTrigger className="w-56">
         <SelectValue placeholder="Выбрать модель" />
       </SelectTrigger>

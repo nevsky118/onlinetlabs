@@ -8,10 +8,14 @@ export function SignInButton() {
   const pathname = usePathname()
 
   return (
-    <Button asChild variant="link">
-      <Link href={`/sign-in?redirect=${encodeURIComponent(pathname)}`}>
-        Войти
-      </Link>
+    <Button
+      nativeButton={false}
+      variant="link"
+      render={
+        <Link href={`/sign-in?redirect=${encodeURIComponent(pathname)}`} />
+      }
+    >
+      Войти
     </Button>
   )
 }

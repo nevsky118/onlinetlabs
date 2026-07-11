@@ -30,11 +30,16 @@ export function StickyMobileActionBar({
 
   return (
     <div className="bg-background fixed inset-x-0 bottom-0 z-40 flex gap-2 border-t px-4 py-3 md:hidden">
-      <Button asChild className="flex-1 rounded-none">
-        <a href={credentials.gns3DeepUrl} target="_blank" rel="noreferrer">
-          Открыть GNS3
-          <ExternalLinkIcon data-icon="inline-end" />
-        </a>
+      <Button
+        nativeButton={false}
+        className="flex-1 rounded-none"
+        render={
+          // biome-ignore lint/a11y/useAnchorContent: контент приходит из render-слота Base UI
+          <a href={credentials.gns3DeepUrl} target="_blank" rel="noreferrer" />
+        }
+      >
+        Открыть GNS3
+        <ExternalLinkIcon data-icon="inline-end" />
       </Button>
       <Button
         variant="outline"

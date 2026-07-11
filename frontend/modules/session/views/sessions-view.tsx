@@ -49,8 +49,13 @@ export function SessionsView() {
         <p className="text-muted-foreground text-xs max-w-xs">
           Запустите лабораторию из каталога, чтобы начать обучение.
         </p>
-        <Button variant="outline" className="rounded-none" asChild>
-          <Link href="/labs">К лабам</Link>
+        <Button
+          nativeButton={false}
+          variant="outline"
+          className="rounded-none"
+          render={<Link href="/labs" />}
+        >
+          К лабам
         </Button>
       </div>
     )
@@ -112,12 +117,13 @@ export function SessionsView() {
                     : formatRelative(s.startedAt)}
                 </span>
                 <Button
+                  nativeButton={false}
                   variant="ghost"
                   size="sm"
                   className="rounded-none text-xs"
-                  asChild
+                  render={<Link href={`/labs/${s.labSlug}`} />}
                 >
-                  <Link href={`/labs/${s.labSlug}`}>Запустить снова</Link>
+                  Запустить снова
                 </Button>
               </li>
             ))}

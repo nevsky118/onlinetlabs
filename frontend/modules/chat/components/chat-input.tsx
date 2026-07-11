@@ -70,16 +70,18 @@ export function ChatInput({
           </div>
           {isStreaming && stop ? (
             <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  aria-label="Остановить генерацию"
-                  variant="destructive"
-                  size={large ? "icon" : "icon-sm"}
-                  onClick={stop}
-                >
-                  <SquareIcon />
-                </Button>
+              <TooltipTrigger
+                render={
+                  <Button
+                    type="button"
+                    aria-label="Остановить генерацию"
+                    variant="destructive"
+                    size={large ? "icon" : "icon-sm"}
+                    onClick={stop}
+                  />
+                }
+              >
+                <SquareIcon />
               </TooltipTrigger>
               <TooltipContent>Остановить генерацию</TooltipContent>
             </Tooltip>

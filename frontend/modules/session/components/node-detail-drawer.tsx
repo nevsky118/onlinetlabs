@@ -59,11 +59,16 @@ export function NodeDetailDrawer({
             </DrawerHeader>
             <div className="flex flex-col gap-2 p-4">
               {node.console !== null && (
-                <Button asChild className="w-full">
-                  <a href={`telnet://${node.consoleHost}:${node.console}`}>
-                    Открыть консоль ({node.consoleType}:{node.console})
-                    <ExternalLinkIcon data-icon="inline-end" />
-                  </a>
+                <Button
+                  nativeButton={false}
+                  className="w-full"
+                  render={
+                    // biome-ignore lint/a11y/useAnchorContent: контент приходит из render-слота Base UI
+                    <a href={`telnet://${node.consoleHost}:${node.console}`} />
+                  }
+                >
+                  Открыть консоль ({node.consoleType}:{node.console})
+                  <ExternalLinkIcon data-icon="inline-end" />
                 </Button>
               )}
               {node.status === "started" ? (

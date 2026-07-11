@@ -42,15 +42,14 @@ export function SiteHeader() {
             className="flex lg:hidden"
           />
           <Button
-            asChild
+            nativeButton={false}
             variant="ghost"
             size="icon"
             className="hidden size-8 lg:flex"
+            render={<Link href="/" />}
           >
-            <Link href="/">
-              <Icons.logo className="size-5" />
-              <span className="sr-only">{siteConfig.name}</span>
-            </Link>
+            <Icons.logo className="size-5" />
+            <span className="sr-only">{siteConfig.name}</span>
           </Button>
           <MainNav items={siteConfig.navItems} className="hidden lg:flex" />
           <div className="ml-auto flex items-center gap-2 md:flex-1 md:justify-end">

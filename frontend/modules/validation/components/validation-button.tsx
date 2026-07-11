@@ -13,11 +13,11 @@ type Props = {
 export function ValidationButton({ sessionId, labSlug }: Props) {
   return (
     <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="outline" size="sm" className="rounded-none">
-          <PlayIcon data-icon="inline-start" />
-          Проверить
-        </Button>
+      <SheetTrigger
+        render={<Button variant="outline" size="sm" className="rounded-none" />}
+      >
+        <PlayIcon data-icon="inline-start" />
+        Проверить
       </SheetTrigger>
       <ValidationSheet sessionId={sessionId} labSlug={labSlug} />
     </Sheet>

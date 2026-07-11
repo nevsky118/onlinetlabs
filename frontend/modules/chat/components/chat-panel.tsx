@@ -281,15 +281,17 @@ export function ChatPanel() {
               if (o) loadSessions()
             }}
           >
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                className="-ml-2 max-w-[200px] justify-between gap-2"
-              >
-                <span className="truncate">{headerLabel}</span>
-                <ChevronDownIcon className="text-muted-foreground size-3 shrink-0" />
-              </Button>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="-ml-2 max-w-[200px] justify-between gap-2"
+                />
+              }
+            >
+              <span className="truncate">{headerLabel}</span>
+              <ChevronDownIcon className="text-muted-foreground size-3 shrink-0" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-64">
               <DropdownMenuLabel>История сессий</DropdownMenuLabel>

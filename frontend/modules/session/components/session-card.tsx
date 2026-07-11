@@ -96,11 +96,15 @@ export function SessionCard({ session, uptimeSeconds, onEnded }: Props) {
 
       <div className="flex items-center gap-2">
         {isRunning && (
-          <Button variant="default" size="sm" className="rounded-none" asChild>
-            <Link href={`/session/${session.id}`}>
-              <ExternalLinkIcon data-icon="inline-start" />
-              Открыть
-            </Link>
+          <Button
+            nativeButton={false}
+            variant="default"
+            size="sm"
+            className="rounded-none"
+            render={<Link href={`/session/${session.id}`} />}
+          >
+            <ExternalLinkIcon data-icon="inline-start" />
+            Открыть
           </Button>
         )}
 
@@ -113,18 +117,20 @@ export function SessionCard({ session, uptimeSeconds, onEnded }: Props) {
 
         {isRunning && (
           <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-none"
-                disabled={pending}
-              >
-                {pending ? (
-                  <Spinner data-icon="inline-start" className="size-3" />
-                ) : null}
-                Завершить
-              </Button>
+            <AlertDialogTrigger
+              render={
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-none"
+                  disabled={pending}
+                />
+              }
+            >
+              {pending ? (
+                <Spinner data-icon="inline-start" className="size-3" />
+              ) : null}
+              Завершить
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
@@ -145,8 +151,14 @@ export function SessionCard({ session, uptimeSeconds, onEnded }: Props) {
         )}
 
         {!isRunning && (
-          <Button variant="outline" size="sm" className="rounded-none" asChild>
-            <Link href={`/labs/${session.labSlug}`}>Запустить снова</Link>
+          <Button
+            nativeButton={false}
+            variant="outline"
+            size="sm"
+            className="rounded-none"
+            render={<Link href={`/labs/${session.labSlug}`} />}
+          >
+            Запустить снова
           </Button>
         )}
       </div>

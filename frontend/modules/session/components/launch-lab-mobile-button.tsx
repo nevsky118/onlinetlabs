@@ -25,11 +25,15 @@ export function LaunchLabMobileButton({
 
   if (!data?.user) {
     return (
-      <Button asChild className={cn("w-fit", className)}>
-        <Link href={`/sign-in?redirect=${encodeURIComponent(returnTo)}`}>
-          <LogInIcon data-icon="inline-start" />
-          Войти, чтобы запустить
-        </Link>
+      <Button
+        nativeButton={false}
+        className={cn("w-fit", className)}
+        render={
+          <Link href={`/sign-in?redirect=${encodeURIComponent(returnTo)}`} />
+        }
+      >
+        <LogInIcon data-icon="inline-start" />
+        Войти, чтобы запустить
       </Button>
     )
   }

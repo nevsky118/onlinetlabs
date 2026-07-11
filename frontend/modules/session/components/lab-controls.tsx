@@ -64,10 +64,10 @@ export function LabControls({
       </Button>
 
       <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <Button variant="outline" disabled={disabled}>
-            Reset
-          </Button>
+        <AlertDialogTrigger
+          render={<Button variant="outline" disabled={disabled} />}
+        >
+          Reset
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -89,10 +89,10 @@ export function LabControls({
       </AlertDialog>
 
       <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <Button variant="destructive" disabled={disabled}>
-            Завершить
-          </Button>
+        <AlertDialogTrigger
+          render={<Button variant="destructive" disabled={disabled} />}
+        >
+          Завершить
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>

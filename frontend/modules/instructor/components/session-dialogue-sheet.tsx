@@ -98,11 +98,11 @@ export function SessionDialogueSheet({
 }: {
   userId: string
   session: { sessionId: string; labTitle: string }
-  children: React.ReactNode
+  children: React.ReactElement
 }) {
   return (
     <Sheet>
-      <SheetTrigger asChild>{children}</SheetTrigger>
+      <SheetTrigger render={children} />
       <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-xl">
         <SheetTitle className="sr-only">Диалог · {session.labTitle}</SheetTitle>
         <SessionDialogueBody

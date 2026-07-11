@@ -77,15 +77,14 @@ export function SessionActions({
     <div className="flex shrink-0 items-center gap-2">
       {/* Desktop: full row of buttons. */}
       <Button
-        asChild
+        nativeButton={false}
         variant="outline"
         size="sm"
         className="hidden rounded-none md:inline-flex"
+        render={<Link href={`/labs/${labSlug}`} />}
       >
-        <Link href={`/labs/${labSlug}`}>
-          <BookOpenIcon data-icon="inline-start" />
-          Инструкция
-        </Link>
+        <BookOpenIcon data-icon="inline-start" />
+        Инструкция
       </Button>
       <div className="hidden gap-2 md:flex">
         <ResetButton disabled={disabled} onConfirm={runReset} />
@@ -94,22 +93,22 @@ export function SessionActions({
       {/* Mobile: all 3 actions consolidated into a kebab menu. */}
       <div className="md:hidden">
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              className="rounded-none"
-              aria-label="Меню действий"
-            >
-              <MoreVerticalIcon />
-            </Button>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-none"
+                aria-label="Меню действий"
+              />
+            }
+          >
+            <MoreVerticalIcon />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuGroup>
-              <DropdownMenuItem asChild>
-                <Link href={`/labs/${labSlug}`}>
-                  <BookOpenIcon /> Инструкция
-                </Link>
+              <DropdownMenuItem render={<Link href={`/labs/${labSlug}`} />}>
+                <BookOpenIcon /> Инструкция
               </DropdownMenuItem>
               <DropdownMenuItem disabled={disabled} onClick={runReset}>
                 <RefreshCcwIcon /> Сбросить
@@ -138,15 +137,17 @@ function ResetButton({
 }) {
   return (
     <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={disabled}
-          className="rounded-none"
-        >
-          <RefreshCcwIcon data-icon="inline-start" /> Сбросить
-        </Button>
+      <AlertDialogTrigger
+        render={
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={disabled}
+            className="rounded-none"
+          />
+        }
+      >
+        <RefreshCcwIcon data-icon="inline-start" /> Сбросить
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
@@ -174,15 +175,17 @@ function EndButton({
 }) {
   return (
     <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button
-          variant="destructive"
-          size="sm"
-          disabled={disabled}
-          className="rounded-none"
-        >
-          Завершить
-        </Button>
+      <AlertDialogTrigger
+        render={
+          <Button
+            variant="destructive"
+            size="sm"
+            disabled={disabled}
+            className="rounded-none"
+          />
+        }
+      >
+        Завершить
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>

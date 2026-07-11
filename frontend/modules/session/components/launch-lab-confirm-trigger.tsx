@@ -24,7 +24,7 @@ export function LaunchLabConfirmTrigger({
   children,
 }: {
   labSlug: string
-  children: React.ReactNode
+  children: React.ReactElement
 }) {
   const { status, result, launch, reset } = useLaunchLab(labSlug)
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -57,7 +57,7 @@ export function LaunchLabConfirmTrigger({
   return (
     <>
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
+        <AlertDialogTrigger render={children} />
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Запустить лабораторию?</AlertDialogTitle>

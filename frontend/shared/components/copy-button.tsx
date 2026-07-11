@@ -40,33 +40,35 @@ export function CopyButton({
 
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          data-slot="copy-button"
-          size="icon"
-          variant={variant}
-          className={cn(
-            "bg-code absolute top-3 right-2 z-10 size-7 hover:opacity-100 focus-visible:opacity-100",
-            className
-          )}
-          onClick={() => {
-            copyToClipboardWithMeta(
-              value,
-              event
-                ? {
-                    name: event,
-                    // код может быть большим, режем до 500 символов под лимит properties
-                    properties: { code: String(value).slice(0, 500) },
-                  }
-                : undefined
-            )
-            setHasCopied(true)
-          }}
-          {...props}
-        >
-          <span className="sr-only">Копировать</span>
-          {hasCopied ? <CheckIcon /> : <CopyIcon />}
-        </Button>
+      <TooltipTrigger
+        render={
+          <Button
+            data-slot="copy-button"
+            size="icon"
+            variant={variant}
+            className={cn(
+              "bg-code absolute top-3 right-2 z-10 size-7 hover:opacity-100 focus-visible:opacity-100",
+              className
+            )}
+            onClick={() => {
+              copyToClipboardWithMeta(
+                value,
+                event
+                  ? {
+                      name: event,
+                      // код может быть большим, режем до 500 символов под лимит properties
+                      properties: { code: String(value).slice(0, 500) },
+                    }
+                  : undefined
+              )
+              setHasCopied(true)
+            }}
+            {...props}
+          />
+        }
+      >
+        <span className="sr-only">Копировать</span>
+        {hasCopied ? <CheckIcon /> : <CopyIcon />}
       </TooltipTrigger>
       <TooltipContent>
         {hasCopied ? "Скопировано" : "Скопировать"}

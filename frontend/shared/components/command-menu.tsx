@@ -1,9 +1,9 @@
 "use client"
 
+import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
 import { useDocsSearch } from "fumadocs-core/search/client"
 import { ArrowRightIcon, CornerDownLeftIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { Dialog as DialogPrimitive } from "radix-ui"
 import * as React from "react"
 import type { FumaDocsPageTree } from "@/lib/source"
 import { copyToClipboardWithMeta } from "@/components/copy-button"
@@ -52,7 +52,7 @@ export function CommandMenu({
   tree,
   navItems,
   ...props
-}: React.ComponentProps<typeof Dialog> & {
+}: React.ComponentProps<typeof Button> & {
   tree: FumaDocsPageTree
   navItems?: { href: string; label: string }[]
 }) {
@@ -243,18 +243,20 @@ export function CommandMenu({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          className={cn(
-            "relative h-8 w-full justify-start rounded-none border-none bg-muted pl-3 text-foreground shadow-none transition-colors hover:bg-muted/50 md:w-48 lg:w-40 xl:w-64 dark:bg-card"
-          )}
-          onClick={() => setOpen(true)}
-          {...props}
-        >
-          <span className="hidden xl:inline-flex">Найти на платформе...</span>
-          <span className="inline-flex xl:hidden">Найти...</span>
-        </Button>
+      <DialogTrigger
+        render={
+          <Button
+            variant="outline"
+            className={cn(
+              "relative h-8 w-full justify-start rounded-none border-none bg-muted pl-3 text-foreground shadow-none transition-colors hover:bg-muted/50 md:w-48 lg:w-40 xl:w-64 dark:bg-card"
+            )}
+            onClick={() => setOpen(true)}
+            {...props}
+          />
+        }
+      >
+        <span className="hidden xl:inline-flex">Найти на платформе...</span>
+        <span className="inline-flex xl:hidden">Найти...</span>
       </DialogTrigger>
       <DialogContent className="rounded-none border-none bg-clip-padding p-2 pb-11 shadow-2xl ring-4 ring-neutral-200/80 dark:bg-neutral-900 dark:ring-neutral-800">
         <DialogHeader className="sr-only">
@@ -433,13 +435,13 @@ function DialogContent({
   className,
   children,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content> & {
+}: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
 }) {
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
-      <DialogPrimitive.Content
+      <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
           "fixed top-[15%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] gap-4 rounded-none border bg-background p-6 shadow-lg duration-200 outline-none sm:max-w-lg",
@@ -448,7 +450,7 @@ function DialogContent({
         {...props}
       >
         {children}
-      </DialogPrimitive.Content>
+      </DialogPrimitive.Popup>
     </DialogPortal>
   )
 }

@@ -50,15 +50,16 @@ export function LaunchLabCard({
         </LaunchLabConfirmTrigger>
       ) : (
         <Button
-          asChild
+          nativeButton={false}
           variant="outline"
           size="sm"
           className="mt-2 h-7 w-fit px-2.5 text-[0.8rem]"
+          render={
+            <Link href={`/sign-in?redirect=${encodeURIComponent(returnTo)}`} />
+          }
         >
-          <Link href={`/sign-in?redirect=${encodeURIComponent(returnTo)}`}>
-            Войти
-            <ArrowRightIcon data-icon="inline-end" />
-          </Link>
+          Войти
+          <ArrowRightIcon data-icon="inline-end" />
         </Button>
       )}
     </div>

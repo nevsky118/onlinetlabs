@@ -48,19 +48,23 @@ export default function Home() {
               </p>
 
               <div className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-both flex flex-wrap items-center gap-3 delay-200 duration-700 motion-reduce:animate-none">
-                <Button asChild size="lg" className="h-11 px-6 text-sm">
-                  <Link href="/courses">
-                    Курсы
-                    <ArrowUpRightIcon data-icon="inline-end" />
-                  </Link>
+                <Button
+                  nativeButton={false}
+                  size="lg"
+                  className="h-11 px-6 text-sm"
+                  render={<Link href="/courses" />}
+                >
+                  Курсы
+                  <ArrowUpRightIcon data-icon="inline-end" />
                 </Button>
                 <Button
-                  asChild
+                  nativeButton={false}
                   size="lg"
                   variant="outline"
                   className="h-11 px-6 text-sm"
+                  render={<Link href="/labs" />}
                 >
-                  <Link href="/labs">Лабы</Link>
+                  Лабы
                 </Button>
               </div>
             </div>

@@ -130,28 +130,26 @@ export default async function Page(props: {
                 <div className="docs-nav bg-background/80 border-border/50 fixed inset-x-0 bottom-0 isolate z-50 flex items-center gap-2 border-t px-6 py-4 backdrop-blur-sm sm:static sm:z-0 sm:border-t-0 sm:bg-transparent sm:px-0 sm:pt-1.5 sm:backdrop-blur-none">
                   {neighbours.previous && (
                     <Button
+                      nativeButton={false}
                       variant="secondary"
                       size="icon"
                       className="extend-touch-target ml-auto size-8 shadow-none md:size-7"
-                      asChild
+                      render={<Link href={neighbours.previous.url} />}
                     >
-                      <Link href={neighbours.previous.url}>
-                        <ArrowLeftIcon />
-                        <span className="sr-only">Назад</span>
-                      </Link>
+                      <ArrowLeftIcon />
+                      <span className="sr-only">Назад</span>
                     </Button>
                   )}
                   {neighbours.next && (
                     <Button
+                      nativeButton={false}
                       variant="secondary"
                       size="icon"
                       className="extend-touch-target size-8 shadow-none md:size-7"
-                      asChild
+                      render={<Link href={neighbours.next.url} />}
                     >
-                      <Link href={neighbours.next.url}>
-                        <span className="sr-only">Вперёд</span>
-                        <ArrowRightIcon />
-                      </Link>
+                      <span className="sr-only">Вперёд</span>
+                      <ArrowRightIcon />
                     </Button>
                   )}
                 </div>
@@ -173,17 +171,27 @@ export default async function Page(props: {
             {links ? (
               <div className="flex items-center gap-2 pt-4">
                 {links?.doc && (
-                  <Badge asChild variant="secondary" className="rounded-none">
-                    <a href={links.doc} target="_blank" rel="noreferrer">
-                      Документация <ArrowUpRightIcon />
-                    </a>
+                  <Badge
+                    variant="secondary"
+                    className="rounded-none"
+                    render={
+                      // biome-ignore lint/a11y/useAnchorContent: контент приходит из render-слота Base UI
+                      <a href={links.doc} target="_blank" rel="noreferrer" />
+                    }
+                  >
+                    Документация <ArrowUpRightIcon />
                   </Badge>
                 )}
                 {links?.api && (
-                  <Badge asChild variant="secondary" className="rounded-none">
-                    <a href={links.api} target="_blank" rel="noreferrer">
-                      API <ArrowUpRightIcon />
-                    </a>
+                  <Badge
+                    variant="secondary"
+                    className="rounded-none"
+                    render={
+                      // biome-ignore lint/a11y/useAnchorContent: контент приходит из render-слота Base UI
+                      <a href={links.api} target="_blank" rel="noreferrer" />
+                    }
+                  >
+                    API <ArrowUpRightIcon />
                   </Badge>
                 )}
               </div>
@@ -196,26 +204,24 @@ export default async function Page(props: {
         <div className="mx-auto hidden h-16 w-full max-w-2xl items-center gap-2 px-4 sm:flex md:px-0">
           {neighbours.previous && (
             <Button
+              nativeButton={false}
               variant="secondary"
               size="sm"
-              asChild
               className="shadow-none"
+              render={<Link href={neighbours.previous.url} />}
             >
-              <Link href={neighbours.previous.url}>
-                <ArrowLeftIcon /> {neighbours.previous.name}
-              </Link>
+              <ArrowLeftIcon /> {neighbours.previous.name}
             </Button>
           )}
           {neighbours.next && (
             <Button
+              nativeButton={false}
               variant="secondary"
               size="sm"
               className="ml-auto shadow-none"
-              asChild
+              render={<Link href={neighbours.next.url} />}
             >
-              <Link href={neighbours.next.url}>
-                {neighbours.next.name} <ArrowRightIcon />
-              </Link>
+              {neighbours.next.name} <ArrowRightIcon />
             </Button>
           )}
         </div>

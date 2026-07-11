@@ -48,11 +48,22 @@ export function SessionHero({
           Текущая сессия
         </span>
         <div className="flex gap-2">
-          <Button asChild variant="outline" size="sm" className="rounded-none">
-            <a href={credentials.gns3DeepUrl} target="_blank" rel="noreferrer">
-              Открыть GNS3
-              <ExternalLinkIcon data-icon="inline-end" />
-            </a>
+          <Button
+            nativeButton={false}
+            variant="outline"
+            size="sm"
+            className="rounded-none"
+            render={
+              // biome-ignore lint/a11y/useAnchorContent: контент приходит из render-слота Base UI
+              <a
+                href={credentials.gns3DeepUrl}
+                target="_blank"
+                rel="noreferrer"
+              />
+            }
+          >
+            Открыть GNS3
+            <ExternalLinkIcon data-icon="inline-end" />
           </Button>
           <Button
             variant="outline"

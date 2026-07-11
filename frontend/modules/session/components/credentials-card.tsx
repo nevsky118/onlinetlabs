@@ -71,15 +71,17 @@ export function CredentialsCard({
         </Row>
       </div>
       <Button
-        asChild
+        nativeButton={false}
         variant="outline"
         size="sm"
         className="mt-3 w-full rounded-none"
+        render={
+          // biome-ignore lint/a11y/useAnchorContent: контент приходит из render-слота Base UI
+          <a href={creds.gns3DeepUrl} target="_blank" rel="noreferrer" />
+        }
       >
-        <a href={creds.gns3DeepUrl} target="_blank" rel="noreferrer">
-          Открыть GNS3
-          <ExternalLinkIcon data-icon="inline-end" />
-        </a>
+        Открыть GNS3
+        <ExternalLinkIcon data-icon="inline-end" />
       </Button>
     </div>
   )

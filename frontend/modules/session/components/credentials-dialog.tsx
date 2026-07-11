@@ -63,10 +63,16 @@ export function CredentialsDialog({
               <CopyIcon />
             </Button>
           </div>
-          <Button asChild variant="outline" className="w-fit rounded-none">
-            <a href={result.gns3DeepUrl} target="_blank" rel="noreferrer">
-              Открыть GNS3 <ExternalLinkIcon data-icon="inline-end" />
-            </a>
+          <Button
+            nativeButton={false}
+            variant="outline"
+            className="w-fit rounded-none"
+            render={
+              // biome-ignore lint/a11y/useAnchorContent: контент приходит из render-слота Base UI
+              <a href={result.gns3DeepUrl} target="_blank" rel="noreferrer" />
+            }
+          >
+            Открыть GNS3 <ExternalLinkIcon data-icon="inline-end" />
           </Button>
         </div>
         <DialogFooter>

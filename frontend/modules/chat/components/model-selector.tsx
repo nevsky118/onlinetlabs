@@ -28,7 +28,12 @@ export function ModelSelector({
   if (!canSelect || models.length < 2) return null
 
   return (
-    <Select value={value} onValueChange={onValueChange}>
+    <Select
+      value={value}
+      onValueChange={(v) => {
+        if (v !== null) onValueChange(v)
+      }}
+    >
       <SelectTrigger
         size="sm"
         className="max-w-[180px]"

@@ -68,7 +68,7 @@ function NavGroup({
       >
         {label}
         <ChevronDown
-          className="size-3.5 shrink-0 opacity-50 transition-transform duration-200 group-data-[state=open]/tab:rotate-180"
+          className="size-3.5 shrink-0 opacity-50 transition-transform duration-200 group-data-popup-open/tab:rotate-180"
           aria-hidden
         />
       </DropdownMenuTrigger>
@@ -79,14 +79,12 @@ function NavGroup({
             return (
               <DropdownMenuItem
                 key={item.href}
-                asChild
+                render={<Link href={item.href} />}
                 data-active={isActive(pathname, item.href)}
                 className="data-[active=true]:bg-foreground data-[active=true]:text-background"
               >
-                <Link href={item.href}>
-                  <Icon className="size-4" aria-hidden />
-                  {item.label}
-                </Link>
+                <Icon className="size-4" aria-hidden />
+                {item.label}
               </DropdownMenuItem>
             )
           })}

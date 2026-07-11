@@ -13,7 +13,6 @@ import {
 import { useState } from "react"
 import type { AgentActivityEvent } from "../types"
 import { useAgentActivity } from "../hooks/use-agent-activity"
-import { cn } from "@/lib/utils"
 import {
   Collapsible,
   CollapsibleContent,
@@ -72,28 +71,30 @@ export function AgentActivityLine({ event }: { event: AgentActivityEvent }) {
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger asChild>
-        <button
-          type="button"
-          className="flex w-full items-start gap-1.5 px-3 py-0.5 text-left hover:bg-muted/50 transition-colors"
-        >
-          <span className="text-muted-foreground font-mono text-xs shrink-0">
-            [{formatTime(event.ts)}]
-          </span>
-          <span className="text-muted-foreground shrink-0 mt-px">
-            {kindIcon(event.kind)}
-          </span>
-          <span className="text-foreground font-mono text-xs leading-relaxed flex-1">
-            {event.summary}
-          </span>
-          <span className="text-muted-foreground shrink-0 mt-px">
-            {open ? (
-              <ChevronDownIcon className="size-3" />
-            ) : (
-              <ChevronRightIcon className="size-3" />
-            )}
-          </span>
-        </button>
+      <CollapsibleTrigger
+        render={
+          <button
+            type="button"
+            className="flex w-full items-start gap-1.5 px-3 py-0.5 text-left hover:bg-muted/50 transition-colors"
+          />
+        }
+      >
+        <span className="text-muted-foreground font-mono text-xs shrink-0">
+          [{formatTime(event.ts)}]
+        </span>
+        <span className="text-muted-foreground shrink-0 mt-px">
+          {kindIcon(event.kind)}
+        </span>
+        <span className="text-foreground font-mono text-xs leading-relaxed flex-1">
+          {event.summary}
+        </span>
+        <span className="text-muted-foreground shrink-0 mt-px">
+          {open ? (
+            <ChevronDownIcon className="size-3" />
+          ) : (
+            <ChevronRightIcon className="size-3" />
+          )}
+        </span>
       </CollapsibleTrigger>
       <CollapsibleContent>
         <pre className="text-xs text-muted-foreground font-mono px-3 pb-1 overflow-x-auto whitespace-pre-wrap break-all bg-muted/30">

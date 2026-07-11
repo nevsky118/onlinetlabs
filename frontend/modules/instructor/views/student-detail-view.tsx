@@ -30,10 +30,13 @@ export function StudentDetailView({ userId }: { userId: string }) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
         <p className="text-muted-foreground text-sm">Ученик не найден</p>
-        <Button variant="outline" className="rounded-none" asChild>
-          <Link href="/instructor">
-            <ArrowLeft className="mr-1 size-4" />К списку
-          </Link>
+        <Button
+          nativeButton={false}
+          variant="outline"
+          className="rounded-none"
+          render={<Link href="/instructor" />}
+        >
+          <ArrowLeft className="mr-1 size-4" />К списку
         </Button>
       </div>
     )
@@ -43,15 +46,14 @@ export function StudentDetailView({ userId }: { userId: string }) {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
         <Button
+          nativeButton={false}
           variant="ghost"
           size="sm"
           className="w-fit rounded-none px-0"
-          asChild
+          render={<Link href="/instructor" />}
         >
-          <Link href="/instructor">
-            <ArrowLeft className="mr-1 size-4" />
-            Все ученики
-          </Link>
+          <ArrowLeft className="mr-1 size-4" />
+          Все ученики
         </Button>
         <div>
           <h2 className="text-2xl font-semibold">

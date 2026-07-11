@@ -57,22 +57,24 @@ export function UserMenu({ user }: UserMenuProps) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="rounded-full data-[state=open]:border-ring data-[state=open]:ring-ring/50 data-[state=open]:ring-[3px]"
-        >
-          <Avatar className="h-8 w-8 rounded-full">
-            <AvatarImage src={user.image ?? undefined} alt={user.name ?? ""} />
-            <AvatarFallback className="rounded-full">
-              {getInitials(user.name)}
-            </AvatarFallback>
-          </Avatar>
-        </Button>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="rounded-full data-popup-open:border-ring data-popup-open:ring-ring/50 data-popup-open:ring-[3px]"
+          />
+        }
+      >
+        <Avatar className="h-8 w-8 rounded-full">
+          <AvatarImage src={user.image ?? undefined} alt={user.name ?? ""} />
+          <AvatarFallback className="rounded-full">
+            {getInitials(user.name)}
+          </AvatarFallback>
+        </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-none"
+        className="w-(--anchor-width) min-w-56 rounded-none"
         side="bottom"
         align="end"
         sideOffset={4}
@@ -97,18 +99,14 @@ export function UserMenu({ user }: UserMenuProps) {
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           {isInstructor ? (
-            <DropdownMenuItem asChild>
-              <Link href="/instructor">
-                Кабинет преподавателя
-                <GraduationCap className="ml-auto" />
-              </Link>
+            <DropdownMenuItem render={<Link href="/instructor" />}>
+              Кабинет преподавателя
+              <GraduationCap className="ml-auto" />
             </DropdownMenuItem>
           ) : null}
-          <DropdownMenuItem asChild>
-            <Link href="/settings">
-              Настройки
-              <Settings className="ml-auto" />
-            </Link>
+          <DropdownMenuItem render={<Link href="/settings" />}>
+            Настройки
+            <Settings className="ml-auto" />
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
