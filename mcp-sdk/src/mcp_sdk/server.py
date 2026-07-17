@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from datetime import datetime
+from functools import wraps
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -21,6 +22,27 @@ from mcp_sdk.protocols import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _tool_errors(name: str) -> Callable:
+    """Единая карта исключений для tool-функций: SessionContext/domain/unexpected."""
+
+    def deco(fn: Callable) -> Callable:
+        @wraps(fn)
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:
+            try:
+                return await fn(*args, **kwargs)
+            except ValidationError as e:
+                raise SessionContextError(f"Invalid session context: {e}") from e
+            except MCPServerError:
+                raise
+            except Exception:
+                logger.exception("Unexpected error in %s", name)
+                raise MCPServerError("Internal server error") from None
+
+        return wrapper
+
+    return deco
 
 
 class OnlinetlabsMCPServer:
@@ -76,50 +98,29 @@ class OnlinetlabsMCPServer:
         impl = self._impl
 
         @self._mcp.tool(description="List all components in the system")
+        @_tool_errors("list_components")
         async def list_components(ctx: dict[str, Any]) -> list[dict[str, Any]]:
-            try:
-                session = SessionContext(**ctx)
-                result = await impl.list_components(session)
-                return [c.model_dump(mode="json") for c in result]
-            except ValidationError as e:
-                raise SessionContextError(f"Invalid session context: {e}") from e
-            except MCPServerError:
-                raise
-            except Exception:
-                logger.exception("Unexpected error in list_components")
-                raise MCPServerError("Internal server error") from None
+            session = SessionContext(**ctx)
+            result = await impl.list_components(session)
+            return [c.model_dump(mode="json") for c in result]
 
         self._tool_names.append("list_components")
 
         @self._mcp.tool(description="Get detailed information about a specific component")
+        @_tool_errors("get_component")
         async def get_component(ctx: dict[str, Any], component_id: str) -> dict[str, Any]:
-            try:
-                session = SessionContext(**ctx)
-                result = await impl.get_component(session, component_id)
-                return result.model_dump(mode="json")
-            except ValidationError as e:
-                raise SessionContextError(f"Invalid session context: {e}") from e
-            except MCPServerError:
-                raise
-            except Exception:
-                logger.exception("Unexpected error in get_component")
-                raise MCPServerError("Internal server error") from None
+            session = SessionContext(**ctx)
+            result = await impl.get_component(session, component_id)
+            return result.model_dump(mode="json")
 
         self._tool_names.append("get_component")
 
         @self._mcp.tool(description="Get a high-level overview of the entire system")
+        @_tool_errors("get_system_overview")
         async def get_system_overview(ctx: dict[str, Any]) -> dict[str, Any]:
-            try:
-                session = SessionContext(**ctx)
-                result = await impl.get_system_overview(session)
-                return result.model_dump(mode="json")
-            except ValidationError as e:
-                raise SessionContextError(f"Invalid session context: {e}") from e
-            except MCPServerError:
-                raise
-            except Exception:
-                logger.exception("Unexpected error in get_system_overview")
-                raise MCPServerError("Internal server error") from None
+            session = SessionContext(**ctx)
+            result = await impl.get_system_overview(session)
+            return result.model_dump(mode="json")
 
         self._tool_names.append("get_system_overview")
 
@@ -129,43 +130,35 @@ class OnlinetlabsMCPServer:
         impl = self._impl
 
         @self._mcp.tool(description="List recent errors and warnings")
+        @_tool_errors("list_errors")
         async def list_errors(
             ctx: dict[str, Any],
             since: str | None = None,
         ) -> list[dict[str, Any]]:
+            session = SessionContext(**ctx)
             try:
-                session = SessionContext(**ctx)
                 since_dt = datetime.fromisoformat(since) if since else None
-                result = await impl.list_errors(session, since=since_dt)
-                return [e.model_dump(mode="json") for e in result]
-            except ValidationError as e:
-                raise SessionContextError(f"Invalid session context: {e}") from e
-            except MCPServerError:
-                raise
-            except Exception:
-                logger.exception("Unexpected error in list_errors")
-                raise MCPServerError("Internal server error") from None
+            except ValueError as e:
+                raise SessionContextError(f"Invalid since timestamp: {since}") from e
+            result = await impl.list_errors(session, since=since_dt)
+            return [e.model_dump(mode="json") for e in result]
 
         self._tool_names.append("list_errors")
 
         @self._mcp.tool(description="Get system logs filtered by level")
+        @_tool_errors("get_logs")
         async def get_logs(
             ctx: dict[str, Any],
             level: str = "all",
             limit: int = 100,
         ) -> list[dict[str, Any]]:
+            session = SessionContext(**ctx)
             try:
-                session = SessionContext(**ctx)
                 log_level = LogLevel(level)
-                result = await impl.get_logs(session, level=log_level, limit=limit)
-                return [e.model_dump(mode="json") for e in result]
-            except ValidationError as e:
-                raise SessionContextError(f"Invalid session context: {e}") from e
-            except MCPServerError:
-                raise
-            except Exception:
-                logger.exception("Unexpected error in get_logs")
-                raise MCPServerError("Internal server error") from None
+            except ValueError as e:
+                raise SessionContextError(f"Invalid log level: {level}") from e
+            result = await impl.get_logs(session, level=log_level, limit=limit)
+            return [e.model_dump(mode="json") for e in result]
 
         self._tool_names.append("get_logs")
 
@@ -175,21 +168,14 @@ class OnlinetlabsMCPServer:
         impl = self._impl
 
         @self._mcp.tool(description="List recent user actions in the system")
+        @_tool_errors("list_user_actions")
         async def list_user_actions(
             ctx: dict[str, Any],
             limit: int = 50,
         ) -> list[dict[str, Any]]:
-            try:
-                session = SessionContext(**ctx)
-                result = await impl.list_user_actions(session, limit=limit)
-                return [a.model_dump(mode="json") for a in result]
-            except ValidationError as e:
-                raise SessionContextError(f"Invalid session context: {e}") from e
-            except MCPServerError:
-                raise
-            except Exception:
-                logger.exception("Unexpected error in list_user_actions")
-                raise MCPServerError("Internal server error") from None
+            session = SessionContext(**ctx)
+            result = await impl.list_user_actions(session, limit=limit)
+            return [a.model_dump(mode="json") for a in result]
 
         self._tool_names.append("list_user_actions")
 
@@ -199,41 +185,27 @@ class OnlinetlabsMCPServer:
         impl = self._impl
 
         @self._mcp.tool(description="List available actions, optionally filtered by component")
+        @_tool_errors("list_available_actions")
         async def list_available_actions(
             ctx: dict[str, Any],
             component_id: str | None = None,
         ) -> list[dict[str, Any]]:
-            try:
-                session = SessionContext(**ctx)
-                result = await impl.list_available_actions(session, component_id=component_id)
-                return [a.model_dump(mode="json") for a in result]
-            except ValidationError as e:
-                raise SessionContextError(f"Invalid session context: {e}") from e
-            except MCPServerError:
-                raise
-            except Exception:
-                logger.exception("Unexpected error in list_available_actions")
-                raise MCPServerError("Internal server error") from None
+            session = SessionContext(**ctx)
+            result = await impl.list_available_actions(session, component_id=component_id)
+            return [a.model_dump(mode="json") for a in result]
 
         self._tool_names.append("list_available_actions")
 
         @self._mcp.tool(description="Execute an action in the system")
+        @_tool_errors("execute_action")
         async def execute_action(
             ctx: dict[str, Any],
             action_name: str,
             params: dict[str, Any],
         ) -> dict[str, Any]:
-            try:
-                session = SessionContext(**ctx)
-                result = await impl.execute_action(session, action_name, params)
-                return result.model_dump(mode="json")
-            except ValidationError as e:
-                raise SessionContextError(f"Invalid session context: {e}") from e
-            except MCPServerError:
-                raise
-            except Exception:
-                logger.exception("Unexpected error in execute_action")
-                raise MCPServerError("Internal server error") from None
+            session = SessionContext(**ctx)
+            result = await impl.execute_action(session, action_name, params)
+            return result.model_dump(mode="json")
 
         self._tool_names.append("execute_action")
 
