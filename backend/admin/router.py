@@ -23,7 +23,7 @@ from admin.schemas import (
     UserListResponse,
     UserUpdate,
 )
-from auth.dependencies import get_current_user
+from auth.dependencies import require_admin
 from config.config_model import LearningAnalyticsConfig
 from control.criterion import Costs
 from control.derive_thresholds import sensitivity_curve
@@ -49,13 +49,6 @@ _T_K_GRID = [0.0, 15.0, 30.0, 60.0, 90.0, 120.0, 150.0, 180.0, 240.0, 300.0]
 
 # Cost ratios for the sensitivity curve.
 _RATIOS = [0.2, 0.5, 1.0, 2.0, 5.0]
-
-
-def require_admin(current_user: dict = Depends(get_current_user)) -> dict:
-    """Admin only (mirrors experiment/router._require_admin)."""
-    if current_user.get("role") != "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin only")
-    return current_user
 
 
 def _build_synthetic_scenarios():

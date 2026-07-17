@@ -41,7 +41,7 @@ class HintAgent(BaseAgent):
         if not input_data.agent_context:
             raise ValueError("hint requires agent_context")
 
-        mid = model_id or self.agents_config.intervention_model
+        resolved_model = model_id or self.agents_config.intervention_model
         hint_level = self.tools.get_hint_level(input_data.attempts_count)
         remaining = self.tools.get_remaining_hints(hint_level)
 
@@ -50,7 +50,7 @@ class HintAgent(BaseAgent):
             check_line = f"{format_failing_check(input_data.failing_check)}\n"
 
         try:
-            result = await self._agent_for(mid).run(
+            result = await self._agent_for(resolved_model).run(
                 f"{check_line}"
                 f"Уровень подсказки: {hint_level}\n"
                 f"Шаг: {input_data.step_slug}\n"

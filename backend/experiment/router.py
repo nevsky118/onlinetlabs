@@ -3,12 +3,12 @@
 import csv
 import io
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth.dependencies import get_current_user
+from auth.dependencies import require_admin
 from db.session import get_db
 from experiment.analysis import compute_arm_analysis, compute_experiment_analysis
 from experiment.assignment import ExperimentGroup
@@ -43,13 +43,6 @@ METRICS_EXPORT_FIELDS = [
     "final_score",
     "completed",
 ]
-
-
-def _require_admin(current_user: dict = Depends(get_current_user)) -> dict:
-    """Admin only."""
-    if current_user.get("role") != "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin only")
-    return current_user
 
 
 def _build_status_response(
@@ -90,7 +83,7 @@ def _metric_to_export_row(metric) -> dict:
 @router.get("/status", response_model=ExperimentStatusResponse)
 async def get_status(
     db: AsyncSession = Depends(get_db),
-    _: dict = Depends(_require_admin),
+    _: dict = Depends(require_admin),
 ):
     """Experiment status: participant counts by group."""
     result = await db.execute(
@@ -119,7 +112,7 @@ async def get_status(
 @router.get("/participants", response_model=list[ParticipantResponse])
 async def list_participants(
     db: AsyncSession = Depends(get_db),
-    _: dict = Depends(_require_admin),
+    _: dict = Depends(require_admin),
 ):
     """List of experiment participants."""
     result = await db.execute(select(User).where(User.experiment_group.isnot(None)))
@@ -159,7 +152,7 @@ async def update_group(
     user_id: str,
     body: GroupUpdateRequest,
     db: AsyncSession = Depends(get_db),
-    _: dict = Depends(_require_admin),
+    _: dict = Depends(require_admin),
 ):
     """Reassign a participant's group."""
     if body.group not in (ExperimentGroup.GROUP_A.value, ExperimentGroup.GROUP_B.value):
@@ -174,7 +167,7 @@ async def update_group(
 async def get_session_timeline(
     session_id: str,
     db: AsyncSession = Depends(get_db),
-    _: dict = Depends(_require_admin),
+    _: dict = Depends(require_admin),
 ):
     """Timeline of session events."""
     result = await db.execute(
@@ -200,7 +193,7 @@ async def get_session_timeline(
 async def export_metrics(
     format: str = "json",
     db: AsyncSession = Depends(get_db),
-    _: dict = Depends(_require_admin),
+    _: dict = Depends(require_admin),
 ):
     """Export metrics (json or csv)."""
     result = await db.execute(select(ExperimentMetrics).order_by(ExperimentMetrics.created_at))
@@ -226,7 +219,7 @@ async def export_metrics(
 @router.get("/analysis")
 async def get_analysis(
     db: AsyncSession = Depends(get_db),
-    _: dict = Depends(_require_admin),
+    _: dict = Depends(require_admin),
 ):
     """Built-in statistical analysis."""
     result = await db.execute(select(ExperimentMetrics))
@@ -237,7 +230,7 @@ async def get_analysis(
 @router.get("/arm-analysis", response_model=ArmAnalysisResponse)
 async def get_arm_analysis(
     db: AsyncSession = Depends(get_db),
-    _: dict = Depends(_require_admin),
+    _: dict = Depends(require_admin),
 ):
     """Comparison of the open vs closed arm on A4-5 metrics."""
     from config import settings

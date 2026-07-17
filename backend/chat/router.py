@@ -27,7 +27,7 @@ from chat.stream_protocol import (
     tool_input_start,
     tool_output_available,
 )
-from chat.tools import TOOL_DEFINITIONS, _run_vpcs_show_ip, execute_tool
+from chat.tools import TOOL_DEFINITIONS, execute_tool, run_vpcs_show_ip
 from config import settings
 from core.llm.client import build_client, model_supports_tools, model_uri
 from core.llm.prompts import LANGUAGE_REMINDER, TUTOR_SYSTEM_PROMPT
@@ -136,7 +136,7 @@ async def _fetch_mcp_context(mcp_client, ctx, expected_vpcs: dict | None = None)
             vpcs_nodes = [c for c in components if c.type == "vpcs" and c.status == "started"]
             if vpcs_nodes:
                 ip_results = await asyncio.gather(
-                    *(_run_vpcs_show_ip(c.name, ctx, mcp_client) for c in vpcs_nodes),
+                    *(run_vpcs_show_ip(c.name, ctx, mcp_client) for c in vpcs_nodes),
                     return_exceptions=True,
                 )
                 lines = []

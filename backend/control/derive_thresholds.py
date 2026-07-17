@@ -187,15 +187,10 @@ if __name__ == "__main__":
 
     def _build_session(
         spell_len: int,
-        recover_at: int | None = None,
         regime: str = "stuck_on_step",
         t_step: int = 15,
     ) -> dict:
-        """Session: a bad spell of length spell_len, then productive.
-
-        recover_at: if given, inserts an early exit into the productive regime
-        (a short self-exit, needed as a basis for n_false).
-        """
+        """Session: a bad spell of length spell_len, then productive."""
         samples: list[dict[str, Any]] = []
         t, dwell = 0, 0.0
         while t <= spell_len:

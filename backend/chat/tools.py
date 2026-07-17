@@ -58,7 +58,7 @@ TOOL_DEFINITIONS = [
 ALLOWED_TOOLS = {t["function"]["name"] for t in TOOL_DEFINITIONS}
 
 
-async def _run_vpcs_show_ip(node_name: str, ctx, mcp_client) -> dict:
+async def run_vpcs_show_ip(node_name: str, ctx, mcp_client) -> dict:
     """Connects via telnet to the VPCS console and runs show ip."""
     from validation.checks.vpcs import _drain_until_prompt, _parse_show_ip
 
@@ -125,7 +125,7 @@ async def execute_tool(name: str, args: dict, ctx, mcp_client) -> str:
         elif name == "get_component":
             data = await mcp_client.get_component(ctx, args["component_id"])
         elif name == "get_vpcs_ip":
-            data = await _run_vpcs_show_ip(args["node_name"], ctx, mcp_client)
+            data = await run_vpcs_show_ip(args["node_name"], ctx, mcp_client)
         elif name == "list_errors":
             data = await mcp_client.list_errors(ctx)
         else:

@@ -62,9 +62,9 @@ class Orchestrator:
         # single-agent mode (ablation) forces one generalist instead of type-based specialization
         if self.config.learning_analytics.single_agent_mode:
             agent_name = "intervene_tutor"
-        resolved = resolve_agent(agent_name)
+        resolved_agent_name = resolve_agent(agent_name)
 
-        if resolved is None:
+        if resolved_agent_name is None:
             logger.warning("No agent route for intervention: %s", agent_name)
             return OrchestratorResponse(
                 agent_used=agent_name,
@@ -72,17 +72,17 @@ class Orchestrator:
                 error=f"No route for intervention: {agent_name}",
             )
 
-        agent = self._get_agent(resolved)
+        agent = self._get_agent(resolved_agent_name)
         if agent is None:
             return OrchestratorResponse(
-                agent_used=resolved,
+                agent_used=resolved_agent_name,
                 success=False,
-                error=f"Agent not available for intervention: {resolved}",
+                error=f"Agent not available for intervention: {resolved_agent_name}",
             )
 
         try:
             agent_input = self._build_agent_input(
-                resolved,
+                resolved_agent_name,
                 OrchestratorInput(
                     session_id=input_data.session_id,
                     user_id=input_data.user_id,
@@ -90,7 +90,7 @@ class Orchestrator:
                     payload=input_data.context,
                 ),
             )
-            if resolved in self._LLM_AGENTS:
+            if resolved_agent_name in self._LLM_AGENTS:
                 model_id = self._resolve_intervention_model(input_data.context)
                 result = await agent.run(agent_input, model_id)
                 try:
@@ -99,7 +99,7 @@ class Orchestrator:
                 except Exception:
                     llm_meta = {"model": model_id}
                 return OrchestratorResponse(
-                    agent_used=resolved,
+                    agent_used=resolved_agent_name,
                     success=True,
                     data=result.model_dump(),
                     metadata=llm_meta,
@@ -107,13 +107,13 @@ class Orchestrator:
             else:
                 result = await agent.run(agent_input)
             return OrchestratorResponse(
-                agent_used=resolved,
+                agent_used=resolved_agent_name,
                 success=True,
                 data=result.model_dump(),
             )
         except Exception as e:
             return OrchestratorResponse(
-                agent_used=resolved,
+                agent_used=resolved_agent_name,
                 success=False,
                 error=str(e),
             )

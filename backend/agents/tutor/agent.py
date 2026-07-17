@@ -11,7 +11,7 @@ from config.config_model import ConfigModel
 logger = logging.getLogger(__name__)
 
 
-TUTOR_SYSTEM_PROMPT = (
+TUTOR_AGENT_PROMPT = (
     "Ты — TutorAgent, наставник для студентов, изучающих сетевые технологии.\n"
     "Правила:\n"
     "- Объясняй концепции, не давай готовых решений\n"
@@ -32,11 +32,11 @@ class TutorAgent(BaseAgent):
 
     def system_prompt(self) -> str:
         """Mentor's system prompt."""
-        return TUTOR_SYSTEM_PROMPT
+        return TUTOR_AGENT_PROMPT
 
     async def run(self, input_data: TutorInput, model_id: str | None = None) -> TutorResponse:
         """Answer a question with optional MCP context."""
-        mid = model_id or self.agents_config.intervention_model
+        resolved_model = model_id or self.agents_config.intervention_model
         prompt_parts = [f"Вопрос студента: {input_data.question}"]
 
         if input_data.failing_check:
@@ -46,7 +46,7 @@ class TutorAgent(BaseAgent):
             prompt_parts.append(input_data.agent_context.to_prompt())
 
         try:
-            result = await self._agent_for(mid).run("\n\n".join(prompt_parts))
+            result = await self._agent_for(resolved_model).run("\n\n".join(prompt_parts))
             return TutorResponse(
                 answer=result.output,
                 follow_up_questions=[],
