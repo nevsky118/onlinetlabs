@@ -1,4 +1,4 @@
-import { ChevronLeftIcon } from "lucide-react"
+import { BanIcon, ChevronLeftIcon } from "lucide-react"
 import Link from "next/link"
 import type { SessionStatus } from "../types"
 import { Badge } from "@/ui/badge"
@@ -23,9 +23,11 @@ const STATUS_VARIANT: Record<
 export function SessionPageHeader({
   lab,
   status,
+  noAssist,
 }: {
   lab: { slug: string; title: string | null }
   status: SessionStatus
+  noAssist: boolean
 }) {
   return (
     <div className="flex min-w-0 items-center gap-2 text-sm">
@@ -52,6 +54,16 @@ export function SessionPageHeader({
         )}
         {STATUS_LABEL[status]}
       </Badge>
+      {noAssist && (
+        <Badge
+          variant="default"
+          className="shrink-0 uppercase tracking-wide"
+          title="Проактивные подсказки отключены в этой сессии (near-transfer)"
+        >
+          <BanIcon data-icon="inline-start" />
+          Без подсказок
+        </Badge>
+      )}
     </div>
   )
 }

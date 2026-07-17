@@ -5,7 +5,7 @@ import pytest
 import respx
 from httpx import Response
 
-from src.gns3_admin_client import GNS3AdminClient
+from src.clients.admin import GNS3AdminClient
 
 
 class TestGns3AdminClientUsers:

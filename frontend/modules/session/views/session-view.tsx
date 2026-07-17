@@ -55,7 +55,11 @@ export function SessionView({
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-6 pb-24 md:pb-6">
           <ConsentGate />
           <div className="flex items-center justify-between gap-3">
-            <SessionPageHeader lab={state.lab} status={state.status} />
+            <SessionPageHeader
+              lab={state.lab}
+              status={state.status}
+              noAssist={state.noAssist}
+            />
             <div className="flex shrink-0 items-center gap-2">
               <ChatTrigger />
               <EscalateButton sessionId={sessionId} />

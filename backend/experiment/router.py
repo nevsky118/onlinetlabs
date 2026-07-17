@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth.dependencies import get_current_user
 from db.session import get_db
 from experiment.analysis import compute_arm_analysis, compute_experiment_analysis
-from experiment.group_assigner import ExperimentGroup
+from experiment.assignment import ExperimentGroup
 from experiment.schemas import (
     ArmAnalysisResponse,
     ExperimentStatusResponse,

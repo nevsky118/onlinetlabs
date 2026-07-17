@@ -9,7 +9,7 @@ from autotests.settings.reports import autotest
 
 def _metric(group: str, time_s: float, repeated: int):
     """Простая заглушка метрики — только поля, нужные analysis."""
-    from experiment.group_assigner import ExperimentGroup
+    from experiment.assignment import ExperimentGroup
 
     class _M:
         experiment_group = group
@@ -27,7 +27,7 @@ class TestExperimentAnalysisE2E:
     @autotest.name("E2E: compute_experiment_analysis возвращает H1/H2 по двум группам")
     async def test_a1b2c3d4_analysis(self):
         from experiment.analysis import compute_experiment_analysis
-        from experiment.group_assigner import ExperimentGroup
+        from experiment.assignment import ExperimentGroup
 
         metrics = (
             [_metric(ExperimentGroup.GROUP_A.value, 600.0, 5) for _ in range(4)]

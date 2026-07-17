@@ -24,7 +24,7 @@ from src.events_broker import EventBroker
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-    from src.gns3_admin_client import GNS3AdminClient
+    from src.clients.admin import GNS3AdminClient
 
 logger = logging.getLogger(__name__)
 

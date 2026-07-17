@@ -2,7 +2,7 @@ import pytest
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 
-from agents.analytics.agent import AnalyticsAgent
+from agents.analytics.agent import identify_regime
 from agents.analytics.models import (
     AnalyticsResult,
     SessionFeatures,
@@ -20,12 +20,11 @@ class TestAnalyticsAgentSession:
     @autotest.external_id("e4f5a6b7-c8d9-4e0f-8a1b-2c3d4e5f6a7b")
     @autotest.name("AnalyticsAgent.analyze_session: нет проблем в нормальной сессии")
     def test_e4f5a6b7_no_struggle_normal_session(self, config_model):
-        with autotest.step("Создаём агент и нормальные фичи"):
-            agent = AnalyticsAgent(config_model, db=None)
+        with autotest.step("Создаём нормальные фичи"):
             features = SessionFeatures(**SessionFeaturesData().data)
 
-        with autotest.step("Вызываем analyze_session"):
-            result = agent.analyze_session(features, LearningAnalyticsConfig())
+        with autotest.step("Вызываем identify_regime"):
+            result = identify_regime(features, LearningAnalyticsConfig())
 
         with autotest.step("Проверяем отсутствие struggle"):
             assert_true(isinstance(result, AnalyticsResult), f"тип: {type(result)}")
@@ -39,11 +38,10 @@ class TestAnalyticsAgentSession:
     @autotest.name("AnalyticsAgent.analyze_session: обнаруживает повторяющиеся ошибки")
     def test_f5a6b7c8_detects_repeating_errors(self, config_model):
         with autotest.step("Создаём фичи с error_repeat_count=4"):
-            agent = AnalyticsAgent(config_model, db=None)
             features = SessionFeatures(**SessionFeaturesData(error_repeat_count=4).data)
 
-        with autotest.step("Вызываем analyze_session"):
-            result = agent.analyze_session(
+        with autotest.step("Вызываем identify_regime"):
+            result = identify_regime(
                 features, LearningAnalyticsConfig(error_repeat_threshold=3)
             )
 
@@ -61,13 +59,12 @@ class TestAnalyticsAgentSession:
     @autotest.name("AnalyticsAgent.analyze_session: обнаруживает idle")
     def test_a6b7c8d9_detects_idle(self, config_model):
         with autotest.step("Создаём фичи с idle_periods=4 и отрицательным slope"):
-            agent = AnalyticsAgent(config_model, db=None)
             features = SessionFeatures(
                 **SessionFeaturesData(idle_periods=4, action_rate_slope=-0.8).data
             )
 
-        with autotest.step("Вызываем analyze_session"):
-            result = agent.analyze_session(features, LearningAnalyticsConfig())
+        with autotest.step("Вызываем identify_regime"):
+            result = identify_regime(features, LearningAnalyticsConfig())
 
         with autotest.step("Проверяем обнаружение idle"):
             assert_true(result.struggle_detected, "struggle обнаружен")
@@ -78,13 +75,12 @@ class TestAnalyticsAgentSession:
     @autotest.name("AnalyticsAgent.analyze_session: обнаруживает trial-and-error")
     def test_b7c8d9e0_detects_trial_and_error(self, config_model):
         with autotest.step("Создаём фичи с высокой энтропией и частотой ошибок"):
-            agent = AnalyticsAgent(config_model, db=None)
             features = SessionFeatures(
                 **SessionFeaturesData(action_sequence_entropy=0.95, error_frequency=3.0).data
             )
 
-        with autotest.step("Вызываем analyze_session"):
-            result = agent.analyze_session(features, LearningAnalyticsConfig())
+        with autotest.step("Вызываем identify_regime"):
+            result = identify_regime(features, LearningAnalyticsConfig())
 
         with autotest.step("Проверяем обнаружение trial-and-error"):
             assert_true(result.struggle_detected, "struggle обнаружен")

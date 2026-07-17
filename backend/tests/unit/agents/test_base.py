@@ -23,12 +23,11 @@ class TestBaseAgent:
         with autotest.step("Проверяем атрибуты"):
             assert_equal(agent.config, config_model, "config должен совпадать")
             assert_equal(agent.agents_config, config_model.agents, "agents_config должен совпадать")
-            assert_equal(agent._agents_by_model, {}, "кэш агентов пуст")
 
     @autotest.num("401")
     @autotest.external_id("2883db9b-dd6b-4bb1-9b29-7373034ad968")
-    @autotest.name("BaseAgent: _agent_for кэширует по model_id")
-    def test_2883db9b_agent_for_caches(self, config_model):
+    @autotest.name("BaseAgent: _agent_for не кэширует — pydantic-ai 2.x получает model per run")
+    def test_2883db9b_agent_for_no_cache(self, config_model):
         with autotest.step("Создаём _Dummy агент"):
             agent = _Dummy(config_model)
 
@@ -36,8 +35,8 @@ class TestBaseAgent:
             m1 = agent._agent_for("yandex-gpt-5.1")
             m2 = agent._agent_for("yandex-gpt-5.1")
 
-        with autotest.step("Проверяем идентичность (кэш)"):
-            assert_true(m1 is m2, "_agent_for должен возвращать тот же объект")
+        with autotest.step("Каждый вызов создаёт новый Agent — кэш не нужен"):
+            assert_true(m1 is not m2, "_agent_for не должен переиспользовать инстанс")
 
     @autotest.num("402")
     @autotest.external_id("06f105f1-959d-4ec3-a324-14e25f802ba3")
@@ -92,6 +91,130 @@ class TestBaseAgent:
                     agent._build_model("yandex-gpt-5.1")
         finally:
             settings.agents.providers.update(original_providers)
+
+    @autotest.num("406")
+    @autotest.external_id("fdbc94b5-03b1-4868-8548-e4a4e6493b62")
+    @autotest.name("BaseAgent: _build_model — base_url/заголовки/model-uri для yandex")
+    def test_fdbc94b5_build_model_yandex_characterization(self, config_model):
+        with autotest.step("Создаём _Dummy агент"):
+            agent = _Dummy(config_model)
+
+        with autotest.step("Вызываем _build_model для yandex"):
+            model = agent._build_model("yandex-gpt-5.1")
+
+        with autotest.step("Проверяем base_url, заголовок x-folder-id, model_name клиента"):
+            assert_equal(
+                str(model.client.base_url),
+                "https://ai.api.cloud.yandex.net/v1/",
+                "base_url — дефолтный yandex endpoint",
+            )
+            assert_equal(
+                model.client._custom_headers.get("x-folder-id"),
+                "test-folder",
+                "x-folder-id прокинут в заголовки",
+            )
+            assert_equal(
+                model.model_name,
+                "gpt://test-folder/yandexgpt/latest",
+                "model_name — gpt:// URI",
+            )
+
+    @autotest.num("407")
+    @autotest.external_id("74ebaf3a-6499-46e6-8b98-a5d950bb8673")
+    @autotest.name("BaseAgent: _build_model — base_url/заголовки/model-uri для openai-совместимой модели")
+    def test_74ebaf3a_build_model_openai_compatible_characterization(self, config_model):
+        from config.config_model import LlmProvider, ModelEntry, ProviderCreds
+        from config.env_config_loader import settings
+
+        with autotest.step("Регистрируем openrouter-провайдера и модель в глобальном каталоге"):
+            creds = ProviderCreds(
+                provider=LlmProvider.OPENAI,
+                api_key="sk-or-test",
+                base_url="https://openrouter.ai/api/v1",
+                extra_headers={"X-Title": "onlinetlabs"},
+            )
+            entry = ModelEntry(
+                id="openrouter-test-model",
+                label="test",
+                provider_ref="openrouter-test",
+                model="some-vendor/some-model",
+            )
+            original_providers = settings.agents.providers.copy()
+            original_catalog = list(settings.agents.catalog)
+            settings.agents.providers["openrouter-test"] = creds
+            settings.agents.catalog.append(entry)
+
+        try:
+            with autotest.step("Создаём _Dummy агент и вызываем _build_model"):
+                agent = _Dummy(config_model)
+                model = agent._build_model("openrouter-test-model")
+
+            with autotest.step("Проверяем base_url, заголовки, api_key, model_name клиента"):
+                assert_equal(
+                    str(model.client.base_url),
+                    "https://openrouter.ai/api/v1/",
+                    "base_url — из ProviderCreds",
+                )
+                assert_equal(
+                    model.client._custom_headers.get("X-Title"),
+                    "onlinetlabs",
+                    "extra_headers прокинуты",
+                )
+                assert_equal(model.client.api_key, "sk-or-test", "api_key — из ProviderCreds")
+                assert_equal(
+                    model.model_name,
+                    "some-vendor/some-model",
+                    "model_name — слаг каталога",
+                )
+        finally:
+            settings.agents.providers.clear()
+            settings.agents.providers.update(original_providers)
+            settings.agents.catalog[:] = original_catalog
+
+    @autotest.num("408")
+    @autotest.external_id("8dc27f60-fe66-4195-a58e-8c96dc39588b")
+    @autotest.name("BaseAgent: без кэша два вызова с разными model_id используют каждый свою модель")
+    def test_8dc27f60_agent_for_no_cache_picks_right_model_per_call(self, config_model):
+        from config.config_model import LlmProvider, ModelEntry, ProviderCreds
+        from config.env_config_loader import settings
+
+        with autotest.step("Регистрируем второй провайдер/модель в глобальном каталоге"):
+            creds = ProviderCreds(
+                provider=LlmProvider.OPENAI,
+                api_key="sk-second",
+                base_url="https://openrouter.ai/api/v1",
+            )
+            entry = ModelEntry(
+                id="second-model", label="second", provider_ref="second-provider",
+                model="vendor/second-model",
+            )
+            original_providers = settings.agents.providers.copy()
+            original_catalog = list(settings.agents.catalog)
+            settings.agents.providers["second-provider"] = creds
+            settings.agents.catalog.append(entry)
+
+        try:
+            with autotest.step("Создаём _Dummy агент и вызываем _agent_for для двух model_id"):
+                agent = _Dummy(config_model)
+                agent1 = agent._agent_for("yandex-gpt-5.1")
+                agent2 = agent._agent_for("second-model")
+
+            with autotest.step("Каждый вызов даёт свежий Agent с правильной моделью"):
+                assert_true(agent1 is not agent2, "разные Agent-инстансы, без кэша")
+                assert_equal(
+                    agent1.model.model_name,
+                    "gpt://test-folder/yandexgpt/latest",
+                    "первый model_id → yandex uri",
+                )
+                assert_equal(
+                    agent2.model.model_name,
+                    "vendor/second-model",
+                    "второй model_id → свой model_uri",
+                )
+        finally:
+            settings.agents.providers.clear()
+            settings.agents.providers.update(original_providers)
+            settings.agents.catalog[:] = original_catalog
 
     @autotest.num("403")
     @autotest.external_id("201db06b-9f48-4415-959a-0afe0c63842a")

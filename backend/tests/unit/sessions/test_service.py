@@ -4,7 +4,7 @@ from mcp_sdk.testing.custom_assertions import assert_equal
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from experiment.group_assigner import ExperimentGroup
+from experiment.assignment import ExperimentGroup
 from models.lab import Lab
 from models.user import User
 from sessions.services.launch import assign_experiment_group_if_needed, launch_session

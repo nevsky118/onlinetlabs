@@ -22,7 +22,7 @@ from src.models import (
 from .state_cache import StateCache
 
 if TYPE_CHECKING:
-    from src.gns3_admin_client import GNS3AdminClient
+    from src.clients.admin import GNS3AdminClient
 
 
 async def fetch_state(

@@ -11,7 +11,7 @@ from mcp_sdk.testing.custom_assertions import assert_equal, assert_is_not_none, 
 from agents.analytics.models import StruggleType
 from agents.orchestrator.models import OrchestratorResponse
 from config.config_model import LearningAnalyticsConfig
-from experiment.control_arm import ControlArm
+from experiment.assignment import ControlArm
 from learning_analytics.monitor import SessionMonitor
 
 pytestmark = [pytest.mark.unit]
@@ -183,13 +183,14 @@ class TestOpenLoop:
             fake_event = SimpleNamespace(
                 timestamp=datetime(2026, 6, 21, 12, 0, tzinfo=UTC),
             )
-            m._analytics_agent = MagicMock()
-            m._analytics_agent.analyze_session = MagicMock(return_value=analysis)
             m._feature_extractor = MagicMock()
             m._feature_extractor.compute = MagicMock(return_value=_make_features())
 
         with autotest.step("Act: _run_analysis с одним событием"):
-            with patch.object(m, "_load_new_events", AsyncMock(return_value=[fake_event])):
+            with (
+                patch.object(m, "_load_new_events", AsyncMock(return_value=[fake_event])),
+                patch("learning_analytics.monitor.identify_regime", return_value=analysis),
+            ):
                 await m._run_analysis()
 
         with autotest.step("Assert: orchestrator не вызван, would_intervene записан"):
@@ -245,13 +246,14 @@ class TestOpenLoop:
             fake_event = SimpleNamespace(
                 timestamp=datetime(2026, 6, 21, 12, 0, tzinfo=UTC),
             )
-            m._analytics_agent = MagicMock()
-            m._analytics_agent.analyze_session = MagicMock(return_value=analysis)
             m._feature_extractor = MagicMock()
             m._feature_extractor.compute = MagicMock(return_value=_make_features())
 
         with autotest.step("Act: два вызова _run_analysis подряд"):
-            with patch.object(m, "_load_new_events", AsyncMock(return_value=[fake_event])):
+            with (
+                patch.object(m, "_load_new_events", AsyncMock(return_value=[fake_event])),
+                patch("learning_analytics.monitor.identify_regime", return_value=analysis),
+            ):
                 await m._run_analysis()
                 await m._run_analysis()
 

@@ -4,7 +4,7 @@ import pytest
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_is_none
 
-from experiment.transfer import skill_tag
+from experiment.assignment import skill_tag
 
 pytestmark = [pytest.mark.unit]
 

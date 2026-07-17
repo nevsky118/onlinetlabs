@@ -3,7 +3,7 @@
 from sqlalchemy import select
 
 from agents.orchestrator.models import InterventionInput, OrchestratorResponse
-from experiment.group_assigner import (
+from experiment.assignment import (
     AgentBackend,
     ExperimentGroup,
     assign_group,
@@ -13,6 +13,7 @@ from experiment.group_assigner import (
 from models.user import User
 
 
+# TODO: wire the B-arm into monitor_registry (currently only tests construct it)
 class ExperimentVariantRouter:
     """Маршрутизирует интервенции в бэкенд, назначенный группе эксперимента."""
 

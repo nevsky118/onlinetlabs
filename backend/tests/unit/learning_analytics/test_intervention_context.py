@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from mcp_sdk.testing import autotest
 
-from agents.analytics.agent import AnalyticsAgent
+from agents.analytics.agent import identify_regime
 from agents.analytics.models import SessionFeatures
 from config.config_model import LearningAnalyticsConfig
 from learning_analytics.context import AgentContext
@@ -60,8 +60,7 @@ def _make_observer_stub() -> MagicMock:
 
 
 def _make_monitor(observer, config_model) -> SessionMonitor:
-    """Монитор с реальным AnalyticsAgent, замоканным context_builder и observer'ом."""
-    analytics_agent = AnalyticsAgent(config_model, None)
+    """Монитор с замоканным context_builder и observer'ом."""
     monitor = SessionMonitor(
         mcp_client=None,
         db_factory=None,
@@ -74,7 +73,6 @@ def _make_monitor(observer, config_model) -> SessionMonitor:
     monitor._user_id = "u1"
     monitor._lab_slug = "lab-gns3"
     monitor._ctx = MagicMock()
-    monitor._analytics_agent = analytics_agent
     monitor._context_builder.build = AsyncMock(
         return_value=AgentContext(
             topology_summary="1 router",
@@ -101,7 +99,7 @@ class TestInterventionContextFromObserver:
 
         # Act
         with autotest.step("Вызываем _decide_intervention"):
-            analysis = monitor._analytics_agent.analyze_session(features, LearningAnalyticsConfig())
+            analysis = identify_regime(features, LearningAnalyticsConfig())
             pending = await monitor._decide_intervention(analysis, features)
 
         # Assert
@@ -124,7 +122,7 @@ class TestInterventionContextFromObserver:
 
         # Act
         with autotest.step("Вызываем _decide_intervention"):
-            analysis = monitor._analytics_agent.analyze_session(features, LearningAnalyticsConfig())
+            analysis = identify_regime(features, LearningAnalyticsConfig())
             pending = await monitor._decide_intervention(analysis, features)
 
         # Assert
@@ -145,7 +143,7 @@ class TestInterventionContextFromObserver:
 
         # Act
         with autotest.step("Вызываем _decide_intervention"):
-            analysis = monitor._analytics_agent.analyze_session(features, LearningAnalyticsConfig())
+            analysis = identify_regime(features, LearningAnalyticsConfig())
             pending = await monitor._decide_intervention(analysis, features)
 
         # Assert

@@ -10,8 +10,7 @@ from mcp_sdk.testing.custom_assertions import (
     assert_true,
 )
 
-from agents.analytics.agent import AnalyticsAgent
-from agents.analytics.models import DifficultyRecommendation, StudentMetrics
+from agents.analytics.models import StudentMetrics
 from agents.analytics.tools import AnalyticsTools
 from tests.settings.data.analytics_data import AttemptData
 
@@ -152,76 +151,3 @@ class TestAnalyticsTools:
 
         with autotest.step("Проверяем пустой результат"):
             assert_equal(patterns, [], "нет ошибок")
-
-
-class TestAnalyticsAgent:
-    @autotest.num("436")
-    @autotest.external_id("f7a8b9ca-dbec-4fd4-9abc-def012340007")
-    @autotest.name("AnalyticsAgent: инициализация")
-    def test_f7a8b9ca_init(self, config_model):
-        with autotest.step("Создаём AnalyticsAgent"):
-            agent = AnalyticsAgent(config_model, db=None)
-
-        with autotest.step("Проверяем атрибуты"):
-            assert_true(agent.tools is not None, "tools не None")
-
-    @autotest.num("437")
-    @autotest.external_id("f8a9bacb-dced-4fe5-9abc-def012340008")
-    @autotest.name("AnalyticsAgent: system_prompt содержит роль")
-    def test_f8a9bacb_system_prompt(self, config_model):
-        with autotest.step("Получаем system_prompt"):
-            agent = AnalyticsAgent(config_model, db=None)
-            prompt = agent.system_prompt()
-
-        with autotest.step("Проверяем содержание"):
-            assert_true(len(prompt) > 10, "prompt содержательный")
-
-    @autotest.num("438")
-    @autotest.external_id("f9aabbcc-ddee-4ff6-9abc-def012340009")
-    @autotest.name("AnalyticsAgent: analyze рекомендует advanced при высоком success_rate")
-    def test_f9aabbcc_analyze_high_success(self, config_model):
-        now = datetime.now(tz=UTC)
-        with autotest.step("Создаём 10 успешных попыток"):
-            attempts = [
-                AttemptData(
-                    id=f"a{i}",
-                    step_slug=f"step-{i}",
-                    result="pass",
-                    started_at=now - timedelta(minutes=i + 1),
-                    ended_at=now - timedelta(minutes=i),
-                )
-                for i in range(10)
-            ]
-            agent = AnalyticsAgent(config_model, db=None)
-
-        with autotest.step("Вызываем analyze"):
-            result = agent.analyze(attempts, current_difficulty="intermediate")
-
-        with autotest.step("Проверяем рекомендацию"):
-            assert_true(isinstance(result, DifficultyRecommendation), f"тип: {type(result)}")
-            assert_equal(result.recommended_difficulty, "advanced", "должен рекомендовать advanced")
-
-    @autotest.num("439")
-    @autotest.external_id("faaabbcd-deef-4f07-9abc-def012340010")
-    @autotest.name("AnalyticsAgent: analyze рекомендует beginner при низком success_rate")
-    def test_faaabbcd_analyze_low_success(self, config_model):
-        now = datetime.now(tz=UTC)
-        with autotest.step("Создаём 10 неудачных попыток"):
-            attempts = [
-                AttemptData(
-                    id=f"a{i}",
-                    step_slug="step-1",
-                    result="fail",
-                    started_at=now - timedelta(minutes=i + 1),
-                    ended_at=now - timedelta(minutes=i),
-                    error_details="failed",
-                )
-                for i in range(10)
-            ]
-            agent = AnalyticsAgent(config_model, db=None)
-
-        with autotest.step("Вызываем analyze"):
-            result = agent.analyze(attempts, current_difficulty="intermediate")
-
-        with autotest.step("Проверяем рекомендацию"):
-            assert_equal(result.recommended_difficulty, "beginner", "должен рекомендовать beginner")

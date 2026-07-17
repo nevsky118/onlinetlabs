@@ -4,7 +4,7 @@
 import logging
 from typing import Any
 
-from src.gns3_admin_client import GNS3AdminClient
+from src.clients.admin import GNS3AdminClient
 
 logger = logging.getLogger(__name__)
 

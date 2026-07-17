@@ -2,6 +2,7 @@
 
 import logging
 
+from agents._shared import format_failing_check
 from agents.base import BaseAgent
 from agents.hint.models import HintInput, HintResponse
 from agents.hint.tools import HintTools
@@ -46,13 +47,7 @@ class HintAgent(BaseAgent):
 
         check_line = ""
         if input_data.failing_check:
-            fc = input_data.failing_check
-            node = fc.get("params", {}).get("node") if isinstance(fc.get("params"), dict) else None
-            node_str = f" на {node}" if node else ""
-            check_line = (
-                f"Провалившаяся проверка {fc.get('kind')}{node_str}: "
-                f"ожидалось {fc.get('expected')}, получено {fc.get('actual')}.\n"
-            )
+            check_line = f"{format_failing_check(input_data.failing_check)}\n"
 
         try:
             result = await self._agent_for(mid).run(

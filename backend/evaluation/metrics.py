@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from evaluation.harness import Detection
 from evaluation.scenarios import LabeledScenario, is_normal
+from evaluation.stats import percentile
 from learning_analytics.process_state import ProcessRegime
 
 
@@ -57,9 +58,8 @@ def bootstrap_ci(values: list[float], n_resamples: int = 1000, seed: int = 0):
 def _p90(values: list[float]) -> float | None:
     if not values:
         return None
-    s = sorted(values)
-    # nearest-rank по базе (n-1): для n=10 → индекс 8 (p90), не max (p100)
-    return s[min(len(s) - 1, int(0.9 * (len(s) - 1)))]
+    # Hyndman-Fan Type 7 (numpy/R default), см. evaluation.stats.percentile
+    return percentile(values, 90)
 
 
 def evaluate(pairs) -> "DetectionMetrics":
@@ -116,7 +116,8 @@ class OperatingPoint:
 
 def operating_curve(scenarios, t_k_grid, config, costs) -> list[OperatingPoint]:
     """Рабочая кривая: метрики + J как функция порога dwell T_k."""
-    from control.derive_thresholds import _BAD_REGIMES, total_J
+    from control.criterion import BAD_REGIMES
+    from control.derive_thresholds import total_J
     from evaluation.harness import run_identifier
 
     # строим сессии однократно (структура не зависит от t_k)
@@ -139,7 +140,7 @@ def operating_curve(scenarios, t_k_grid, config, costs) -> list[OperatingPoint]:
     for t_k in t_k_grid:
         pairs = [(scn, run_identifier(scn, t_k, config)) for scn in scenarios]
         m = evaluate(pairs)
-        thresholds = dict.fromkeys(_BAD_REGIMES, t_k)
+        thresholds = dict.fromkeys(BAD_REGIMES, t_k)
         j = total_J(sessions, costs, thresholds, cooldown_seconds=cooldown)
         points.append(OperatingPoint(t_k, m.latency_median, m.false_per_hour, m.recall, j))
     return points

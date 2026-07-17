@@ -2,10 +2,9 @@
 
 import logging
 
-from agents.analytics.agent import AnalyticsAgent
 from config.config_model import ConfigModel
 from control_interface.interface import ControlInterface
-from experiment.arm_resolver import effective_arm
+from experiment.assignment import effective_arm
 from learning_analytics.monitor import SessionMonitor
 
 logger = logging.getLogger(__name__)
@@ -35,7 +34,6 @@ class SessionMonitorRegistry:
         self._monitors: dict[str, SessionMonitor] = {}
         # observer живёт дольше монитора — реестр владеет им
         self._observers: dict[str, object] = {}
-        self._analytics_agent = AnalyticsAgent(config, None)
 
     async def start(self, session_id: str, user_id: str, lab_slug: str, ctx) -> None:
         """Создаёт и запускает монитор сессии. Повторный вызов для той же сессии ничего не делает."""
@@ -90,7 +88,7 @@ class SessionMonitorRegistry:
             control_interface=control_interface,
         )
         self._monitors[session_id] = monitor
-        await monitor.start_session(session_id, user_id, lab_slug, ctx, self._analytics_agent)
+        await monitor.start_session(session_id, user_id, lab_slug, ctx)
         logger.info("SessionMonitor запущен для %s", session_id)
 
     async def stop(self, session_id: str) -> None:

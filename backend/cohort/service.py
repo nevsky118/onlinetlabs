@@ -3,7 +3,7 @@
 from sqlalchemy import select
 
 from cohort.metrics import LearnerOutcome, aggregate_cohort
-from experiment.transfer import skill_tag
+from experiment.assignment import skill_tag
 from models.experiment import ExperimentMetrics
 from models.lab import Lab
 from models.progress import LabProgress

@@ -2,7 +2,7 @@ import pytest
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal
 
-from experiment.group_assigner import ExperimentGroup, assign_group
+from experiment.assignment import ExperimentGroup, assign_group
 
 pytestmark = [pytest.mark.unit]
 
@@ -22,7 +22,7 @@ class TestGroupAssigner:
         # Arrange
         with autotest.step("Подменяем random.choice на детерминированную лямбду"):
             monkeypatch.setattr(
-                "experiment.group_assigner.random.choice",
+                "experiment.assignment.random.choice",
                 lambda choices: forced_group,
             )
 

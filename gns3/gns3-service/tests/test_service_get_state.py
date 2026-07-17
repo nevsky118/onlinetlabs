@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from src.db.models import Session, SessionStatus
-from src.service import SessionService
+from src.services.session_lifecycle import SessionService
 
 
 def _make_active_session(uptime_seconds: int = 0):

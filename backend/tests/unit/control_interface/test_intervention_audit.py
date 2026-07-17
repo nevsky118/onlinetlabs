@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from agents.analytics.models import StruggleType
 from agents.orchestrator.models import OrchestratorResponse
 from config.config_model import LearningAnalyticsConfig
-from experiment.control_arm import ControlArm
+from experiment.assignment import ControlArm
 from learning_analytics.monitor import SessionMonitor
 from models.mcp_audit import MCPAudit
 
@@ -285,13 +285,14 @@ class TestInterventionAudit:
             analysis = _make_analysis()
             fake_event = MagicMock()
             fake_event.timestamp = datetime(2026, 6, 21, 12, 0, tzinfo=UTC)
-            m._analytics_agent = MagicMock()
-            m._analytics_agent.analyze_session = MagicMock(return_value=analysis)
             m._feature_extractor = MagicMock()
             m._feature_extractor.compute = MagicMock(return_value=MagicMock())
 
         with autotest.step("Act: _run_analysis arm=OPEN"):
-            with patch.object(m, "_load_new_events", AsyncMock(return_value=[fake_event])):
+            with (
+                patch.object(m, "_load_new_events", AsyncMock(return_value=[fake_event])),
+                patch("learning_analytics.monitor.identify_regime", return_value=analysis),
+            ):
                 await m._run_analysis()
 
         with autotest.step("Assert: mcp_audit пуст (dispatch не вызван)"):

@@ -24,11 +24,11 @@ class JResult:
     n_false: int
 
 
-_BAD_REGIMES = {"stuck_on_step", "repeating_errors", "idle", "trial_and_error"}
+BAD_REGIMES = {"stuck_on_step", "repeating_errors", "idle", "trial_and_error"}
 
 
-def _is_bad(regime: str) -> bool:
-    return regime in _BAD_REGIMES
+def is_bad_regime(regime: str) -> bool:
+    return regime in BAD_REGIMES
 
 
 def _to_sec(x) -> float:
@@ -58,13 +58,13 @@ def _count_false(samples, interventions) -> int:
     i = 0
     n = len(samples)
     while i < n - 1:
-        if _is_bad(samples[i]["regime"]):
+        if is_bad_regime(samples[i]["regime"]):
             spell_start = ts[i]
             j = i
-            while j < n - 1 and _is_bad(samples[j]["regime"]):
+            while j < n - 1 and is_bad_regime(samples[j]["regime"]):
                 j += 1
             spell_end = ts[j]  # момент выхода в продуктивный режим
-            recovered = not _is_bad(samples[j]["regime"])
+            recovered = not is_bad_regime(samples[j]["regime"])
             # Есть ли интервенция внутри спелла [spell_start, spell_end)?
             had_iv = any(spell_start <= ivt < spell_end for ivt in intervention_ts)
             spells.append(
@@ -94,7 +94,7 @@ def _count_false(samples, interventions) -> int:
     return n_false
 
 
-def compute_J(samples, interventions, costs, dwell_thresholds=None, *, bad_duration_samples=None):
+def compute_J(samples, interventions, costs, *, bad_duration_samples=None):
     """Стоимость политики по логу состояния сессии.
 
     samples: список dict {ts: float|datetime, regime: str, dwell: float}, по возрастанию ts.
@@ -113,7 +113,7 @@ def compute_J(samples, interventions, costs, dwell_thresholds=None, *, bad_durat
     ts = [_to_sec(s["ts"]) for s in dur_samples]
     bad_duration = 0.0
     for i in range(len(dur_samples) - 1):
-        if _is_bad(dur_samples[i]["regime"]):
+        if is_bad_regime(dur_samples[i]["regime"]):
             bad_duration += ts[i + 1] - ts[i]
     n_interventions = len(interventions)
     n_false = _count_false(samples, interventions)

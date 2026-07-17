@@ -1,13 +1,10 @@
 import logging
-from collections.abc import Callable
 
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from experiment.group_assigner import ExperimentGroup, assign_group
+from experiment.assignment import assign_experiment_group_if_needed
 from models.lab import Lab
 from models.session import LearningSession
-from models.user import User
 from security.secrets import decrypt_secret, encrypt_secret
 from sessions.services.proxy import existing_gns3_deep_url, existing_gns3_url
 from sessions.services.query import get_active_session
@@ -26,22 +23,6 @@ async def count_active_sessions(db, user_id: str) -> int:
         )
     )
     return int(result.scalar_one() or 0)
-
-
-async def assign_experiment_group_if_needed(
-    db: AsyncSession,
-    user_id: str,
-    group_assigner: Callable[[], ExperimentGroup] = assign_group,
-) -> None:
-    """Назначить экспериментальную группу пользователю, если ещё не назначена.
-
-    group_assigner — функция выбора группы. Дефолт — assign_group.
-    В тестах подменяется на детерминированную лямбду.
-    """
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if user is not None and user.experiment_group is None:
-        user.experiment_group = group_assigner().value
 
 
 async def _create_provisioning_row(db_factory, user_id: str, lab_slug: str):

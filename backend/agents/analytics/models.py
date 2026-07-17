@@ -1,4 +1,4 @@
-"""Модели AnalyticsAgent."""
+"""Модели identify_regime и батч-аналитики прогресса."""
 
 from datetime import datetime
 from enum import Enum
@@ -13,13 +13,6 @@ class StudentMetrics(BaseModel):
     success_rate: float = Field(ge=0.0, le=1.0)
     avg_time_per_step: float = Field(description="Среднее время на шаг (секунды)")
     struggling_steps: list[str] = Field(description="Шаги с >2 неудачами подряд")
-
-
-class AnalyticsInput(BaseModel):
-    """Вход для аналитики."""
-
-    user_id: str
-    lab_slug: str
 
 
 class DifficultyRecommendation(BaseModel):

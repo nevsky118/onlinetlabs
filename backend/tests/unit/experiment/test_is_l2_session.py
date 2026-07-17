@@ -5,7 +5,7 @@ from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_false, assert_true
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from experiment.arm_resolver import is_l2_session
+from experiment.assignment import is_l2_session
 from models.lab import Lab
 from models.progress import LabProgress
 from models.user import User

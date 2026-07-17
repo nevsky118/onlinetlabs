@@ -36,12 +36,15 @@ class TestTutorAgentLLM:
     @autotest.num("561")
     @autotest.external_id("b2c3d4e5-f6a7-4890-bcde-561000000002")
     @autotest.name("TutorAgent: run с agent_context — реальный Agent.run даёт ответ из output")
-    async def test_b2c3d4e5_run_with_context(self, config_model):
-        with autotest.step("Создаём агент с контекстом, берём реальный pydantic-ai Agent"):
+    async def test_b2c3d4e5_run_with_context(self, config_model, monkeypatch):
+        with autotest.step("Создаём агент с контекстом, подменяем _build_model на TestModel"):
             agent = TutorAgent(config_model, mcp_client=None)
             context = AgentContextData().context
             mid = config_model.agents.intervention_model
-            pyd_agent = agent._agent_for(mid)
+            canned = "OSPF сессия не поднимается из-за неверной маски"
+            monkeypatch.setattr(
+                agent, "_build_model", lambda model_id: TestModel(custom_output_text=canned)
+            )
             inp = TutorInput(
                 session_id="s1",
                 user_id="u1",
@@ -49,10 +52,8 @@ class TestTutorAgentLLM:
                 agent_context=context,
             )
 
-        with autotest.step("Вызываем run с моделью, подменённой на TestModel (без сети)"):
-            canned = "OSPF сессия не поднимается из-за неверной маски"
-            with pyd_agent.override(model=TestModel(custom_output_text=canned)):
-                result = await agent.run(inp, model_id=mid)
+        with autotest.step("Вызываем run (без сети — модель подменена на TestModel)"):
+            result = await agent.run(inp, model_id=mid)
 
         with autotest.step("Ответ собран из result.output реального прогона"):
             assert_true(isinstance(result, TutorResponse), f"тип: {type(result)}")

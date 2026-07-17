@@ -3,7 +3,7 @@
 import math
 from dataclasses import dataclass
 
-from experiment.group_assigner import ExperimentGroup
+from experiment.assignment import ExperimentGroup
 
 
 @dataclass

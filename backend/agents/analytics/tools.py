@@ -1,4 +1,4 @@
-"""Инструменты AnalyticsAgent для анализа прогресса."""
+"""Инструменты батч-аналитики прогресса по StepAttempt."""
 
 from collections import Counter, defaultdict
 

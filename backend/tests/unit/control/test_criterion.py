@@ -22,7 +22,7 @@ class TestCriterion:
             costs = Costs(c_stuck=1.0, c_intervention=2.0, c_false=0.5)
 
         with autotest.step("Act: compute_J"):
-            res = compute_J(samples, interventions, costs, dwell_thresholds={"stuck_on_step": 0.0})
+            res = compute_J(samples, interventions, costs)
 
         with autotest.step("Assert: bad_duration=60, n_interventions=1, n_false=0, J=62"):
             assert_equal(res.bad_duration, 60.0, "bad_duration == 60")

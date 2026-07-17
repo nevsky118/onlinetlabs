@@ -2,6 +2,7 @@
 
 import logging
 
+from agents._shared import format_failing_check
 from agents.base import BaseAgent
 from agents.tutor.models import TutorInput, TutorResponse
 from agents.tutor.tools import TutorTools
@@ -39,14 +40,7 @@ class TutorAgent(BaseAgent):
         prompt_parts = [f"Вопрос студента: {input_data.question}"]
 
         if input_data.failing_check:
-            fc = input_data.failing_check
-            node = fc.get("params", {}).get("node") if isinstance(fc.get("params"), dict) else None
-            node_str = f" на {node}" if node else ""
-            prompt_parts.insert(
-                0,
-                f"Провалившаяся проверка {fc.get('kind')}{node_str}: "
-                f"ожидалось {fc.get('expected')}, получено {fc.get('actual')}.",
-            )
+            prompt_parts.insert(0, format_failing_check(input_data.failing_check))
 
         if input_data.agent_context:
             prompt_parts.append(input_data.agent_context.to_prompt())

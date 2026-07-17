@@ -5,8 +5,7 @@ from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from experiment.arm_resolver import effective_arm
-from experiment.control_arm import ControlArm
+from experiment.assignment import ControlArm, effective_arm
 from models.lab import Lab
 from models.progress import LabProgress
 from models.user import User

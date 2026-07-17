@@ -76,6 +76,7 @@ export type FullSessionState = {
   nodes: Node[]
   links: Link[]
   metrics: SessionMetrics
+  noAssist: boolean
 }
 
 export type ActivityEvent = {

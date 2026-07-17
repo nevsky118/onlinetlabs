@@ -11,7 +11,7 @@ from src.exceptions import SessionClosed, SessionNotFound
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from src.gns3_admin_client import GNS3AdminClient
+    from src.clients.admin import GNS3AdminClient
 
 
 async def _load_active_session(db: AsyncSession, session_id: str) -> Session:

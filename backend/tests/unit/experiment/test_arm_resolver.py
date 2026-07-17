@@ -3,8 +3,7 @@ from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_in
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from experiment.arm_resolver import resolve_control_arm
-from experiment.control_arm import ControlArm
+from experiment.assignment import ControlArm, UserNotFound, resolve_control_arm
 from models.user import User
 
 pytestmark = [pytest.mark.unit]
@@ -51,7 +50,7 @@ class TestArmResolver:
             "Arrange: пользователь с control_arm=closed; assign_arm → ошибка при вызове"
         ):
             session_factory = db_setup
-            import experiment.control_arm as m
+            import experiment.assignment as m
 
             monkeypatch.setattr(
                 m.random, "choice", lambda seq: (_ for _ in ()).throw(AssertionError("reassigned"))
@@ -67,14 +66,12 @@ class TestArmResolver:
         with autotest.step("Assert: вернулось CLOSED, reassign не произошёл"):
             assert_equal(arm, ControlArm.CLOSED, "existing arm не перезаписан")
 
-    @autotest.num("1124")
-    @autotest.external_id("35ec9f55-168f-483c-83c8-78a54903e2a7")
-    @autotest.name("resolve_control_arm: несуществующий user_id возвращает плечо, не падает")
-    async def test_35ec9f55_unknown_user_returns_arm_without_persist(self, db_setup):
-        with autotest.step("Act: resolve для несуществующего пользователя"):
+    @autotest.num("1125")
+    @autotest.external_id("9973c6f2-6271-423e-93ed-0febcb672226")
+    @autotest.name("resolve_control_arm: несуществующий user_id — UserNotFound (детерминированность)")
+    async def test_9973c6f2_unknown_user_raises_user_not_found(self, db_setup):
+        with autotest.step("Act+Assert: resolve для несуществующего пользователя падает"):
             session_factory = db_setup
             async with session_factory() as db:
-                arm = await resolve_control_arm(db, "ghost")
-
-        with autotest.step("Assert: плечо из допустимых"):
-            assert_in(arm, (ControlArm.OPEN, ControlArm.CLOSED), "плечо валидно")
+                with pytest.raises(UserNotFound):
+                    await resolve_control_arm(db, "ghost")

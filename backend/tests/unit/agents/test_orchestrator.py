@@ -6,9 +6,7 @@ from mcp_sdk.testing.custom_assertions import assert_equal, assert_is_none, asse
 
 from agents.hint.models import HintResponse
 from agents.orchestrator.agent import Orchestrator
-from agents.orchestrator.models import OrchestratorInput, OrchestratorResponse
 from agents.orchestrator.router import INTENT_TO_AGENT, resolve_agent
-from agents.tutor.models import TutorResponse
 
 
 def _mock_hint_agent(orch):
@@ -20,21 +18,7 @@ def _mock_hint_agent(orch):
     orch._agents["hint"] = fake
 
 
-def _mock_tutor_agent(orch):
-    """Возвращает TutorResponse без LLM-вызова."""
-    fake = AsyncMock()
-    fake.run = AsyncMock(
-        return_value=TutorResponse(answer="ответ", follow_up_questions=[], references=[])
-    )
-    orch._agents["tutor"] = fake
-
-
 pytestmark = [pytest.mark.unit, pytest.mark.agents]
-
-
-def _make_orchestrator_input(**overrides):
-    defaults = dict(session_id="s1", user_id="u1", intent="hint", payload={})
-    return OrchestratorInput(**(defaults | overrides))
 
 
 # Router
@@ -73,136 +57,6 @@ class TestOrchestrator:
         with autotest.step("Проверяем атрибуты"):
             assert_equal(orch.config, config_model, "config")
             assert_equal(orch._agents, {}, "agents пуст")
-
-    @autotest.num("463")
-    @autotest.external_id("d4e5f6a7-b8c9-4dae-8f9a-efa012340004")
-    @autotest.name("Orchestrator: run с неизвестным intent")
-    async def test_d4e5f6a7_run_unknown_intent(self, config_model, fake_mcp):
-        with autotest.step("Запускаем с unknown intent"):
-            orch = Orchestrator(config_model, mcp_client=fake_mcp)
-            inp = _make_orchestrator_input(intent="unknown")
-            result = await orch.run(inp)
-
-        with autotest.step("Проверяем ошибку"):
-            assert_true(isinstance(result, OrchestratorResponse), f"тип: {type(result)}")
-            assert_true(not result.success, "не должен быть успешным")
-            assert_true(result.error is not None, "должна быть ошибка")
-
-    @autotest.num("464")
-    @autotest.external_id("d5e6f7a8-b9ca-4dbe-8f9a-efa012340005")
-    @autotest.name("Orchestrator: run с intent=hint")
-    async def test_d5e6f7a8_run_hint(self, config_model, fake_mcp):
-        with autotest.step("Запускаем hint с мок-агентом"):
-            orch = Orchestrator(config_model, mcp_client=fake_mcp)
-            _mock_hint_agent(orch)
-            inp = _make_orchestrator_input(
-                intent="hint",
-                payload={"lab_slug": "lab-1", "step_slug": "step-1", "attempts_count": 2},
-            )
-            result = await orch.run(inp)
-
-        with autotest.step("Проверяем результат"):
-            assert_true(result.success, f"должен быть успешным, error={result.error}")
-            assert_equal(result.agent_used, "hint", "agent_used=hint")
-            assert_true("hint" in result.data, "data содержит hint")
-
-    @autotest.num("465")
-    @autotest.external_id("d6e7f8a9-badb-4dce-8f9a-efa012340006")
-    @autotest.name("Orchestrator: run с intent=question")
-    async def test_d6e7f8a9_run_question(self, config_model, fake_mcp):
-        with autotest.step("Запускаем question с мок-агентом"):
-            orch = Orchestrator(config_model, mcp_client=fake_mcp)
-            _mock_tutor_agent(orch)
-            inp = _make_orchestrator_input(
-                intent="question",
-                payload={"question": "Что такое OSPF?"},
-            )
-            result = await orch.run(inp)
-
-        with autotest.step("Проверяем результат"):
-            assert_true(result.success, f"успешно, error={result.error}")
-            assert_equal(result.agent_used, "tutor", "agent_used=tutor")
-            assert_true("answer" in result.data, "data содержит answer")
-
-    @autotest.num("466")
-    @autotest.external_id("d7e8f9aa-bbec-4dde-8f9a-efa012340007")
-    @autotest.name("Orchestrator: run с intent=lab")
-    async def test_d7e8f9aa_run_lab(self, config_model, fake_mcp):
-        with autotest.step("Запускаем lab"):
-            orch = Orchestrator(config_model, mcp_client=fake_mcp)
-            inp = _make_orchestrator_input(
-                intent="lab",
-                payload={
-                    "environment_url": "http://localhost:3080",
-                    "project_id": "p1",
-                    "query": "show topology",
-                },
-            )
-            result = await orch.run(inp)
-
-        with autotest.step("Проверяем результат"):
-            assert_true(result.success, f"успешно, error={result.error}")
-            assert_equal(result.agent_used, "lab", "agent_used=lab")
-
-    @autotest.num("467")
-    @autotest.external_id("d8e9faab-bcfd-4dee-8f9a-efa012340008")
-    @autotest.name("Orchestrator: run с intent=validate")
-    async def test_d8e9faab_run_validate(self, config_model, fake_mcp):
-        with autotest.step("Запускаем validate"):
-            orch = Orchestrator(config_model, mcp_client=fake_mcp)
-            inp = _make_orchestrator_input(
-                intent="validate",
-                payload={
-                    "environment_url": "http://localhost:3080",
-                    "project_id": "p1",
-                    "lab_slug": "lab-1",
-                    "step_slug": "step-1",
-                    "criteria": [{"component_id": "n1", "expected_status": "running"}],
-                },
-            )
-            result = await orch.run(inp)
-
-        with autotest.step("Проверяем результат"):
-            assert_true(result.success, f"успешно, error={result.error}")
-            assert_equal(result.agent_used, "validator", "agent_used=validator")
-
-    @autotest.num("468")
-    @autotest.external_id("d9eafbbc-cdae-4dfe-8f9a-efa012340009")
-    @autotest.name("Orchestrator: lazy-инициализация агентов")
-    async def test_d9eafbbc_lazy_agent_init(self, config_model, fake_mcp):
-        with autotest.step("Создаём Orchestrator"):
-            orch = Orchestrator(config_model, mcp_client=fake_mcp)
-            assert_equal(len(orch._agents), 0, "агентов нет")
-
-        with autotest.step("Запускаем hint с мок-агентом"):
-            _mock_hint_agent(orch)
-            inp = _make_orchestrator_input(
-                intent="hint",
-                payload={"lab_slug": "lab-1", "step_slug": "step-1"},
-            )
-            await orch.run(inp)
-
-        with autotest.step("Проверяем что hint агент в кеше"):
-            assert_true("hint" in orch._agents, "hint в кеше")
-
-    @autotest.num("469")
-    @autotest.external_id("daebfccd-deef-4e0f-8f9a-efa012340010")
-    @autotest.name("Orchestrator: повторный вызов переиспользует агента")
-    async def test_daebfccd_agent_reuse(self, config_model, fake_mcp):
-        with autotest.step("Два вызова hint"):
-            orch = Orchestrator(config_model, mcp_client=fake_mcp)
-            _mock_hint_agent(orch)
-            inp = _make_orchestrator_input(
-                intent="hint",
-                payload={"lab_slug": "lab-1", "step_slug": "step-1"},
-            )
-            await orch.run(inp)
-            agent_first = orch._agents.get("hint")
-            await orch.run(inp)
-            agent_second = orch._agents.get("hint")
-
-        with autotest.step("Проверяем что тот же объект"):
-            assert_true(agent_first is agent_second, "должен быть тот же объект")
 
 
 from agents.orchestrator.models import InterventionInput

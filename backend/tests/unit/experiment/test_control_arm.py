@@ -2,7 +2,7 @@ import pytest
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal
 
-from experiment.control_arm import ControlArm, assign_arm
+from experiment.assignment import ControlArm, assign_arm
 
 pytestmark = [pytest.mark.unit]
 
@@ -22,7 +22,7 @@ class TestControlArm:
     @autotest.name("ControlArm: assign_arm возвращает OPEN при первом элементе")
     def test_6e20da78_assign_arm_valid(self, monkeypatch):
         with autotest.step("Arrange: подменить random.choice → первый элемент"):
-            import experiment.control_arm as m
+            import experiment.assignment as m
 
             monkeypatch.setattr(m.random, "choice", lambda seq: seq[0])
         with autotest.step("Act: вызвать assign_arm"):
