@@ -1,4 +1,4 @@
-"""Реестр SessionMonitor по session_id."""
+"""Registry of SessionMonitor instances by session_id."""
 
 import logging
 
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class SessionMonitorRegistry:
-    """Реестр активных SessionMonitor по идентификатору сессии."""
+    """Registry of active SessionMonitor instances by session id."""
 
     def __init__(
         self,
@@ -23,7 +23,7 @@ class SessionMonitorRegistry:
         activity_log=None,
         gns3_client=None,
     ):
-        """Хранит зависимости для создания мониторов и словарь запущенных мониторов."""
+        """Stores dependencies for creating monitors and a dict of running monitors."""
         self._config = config
         self._mcp_client = mcp_client
         self._db_factory = db_factory
@@ -32,15 +32,15 @@ class SessionMonitorRegistry:
         self._activity_log = activity_log
         self._gns3_client = gns3_client
         self._monitors: dict[str, SessionMonitor] = {}
-        # observer живёт дольше монитора — реестр владеет им
+        # observer outlives the monitor — the registry owns it
         self._observers: dict[str, object] = {}
 
     async def start(self, session_id: str, user_id: str, lab_slug: str, ctx) -> None:
-        """Создаёт и запускает монитор сессии. Повторный вызов для той же сессии ничего не делает."""
+        """Creates and starts a session monitor. A repeat call for the same session is a no-op."""
         if session_id in self._monitors:
             return
 
-        # Пытаемся поднять LabProgressObserver если есть GNS3-сессия
+        # Try to bring up LabProgressObserver if a GNS3 session exists
         observer = None
         if self._gns3_client is not None:
             try:
@@ -72,7 +72,7 @@ class SessionMonitorRegistry:
         async with self._db_factory() as db:
             arm = await effective_arm(db, user_id, lab_slug)
 
-        # Шов контура: один экземпляр на сессию, переиспользует те же зависимости
+        # Control-loop seam: one instance per session, reuses the same dependencies
         control_interface = ControlInterface(
             self._mcp_client, self._db_factory, self._config.learning_analytics
         )
@@ -92,12 +92,12 @@ class SessionMonitorRegistry:
         logger.info("SessionMonitor запущен для %s", session_id)
 
     async def stop(self, session_id: str) -> None:
-        """Останавливает монитор сессии и убирает его из реестра."""
+        """Stops the session monitor and removes it from the registry."""
         monitor = self._monitors.pop(session_id, None)
         if monitor:
             await monitor.stop_session()
             logger.info("SessionMonitor остановлен для %s", session_id)
-        # Останавливаем observer после монитора
+        # Stop the observer after the monitor
         observer = self._observers.pop(session_id, None)
         if observer:
             try:
@@ -108,6 +108,6 @@ class SessionMonitorRegistry:
                 )
 
     async def stop_all(self) -> None:
-        """Останавливает все запущенные мониторы сессий."""
+        """Stops all running session monitors."""
         for sid in list(self._monitors):
             await self.stop(sid)

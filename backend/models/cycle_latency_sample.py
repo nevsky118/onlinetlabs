@@ -8,7 +8,7 @@ from models.base import Base
 
 
 class CycleLatencySample(Base):
-    """Латентность одной стадии цикла (для p50/p95/p99 под нагрузкой, не среднего)."""
+    """Latency of a single cycle stage (for p50/p95/p99 under load, not the mean)."""
 
     __tablename__ = "cycle_latency_samples"
     __table_args__ = (

@@ -7,11 +7,11 @@ from models.progress import CourseProgress, LabProgress, StepAttempt
 
 
 def score_from_steps(steps: list[dict]) -> tuple[float, bool]:
-    """Оценка по доле пройденных проверок и флаг полного прохождения.
+    """Score by the share of passed checks, plus a full-completion flag.
 
-    Возвращает `(score, all_passed)`, где score = passed_checks / total_checks * 100,
-    округлённое до целого. Если проверок нет — score 0.0. all_passed True, когда
-    все шаги пройдены (используется для перевода лабы в статус completed.)
+    Returns `(score, all_passed)`, where score = passed_checks / total_checks * 100,
+    rounded to a whole number. Score is 0.0 if there are no checks. all_passed is True
+    when all steps passed (used to move the lab to the completed status).
     """
     total = 0
     passed = 0
@@ -28,11 +28,11 @@ def score_from_steps(steps: list[dict]) -> tuple[float, bool]:
 async def record_lab_validation(
     db: AsyncSession, user_id: str, lab_slug: str, steps: list[dict]
 ) -> LabProgress:
-    """Обновить прогресс лабы по итогам прогона валидации.
+    """Update lab progress from the results of a validation run.
 
-    Оценка — доля пройденных проверок; берём лучшую из прежней и новой, чтобы
-    неудачный повторный прогон не обнулял достижение. При полном прохождении лаба
-    переводится в completed (необратимо в рамках последующих прогонов).
+    Score is the share of passed checks; we keep the best of the old and new score
+    so a failed re-run doesn't wipe out prior achievement. On full completion, the
+    lab moves to completed (irreversible across subsequent runs).
     """
     score, all_passed = score_from_steps(steps)
     now = datetime.now(UTC)
@@ -62,7 +62,7 @@ async def record_lab_validation(
 
 
 async def start_lab(db: AsyncSession, user_id: str, lab_slug: str) -> LabProgress:
-    """Возвращает существующий прогресс по лабораторной или создаёт новый со статусом in_progress."""
+    """Returns existing lab progress or creates a new one with status in_progress."""
     result = await db.execute(
         select(LabProgress).where(LabProgress.user_id == user_id, LabProgress.lab_slug == lab_slug)
     )
@@ -90,7 +90,7 @@ async def record_step_attempt(
     score: float | None = None,
     error_details: dict | None = None,
 ) -> StepAttempt:
-    """Создаёт попытку прохождения шага с автоматическим номером и сохраняет её в БД."""
+    """Creates a step attempt with an auto-incremented number and saves it to the DB."""
     count_result = await db.execute(
         select(func.count()).where(
             StepAttempt.user_id == user_id,
@@ -115,7 +115,7 @@ async def record_step_attempt(
 
 
 async def get_all_progress(db: AsyncSession, user_id: str) -> dict:
-    """Возвращает весь прогресс пользователя по курсам и лабораторным из БД."""
+    """Returns all of the user's progress across courses and labs from the DB."""
     courses_result = await db.execute(
         select(CourseProgress).where(CourseProgress.user_id == user_id)
     )
@@ -127,7 +127,7 @@ async def get_all_progress(db: AsyncSession, user_id: str) -> dict:
 
 
 async def get_lab_progress_detail(db: AsyncSession, user_id: str, lab_slug: str) -> dict | None:
-    """Возвращает прогресс по лабораторной с попытками по шагам или None, если прогресса нет."""
+    """Returns lab progress with step attempts, or None if there's no progress."""
     lp_result = await db.execute(
         select(LabProgress).where(LabProgress.user_id == user_id, LabProgress.lab_slug == lab_slug)
     )

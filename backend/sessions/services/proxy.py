@@ -6,34 +6,34 @@ from fastapi import Request
 from security.secrets import decrypt_secret
 from sessions.services.query import get_owned_session
 
-# Throttle для bulk-node-start. gns3-server одно-процессный async, насыщает
-# docker.sock при >12 параллельных. На MSK-8 даёт пик CPU около 70 процентов.
+# Throttle for bulk-node-start. gns3-server is single-process async and
+# saturates docker.sock above 12 parallel calls. On MSK-8 this peaks CPU at about 70 percent.
 _BULK_GNS3_SEMAPHORE = asyncio.Semaphore(12)
 
 
 def get_bulk_semaphore(request: Request) -> asyncio.Semaphore:
-    """DI: вернёт семафор из app.state, либо модульный фоллбек.
+    """DI: returns the semaphore from app.state, or the module-level fallback.
 
-    Тесты подменяют app.state.bulk_gns3_semaphore, чтобы не блокировать
-    параллельные сценарии лимитом продового семафора.
+    Tests override app.state.bulk_gns3_semaphore so parallel test scenarios
+    aren't blocked by the production semaphore's limit.
     """
     return getattr(request.app.state, "bulk_gns3_semaphore", _BULK_GNS3_SEMAPHORE)
 
 
 def existing_gns3_url(session) -> str:
-    """Возвращает публичный URL GNS3."""
+    """Returns the public GNS3 URL."""
     from config import settings
 
     return settings.gns3.public_url
 
 
 def existing_gns3_deep_url(session) -> str:
-    """Возвращает глубокую ссылку на проект сессии в веб-интерфейсе GNS3.
+    """Returns a deep link to the session's project in the GNS3 web UI.
 
-    Ведёт через auth-relay.html (см. gns3/gns3-server/auth-relay.html): прямой
-    переход на /controller/1/project/<id> упирается в форму логина GNS3 — relay
-    подставляет в неё временные gns3_username/gns3_password и доводит студента
-    до returnUrl проекта за один клик «Войти».
+    Goes through auth-relay.html (see gns3/gns3-server/auth-relay.html): a
+    direct jump to /controller/1/project/<id> hits the GNS3 login form —
+    the relay fills it with the temporary gns3_username/gns3_password and
+    gets the student to the project's returnUrl with a single "Log in" click.
     """
     from config import settings
 
@@ -57,7 +57,7 @@ def existing_gns3_deep_url(session) -> str:
 
 
 async def get_credentials(db, session_id: str, user_id: str) -> dict | None:
-    """Возвращает доступы и ссылки GNS3 для сессии. None если сессия чужая или без метаданных."""
+    """Returns GNS3 credentials and links for the session. None if not owned or no metadata."""
     session = await get_owned_session(db, session_id, user_id)
     if session is None or not session.meta:
         return None
@@ -79,7 +79,7 @@ async def proxy_node_action(
     gns3_client,
     state_cache,
 ) -> bool:
-    """Выполняет действие над узлом в GNS3 и сбрасывает кэш состояния. False если сессия чужая."""
+    """Performs an action on a node in GNS3 and invalidates the state cache. False if not owned."""
     session = await get_owned_session(db, session_id, user_id)
     if session is None:
         return False
@@ -100,7 +100,7 @@ async def proxy_bulk_node_action(
     state_cache,
     semaphore: asyncio.Semaphore | None = None,
 ) -> bool:
-    """Выполняет массовое действие над узлами в GNS3 под семафором. False если сессия чужая."""
+    """Performs a bulk action on nodes in GNS3 under a semaphore. False if not owned."""
     session = await get_owned_session(db, session_id, user_id)
     if session is None:
         return False
@@ -122,7 +122,7 @@ async def proxy_activity(
     cursor: str | None,
     gns3_client,
 ) -> dict | None:
-    """Возвращает ленту активности сессии из GNS3. None если сессия чужая."""
+    """Returns the session's activity feed from GNS3. None if not owned."""
     session = await get_owned_session(db, session_id, user_id)
     if session is None:
         return None

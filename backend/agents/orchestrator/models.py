@@ -1,10 +1,10 @@
-"""Модели Orchestrator."""
+"""Orchestrator models."""
 
 from pydantic import BaseModel, Field
 
 
 class OrchestratorInput(BaseModel):
-    """Входящий запрос в оркестратор."""
+    """Incoming request to the orchestrator."""
 
     session_id: str
     user_id: str
@@ -13,7 +13,7 @@ class OrchestratorInput(BaseModel):
 
 
 class OrchestratorResponse(BaseModel):
-    """Ответ оркестратора."""
+    """Orchestrator's response."""
 
     agent_used: str
     success: bool
@@ -25,7 +25,7 @@ class OrchestratorResponse(BaseModel):
 
 
 class InterventionInput(BaseModel):
-    """Проактивная интервенция от SessionMonitor."""
+    """Proactive intervention from SessionMonitor."""
 
     session_id: str
     user_id: str

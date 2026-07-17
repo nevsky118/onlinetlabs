@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class Course(Base):
-    """Учебный курс с набором лаб, сложностью и предусловиями."""
+    """A course with a set of labs, difficulty, and prerequisites."""
 
     __tablename__ = "courses"
 

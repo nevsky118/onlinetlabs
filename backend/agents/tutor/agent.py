@@ -1,4 +1,4 @@
-"""TutorAgent — агент-наставник для ответов на вопросы."""
+"""TutorAgent — mentor agent for answering questions."""
 
 import logging
 
@@ -23,19 +23,19 @@ TUTOR_SYSTEM_PROMPT = (
 
 
 class TutorAgent(BaseAgent):
-    """Отвечает на вопросы с MCP-контекстом через LLM."""
+    """Answers questions with MCP context via LLM."""
 
     def __init__(self, config: ConfigModel, mcp_client=None):
-        """Инициализация с конфигом и MCP-клиентом."""
+        """Initialize with config and MCP client."""
         self.tools = TutorTools(mcp_client)
         super().__init__(config)
 
     def system_prompt(self) -> str:
-        """Системный промпт наставника."""
+        """Mentor's system prompt."""
         return TUTOR_SYSTEM_PROMPT
 
     async def run(self, input_data: TutorInput, model_id: str | None = None) -> TutorResponse:
-        """Ответ на вопрос с опциональным MCP-контекстом."""
+        """Answer a question with optional MCP context."""
         mid = model_id or self.agents_config.intervention_model
         prompt_parts = [f"Вопрос студента: {input_data.question}"]
 

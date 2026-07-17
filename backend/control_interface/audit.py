@@ -1,4 +1,4 @@
-"""Append-only журнал вызовов контура (observe/act). Двойного назначения: act = источник воздействий."""
+"""Append-only log of loop calls (observe/act). Dual-purpose: act = source of interventions."""
 
 from datetime import UTC, datetime
 from uuid import uuid4

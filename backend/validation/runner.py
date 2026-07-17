@@ -1,4 +1,4 @@
-"""YAML-driven validation runner. Emits Event-stream через asyncio."""
+"""YAML-driven validation runner. Emits an Event stream via asyncio."""
 
 from collections.abc import AsyncIterator
 from pathlib import Path
@@ -11,7 +11,7 @@ from validation.stream import Event
 
 
 async def _eval_check(ctx: CheckContext, check: dict) -> CheckResult:
-    """Выполнить одну проверку — общая логика для run_validation и evaluate_spec."""
+    """Run a single check — shared logic for run_validation and evaluate_spec."""
     kind = check.get("kind", "")
     params = {k: v for k, v in check.items() if k not in {"kind", "expect"}}
     expect = check.get("expect") or {}
@@ -32,7 +32,7 @@ _spec_cache: dict[str, tuple[float, dict]] = {}
 
 
 def load_lab_spec(slug: str) -> dict | None:
-    """Загрузить YAML-спеку проверок лабы с кешем по mtime. None, если файла нет."""
+    """Load the lab's YAML checks spec, cached by mtime. None if the file doesn't exist."""
     path = _LABS_DIR / f"{slug}.yaml"
     if not path.exists():
         return None
@@ -47,7 +47,7 @@ def load_lab_spec(slug: str) -> dict | None:
 
 
 async def evaluate_spec(ctx: CheckContext, spec: dict) -> list[dict]:
-    """Прогнать все проверки spec без SSE-стрима. Возвращает список step-records."""
+    """Run all checks in the spec without an SSE stream. Returns a list of step records."""
     accumulated: list[dict] = []
     for step in spec.get("steps") or []:
         step_id = step.get("id", "")
@@ -80,10 +80,10 @@ async def run_validation(
     ctx: CheckContext,
     spec: dict,
 ) -> AsyncIterator[tuple[Event, list]]:
-    """Generator событий + накопленный список шагов для финального UPDATE.
+    """Event generator + accumulated step list for the final UPDATE.
 
-    Yield-ит `(Event, steps_snapshot)`. Caller использует Event для SSE,
-    а финальный steps_snapshot — для записи в БД.
+    Yields `(Event, steps_snapshot)`. The caller uses Event for SSE, and the
+    final steps_snapshot for writing to the DB.
     """
     steps = spec.get("steps") or []
     yield Event("run.start", {"totalSteps": len(steps)}), []

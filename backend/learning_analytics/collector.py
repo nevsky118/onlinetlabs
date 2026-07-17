@@ -1,4 +1,4 @@
-"""BehavioralCollector — опрос MCP-сервера и сохранение поведенческих событий."""
+"""BehavioralCollector — polling the MCP server and storing behavioral events."""
 
 import asyncio
 import hashlib
@@ -15,14 +15,14 @@ logger = logging.getLogger(__name__)
 
 
 class BehavioralCollector:
-    """Периодический опрос MCP, нормализация, дедупликация, запись в DB."""
+    """Periodic MCP polling, normalization, deduplication, DB write."""
 
     def __init__(self, mcp_client, db_factory, learning_analytics_config: LearningAnalyticsConfig, control_interface=None):
-        """Инициализация. control_interface — необязательный шов (Task 7); None → прямые вызовы mcp_client."""
+        """Initialize. control_interface is an optional seam (Task 7); None → direct mcp_client calls."""
         self._mcp = mcp_client
         self._db_factory = db_factory
         self._cfg = learning_analytics_config
-        self._control_interface = control_interface  # шов П1; None = backward-compat fallback
+        self._control_interface = control_interface  # seam P1; None = backward-compat fallback
         self._task: asyncio.Task | None = None
         self._running = False
         self._last_error_poll: datetime | None = None
@@ -35,11 +35,11 @@ class BehavioralCollector:
 
     @property
     def is_running(self) -> bool:
-        """Запущен ли цикл опроса."""
+        """Whether the polling loop is running."""
         return self._running
 
     async def start(self, session_id: str, user_id: str, lab_slug: str, ctx) -> None:
-        """Запуск цикла опроса как asyncio.Task."""
+        """Start the polling loop as an asyncio.Task."""
         self._session_id = session_id
         self._user_id = user_id
         self._lab_slug = lab_slug
@@ -48,7 +48,7 @@ class BehavioralCollector:
         self._task = asyncio.create_task(self._poll_loop())
 
     async def stop(self) -> None:
-        """Остановка цикла."""
+        """Stop the loop."""
         self._running = False
         if self._task and not self._task.done():
             self._task.cancel()
@@ -57,10 +57,10 @@ class BehavioralCollector:
             except asyncio.CancelledError:
                 pass
 
-    # Цикл опроса
+    # Polling loop
 
     async def _poll_loop(self) -> None:
-        """Бесконечный цикл: опрос → пауза → повтор."""
+        """Infinite loop: poll → pause → repeat."""
         while self._running:
             try:
                 await self._poll_cycle()
@@ -71,7 +71,7 @@ class BehavioralCollector:
             await asyncio.sleep(self._cfg.poll_interval)
 
     async def _poll_cycle(self) -> None:
-        """Один цикл: actions + logs + errors → (evidence-снимок) → persist."""
+        """One cycle: actions + logs + errors → (evidence snapshot) → persist."""
         events: list[dict] = []
         events.extend(await self._fetch_actions())
         events.extend(await self._fetch_logs())
@@ -82,7 +82,7 @@ class BehavioralCollector:
             await self._persist(events)
 
     async def _capture_evidence(self, events: list[dict]) -> None:
-        """Сырой снимок MCP-наблюдений цикла для разметки (best-effort, disjoint от признаков)."""
+        """Raw snapshot of the cycle's MCP observations for annotation (best-effort, disjoint from features)."""
         from learning_analytics.evidence import capture_snapshot
         try:
             async with self._db_factory() as db:
@@ -94,7 +94,7 @@ class BehavioralCollector:
             logger.warning("Не удалось записать evidence-снимок", exc_info=True)
 
     async def _call_observe(self, tool: str, arguments: dict):
-        """Наблюдение через шов или напрямую (fallback)."""
+        """Observe via the seam or directly (fallback)."""
         if self._control_interface is not None:
             return await self._control_interface.observe(
                 tool, self._ctx, arguments,
@@ -102,7 +102,7 @@ class BehavioralCollector:
                 session_id=self._session_id,
                 lab_slug=self._lab_slug,
             )
-        # fallback: прямой вызов mcp_client
+        # fallback: direct mcp_client call
         if tool == "list_user_actions":
             return await self._mcp.list_user_actions(self._ctx, **arguments)
         if tool == "get_logs":
@@ -112,7 +112,7 @@ class BehavioralCollector:
         raise ValueError(f"Неизвестный observe-инструмент: {tool}")
 
     async def _fetch_actions(self) -> list[dict]:
-        """Получить UserAction из MCP, дедуплицировать, нормализовать."""
+        """Fetch UserAction from MCP, deduplicate, normalize."""
         result: list[dict] = []
         try:
             from control_interface.interface import InterfaceDenied
@@ -136,7 +136,7 @@ class BehavioralCollector:
         return result
 
     async def _fetch_logs(self) -> list[dict]:
-        """Получить LogEntry из MCP, дедуплицировать, нормализовать."""
+        """Fetch LogEntry from MCP, deduplicate, normalize."""
         result: list[dict] = []
         try:
             logs = await self._call_observe(
@@ -157,7 +157,7 @@ class BehavioralCollector:
         return result
 
     async def _fetch_errors(self) -> list[dict]:
-        """Получить ErrorEntry из MCP (с since), нормализовать."""
+        """Fetch ErrorEntry from MCP (with since), normalize."""
         result: list[dict] = []
         try:
             errors = await self._call_observe(
@@ -176,10 +176,10 @@ class BehavioralCollector:
                 logger.warning("Не удалось получить ошибки", exc_info=True)
         return result
 
-    # Запись в БД
+    # DB write
 
     async def _persist(self, events: list[dict]) -> None:
-        """Пакетная запись событий в DB."""
+        """Batch write of events to the DB."""
         from models.behavioral_event import BehavioralEvent
         try:
             async with self._db_factory() as session:
@@ -189,10 +189,10 @@ class BehavioralCollector:
         except Exception:
             logger.error("Не удалось сохранить события", exc_info=True)
 
-    # Вспомогательные
+    # Helpers
 
     async def _resolve_type(self, component_id: str | None) -> str | None:
-        """Lazy-определение component_type через MCP."""
+        """Lazy resolution of component_type via MCP."""
         if not component_id or component_id in self._component_types:
             return self._component_types.get(component_id)
         try:
@@ -203,30 +203,30 @@ class BehavioralCollector:
             return None
 
     def _dedup_key(self, ts: datetime, action: str, cid: str | None) -> str:
-        """Стабильный ключ дедупликации из timestamp, action и component_id.
+        """Stable dedup key from timestamp, action, and component_id.
 
-        MD5 для краткости, не для безопасности.
+        MD5 for brevity, not security.
         """
         raw = f"{ts.isoformat()}:{action}:{cid or ''}"
         return hashlib.md5(raw.encode()).hexdigest()
 
     def _is_new(self, key: str) -> bool:
-        """True если событие новое. Ограниченный OrderedDict."""
+        """True if the event is new. Bounded OrderedDict."""
         if key in self._seen:
             return False
         self._seen[key] = None
         while len(self._seen) > self._cfg.dedup_max_size:
-            self._seen.popitem(last=False)  # вытесняем самый старый
+            self._seen.popitem(last=False)  # evict the oldest
         return True
 
-    # Нормализация MCP-моделей → event dict
+    # Normalization of MCP models → event dict
 
     @staticmethod
     def normalize_user_action(
         action: UserAction, session_id: str, user_id: str, lab_slug: str,
         component_types: dict[str, str] | None = None,
     ) -> dict:
-        """UserAction → dict для BehavioralEvent."""
+        """UserAction → dict for BehavioralEvent."""
         return {
             "id": str(uuid4()),
             "session_id": session_id,
@@ -248,7 +248,7 @@ class BehavioralCollector:
     def normalize_log_entry(
         log: LogEntry, session_id: str, user_id: str, lab_slug: str,
     ) -> dict:
-        """LogEntry → dict для BehavioralEvent."""
+        """LogEntry → dict for BehavioralEvent."""
         return {
             "id": str(uuid4()),
             "session_id": session_id,
@@ -270,7 +270,7 @@ class BehavioralCollector:
     def normalize_error_entry(
         error: ErrorEntry, session_id: str, user_id: str, lab_slug: str,
     ) -> dict:
-        """ErrorEntry → dict для BehavioralEvent."""
+        """ErrorEntry → dict for BehavioralEvent."""
         return {
             "id": str(uuid4()),
             "session_id": session_id,

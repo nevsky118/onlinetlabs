@@ -1,4 +1,4 @@
-"""Сборка SessionContext для MCP-вызовов из LearningSession."""
+"""Builds SessionContext for MCP calls from LearningSession."""
 
 from mcp_sdk.context import SessionContext
 
@@ -8,7 +8,7 @@ from security.secrets import decrypt_secret
 
 
 def build_session_context(session: LearningSession) -> SessionContext:
-    """Собирает SessionContext для MCP-вызовов из учебной сессии, расшифровывая JWT gns3."""
+    """Builds SessionContext for MCP calls from a learning session, decrypting the gns3 JWT."""
     meta = session.meta or {}
     return SessionContext(
         user_id=session.user_id,
@@ -17,7 +17,7 @@ def build_session_context(session: LearningSession) -> SessionContext:
         project_id=meta.get("gns3_project_id"),
         metadata={
             "gns3_jwt": decrypt_secret(meta["enc_jwt"]),
-            # gns3-service session id — реальный ключ history (ctx.session_id = backend id).
+            # gns3-service session id — the actual history key (ctx.session_id = backend id).
             "gns3_session_id": meta.get("gns3_service_session_id"),
         },
     )

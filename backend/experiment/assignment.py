@@ -1,10 +1,11 @@
-"""Назначение и резолвинг экспериментального плеча/группы (собрано из 4 модулей).
+"""Assignment and resolution of the experimental arm/group (merged from 4 modules).
 
-Ось loop on/off: open (без проактива) vs closed (замкнутый контур).
+Loop on/off axis: open (no proactivity) vs closed (closed loop).
 
-Примечание (MRT, 2026-07): при `mrt_enabled` первичен per-decision-point дизайн
-(рандомизация intervene/withhold в точке решения, см. monitor._mrt_step). Per-session
-плечо ниже — грубый secondary contrast, не основная рандомизация MRT-испытания.
+Note (MRT, 2026-07): when `mrt_enabled` is set, the per-decision-point design is
+primary (intervene/withhold randomization at the decision point, see
+monitor._mrt_step). The per-session arm below is a coarse secondary contrast,
+not the MRT trial's primary randomization.
 """
 import random
 from collections.abc import Callable
@@ -17,24 +18,24 @@ from models.user import User
 
 
 class ControlArm(str, Enum):
-    OPEN = "open"      # заземлённый реактивный чат, проактив подавлен
-    CLOSED = "closed"  # замкнутый контур
+    OPEN = "open"      # grounded reactive chat, proactivity suppressed
+    CLOSED = "closed"  # closed loop
 
 
 def assign_arm() -> ControlArm:
-    """Случайное назначение плеча 50/50 (грубый secondary contrast; MRT — per-decision-point)."""
+    """Random 50/50 arm assignment (coarse secondary contrast; MRT is per-decision-point)."""
     return random.choice([ControlArm.OPEN, ControlArm.CLOSED])
 
 
 class ExperimentGroup(str, Enum):
-    """Группы эксперимента."""
+    """Experiment groups."""
 
     GROUP_A = "group_a"
     GROUP_B = "group_b"
 
 
 class AgentBackend(str, Enum):
-    """Бэкенд, соответствующий экспериментальной группе."""
+    """Backend corresponding to the experiment group."""
 
     MULTI_AGENT = "multi_agent"
     OPENCLAW = "openclaw"
@@ -47,36 +48,36 @@ GROUP_TO_BACKEND = {
 
 
 def assign_group() -> ExperimentGroup:
-    """Случайное назначение группы 50/50."""
+    """Random 50/50 group assignment."""
     return random.choice([ExperimentGroup.GROUP_A, ExperimentGroup.GROUP_B])
 
 
 def parse_experiment_group(value: str | ExperimentGroup) -> ExperimentGroup:
-    """Строка → ExperimentGroup, только для финальных буквенных групп."""
+    """String -> ExperimentGroup, for final letter groups only."""
     return value if isinstance(value, ExperimentGroup) else ExperimentGroup(value)
 
 
 def backend_for_group(group: str | ExperimentGroup) -> AgentBackend:
-    """Определить бэкенд по группе эксперимента."""
+    """Determine the backend from the experiment group."""
     return GROUP_TO_BACKEND[parse_experiment_group(group)]
 
 
 def skill_tag(lab) -> str | None:
-    """Тег навыка лабы из meta['skill']. None, если не задан (near-transfer L2-проверка)."""
+    """Lab's skill tag from meta['skill']. None if not set (near-transfer L2 check)."""
     return (getattr(lab, "meta", None) or {}).get("skill")
 
 
 class UserNotFound(Exception):
-    """Пользователь не найден при резолвинге плеча эксперимента."""
+    """User not found while resolving the experiment arm."""
 
     pass
 
 
 async def resolve_control_arm(db, user_id) -> ControlArm:
-    """Читает User.control_arm; если не задано — назначает и персистит.
+    """Reads User.control_arm; if unset, assigns and persists it.
 
-    Raises UserNotFound для несуществующего user_id (детерминированность: без
-    персиста возврат случайного плеча плавал бы между вызовами).
+    Raises UserNotFound for a nonexistent user_id (determinism: without
+    persisting, a random arm would drift between calls).
     """
     user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
     if user is None:
@@ -88,7 +89,7 @@ async def resolve_control_arm(db, user_id) -> ControlArm:
 
 
 async def is_l2_session(db, user_id: str, lab_slug: str) -> bool:
-    """True если пользователь уже завершил другую лабу того же навыка (L2-холдаут)."""
+    """True if the user has already completed another lab of the same skill (L2 holdout)."""
     from models.lab import Lab
     from models.progress import LabProgress
 
@@ -96,7 +97,7 @@ async def is_l2_session(db, user_id: str, lab_slug: str) -> bool:
     skill = skill_tag(current) if current else None
     if not skill:
         return False
-    # slugи пройденных лаб того же навыка, кроме текущей
+    # slugs of completed labs with the same skill, excluding the current one
     completed_slugs = (
         (
             await db.execute(
@@ -120,13 +121,13 @@ async def is_l2_session(db, user_id: str, lab_slug: str) -> bool:
 
 
 async def effective_arm(db, user_id: str, lab_slug: str) -> ControlArm:
-    """Эффективное плечо для сессии.
+    """Effective arm for a session.
 
-    На L2-холдауте (есть пройденная лаба того же навыка, но другая) →
-    OPEN для ОБОИХ плеч; иначе базовое плечо.
+    On an L2 holdout (a completed lab of the same skill exists, but a different
+    one) -> OPEN for BOTH arms; otherwise the base arm.
     """
     if await is_l2_session(db, user_id, lab_slug):
-        # L2-холдаут: проактив подавлен для всех
+        # L2 holdout: proactivity suppressed for everyone
         return ControlArm.OPEN
     return await resolve_control_arm(db, user_id)
 
@@ -136,10 +137,10 @@ async def assign_experiment_group_if_needed(
     user_id: str,
     group_assigner: Callable[[], ExperimentGroup] = assign_group,
 ) -> None:
-    """Назначить экспериментальную группу пользователю, если ещё не назначена.
+    """Assign an experiment group to the user, if not already assigned.
 
-    group_assigner — функция выбора группы. Дефолт — assign_group.
-    В тестах подменяется на детерминированную лямбду.
+    group_assigner -- the group-selection function. Defaults to assign_group.
+    Swapped for a deterministic lambda in tests.
     """
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()

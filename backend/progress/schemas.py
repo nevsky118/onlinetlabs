@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 class CourseProgressResponse(BaseModel):
-    """Прогресс пользователя по курсу."""
+    """User's progress on a course."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -17,7 +17,7 @@ class CourseProgressResponse(BaseModel):
 
 
 class LabProgressResponse(BaseModel):
-    """Прогресс пользователя по лабораторной."""
+    """User's progress on a lab."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -31,7 +31,7 @@ class LabProgressResponse(BaseModel):
 
 
 class StepAttemptCreate(BaseModel):
-    """Данные для записи попытки прохождения шага."""
+    """Data for recording a step attempt."""
 
     result: str
     score: float | None = None
@@ -39,7 +39,7 @@ class StepAttemptCreate(BaseModel):
 
 
 class StepAttemptResponse(BaseModel):
-    """Попытка прохождения шага лабораторной."""
+    """A lab step attempt."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -53,13 +53,13 @@ class StepAttemptResponse(BaseModel):
 
 
 class LabProgressDetailResponse(LabProgressResponse):
-    """Прогресс по лабораторной вместе с попытками по шагам."""
+    """Lab progress together with step attempts."""
 
     attempts: list[StepAttemptResponse]
 
 
 class AllProgressResponse(BaseModel):
-    """Весь прогресс пользователя по курсам и лабораторным."""
+    """All of the user's progress across courses and labs."""
 
     courses: list[CourseProgressResponse]
     labs: list[LabProgressResponse]

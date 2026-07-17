@@ -6,13 +6,13 @@ from models.course import Course
 
 
 async def get_all_courses(db: AsyncSession) -> list[Course]:
-    """Выбирает все курсы из БД, сортируя по порядку."""
+    """Selects all courses from the DB, ordered by sort order."""
     result = await db.execute(select(Course).order_by(Course.order))
     return list(result.scalars().all())
 
 
 async def get_course_by_slug(db: AsyncSession, slug: str) -> Course | None:
-    """Возвращает курс по slug вместе с его лабораторными работами или None."""
+    """Returns the course by slug with its labs, or None."""
     result = await db.execute(
         select(Course).options(selectinload(Course.labs)).where(Course.slug == slug)
     )

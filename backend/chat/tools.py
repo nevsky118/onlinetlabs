@@ -1,4 +1,4 @@
-"""MCP-тулзы доступные чат-LLM."""
+"""MCP tools available to the chat LLM."""
 
 import asyncio
 import json
@@ -59,10 +59,10 @@ ALLOWED_TOOLS = {t["function"]["name"] for t in TOOL_DEFINITIONS}
 
 
 async def _run_vpcs_show_ip(node_name: str, ctx, mcp_client) -> dict:
-    """Подключается telnet к VPCS-консоли и выполняет show ip."""
+    """Connects via telnet to the VPCS console and runs show ip."""
     from validation.checks.vpcs import _drain_until_prompt, _parse_show_ip
 
-    # Находим ноду по имени
+    # Find the node by name
     components = await mcp_client.list_components(ctx)
     node = next((c for c in components if c.name == node_name and c.type == "vpcs"), None)
     if node is None:
@@ -73,7 +73,7 @@ async def _run_vpcs_show_ip(node_name: str, ctx, mcp_client) -> dict:
             "status": node.status,
         }
 
-    # Получаем консольный порт
+    # Get the console port
     detail = await mcp_client.get_component(ctx, node.id)
     console_port = detail.properties.get("console")
     console_host = detail.properties.get("console_host") or ""
@@ -81,7 +81,7 @@ async def _run_vpcs_show_ip(node_name: str, ctx, mcp_client) -> dict:
     if not console_port:
         return {"error": f"Нет консольного порта у узла '{node_name}'"}
 
-    # GNS3 отдаёт 0.0.0.0 как listening-адрес — используем хост из URL
+    # GNS3 returns 0.0.0.0 as the listening address — use the host from the URL
     if not console_host or console_host in ("0.0.0.0", "::"):
         derived = urlparse(ctx.environment_url).hostname
         if not derived:
@@ -118,7 +118,7 @@ async def _run_vpcs_show_ip(node_name: str, ctx, mcp_client) -> dict:
 
 
 async def execute_tool(name: str, args: dict, ctx, mcp_client) -> str:
-    """Выполняет разрешённую тулзу по имени и возвращает результат как JSON-строку."""
+    """Executes an allowed tool by name and returns the result as a JSON string."""
     if name not in ALLOWED_TOOLS:
         return f"Tool {name} is not allowed."
     try:

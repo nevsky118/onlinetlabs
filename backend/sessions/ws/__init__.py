@@ -1,4 +1,4 @@
-"""WebSocket для сессий. Единый gateway и форвардер gns3-событий."""
+"""WebSocket for sessions. Unified gateway and gns3 event forwarder."""
 
 from sessions.ws.events import forward_session_events
 from sessions.ws.gateway import (

@@ -1,4 +1,4 @@
-"""AgentActivityLog: неблокирующая эмиссия событий → persist + pub/sub."""
+"""AgentActivityLog: non-blocking event emission → persist + pub/sub."""
 
 import asyncio
 import logging
@@ -32,14 +32,14 @@ class AgentActivityLog:
                 self._subs.pop(session_id, None)
 
     def emit(self, event: AgentActivityEvent) -> None:
-        """Неблокирующе: редактирует, публикует подписчикам, планирует запись."""
+        """Non-blocking: redacts, publishes to subscribers, schedules the write."""
         try:
             event.detail = redact(event.detail)
             for q in list(self._subs.get(event.session_id, ())):
                 try:
                     q.put_nowait(event)
                 except asyncio.QueueFull:
-                    pass  # медленный наблюдатель — дропаем кадр
+                    pass  # slow observer — drop the frame
             asyncio.create_task(self._persist(event))
         except Exception:
             logger.warning("activity emit failed", exc_info=True)
@@ -67,7 +67,7 @@ class AgentActivityLog:
             logger.warning("activity persist failed", exc_info=True)
 
     async def _prune(self, db, session_id: str) -> None:
-        """Best-effort обрезка до retention последних событий сессии."""
+        """Best-effort trim down to the retention of the session's latest events."""
         try:
             stmt = (
                 select(AgentActivityEventRow.id)

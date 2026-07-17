@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class Lab(Base):
-    """Лабораторная работа. Привязана к курсу, имеет среду выполнения и шаги."""
+    """A lab. Tied to a course, has an execution environment and steps."""
 
     __tablename__ = "labs"
 
@@ -54,7 +54,7 @@ class Lab(Base):
 
 
 class LabStep(Base):
-    """Шаг лабораторной работы с порядком и типом валидации."""
+    """A lab step with its order and validation type."""
 
     __tablename__ = "lab_steps"
 

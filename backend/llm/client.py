@@ -1,4 +1,4 @@
-"""Резолвинг LLM-провайдера и клиента по model_id из каталога."""
+"""Resolve LLM provider and client by model_id from the catalog."""
 
 from openai import AsyncOpenAI
 
@@ -7,7 +7,7 @@ from config.config_model import LlmProvider, ModelEntry, ProviderCreds
 
 
 def resolve_model(model_id: str) -> tuple[ProviderCreds, ModelEntry]:
-    """Возвращает (креды провайдера, запись каталога) по model_id. KeyError если нет."""
+    """Returns (provider creds, catalog entry) for model_id. Raises KeyError if missing."""
     cfg = settings.agents
     entry = cfg.get_entry(model_id)
     if entry is None:
@@ -16,7 +16,7 @@ def resolve_model(model_id: str) -> tuple[ProviderCreds, ModelEntry]:
 
 
 def build_client(model_id: str) -> AsyncOpenAI:
-    """AsyncOpenAI под провайдера выбранной модели (base_url + ключ + заголовки)."""
+    """AsyncOpenAI for the selected model's provider (base_url + key + headers)."""
     creds, _ = resolve_model(model_id)
     headers = dict(creds.extra_headers or {})
     base_url = creds.base_url
@@ -31,7 +31,7 @@ def build_client(model_id: str) -> AsyncOpenAI:
 
 
 def model_uri(model_id: str) -> str:
-    """Строка модели для API: yandex → gpt://folder/model, иначе слаг."""
+    """Model string for the API: yandex → gpt://folder/model, otherwise the slug."""
     creds, entry = resolve_model(model_id)
     if creds.provider == LlmProvider.YANDEX and creds.yandex_folder:
         return f"gpt://{creds.yandex_folder}/{entry.model}"
@@ -39,6 +39,6 @@ def model_uri(model_id: str) -> str:
 
 
 def model_supports_tools(model_id: str) -> bool:
-    """Поддерживает ли модель function calling."""
+    """Whether the model supports function calling."""
     _, entry = resolve_model(model_id)
     return entry.tools

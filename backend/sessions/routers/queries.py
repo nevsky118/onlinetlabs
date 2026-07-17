@@ -1,16 +1,18 @@
-"""Эндпоинты чтения сессии: список, детали, состояние, чат, креды, активность, очередь.
+"""Session read endpoints: list, details, state, chat, credentials, activity, queue.
 
-`/queue-status` регистрируется РАНЬШЕ catch-all `/{session_id}` в этом же
-файле — иначе `{session_id}`-роут проглотил бы литеральный путь (Starlette
-матчит маршруты в порядке регистрации).
+`/queue-status` is registered BEFORE the catch-all `/{session_id}` in this
+same file — otherwise the `{session_id}` route would swallow the literal
+path (Starlette matches routes in registration order).
 
-`agent_activity_router` — отдельный APIRouter, НЕ включённый в `router` ниже.
-В main.py он монтируется отдельным include_router с префиксом `/sessions`
-(а не `/users/me/sessions`, как всё остальное здесь) — так было и до
-консолидации роутеров. Смешение его в общий `router` изменило бы итоговый
-путь на `/users/me/sessions/{session_id}/agent-activity` и сломало бы
-реального потребителя (frontend дергает `/sessions/{session_id}/agent-activity`
-напрямую), поэтому код хендлера перенесён сюда, а регистрация — нет.
+`agent_activity_router` is a separate APIRouter, NOT included in `router`
+below. In main.py it's mounted with a separate include_router under the
+`/sessions` prefix (not `/users/me/sessions` like everything else here) —
+that was the case even before the router consolidation. Folding it into
+the shared `router` would change the resulting path to
+`/users/me/sessions/{session_id}/agent-activity` and break the real
+consumer (the frontend hits `/sessions/{session_id}/agent-activity`
+directly), so the handler code was moved here, but its registration was
+not.
 """
 
 import logging
@@ -52,7 +54,7 @@ async def list_sessions(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Возвращает список всех учебных сессий текущего пользователя."""
+    """Returns the list of all learning sessions of the current user."""
     sessions = await get_user_sessions(db, current_user["id"])
     slugs = {s.lab_slug for s in sessions}
     titles: dict[str, str] = {}
@@ -67,7 +69,7 @@ async def list_sessions(
             status=s.status,
             started_at=s.started_at,
             ended_at=s.ended_at,
-            meta=None,  # зашифрованные креды не отдаём в списке
+            meta=None,  # don't expose encrypted credentials in the list
         )
         for s in sessions
     ]
@@ -79,7 +81,7 @@ async def queue_status(
     current_user: dict = Depends(get_current_user),
     queue: SessionQueueService = Depends(get_queue_service),
 ):
-    """Возвращает позицию пользователя в очереди на лабу и её глубину."""
+    """Returns the user's position in the lab queue and its depth."""
     pos = await queue.position(current_user["id"], lab_slug)
     depth = await queue.queue_depth(lab_slug)
     if pos is None:
@@ -98,7 +100,7 @@ async def get_session_endpoint(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Возвращает данные сессии по её идентификатору."""
+    """Returns session data by its identifier."""
     session = await get_session(db, session_id, current_user["id"])
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -120,7 +122,7 @@ async def get_session_chat_history(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Возвращает историю сообщений чата сессии."""
+    """Returns the session's chat message history."""
     session = await get_session(db, session_id, current_user["id"])
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -135,7 +137,7 @@ async def get_state_endpoint(
     gns3_client=Depends(get_gns3_client),
     state_cache=Depends(get_state_cache),
 ):
-    """Возвращает полное текущее состояние сессии с топологией GNS3."""
+    """Returns the full current session state with GNS3 topology."""
     state = await get_session_state(db, session_id, current_user["id"], gns3_client, state_cache)
     if state is None:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -148,7 +150,7 @@ async def credentials_endpoint(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Возвращает учётные данные доступа к GNS3 для сессии."""
+    """Returns GNS3 access credentials for the session."""
     creds = await get_credentials(db, session_id, current_user["id"])
     if creds is None:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -164,7 +166,7 @@ async def get_activity_endpoint(
     db: AsyncSession = Depends(get_db),
     gns3_client=Depends(get_gns3_client),
 ):
-    """Возвращает ленту активности сессии с постраничной навигацией по курсору."""
+    """Returns the session activity feed with cursor-based pagination."""
     result = await proxy_activity(
         db,
         session_id,
@@ -178,7 +180,7 @@ async def get_activity_endpoint(
     return result
 
 
-# ── agent_activity: отдельный роутер, монтируется отдельно (см. docstring выше) ──
+# ── agent_activity: a separate router, mounted separately (see docstring above) ──
 
 agent_activity_router = APIRouter()
 
@@ -192,12 +194,12 @@ async def get_agent_activity(
     activity=Depends(get_activity_log),
     db: AsyncSession = Depends(get_db),
 ):
-    """История событий активности агентов для сессии (препод/админ или владелец)."""
+    """Agent activity event history for the session (instructor/admin or owner)."""
     session = await db.get(LearningSession, session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
     if not can_view_session_activity(current_user, session):
         raise HTTPException(status_code=403, detail="Forbidden")
-    # ограничить размер истории чтобы избежать DoS
+    # cap history size to avoid DoS
     limit = max(1, min(limit, 1000))
     return await activity.history(session_id, since, limit)

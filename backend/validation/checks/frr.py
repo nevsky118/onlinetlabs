@@ -1,9 +1,9 @@
 """FRR check-handlers — `frr.ospf_neighbor`, `frr.route_in_table`.
 
-Хендлеры ходят через `ctx.frr_client.exec_vtysh(project_id, node_id, command)`
-(тонкая обёртка над gns3-service `POST /v1/exec/vtysh`).
-Парсинг живёт в чистых функциях `_parse_neighbor_state` / `_parse_route`,
-чтобы их можно было покрыть unit-тестами без сетевых вызовов.
+Handlers go through `ctx.frr_client.exec_vtysh(project_id, node_id, command)`
+(a thin wrapper over gns3-service `POST /v1/exec/vtysh`).
+Parsing lives in the pure functions `_parse_neighbor_state` / `_parse_route`,
+so they can be covered by unit tests without network calls.
 """
 
 from __future__ import annotations
@@ -13,20 +13,20 @@ import re
 from validation.checks.registry import CheckContext, CheckResult
 
 # `Neighbor ID   Pri  State                       Up Time      ...`
-# реальная строка: `2.2.2.2  1 Full/DR             00:01:23     ...`
+# a real line: `2.2.2.2  1 Full/DR             00:01:23     ...`
 _NEIGHBOR_LINE_RE = re.compile(r"^\s*(\S+)\s+\d+\s+(\S+)")
 
-# Примеры строк маршрута:
+# Example route lines:
 #   `O>* 192.168.110.0/24 [110/20] via 10.0.0.2, eth1, ...`
 #   `O   192.168.110.0/24 [110/20] is directly connected, eth1, ...`
-# Code часть может быть `O`, `O>*`, `O>` и т.д.
+# The code part can be `O`, `O>*`, `O>`, etc.
 _ROUTE_LINE_RE = re.compile(r"^\s*([A-Z][A-Z>*]*)\s+(\d+\.\d+\.\d+\.\d+/\d+)\b")
 
 
 def _parse_neighbor_state(stdout: str, neighbor_id: str) -> str | None:
-    """Вернуть State (например "Full/DR") строки соседа с заданным Neighbor ID.
+    """Return the State (e.g. "Full/DR") of the neighbor line with the given Neighbor ID.
 
-    Возвращает None, если соседа нет.
+    Returns None if the neighbor doesn't exist.
     """
     for raw_line in stdout.splitlines():
         line = raw_line.rstrip()
@@ -41,10 +41,10 @@ def _parse_neighbor_state(stdout: str, neighbor_id: str) -> str | None:
 
 
 def _parse_route(stdout: str, prefix: str) -> tuple[str, str] | None:
-    """Вернуть `(code, full_line)` маршрута с заданным префиксом.
+    """Return `(code, full_line)` for the route with the given prefix.
 
-    `code` — первая колонка (тип маршрута), напр. `O>*`. Возвращает None,
-    если маршрут с таким префиксом не найден.
+    `code` is the first column (route type), e.g. `O>*`. Returns None
+    if no route with that prefix is found.
     """
     for raw_line in stdout.splitlines():
         line = raw_line.rstrip()
@@ -59,7 +59,7 @@ def _parse_route(stdout: str, prefix: str) -> tuple[str, str] | None:
 
 
 def _missing_param(name: str, expect: dict) -> CheckResult:
-    """Сформировать проваленный результат об отсутствующем параметре."""
+    """Build a failed result for a missing parameter."""
     return CheckResult(
         ok=False,
         expected=expect,
@@ -71,10 +71,10 @@ def _missing_param(name: str, expect: dict) -> CheckResult:
 async def _exec_or_error(
     ctx: CheckContext, node_name: str, command: str, expect: dict
 ) -> tuple[dict | None, CheckResult | None]:
-    """Выполнить команду через vtysh узла.
+    """Run a command via the node's vtysh.
 
-    Возвращает (результат, None) при успехе либо (None, проваленный результат)
-    если узел не найден, клиент не настроен или вызов упал.
+    Returns (result, None) on success, or (None, failed_result) if the node
+    isn't found, the client isn't configured, or the call fails.
     """
     node_id = ctx.node_id(node_name)
     if not node_id:
@@ -104,12 +104,12 @@ async def _exec_or_error(
 
 
 async def frr_ospf_neighbor(ctx: CheckContext, params: dict, expect: dict) -> CheckResult:
-    """`show ip ospf neighbor` → проверка состояния конкретного соседа.
+    """`show ip ospf neighbor` -> check the state of a specific neighbor.
 
     params:  `{node: "R1"}`
     expect:  `{neighbor_id: "2.2.2.2", state: "Full"}`
-             Совпадение state делается через `startswith`, поэтому `Full`
-             покрывает `Full/DR`, `Full/BDR`, `Full/DROther`.
+             State matching is done via `startswith`, so `Full`
+             covers `Full/DR`, `Full/BDR`, `Full/DROther`.
     """
     node_name = params.get("node")
     if not node_name:
@@ -136,11 +136,11 @@ async def frr_ospf_neighbor(ctx: CheckContext, params: dict, expect: dict) -> Ch
 
 
 async def frr_route_in_table(ctx: CheckContext, params: dict, expect: dict) -> CheckResult:
-    """`show ip route ospf` → проверка наличия маршрута с нужным protocol-кодом.
+    """`show ip route ospf` -> check that a route with the given protocol code exists.
 
     params:  `{node: "R1"}`
     expect:  `{prefix: "192.168.110.0/24", protocol: "O"}`
-             Совпадение protocol через `startswith` → `O` покрывает `O>*`, `O>`.
+             Protocol matching via `startswith` -> `O` covers `O>*`, `O>`.
     """
     node_name = params.get("node")
     if not node_name:

@@ -14,7 +14,7 @@ _bcrypt_executor = ThreadPoolExecutor(max_workers=4)
 
 
 async def hash_password_async(password: str) -> str:
-    """Хеширует пароль bcrypt в отдельном потоке, не блокируя event loop."""
+    """Hashes password with bcrypt in a separate thread, without blocking the event loop."""
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(
         _bcrypt_executor,
@@ -23,7 +23,7 @@ async def hash_password_async(password: str) -> str:
 
 
 async def verify_password_async(password: str, hashed: str | None) -> bool:
-    """Проверяет пароль bcrypt в отдельном потоке, не блокируя event loop."""
+    """Verifies password with bcrypt in a separate thread, without blocking the event loop."""
     if hashed is None:
         return False
     loop = asyncio.get_running_loop()
@@ -34,7 +34,7 @@ async def verify_password_async(password: str, hashed: str | None) -> bool:
 
 
 async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
-    """Ищет пользователя по email вместе с его аккаунтами. None, если не найден."""
+    """Looks up a user by email along with their accounts. None if not found."""
     result = await db.execute(
         select(User).options(selectinload(User.accounts)).where(User.email == email)
     )
@@ -48,10 +48,10 @@ async def create_user(
     name: str | None = None,
     role: UserRole = UserRole.STUDENT,
 ) -> User:
-    """Создаёт пользователя в БД. При дубле email бросает UserAlreadyExistsError."""
-    # Credential-регистрация (тесты/внутренний путь) — сразу активна. Реальные
-    # пользователи заходят через GitHub OAuth (upsert_github_user) и создаются
-    # НЕактивными: их активирует админ в админке.
+    """Creates a user in the DB. Raises UserAlreadyExistsError on duplicate email."""
+    # Credential registration (tests/internal path) — active immediately. Real
+    # users sign in via GitHub OAuth (upsert_github_user) and are created
+    # INACTIVE: an admin activates them in the admin panel.
     user = User(
         email=email, password_hash=password_hash, name=name, role=role.value, is_active=True
     )
@@ -66,7 +66,7 @@ async def create_user(
 
 
 async def delete_user(db: AsyncSession, user_id: str) -> bool:
-    """Удаляет пользователя по id. Возвращает False, если его не было."""
+    """Deletes a user by id. Returns False if it didn't exist."""
     user = await db.get(User, user_id)
     if user is None:
         return False
@@ -81,11 +81,11 @@ async def upsert_github_user(
     image: str | None,
     provider_account_id: str,
 ) -> User:
-    """Создаёт или обновляет пользователя по данным из GitHub и привязывает аккаунт.
+    """Creates or updates a user from GitHub data and links the account.
 
-    Идентификатор это email, подтверждённый GitHub OAuth. Привязку github-аккаунта
-    обновляем при изменении, потому что better-auth в cookie-режиме шлёт эфемерный
-    user.id, меняющийся на каждый свежий логин.
+    The identifier is the email confirmed by GitHub OAuth. The github account
+    link is updated on change because better-auth in cookie mode sends an ephemeral
+    user.id that changes on every fresh login.
     """
     user = await get_user_by_email(db, email)
 
@@ -95,7 +95,7 @@ async def upsert_github_user(
         db.add(user)
         await db.flush()
 
-    # Привязываем github-аккаунт, обновляя provider_account_id при изменении.
+    # Link the github account, updating provider_account_id on change.
     existing_account = next(
         (a for a in user.accounts if a.provider == "github"),
         None,
@@ -112,7 +112,7 @@ async def upsert_github_user(
         )
         db.add(account)
 
-    # Обновляем профиль из GitHub
+    # Update profile from GitHub
     if name:
         user.name = name
     if image:

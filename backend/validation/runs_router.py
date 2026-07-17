@@ -1,4 +1,4 @@
-"""GET /sessions/{sid}/validation-runs[/{runId}] — история прогонов."""
+"""GET /sessions/{sid}/validation-runs[/{runId}] — run history."""
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,7 +13,7 @@ router = APIRouter()
 
 
 def _count_checks(steps: list) -> tuple[int, int]:
-    """Посчитать по шагам число пройденных и общее число проверок."""
+    """Count passed and total checks across steps."""
     total = 0
     passed = 0
     for step in steps:
@@ -33,7 +33,7 @@ async def list_runs(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Вернуть список прогонов валидации сессии со сводкой по проверкам."""
+    """Return the session's validation runs with a checks summary."""
     session = await get_owned_session(db, sid, current_user["id"])
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -69,7 +69,7 @@ async def get_run(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Вернуть один прогон валидации с детальными шагами."""
+    """Return a single validation run with detailed steps."""
     session = await get_owned_session(db, sid, current_user["id"])
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")

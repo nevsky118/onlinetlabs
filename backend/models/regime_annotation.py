@@ -8,10 +8,10 @@ from models.base import Base
 
 
 class RegimeAnnotation(Base):
-    """Разметка режима коллаборантом по окну сессии (для IRR / kappa и adjudicated gold).
+    """A regime annotation by a coder for a session window (for IRR / kappa and adjudicated gold).
 
-    coder_id — разметчик, НЕ автор правил (иначе тавтология). window_index выравнивает
-    метки разных коллаборантов для Cohen's kappa. is_gold — adjudicated-эталон.
+    coder_id is the annotator, NOT the rules author (else it's tautological). window_index
+    aligns labels from different coders for Cohen's kappa. is_gold marks the adjudicated ground truth.
     """
 
     __tablename__ = "regime_annotations"

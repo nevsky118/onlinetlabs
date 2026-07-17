@@ -1,4 +1,4 @@
-"""Совместимая с Auth.js схема для OAuth-провайдеров, например GitHub."""
+"""Auth.js-compatible schema for OAuth providers, e.g. GitHub."""
 
 from datetime import datetime
 from enum import Enum
@@ -11,7 +11,7 @@ from models.base import Base
 
 
 class UserRole(str, Enum):
-    """Роли пользователя для разграничения доступа."""
+    """User roles for access control."""
 
     STUDENT = "student"
     INSTRUCTOR = "instructor"
@@ -19,7 +19,7 @@ class UserRole(str, Enum):
 
 
 class User(Base):
-    """Таблица users Auth.js."""
+    """Auth.js users table."""
 
     __tablename__ = "users"
 
@@ -34,7 +34,7 @@ class User(Base):
     control_arm: Mapped[str | None] = mapped_column(String(20), default=None)
     can_select_model: Mapped[bool | None] = mapped_column(default=None)
     can_view_agent_logs: Mapped[bool | None] = mapped_column(default=None)
-    # Firewall: симулированный студент; исключается из «реальных результатов»
+    # Firewall: a simulated student; excluded from "real results"
     is_simulated: Mapped[bool] = mapped_column(default=False)
     default_model_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(
@@ -50,7 +50,7 @@ class User(Base):
 
 
 class Account(Base):
-    """Таблица accounts Auth.js. Хранит данные OAuth-провайдеров."""
+    """Auth.js accounts table. Stores OAuth provider data."""
 
     __tablename__ = "accounts"
     __table_args__ = (Index("ix_accounts_user_id", "user_id"),)
@@ -72,7 +72,7 @@ class Account(Base):
 
 
 class Session(Base):
-    """Таблица sessions Auth.js."""
+    """Auth.js sessions table."""
 
     __tablename__ = "sessions"
     __table_args__ = (Index("ix_sessions_user_id", "user_id"),)
@@ -86,7 +86,7 @@ class Session(Base):
 
 
 class VerificationToken(Base):
-    """Verification-токены Auth.js для подтверждения email."""
+    """Auth.js verification tokens for email confirmation."""
 
     __tablename__ = "verification_tokens"
 

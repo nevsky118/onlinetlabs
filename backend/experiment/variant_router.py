@@ -1,4 +1,4 @@
-"""Маршрутизация интервенций по экспериментальным вариантам."""
+"""Routing interventions across experiment variants."""
 
 from sqlalchemy import select
 
@@ -15,7 +15,7 @@ from models.user import User
 
 # TODO: wire the B-arm into monitor_registry (currently only tests construct it)
 class ExperimentVariantRouter:
-    """Маршрутизирует интервенции в бэкенд, назначенный группе эксперимента."""
+    """Routes interventions to the backend assigned to the experiment group."""
 
     def __init__(self, orchestrator, openclaw_adapter, db_factory=None):
         self._orchestrator = orchestrator
@@ -23,14 +23,14 @@ class ExperimentVariantRouter:
         self._db_factory = db_factory
 
     async def intervene(self, input_data: InterventionInput) -> OrchestratorResponse:
-        """Определить постоянную группу пользователя и выполнить маршрутизацию."""
+        """Resolve the user's persistent group and perform routing."""
         group = await self._resolve_group(input_data.user_id)
         return await self.route(input_data, group)
 
     async def route(
         self, input_data: InterventionInput, group: str | ExperimentGroup
     ) -> OrchestratorResponse:
-        """Маршрутизировать интервенцию для известной группы эксперимента."""
+        """Route an intervention for a known experiment group."""
         parsed_group = parse_experiment_group(group)
         backend = backend_for_group(parsed_group)
 
@@ -42,7 +42,7 @@ class ExperimentVariantRouter:
         return self._tag_response(response, parsed_group, backend)
 
     async def _resolve_group(self, user_id: str) -> ExperimentGroup:
-        """Получить или назначить постоянную группу пользователя."""
+        """Get or assign the user's persistent group."""
         if self._db_factory is None:
             return ExperimentGroup.GROUP_A
 
@@ -68,7 +68,7 @@ class ExperimentVariantRouter:
         group: ExperimentGroup,
         backend: AgentBackend,
     ) -> OrchestratorResponse:
-        """Добавить метаданные эксперимента, сохранив ответ бэкенда."""
+        """Attach experiment metadata while preserving the backend's response."""
         metadata = dict(response.metadata)
         metadata["experiment_group"] = group.value
         metadata["agent_backend"] = backend.value

@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 async def _finalize_experiment_metrics(db: AsyncSession, session: LearningSession) -> None:
-    """Вычисляет и сохраняет ExperimentMetrics по итогам сессии (best-effort)."""
+    """Computes and saves ExperimentMetrics for the session outcome (best-effort)."""
     from config import settings
     from experiment.assignment import effective_arm, is_l2_session
     from experiment.finalizer import compute_session_metrics
@@ -27,7 +27,7 @@ async def _finalize_experiment_metrics(db: AsyncSession, session: LearningSessio
     user_id = session.user_id
     lab_slug = session.lab_slug
 
-    # события сессии
+    # session events
     events_result = await db.execute(
         select(BehavioralEvent).where(BehavioralEvent.session_id == session_id)
     )
@@ -39,7 +39,7 @@ async def _finalize_experiment_metrics(db: AsyncSession, session: LearningSessio
     user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
     experiment_group = (user.experiment_group or "unknown") if user else "unknown"
 
-    # шаги из LabProgress
+    # steps from LabProgress
     lp = (await db.execute(
         select(LabProgress).where(
             LabProgress.user_id == user_id,
@@ -48,7 +48,7 @@ async def _finalize_experiment_metrics(db: AsyncSession, session: LearningSessio
     )).scalar_one_or_none()
     steps_completed = (lp.current_step or 0) if lp else 0
 
-    # total_steps из YAML-спеки (авторитетный источник); fallback → LabStep count или 1
+    # total_steps from the YAML spec (authoritative source); fallback → LabStep count or 1
     from validation.runner import load_lab_spec
     spec = load_lab_spec(lab_slug)
     total_steps = len(spec.get("steps", [])) if spec else 0
@@ -68,7 +68,7 @@ async def _finalize_experiment_metrics(db: AsyncSession, session: LearningSessio
         total_steps=total_steps,
         experiment_group=experiment_group,
         control_arm=arm.value,
-        # base_arm = постоянный training-arm пользователя, не effective arm сессии
+        # base_arm = the user's permanent training arm, not the session's effective arm
         base_arm=user.control_arm if user else None,
         l2_intervention_cap=la_cfg.l2_intervention_cap,
         is_l2=l2,
@@ -87,25 +87,25 @@ async def _finalize_experiment_metrics(db: AsyncSession, session: LearningSessio
 async def _mark_ended_and_finalize(
     db: AsyncSession, session: LearningSession, status: str
 ) -> LearningSession:
-    """Помечает сессию завершённой и снимает измерения: ExperimentMetrics + MRT-цензура.
+    """Marks the session ended and captures measurements: ExperimentMetrics + MRT censoring.
 
-    Единая точка финализации для ВСЕХ путей завершения (`end_session`, `end_lab`) —
-    иначе слой измерений эксперимента (A/B, когорта) остаётся пустым.
-    Вызывать ПОСЛЕ остановки монитора: иначе поздние события/интервенции не попадут
-    в снапшот ExperimentMetrics.
+    The single finalization point for ALL termination paths (`end_session`, `end_lab`) —
+    otherwise the experiment measurement layer (A/B, cohort) stays empty.
+    Must be called AFTER stopping the monitor: otherwise late events/interventions
+    won't make it into the ExperimentMetrics snapshot.
     """
     session.status = status
     session.ended_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(session)
 
-    # best-effort: ошибка финализации не ломает завершение сессии
+    # best-effort: finalization error doesn't break session termination
     try:
         await _finalize_experiment_metrics(db, session)
     except Exception:
         logger.exception("Финализация метрик эксперимента упала для сессии %s", session.id)
 
-    # best-effort: MRT-точки с незакрытым spell — правоцензурированы концом сессии
+    # best-effort: MRT points with an unclosed spell are right-censored by session end
     try:
         from learning_analytics.mrt import censor_open_decisions
         await censor_open_decisions(db, session.id)
@@ -118,7 +118,7 @@ async def _mark_ended_and_finalize(
 async def end_session(
     db: AsyncSession, session_id: str, user_id: str, status: str
 ) -> LearningSession | None:
-    """Завершает сессию пользователя, проставляя статус и время окончания."""
+    """Ends the user's session, setting the status and end time."""
     result = await db.execute(
         select(LearningSession).where(
             LearningSession.id == session_id,
@@ -132,7 +132,7 @@ async def end_session(
 
 
 async def stop_lab(db, session_id: str, user_id: str, mcp_client) -> bool:
-    """Останавливает все узлы лабораторной через MCP. False если сессия чужая."""
+    """Stops all lab nodes via MCP. False if the session isn't owned by the user."""
     session = await get_owned_session(db, session_id, user_id)
     if session is None:
         return False
@@ -142,7 +142,7 @@ async def stop_lab(db, session_id: str, user_id: str, mcp_client) -> bool:
 
 
 async def restart_lab(db, session_id: str, user_id: str, mcp_client) -> bool:
-    """Перезапускает узлы лабораторной через MCP. False если сессия чужая."""
+    """Restarts lab nodes via MCP. False if the session isn't owned by the user."""
     session = await get_owned_session(db, session_id, user_id)
     if session is None:
         return False
@@ -153,7 +153,7 @@ async def restart_lab(db, session_id: str, user_id: str, mcp_client) -> bool:
 
 
 async def reset_lab(db, session_id: str, user_id: str, gns3_client) -> bool:
-    """Пересоздаёт проект GNS3 из шаблона и обновляет id проекта в сессии."""
+    """Recreates the GNS3 project from the template and updates the project id in the session."""
     session = await get_owned_session(db, session_id, user_id)
     if session is None:
         return False
@@ -171,14 +171,17 @@ async def reset_lab(db, session_id: str, user_id: str, gns3_client) -> bool:
 
 
 async def end_lab(db, session_id: str, user_id: str, gns3_client, monitor_registry) -> bool:
-    """Завершает лабораторную — путь, которым сессию закрывает сам студент.
+    """Ends the lab — the path by which the student themself closes the session.
 
-    Порядок шагов существенен:
-    1. Гасим монитор — после этого поток поведенческих событий и интервенций закрыт,
-       поэтому снапшот метрик будет полным (иначе поздние интервенции теряются).
-    2. Финализируем измерения (ExperimentMetrics + цензура открытых MRT-точек) —
-       ДО teardown'а GNS3, чтобы сбой внешней системы не терял данные эксперимента.
-    3. Сносим сессию gns3-service (best-effort), освобождаем очередь и счётчик.
+    Step order matters:
+    1. Stop the monitor — after this, the stream of behavioral events and
+       interventions is closed, so the metrics snapshot will be complete
+       (otherwise late interventions are lost).
+    2. Finalize measurements (ExperimentMetrics + censoring of open MRT
+       points) — BEFORE GNS3 teardown, so an external system failure
+       doesn't lose experiment data.
+    3. Tear down the gns3-service session (best-effort), release the queue
+       and counter.
     """
     session = await get_owned_session(db, session_id, user_id)
     if session is None:

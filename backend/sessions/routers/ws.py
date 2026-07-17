@@ -1,4 +1,4 @@
-"""WebSocket-эндпоинты сессии: интервенции и поток событий из gns3-service."""
+"""Session WebSocket endpoints: interventions and the gns3-service event stream."""
 
 import asyncio
 import contextlib
@@ -23,7 +23,7 @@ router = APIRouter()
 
 @router.websocket("/ws/sessions/{session_id}")
 async def session_interventions_ws(websocket: WebSocket, session_id: str, token: str = Query(...)):
-    """Поток интервенций (TutorAgent, HintAgent) для активной сессии."""
+    """Intervention stream (TutorAgent, HintAgent) for an active session."""
     try:
         payload = decode_backend_token(token, settings.api.jwt_secret)
         user_id = payload.get("sub")
@@ -55,13 +55,13 @@ async def session_events_ws(
     session_id: str,
     token: str | None = Query(default=None),
 ):
-    """Поток событий из gns3-service для клиента.
+    """Event stream from gns3-service for the client.
 
-    Авторизация через ?token=<jwt>. Коды закрытия:
-    4401 — токен отсутствует или невалиден,
-    4404 — сессия не принадлежит пользователю,
-    1011 — внутренняя ошибка форварда,
-    1012 — остановка сервера (через close_all_connections).
+    Authorization via ?token=<jwt>. Close codes:
+    4401 — token missing or invalid,
+    4404 — session doesn't belong to the user,
+    1011 — internal forwarding error,
+    1012 — server shutdown (via close_all_connections).
     """
     user = await verify_jwt_for_ws(token)
     if user is None:
@@ -103,7 +103,7 @@ async def session_events_ws(
 async def session_activity_observe_ws(
     websocket: WebSocket, session_id: str, token: str = Query(...)
 ):
-    """Поток активности агентов для наблюдателя (препод/админ)."""
+    """Agent activity stream for an observer (instructor/admin)."""
     user = await verify_jwt_for_ws(token)
     if user is None:
         await websocket.close(code=4401)
@@ -130,9 +130,9 @@ async def session_activity_observe_ws(
                 )
 
         async def _watch_disconnect() -> None:
-            # receive() поднимает WebSocketDisconnect при отключении клиента,
-            # даже пока _pump заблокирован на пустой очереди — иначе хендлер
-            # висел бы вечно, утекая задачей и подпиской.
+            # receive() raises WebSocketDisconnect when the client disconnects,
+            # even while _pump is blocked on an empty queue — otherwise the
+            # handler would hang forever, leaking a task and a subscription.
             while True:
                 await websocket.receive()
 

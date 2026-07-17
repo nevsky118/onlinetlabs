@@ -1,4 +1,4 @@
-"""Метрики эксперимента."""
+"""Experiment metrics."""
 
 from datetime import UTC, datetime
 from uuid import uuid4
@@ -10,7 +10,7 @@ from models.base import Base
 
 
 class ExperimentMetrics(Base):
-    """Итоговые метрики сессии для статистического анализа."""
+    """Final session metrics for statistical analysis."""
 
     __tablename__ = "experiment_metrics"
 
@@ -31,9 +31,9 @@ class ExperimentMetrics(Base):
     interventions_succeeded: Mapped[int] = mapped_column(Integer, default=0)
     interventions_failed: Mapped[int] = mapped_column(Integer, default=0)
     interventions_accepted: Mapped[int] = mapped_column(Integer, default=0)
-    # Task 8: расширенные метрики эксперимента
+    # Task 8: extended experiment metrics
     control_arm: Mapped[str | None] = mapped_column(String(20), default=None)
-    # base_arm = постоянный training-arm пользователя (User.control_arm); control_arm = effective arm сессии
+    # base_arm = the user's persistent training arm (User.control_arm); control_arm = the session's effective arm
     base_arm: Mapped[str | None] = mapped_column(String(20), default=None)
     escalations: Mapped[int] = mapped_column(Integer, default=0)
     would_interventions: Mapped[int] = mapped_column(Integer, default=0)

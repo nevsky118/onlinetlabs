@@ -25,7 +25,7 @@ async def get_progress(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Возвращает весь прогресс пользователя по курсам и лабораторным."""
+    """Returns all of the user's progress across courses and labs."""
     result = await get_all_progress(db, current_user["id"])
     return AllProgressResponse(courses=result["courses"], labs=result["labs"])
 
@@ -36,9 +36,9 @@ async def get_lab_progress(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Возвращает прогресс по лабораторной с попытками по шагам.
+    """Returns lab progress with step attempts.
 
-    Если прогресса нет, отдаёт 404.
+    Returns 404 if there's no progress.
     """
     detail = await get_lab_progress_detail(db, current_user["id"], lab_slug)
     if detail is None:
@@ -54,7 +54,7 @@ async def start_lab_endpoint(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Начинает лабораторную для пользователя и возвращает её прогресс."""
+    """Starts the lab for the user and returns its progress."""
     return await start_lab(db, current_user["id"], lab_slug)
 
 
@@ -69,7 +69,7 @@ async def record_attempt_endpoint(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Записывает попытку прохождения шага лабораторной."""
+    """Records a lab step attempt."""
     return await record_step_attempt(
         db,
         current_user["id"],

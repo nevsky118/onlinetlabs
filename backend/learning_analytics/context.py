@@ -1,4 +1,4 @@
-"""MCPContextBuilder — сборка контекста из MCP для промптов агентов."""
+"""MCPContextBuilder — assembling context from MCP for agent prompts."""
 
 import asyncio
 import logging
@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class AgentContext(BaseModel):
-    """Снимок состояния среды для инжекции в промпты."""
+    """Snapshot of environment state for injection into prompts."""
 
     topology_summary: str
     recent_errors: list[str]
@@ -19,7 +19,7 @@ class AgentContext(BaseModel):
     features_summary: str
 
     def to_prompt(self) -> str:
-        """Контекст → текст для user message."""
+        """Context → text for the user message."""
         parts = ["=== СОСТОЯНИЕ СРЕДЫ ==="]
         if self.topology_summary:
             parts.append(f"Топология: {self.topology_summary}")
@@ -36,10 +36,10 @@ class AgentContext(BaseModel):
 
 
 class MCPContextBuilder:
-    """Параллельный сбор контекста из MCP для промптов."""
+    """Parallel context gathering from MCP for prompts."""
 
     def __init__(self, mcp_client):
-        """Инициализация с MCP-клиентом."""
+        """Initialize with an MCP client."""
         self._mcp = mcp_client
 
     async def build(
@@ -49,7 +49,7 @@ class MCPContextBuilder:
         struggle_type: str | None,
         dominant_error: str | None,
     ) -> AgentContext:
-        """Топология + действия + ошибки параллельно → AgentContext."""
+        """Topology + actions + errors in parallel → AgentContext."""
         components, actions, errors = await asyncio.gather(
             self._safe_list_components(mcp_ctx),
             self._safe_list_actions(mcp_ctx),
@@ -78,7 +78,7 @@ class MCPContextBuilder:
         )
 
     async def _safe_list_components(self, ctx) -> list:
-        """Компоненты; при ошибке — пустой список."""
+        """Components; empty list on error."""
         try:
             return await self._mcp.list_components(ctx)
         except Exception:
@@ -86,7 +86,7 @@ class MCPContextBuilder:
             return []
 
     async def _safe_list_actions(self, ctx) -> list:
-        """Действия; при ошибке — пустой список."""
+        """Actions; empty list on error."""
         try:
             return await self._mcp.list_user_actions(ctx, limit=10)
         except Exception:
@@ -94,7 +94,7 @@ class MCPContextBuilder:
             return []
 
     async def _safe_list_errors(self, ctx) -> list:
-        """Ошибки; при ошибке — пустой список."""
+        """Errors; empty list on error."""
         try:
             return await self._mcp.list_errors(ctx, since=None)
         except Exception:
@@ -103,7 +103,7 @@ class MCPContextBuilder:
 
     @staticmethod
     def _summarize_topology(components: list) -> str:
-        """Компоненты → текстовое резюме."""
+        """Components → text summary."""
         if not components:
             return ""
         by_status: dict[str, list[str]] = {}

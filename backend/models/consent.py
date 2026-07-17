@@ -1,4 +1,4 @@
-"""Согласие обучаемого: study (эксперимент) и product (гранулярно observe/act)."""
+"""Learner consent: study (experiment) and product (granular observe/act)."""
 
 from datetime import UTC, datetime
 

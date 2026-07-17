@@ -1,4 +1,4 @@
-"""identify_regime — чистый анализ сессии в реальном времени, детекция struggle."""
+"""identify_regime — pure real-time session analysis, struggle detection."""
 
 from collections.abc import Callable
 
@@ -13,8 +13,7 @@ from agents.analytics.models import (
 )
 from config.config_model import LearningAnalyticsConfig
 
-
-# Правила детекции struggle
+# Struggle detection rules
 # (predicate, struggle_type, intervention, confidence_fn)
 
 StruggleRule = tuple[
@@ -31,14 +30,14 @@ STRUGGLE_RULES: list[StruggleRule] = [
         SuggestedIntervention.HINT,
         lambda f, c: min(f.error_repeat_count / (c.error_repeat_threshold + 2), 1.0),
     ),
-    # Прямой сигнал: много уникальных неверных ответов → trial-and-error (Table 1)
+    # Direct signal: many unique wrong answers → trial-and-error (Table 1)
     (
         lambda f, c: f.distinct_failing_actuals > c.distinct_actuals_threshold,
         StruggleType.TRIAL_AND_ERROR,
         SuggestedIntervention.TUTOR,
         lambda f, c: min(f.distinct_failing_actuals / 4, 1.0),
     ),
-    # Прямой сигнал: цикли без изменений → stuck (Table 1)
+    # Direct signal: cycles without change → stuck (Table 1)
     (
         lambda f, c: f.cycles_failing_unchanged >= c.unchanged_cycles_threshold,
         StruggleType.STUCK_ON_STEP,
@@ -78,7 +77,7 @@ STRUGGLE_RULES: list[StruggleRule] = [
 def _detect_struggle(
     features: SessionFeatures, learning_analytics_config: LearningAnalyticsConfig
 ) -> tuple[StruggleType | None, SuggestedIntervention, float]:
-    """Прогон правил; первое сработавшее побеждает."""
+    """Run through rules; first match wins."""
     for predicate, stype, interv, conf_fn in STRUGGLE_RULES:
         if predicate(features, learning_analytics_config):
             return stype, interv, conf_fn(features, learning_analytics_config)
@@ -88,7 +87,7 @@ def _detect_struggle(
 def identify_regime(
     features: SessionFeatures, config: LearningAnalyticsConfig
 ) -> AnalyticsResult:
-    """Анализ сессии в реальном времени. Детекция struggle по правилам."""
+    """Real-time session analysis. Rule-based struggle detection."""
     metrics = StudentMetrics(
         total_attempts=features.events_total,
         success_rate=1.0 - features.error_repeat_rate,

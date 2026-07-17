@@ -1,4 +1,4 @@
-"""HintAgent — агент прогрессивных подсказок с LLM."""
+"""HintAgent — progressive hints agent backed by LLM."""
 
 import logging
 
@@ -25,19 +25,19 @@ HINT_SYSTEM_PROMPT = (
 
 
 class HintAgent(BaseAgent):
-    """Прогрессивные подсказки через LLM; без контекста — ошибка."""
+    """Progressive hints via LLM; raises without context."""
 
     def __init__(self, config: ConfigModel):
-        """Инициализация с конфигом."""
+        """Initialize with config."""
         self.tools = HintTools()
         super().__init__(config)
 
     def system_prompt(self) -> str:
-        """Системный промпт с инструкциями по уровням."""
+        """System prompt with level instructions."""
         return HINT_SYSTEM_PROMPT
 
     async def run(self, input_data: HintInput, model_id: str | None = None) -> HintResponse:
-        """Подсказка нужного уровня через LLM. agent_context обязателен."""
+        """Hint at the requested level via LLM. agent_context is required."""
         if not input_data.agent_context:
             raise ValueError("hint requires agent_context")
 

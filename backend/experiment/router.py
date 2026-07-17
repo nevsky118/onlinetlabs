@@ -1,4 +1,4 @@
-"""API-эндпоинты для мониторинга и экспорта эксперимента."""
+"""API endpoints for monitoring and exporting the experiment."""
 
 import csv
 import io
@@ -46,7 +46,7 @@ METRICS_EXPORT_FIELDS = [
 
 
 def _require_admin(current_user: dict = Depends(get_current_user)) -> dict:
-    """Только администратор."""
+    """Admin only."""
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin only")
     return current_user
@@ -55,7 +55,7 @@ def _require_admin(current_user: dict = Depends(get_current_user)) -> dict:
 def _build_status_response(
     counts: dict[str, int], completed: int, in_progress: int
 ) -> ExperimentStatusResponse:
-    """Собрать статус для финальных буквенных групп исследования OpenClaw."""
+    """Build status for the final lettered groups of the OpenClaw study."""
     group_a_count = counts.get(ExperimentGroup.GROUP_A.value, 0)
     group_b_count = counts.get(ExperimentGroup.GROUP_B.value, 0)
     return ExperimentStatusResponse(
@@ -68,7 +68,7 @@ def _build_status_response(
 
 
 def _metric_to_export_row(metric) -> dict:
-    """Преобразовать объект метрики в строку экспорта."""
+    """Convert a metrics object into an export row."""
     return {
         "user_id": metric.user_id,
         "session_id": metric.session_id,
@@ -92,7 +92,7 @@ async def get_status(
     db: AsyncSession = Depends(get_db),
     _: dict = Depends(_require_admin),
 ):
-    """Статус эксперимента: кол-во участников по группам."""
+    """Experiment status: participant counts by group."""
     result = await db.execute(
         select(
             User.experiment_group,
@@ -121,7 +121,7 @@ async def list_participants(
     db: AsyncSession = Depends(get_db),
     _: dict = Depends(_require_admin),
 ):
-    """Список участников эксперимента."""
+    """List of experiment participants."""
     result = await db.execute(select(User).where(User.experiment_group.isnot(None)))
     users = result.scalars().all()
 
@@ -161,7 +161,7 @@ async def update_group(
     db: AsyncSession = Depends(get_db),
     _: dict = Depends(_require_admin),
 ):
-    """Переназначить группу участника."""
+    """Reassign a participant's group."""
     if body.group not in (ExperimentGroup.GROUP_A.value, ExperimentGroup.GROUP_B.value):
         raise HTTPException(status_code=400, detail="group must be 'group_a' or 'group_b'")
 
@@ -176,7 +176,7 @@ async def get_session_timeline(
     db: AsyncSession = Depends(get_db),
     _: dict = Depends(_require_admin),
 ):
-    """Хронология событий сессии."""
+    """Timeline of session events."""
     result = await db.execute(
         select(BehavioralEvent)
         .where(BehavioralEvent.session_id == session_id)
@@ -202,7 +202,7 @@ async def export_metrics(
     db: AsyncSession = Depends(get_db),
     _: dict = Depends(_require_admin),
 ):
-    """Выгрузка метрик (json или csv)."""
+    """Export metrics (json or csv)."""
     result = await db.execute(select(ExperimentMetrics).order_by(ExperimentMetrics.created_at))
     metrics = result.scalars().all()
 
@@ -228,7 +228,7 @@ async def get_analysis(
     db: AsyncSession = Depends(get_db),
     _: dict = Depends(_require_admin),
 ):
-    """Встроенный статистический анализ."""
+    """Built-in statistical analysis."""
     result = await db.execute(select(ExperimentMetrics))
     metrics = result.scalars().all()
     return compute_experiment_analysis(metrics)
@@ -239,7 +239,7 @@ async def get_arm_analysis(
     db: AsyncSession = Depends(get_db),
     _: dict = Depends(_require_admin),
 ):
-    """Сравнение open vs closed arm по A4-5 метрикам."""
+    """Comparison of the open vs closed arm on A4-5 metrics."""
     from config import settings
 
     result = await db.execute(select(ExperimentMetrics))

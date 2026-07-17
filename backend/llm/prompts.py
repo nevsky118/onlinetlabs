@@ -1,4 +1,4 @@
-"""Системные промпты тьютора/подсказчика (шарятся чатом и интервенциями)."""
+"""System prompts for tutor/hint agents (shared by chat and interventions)."""
 
 LANGUAGE_REMINDER = (
     "ALWAYS respond in the same language the user writes in. "

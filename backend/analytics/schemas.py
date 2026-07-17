@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class EventPayload(BaseModel):
-    """Одно событие телеметрии платформы."""
+    """A single platform telemetry event."""
 
     event_name: str = Field(max_length=100)
     properties: dict = Field(default_factory=dict)
@@ -15,14 +15,14 @@ class EventPayload(BaseModel):
     @field_validator("properties")
     @classmethod
     def limit_properties_size(cls, v: dict) -> dict:
-        """Проверяет, что размер properties не превышает 4 КБ."""
+        """Checks that the properties size doesn't exceed 4 KB."""
         if len(json.dumps(v)) > 4096:
             raise ValueError("properties exceeds 4KB")
         return v
 
 
 class AnalyticsIngestRequest(BaseModel):
-    """Запрос на приём пачки событий телеметрии от устройства."""
+    """Request to ingest a batch of telemetry events from a device."""
 
     device_id: str = Field(max_length=100)
     events: list[EventPayload] = Field(min_length=1, max_length=50)

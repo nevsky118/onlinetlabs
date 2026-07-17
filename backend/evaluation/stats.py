@@ -1,12 +1,12 @@
-"""Общий статистический хелпер: единая перцентиль-конвенция для evaluation и learning_analytics."""
+"""Shared statistics helper: a single percentile convention for evaluation and learning_analytics."""
 
 import statistics
 
 
 def percentile(data: list[float], p: float) -> float:
-    """Перцентиль p (0-100) по стандартной линейной интерполяции.
+    """Percentile p (0-100) via standard linear interpolation.
 
-    Hyndman-Fan Type 7 (numpy/R/pandas default) — единственная конвенция в проекте.
+    Hyndman-Fan Type 7 (numpy/R/pandas default) -- the only convention used in this project.
     """
     if not data:
         return 0.0

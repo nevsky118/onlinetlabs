@@ -1,4 +1,4 @@
-"""LabProgressObserver — периодический прогон spec-проверок, текущий шаг."""
+"""LabProgressObserver — periodic run of spec checks, current step."""
 
 import asyncio
 import json
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ProgressState:
-    """Производное состояние прогресса: текущий шаг и провальные проверки."""
+    """Derived progress state: current step and failing checks."""
 
     current_step_id: str | None
     current_step_title: str
@@ -21,7 +21,7 @@ class ProgressState:
 
 
 def derive_current_step(snapshot: list[dict]) -> ProgressState:
-    """Первый упавший шаг — текущий; нет упавших — лаба завершена."""
+    """The first failing step is current; none failing means the lab is complete."""
     for step in snapshot:
         if step.get("ok") is False:
             failing = [c for c in step.get("checks", []) if c.get("ok") is False]
@@ -34,11 +34,11 @@ def derive_current_step(snapshot: list[dict]) -> ProgressState:
 
 
 def diff_snapshots(prev: list[dict] | None, curr: list[dict]) -> list[dict]:
-    """Дельта двух снапшотов → список event-dict для BehavioralEvent."""
+    """Delta between two snapshots → list of event-dicts for BehavioralEvent."""
     if prev is None:
         return []
 
-    # индекс prev-проверок по стабильному ключу
+    # index of prev checks by stable key
     prev_index: dict[str, dict] = {}
     for step in prev:
         for c in step.get("checks", []):
@@ -58,7 +58,7 @@ def diff_snapshots(prev: list[dict] | None, curr: list[dict]) -> list[dict]:
             component_id = (params.get("node") if isinstance(params, dict) else None) or c["kind"]
 
             if not p_ok and c_ok:
-                # исправлено
+                # fixed
                 events.append(
                     {
                         "event_type": "action",
@@ -70,7 +70,7 @@ def diff_snapshots(prev: list[dict] | None, curr: list[dict]) -> list[dict]:
                     }
                 )
             elif p_ok and not c_ok:
-                # регресс
+                # regression
                 events.append(
                     {
                         "event_type": "error",
@@ -83,7 +83,7 @@ def diff_snapshots(prev: list[dict] | None, curr: list[dict]) -> list[dict]:
                 )
             elif not p_ok and not c_ok:
                 if p_actual == c_actual:
-                    # без изменений
+                    # unchanged
                     events.append(
                         {
                             "event_type": "error",
@@ -95,7 +95,7 @@ def diff_snapshots(prev: list[dict] | None, curr: list[dict]) -> list[dict]:
                         }
                     )
                 else:
-                    # другая ошибка — студент пробует
+                    # different error — student is trying
                     events.append(
                         {
                             "event_type": "error",
@@ -106,17 +106,17 @@ def diff_snapshots(prev: list[dict] | None, curr: list[dict]) -> list[dict]:
                             "extra_data": {"prev_actual": p_actual, "actual": c_actual},
                         }
                     )
-            # both ok → нет события
+            # both ok → no event
     return events
 
 
 class LabProgressObserver:
-    """Периодически прогоняет spec-проверки и хранит текущий шаг."""
+    """Periodically runs spec checks and holds the current step."""
 
     def __init__(
         self, gns3_client, db_factory, settings, learning_analytics_config: LearningAnalyticsConfig
     ):
-        """Инициализация с GNS3-клиентом, фабрикой DB и конфигом."""
+        """Initialize with a GNS3 client, DB factory, and config."""
         self._gns3 = gns3_client
         self._db_factory = db_factory
         self._settings = settings
@@ -130,7 +130,7 @@ class LabProgressObserver:
         self._gns3_sid: str | None = None
 
     async def start(self, session_id: str, user_id: str, lab_slug: str, gns3_sid: str) -> None:
-        """Запуск цикла опроса как asyncio.Task."""
+        """Start the polling loop as an asyncio.Task."""
         self._session_id = session_id
         self._user_id = user_id
         self._lab_slug = lab_slug
@@ -138,7 +138,7 @@ class LabProgressObserver:
         self._task = asyncio.create_task(self._poll_loop())
 
     async def stop(self) -> None:
-        """Остановка цикла."""
+        """Stop the loop."""
         if self._task and not self._task.done():
             self._task.cancel()
             try:
@@ -147,11 +147,11 @@ class LabProgressObserver:
                 pass
 
     def current_state(self) -> ProgressState | None:
-        """Последнее вычисленное состояние прогресса."""
+        """Last computed progress state."""
         return self._state
 
     async def _poll_loop(self) -> None:
-        """Бесконечный цикл: прогон → пауза → повтор."""
+        """Infinite loop: run → pause → repeat."""
         while True:
             try:
                 await self._poll_cycle()
@@ -162,7 +162,7 @@ class LabProgressObserver:
             await asyncio.sleep(self._cfg.progress_poll_interval)
 
     async def _poll_cycle(self) -> None:
-        """Один цикл: загрузка spec → контекст → снапшот → текущий шаг."""
+        """One cycle: load spec → context → snapshot → current step."""
         from validation.runner import evaluate_spec, load_lab_spec
         from validation.service import build_check_context
 
@@ -173,7 +173,7 @@ class LabProgressObserver:
         ctx = await build_check_context(self._gns3, self._gns3_sid, self._settings)
         snapshot = await evaluate_spec(ctx, spec)
         self._state = derive_current_step(snapshot)
-        # дельты → поведенческие события
+        # deltas → behavioral events
         events = diff_snapshots(self._prev_snapshot, snapshot)
         if events:
             from datetime import datetime
@@ -197,7 +197,7 @@ class LabProgressObserver:
         self._prev_snapshot = snapshot
 
     async def _persist(self, events: list[dict]) -> None:
-        """Пакетная запись событий в DB."""
+        """Batch write of events to the DB."""
         from models.behavioral_event import BehavioralEvent
 
         try:

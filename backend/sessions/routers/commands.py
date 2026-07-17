@@ -1,4 +1,4 @@
-"""Эндпоинты изменения состояния сессии: launch, stop, restart, reset, end, patch, node actions."""
+"""Session state-change endpoints: launch, stop, restart, reset, end, patch, node actions."""
 
 import logging
 from typing import Literal
@@ -56,15 +56,15 @@ async def launch_endpoint(
     monitor_registry: SessionMonitorRegistry = Depends(get_monitor_registry),
     queue: SessionQueueService = Depends(get_queue_service),
 ):
-    """Запускает лабу и создаёт сессию с выдачей доступов к GNS3.
+    """Launches a lab and creates a session, issuing GNS3 credentials.
 
-    Если свободных слотов нет, ставит пользователя в очередь и возвращает её позицию.
+    If there are no free slots, puts the user in the queue and returns their position.
     """
-    # Прокидываем user_id и lab_slug в structlog contextvars, чтобы все
-    # последующие логи в рамках запроса автоматически содержали эти поля.
+    # Push user_id and lab_slug into structlog contextvars so all subsequent
+    # logs within this request automatically carry these fields.
     structlog.contextvars.bind_contextvars(user_id=current_user["id"], lab_slug=body.lab_slug)
-    # Релонч уже активной сессии не должен брать слот очереди и задваивать
-    # счётчики: слот/мониторинг/gauge трогаем только для нового запуска.
+    # Relaunching an already-active session must not take a queue slot or
+    # double-count: slot/monitoring/gauge are only touched for a new launch.
     existing = await get_active_session(db, current_user["id"], body.lab_slug)
     is_new_launch = existing is None
 
@@ -120,7 +120,7 @@ async def stop_endpoint(
     db: AsyncSession = Depends(get_db),
     mcp_client=Depends(get_mcp_client),
 ):
-    """Останавливает лабу в рамках сессии."""
+    """Stops the lab within the session."""
     try:
         ok = await stop_lab(db, session_id, current_user["id"], mcp_client)
     except MCPToolError as exc:
@@ -137,7 +137,7 @@ async def restart_endpoint(
     db: AsyncSession = Depends(get_db),
     mcp_client=Depends(get_mcp_client),
 ):
-    """Перезапускает лабу в рамках сессии."""
+    """Restarts the lab within the session."""
     try:
         ok = await restart_lab(db, session_id, current_user["id"], mcp_client)
     except MCPToolError as exc:
@@ -154,7 +154,7 @@ async def reset_endpoint(
     db: AsyncSession = Depends(get_db),
     gns3_client=Depends(get_gns3_client),
 ):
-    """Сбрасывает лабу к исходному состоянию в рамках сессии."""
+    """Resets the lab to its initial state within the session."""
     if not await reset_lab(db, session_id, current_user["id"], gns3_client):
         raise HTTPException(status_code=404, detail="Session not found")
     return {"ok": True}
@@ -168,7 +168,7 @@ async def end_endpoint(
     gns3_client=Depends(get_gns3_client),
     monitor_registry: SessionMonitorRegistry = Depends(get_monitor_registry),
 ):
-    """Завершает сессию и освобождает ресурсы GNS3."""
+    """Ends the session and releases GNS3 resources."""
     if not await end_lab(db, session_id, current_user["id"], gns3_client, monitor_registry):
         raise HTTPException(status_code=404, detail="Session not found")
     return {"ok": True}
@@ -181,7 +181,7 @@ async def update_session_endpoint(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Обновляет статус сессии."""
+    """Updates the session status."""
     session = await end_session(db, session_id, current_user["id"], body.status)
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -191,7 +191,7 @@ async def update_session_endpoint(
         status=session.status,
         started_at=session.started_at,
         ended_at=session.ended_at,
-        meta=None,  # зашифрованные креды не отдаём наружу
+        meta=None,  # don't expose encrypted credentials externally
     )
 
 
@@ -207,7 +207,7 @@ async def node_action_endpoint(
     gns3_client=Depends(get_gns3_client),
     state_cache=Depends(get_state_cache),
 ):
-    """Выполняет действие над узлом топологии (start, stop, suspend, reload)."""
+    """Performs an action on a topology node (start, stop, suspend, reload)."""
     ok = await proxy_node_action(
         db,
         session_id,
@@ -234,7 +234,7 @@ async def bulk_node_action_endpoint(
     state_cache=Depends(get_state_cache),
     bulk_semaphore=Depends(get_bulk_semaphore),
 ):
-    """Выполняет действие сразу над всеми узлами топологии сессии."""
+    """Performs an action on all topology nodes of the session at once."""
     ok = await proxy_bulk_node_action(
         db,
         session_id,

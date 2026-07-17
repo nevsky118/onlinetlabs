@@ -9,7 +9,7 @@ from models.base import Base
 
 
 class ValidationRun(Base):
-    """Запуск проверки лабы в сессии с её статусом и результатами по шагам."""
+    """A lab check run within a session with its status and per-step results."""
 
     __tablename__ = "validation_runs"
     __table_args__ = (

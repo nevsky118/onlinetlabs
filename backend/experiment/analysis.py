@@ -1,4 +1,4 @@
-"""Встроенный статистический анализ эксперимента."""
+"""Built-in statistical analysis of the experiment."""
 
 import math
 from dataclasses import dataclass
@@ -8,7 +8,7 @@ from experiment.assignment import ExperimentGroup
 
 @dataclass
 class ArmAnalysisResult:
-    """Результат сравнения open vs closed arm."""
+    """Result of comparing the open vs closed arm."""
 
     l2_pass_rate_open: float
     l2_pass_rate_closed: float
@@ -19,8 +19,8 @@ class ArmAnalysisResult:
 
 
 def compute_arm_analysis(all_metrics: list, mentor_seconds: float = 900.0) -> ArmAnalysisResult:
-    """Сравнение arm open vs closed по A4-5 метрикам."""
-    # группируем по base_arm (постоянный training-arm), не по effective arm сессии
+    """Comparison of the open vs closed arm on A4-5 metrics."""
+    # group by base_arm (the persistent training-arm), not by the session's effective arm
     open_arm = [m for m in all_metrics if getattr(m, "base_arm", None) == "open"]
     closed_arm = [m for m in all_metrics if getattr(m, "base_arm", None) == "closed"]
 
@@ -45,7 +45,7 @@ def compute_arm_analysis(all_metrics: list, mentor_seconds: float = 900.0) -> Ar
 
     esc_open_total = sum(m.escalations for m in open_arm)
     esc_closed_total = sum(m.escalations for m in closed_arm)
-    # Закрытый arm эскалирует меньше → closed сохраняет часы ментора
+    # The closed arm escalates less -> closed saves mentor hours
     mentor_hours_saved = (esc_open_total - esc_closed_total) * mentor_seconds / 3600.0
 
     return ArmAnalysisResult(
@@ -59,7 +59,7 @@ def compute_arm_analysis(all_metrics: list, mentor_seconds: float = 900.0) -> Ar
 
 
 def compute_experiment_analysis(all_metrics: list) -> dict:
-    """Метрики → статистический анализ по гипотезам H1, H2."""
+    """Metrics -> statistical analysis for hypotheses H1, H2."""
     group_a = [m for m in all_metrics if m.experiment_group == ExperimentGroup.GROUP_A]
     group_b = [m for m in all_metrics if m.experiment_group == ExperimentGroup.GROUP_B]
 
@@ -87,7 +87,7 @@ def compute_experiment_analysis(all_metrics: list) -> dict:
 
 
 def _compare_groups(group_a_values: list[float], group_b_values: list[float]) -> dict:
-    """t-статистика Welch + p-value с нормальной аппроксимацией + Cohen's d."""
+    """Welch t-statistic + p-value with a normal approximation + Cohen's d."""
     group_a_mean = sum(group_a_values) / len(group_a_values)
     group_b_mean = sum(group_b_values) / len(group_b_values)
 
@@ -108,7 +108,7 @@ def _compare_groups(group_a_values: list[float], group_b_values: list[float]) ->
 
 
 def _welch_ttest_normal_approx(group1: list[float], group2: list[float]) -> tuple[float, float]:
-    """Двусторонний t-test без scipy, с нормальной аппроксимацией для p-value."""
+    """Two-sided t-test without scipy, using a normal approximation for the p-value."""
     mean1 = sum(group1) / len(group1)
     mean2 = sum(group2) / len(group2)
     var1 = _sample_variance(group1)
@@ -124,7 +124,7 @@ def _welch_ttest_normal_approx(group1: list[float], group2: list[float]) -> tupl
 
 
 def _sample_variance(values: list[float]) -> float:
-    """Выборочная дисперсия."""
+    """Sample variance."""
     if len(values) < 2:
         return 0.0
     mean = sum(values) / len(values)
@@ -132,7 +132,7 @@ def _sample_variance(values: list[float]) -> float:
 
 
 def _cohens_d(group1: list[float], group2: list[float]) -> float:
-    """Размер эффекта Cohen's d."""
+    """Cohen's d effect size."""
     n1, n2 = len(group1), len(group2)
     mean1 = sum(group1) / n1
     mean2 = sum(group2) / n2
@@ -143,7 +143,7 @@ def _cohens_d(group1: list[float], group2: list[float]) -> float:
 
 
 def _insufficient_data() -> dict:
-    """Заглушка при недостаточной выборке."""
+    """Stub for when the sample is insufficient."""
     return {
         "group_a_mean": None,
         "group_b_mean": None,

@@ -1,4 +1,4 @@
-"""Офлайн-вывод порогов dwell T_k по историческим сессиям."""
+"""Offline derivation of dwell thresholds T_k from historical sessions."""
 from __future__ import annotations
 
 import sys
@@ -8,8 +8,8 @@ from typing import Any
 
 from control.criterion import Costs, _to_sec, compute_J, is_bad_regime
 
-# Counterfactual: (samples, interventions) -> сэмплы для расчёта bad_duration.
-# Стипуляция (truncation) vs измеренный hazard (P4) — ось ablation де-циркуляризации.
+# Counterfactual: (samples, interventions) -> samples for computing bad_duration.
+# Stipulation (truncation) vs measured hazard (P4) -- the de-circularization ablation axis.
 Counterfactual = Callable[[list[dict], list[dict]], list[dict]]
 
 
@@ -18,29 +18,29 @@ def simulate_interventions(
     dwell_thresholds: dict[str, float],
     cooldown_seconds: float = 0.0,
 ) -> list[dict]:
-    """Симулирует политику вмешательства по порогам dwell + cooldown.
+    """Simulates the intervention policy from dwell thresholds + cooldown.
 
-    cooldown_seconds=0 → срабатывает на каждый подходящий сэмпл;
-    cooldown_seconds>0 → cooldown блокирует повторный выстрел.
-    Алгоритм соответствует живому закону управления в monitor.py.
+    cooldown_seconds=0 -> fires on every qualifying sample;
+    cooldown_seconds>0 -> cooldown blocks a repeat firing.
+    The algorithm matches the live control law in monitor.py.
     """
     interventions: list[dict] = []
-    last_fire_ts: float | None = None  # последний выстрел (Unix-сек)
+    last_fire_ts: float | None = None  # last firing (Unix seconds)
 
     for s in samples:
         regime = s["regime"]
         if not is_bad_regime(regime):
-            continue  # продуктивный — пропуск
+            continue  # productive -- skip
 
         threshold = dwell_thresholds.get(regime)
         if threshold is None:
-            continue  # режим не регулируется
+            continue  # regime isn't regulated
 
         if s["dwell"] < threshold:
-            continue  # ещё не достигли порога
+            continue  # threshold not reached yet
 
         s_ts = _to_sec(s["ts"])
-        # cooldown-гейт: либо первый выстрел, либо пауза достаточна
+        # cooldown gate: either the first firing, or the pause is long enough
         if last_fire_ts is not None and s_ts - last_fire_ts < cooldown_seconds:
             continue
 
@@ -53,11 +53,11 @@ def simulate_interventions(
 def _truncate_at_interventions(
     samples: list[dict], interventions: list[dict]
 ) -> list[dict]:
-    """Для офлайн-оценки: вмешательство считается завершающим спелл.
+    """For offline evaluation: an intervention is treated as ending the spell.
 
-    Сэмплы в плохом режиме ПОСЛЕ интервенции (и до конца спелла) заменяются
-    продуктивными — симулируем, что агент завершил затруднение.
-    Это делает bad_duration зависимым от T_k → оптимизация находит смысловой минимум.
+    Bad-regime samples AFTER the intervention (and until the spell ends) are
+    replaced with productive ones -- simulating that the agent resolved the struggle.
+    This makes bad_duration depend on T_k -> optimization finds a meaningful minimum.
     """
     if not interventions:
         return samples
@@ -65,7 +65,7 @@ def _truncate_at_interventions(
     result = []
     for s in samples:
         s_ts = _to_sec(s["ts"])
-        # если этот сэмпл в плохом режиме и после хотя бы одной интервенции — обнуляем
+        # if this sample is in a bad regime and after at least one intervention -- zero it out
         if is_bad_regime(s["regime"]) and any(iv_t <= s_ts for iv_t in iv_ts_sorted):
             result.append({**s, "regime": "productive", "dwell": 0.0})
         else:
@@ -74,11 +74,11 @@ def _truncate_at_interventions(
 
 
 def no_effect_counterfactual(samples: list[dict], interventions: list[dict]) -> list[dict]:
-    """Counterfactual «вмешательство НЕ влияет на исход»: bad_duration не зависит от T_k.
+    """Counterfactual "the intervention does NOT affect the outcome": bad_duration doesn't depend on T_k.
 
-    Ablation-альтернатива стипуляции _truncate_at_interventions: показывает, что
-    оптимум T_k — свойство ДОПУЩЕНИЯ об эффекте, а не только данных. На реальных
-    логах место этого — counterfactual из ИЗМЕРЕННОГО hazard (P4), не из допущения.
+    An ablation alternative to the _truncate_at_interventions stipulation: shows that
+    the T_k optimum is a property of the ASSUMPTION about effect, not just the data. On
+    real logs, its place is taken by a counterfactual from MEASURED hazard (P4), not an assumption.
     """
     return samples
 
@@ -90,17 +90,17 @@ def total_J(
     cooldown_seconds: float = 0.0,
     counterfactual: Counterfactual = _truncate_at_interventions,
 ) -> float:
-    """Суммарный критерий J по всем сессиям с симулированными вмешательствами.
+    """Total criterion J summed over all sessions with simulated interventions.
 
-    bad_duration считается по counterfactual-сэмплам (эффект вмешательства),
-    n_false — по оригинальным (нужны clean-выходы для сравнения медиан).
-    counterfactual по умолчанию — стипуляция (интервенция завершает спелл); без
-    зависимости от T_k (no_effect_counterfactual) T_k=∞ тривиально побеждает.
+    bad_duration is computed from counterfactual samples (intervention effect),
+    n_false from the original ones (clean exits are needed to compare medians).
+    The default counterfactual is the stipulation (intervention ends the spell); without
+    dependence on T_k (no_effect_counterfactual), T_k=inf trivially wins.
     """
     total = 0.0
     for s in sessions:
         ivs = simulate_interventions(s["samples"], dwell_thresholds, cooldown_seconds)
-        # bad_duration по counterfactual: эффект вмешательства на исход
+        # bad_duration from the counterfactual: the intervention's effect on the outcome
         truncated = counterfactual(s["samples"], ivs)
         total += compute_J(
             s["samples"], ivs, costs,
@@ -116,8 +116,8 @@ def derive_T_k(
     cooldown_seconds: float = 0.0,
     counterfactual: Counterfactual = _truncate_at_interventions,
 ) -> dict[str, float]:
-    """Выбирает лучший T_k для каждого режима независимо по сетке кандидатов."""
-    # Инициализируем пороги первыми значениями сетки
+    """Selects the best T_k for each regime independently over a candidate grid."""
+    # Initialize thresholds with the grid's first values
     current_thresholds: dict[str, float] = {
         regime: candidates[0]
         for regime, candidates in grid.items()
@@ -135,7 +135,7 @@ def derive_T_k(
                 best_j = j
                 best_tk = tk
         result[regime] = best_tk
-        current_thresholds[regime] = best_tk  # фиксируем для следующих режимов
+        current_thresholds[regime] = best_tk  # lock in for subsequent regimes
 
     return result
 
@@ -150,11 +150,11 @@ def sensitivity_curve(
     time_unit_seconds: float = 1.0,
     counterfactual: Counterfactual = _truncate_at_interventions,
 ) -> list[tuple]:
-    """Кривая чувствительности T_k по диапазону соотношений стоимостей.
+    """Sensitivity curve of T_k over a range of cost ratios.
 
-    time_unit_seconds: делитель для c_stuck; = 60 → ratio трактуется как
-    «мин затруднения на единицу воздействия», точка безразличия D* = 60/ratio сек.
-    c_stuck варьируется по ratio — намеренно (Парето-анализ).
+    time_unit_seconds: divisor for c_stuck; =60 -> ratio is interpreted as
+    "minutes stuck per unit of intervention", indifference point D* = 60/ratio sec.
+    c_stuck varies with ratio -- intentionally (Pareto analysis).
     """
     curve: list[tuple] = []
     for ratio in ratios:
@@ -170,7 +170,7 @@ def sensitivity_curve(
 
 
 # ---------------------------------------------------------------------------
-# CLI — синтетические данные или JSON-файл из argv[1]
+# CLI -- synthetic data, or a JSON file from argv[1]
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     import json
@@ -178,7 +178,7 @@ if __name__ == "__main__":
     from config.config_model import LearningAnalyticsConfig
 
     _cfg = LearningAnalyticsConfig()
-    # Стоимости из конфига — не хардкод
+    # Costs from config -- not hardcoded
     _costs_from_config = Costs(
         c_stuck=_cfg.cost_stuck,
         c_intervention=_cfg.cost_intervention,
@@ -192,10 +192,10 @@ if __name__ == "__main__":
         regime: str = "stuck_on_step",
         t_step: int = 15,
     ) -> dict:
-        """Сессия: плохой спелл длиной spell_len, затем продуктивный.
+        """Session: a bad spell of length spell_len, then productive.
 
-        recover_at: если задан, вставляет ранний выход в продуктивный режим
-        (короткий самовыход, нужен для базы n_false).
+        recover_at: if given, inserts an early exit into the productive regime
+        (a short self-exit, needed as a basis for n_false).
         """
         samples: list[dict[str, Any]] = []
         t, dwell = 0, 0.0
@@ -210,20 +210,20 @@ if __name__ == "__main__":
         with open(sys.argv[1]) as f:
             sessions = json.load(f)
     else:
-        # Данные с вариацией: короткие самовыходы (30-90с) и длинные спеллы (120-600с).
-        # base_c_intervention=60 → стоимость воздействия = 1 мин; c_stuck в с⁻¹;
-        # при ratio=c_stuck/c_int точка безразличия: D* = c_int/(c_stuck) = 1/ratio мин.
-        # ratio=0.2 → D*=5 мин=300с; ratio=5 → D*=12с — кривая гнётся внутри диапазона.
-        # Микс спеллов: короткие (30-60с, самовыходы) и длинные (120-600с).
-        # D*(ratio) = 60/ratio сек: ratio=0.2→300с, ratio=5→12с — кривая гнётся.
+        # Data with variation: short self-exits (30-90s) and long spells (120-600s).
+        # base_c_intervention=60 -> intervention cost = 1 min; c_stuck in s^-1;
+        # at ratio=c_stuck/c_int, indifference point: D* = c_int/(c_stuck) = 1/ratio min.
+        # ratio=0.2 -> D*=5 min=300s; ratio=5 -> D*=12s -- the curve bends within the range.
+        # Mix of spells: short (30-60s, self-exits) and long (120-600s).
+        # D*(ratio) = 60/ratio sec: ratio=0.2->300s, ratio=5->12s -- the curve bends.
         sessions = [
-            _build_session(30),    # 30с — короткий
+            _build_session(30),    # 30s -- short
             _build_session(30),
-            _build_session(60),    # 60с
-            _build_session(120),   # 120с
-            _build_session(180),   # 3 мин
-            _build_session(300),   # 5 мин
-            _build_session(600),   # 10 мин
+            _build_session(60),    # 60s
+            _build_session(120),   # 120s
+            _build_session(180),   # 3 min
+            _build_session(300),   # 5 min
+            _build_session(600),   # 10 min
         ]
 
     grid: dict[str, list[float]] = {
@@ -231,18 +231,18 @@ if __name__ == "__main__":
     }
     ratios = [0.2, 0.5, 1.0, 2.0, 5.0]
 
-    # time_unit_seconds=60: ratio трактуется как «мин затруднения / воздействие»;
-    # точка безразличия D*(ratio) = 60/ratio сек — укладывается в диапазон спеллов (12..300с).
+    # time_unit_seconds=60: ratio is interpreted as "minutes stuck / intervention";
+    # indifference point D*(ratio) = 60/ratio sec -- fits within the spell range (12..300s).
     best = derive_T_k(sessions, _costs_from_config, grid, cooldown_seconds=_cooldown)
     curve = sensitivity_curve(
         sessions, ratios, grid,
         base_c_intervention=_cfg.cost_intervention,
         c_false=_cfg.cost_false_intervention,
         cooldown_seconds=_cooldown,
-        time_unit_seconds=60.0,  # ratio в мин⁻¹; D*(ratio)=60/ratio сек
+        time_unit_seconds=60.0,  # ratio in min^-1; D*(ratio)=60/ratio sec
     )
 
-    # Пишем отчёт
+    # Write the report
     out_dir = Path(__file__).parents[2] / "docs" / "superpowers" / "artifacts"
     out_dir.mkdir(parents=True, exist_ok=True)
     report = out_dir / "T_k_sensitivity.md"

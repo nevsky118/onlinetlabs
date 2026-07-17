@@ -1,11 +1,11 @@
-"""Переменная состояния управляемого процесса: дискретный режим + dwell-time."""
+"""State variable of the controlled process: discrete regime + dwell-time."""
 
 from datetime import datetime
 from enum import Enum
 
 
 class ProcessRegime(str, Enum):
-    """Режим процесса: продуктивный либо затруднение типа k (зеркалит StruggleType)."""
+    """Process regime: productive or struggle of type k (mirrors StruggleType)."""
 
     PRODUCTIVE = "productive"
     STUCK_ON_STEP = "stuck_on_step"
@@ -15,19 +15,19 @@ class ProcessRegime(str, Enum):
 
 
 def analysis_to_regime(analysis) -> ProcessRegime:
-    """Оценка состояния из результата идентификатора. Без затруднения — продуктивный."""
+    """Derive state from the identifier's result. No struggle → productive."""
     if not analysis.struggle_detected or analysis.struggle_type is None:
         return ProcessRegime.PRODUCTIVE
     return ProcessRegime(analysis.struggle_type.value)
 
 
 def is_bad(regime: ProcessRegime) -> bool:
-    """Плохой режим = любое затруднение (не продуктивный)."""
+    """Bad regime = any struggle (not productive)."""
     return regime != ProcessRegime.PRODUCTIVE
 
 
 class DwellTracker:
-    """Считает время непрерывного пребывания в одном режиме. Смена режима — сброс."""
+    """Tracks continuous time spent in one regime. Regime change resets it."""
 
     def __init__(self) -> None:
         self._regime: ProcessRegime | None = None
@@ -38,7 +38,7 @@ class DwellTracker:
         return self._regime
 
     def observe(self, regime: ProcessRegime, now: datetime) -> float:
-        """Зафиксировать режим на момент now, вернуть dwell_seconds в текущем режиме."""
+        """Record the regime at time now, return dwell_seconds in the current regime."""
         if regime != self._regime:
             self._regime = regime
             self._since = now

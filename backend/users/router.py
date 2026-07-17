@@ -46,7 +46,7 @@ async def update_preferences(
                 raise HTTPException(422, "Неизвестная модель")
             user.default_model_id = val
         else:
-            user.default_model_id = None  # очистка
+            user.default_model_id = None  # clear
         await db.commit()
         await db.refresh(user)
     return PreferencesResponse(default_model_id=user.default_model_id)

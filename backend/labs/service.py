@@ -6,7 +6,7 @@ from models.lab import Lab
 
 
 async def get_all_labs(db: AsyncSession, course_slug: str | None = None) -> list[Lab]:
-    """Выбирает лабораторные работы из БД, опционально фильтруя по курсу, сортируя по порядку."""
+    """Selects labs from the DB, optionally filtered by course, ordered by sort order."""
     stmt = select(Lab)
     if course_slug is not None:
         stmt = stmt.where(Lab.course_slug == course_slug)
@@ -24,7 +24,7 @@ async def create_lab(
     environment_type: str = "none",
     gns3_template_project_id: str | None = None,
 ) -> Lab:
-    """Создаёт и сохраняет в БД новую лабораторную работу."""
+    """Creates and saves a new lab to the DB."""
     lab = Lab(
         slug=slug,
         title=title,
@@ -40,7 +40,7 @@ async def create_lab(
 
 
 async def delete_lab(db: AsyncSession, slug: str) -> bool:
-    """Удаляет лабораторную работу из БД по slug. Возвращает False, если её нет."""
+    """Deletes a lab from the DB by slug. Returns False if it doesn't exist."""
     lab = await get_lab_by_slug(db, slug)
     if lab is None:
         return False
@@ -49,7 +49,7 @@ async def delete_lab(db: AsyncSession, slug: str) -> bool:
 
 
 async def get_lab_by_slug(db: AsyncSession, slug: str) -> Lab | None:
-    """Возвращает лабораторную работу по slug вместе с её шагами или None."""
+    """Returns the lab by slug with its steps, or None."""
     result = await db.execute(select(Lab).options(selectinload(Lab.steps)).where(Lab.slug == slug))
     return result.scalar_one_or_none()
 
@@ -85,10 +85,10 @@ _VARIANT_COLUMN: dict[str, str] = {
 async def set_lab_template(
     db: AsyncSession, slug: str, template_project_id: str, variant: str = "default"
 ) -> Lab:
-    """Привязывает GNS3 template_project_id к лабе по варианту среды.
+    """Binds a GNS3 template_project_id to the lab for the given environment variant.
 
     variant: "default" | "frr" | "iosvl2"
-    Возвращает обновлённую Lab. Поднимает HTTPException(404) при неизвестном slug.
+    Returns the updated Lab. Raises HTTPException(404) for an unknown slug.
     """
     from fastapi import HTTPException, status
 

@@ -1,4 +1,4 @@
-"""Загрузка реальных сценариев из open-плеча + согласие разметчиков (Cohen's κ)."""
+"""Loading real scenarios from the open arm + inter-rater agreement (Cohen's kappa)."""
 
 from sqlalchemy import select
 
@@ -6,7 +6,7 @@ from models.experiment import ExperimentMetrics
 
 
 def cohens_kappa(labeler_a: list[str], labeler_b: list[str]) -> float:
-    """Согласие двух разметчиков по категориям: (po - pe) / (1 - pe)."""
+    """Agreement between two annotators over categories: (po - pe) / (1 - pe)."""
     n = len(labeler_a)
     if n == 0 or n != len(labeler_b):
         return 0.0
@@ -19,12 +19,12 @@ def cohens_kappa(labeler_a: list[str], labeler_b: list[str]) -> float:
 
 
 def labeled_real_count(scenarios) -> int:
-    """Число сценариев source=='real' (реальные с разметкой)."""
+    """Count of scenarios with source=='real' (real, labeled)."""
     return sum(1 for s in scenarios if s.source == "real")
 
 
 async def harvest_open_arm_sessions(db) -> list[str]:
-    """session_id'ы, где base_arm == 'open' (без вмешательств)."""
+    """session_ids where base_arm == 'open' (no interventions)."""
     rows = (
         (
             await db.execute(

@@ -12,24 +12,24 @@ logger = logging.getLogger(__name__)
 
 
 class StateCache:
-    """Кэш состояния сессии в Redis с коротким TTL.
+    """Session state cache in Redis with a short TTL.
 
-    Хранит SessionState в виде JSON. Повреждённые записи считаются промахом,
-    а не ошибкой запроса.
+    Stores SessionState as JSON. Corrupted entries are treated as a miss,
+    not a request error.
     """
 
     def __init__(self, redis, ttl_seconds: int = 5) -> None:
-        """Хранит клиент Redis и TTL записей в секундах."""
+        """Stores the Redis client and the entry TTL in seconds."""
         self._redis = redis
         self._ttl = ttl_seconds
 
     @staticmethod
     def _key(session_id: str) -> str:
-        """Ключ Redis для состояния указанной сессии."""
+        """Redis key for the given session's state."""
         return f"session:state:{session_id}"
 
     async def get(self, session_id: str) -> dict | None:
-        """Возвращает закэшированное состояние сессии или None при промахе."""
+        """Returns the cached session state, or None on a miss."""
         raw = await self._redis.get(self._key(session_id))
         if raw is None:
             return None
@@ -40,9 +40,9 @@ class StateCache:
             return None
 
     async def set(self, session_id: str, state: dict) -> None:
-        """Сохраняет состояние сессии в кэш с заданным TTL."""
+        """Saves the session state to the cache with the given TTL."""
         await self._redis.set(self._key(session_id), json.dumps(state), ex=self._ttl)
 
     async def invalidate(self, session_id: str) -> None:
-        """Удаляет закэшированное состояние сессии."""
+        """Deletes the cached session state."""
         await self._redis.delete(self._key(session_id))

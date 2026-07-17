@@ -1,4 +1,4 @@
-"""Orchestrator — маршрутизация запросов к агентам."""
+"""Orchestrator — routes requests to agents."""
 
 import logging
 
@@ -17,17 +17,17 @@ logger = logging.getLogger(__name__)
 
 
 class Orchestrator:
-    """Оркестратор создаёт агентов и маршрутизирует запросы."""
+    """Orchestrator creates agents and routes requests."""
 
     def __init__(self, config: ConfigModel, mcp_client=None, db=None):
-        """Сохраняет конфиг и зависимости, кэш агентов создаётся лениво."""
+        """Stores config and dependencies; agent cache is created lazily."""
         self.config = config
         self._mcp_client = mcp_client
         self._db = db
         self._agents = {}
 
     def _get_agent(self, agent_name: str):
-        """Lazy создание агента по имени через AGENT_REGISTRY."""
+        """Lazily create an agent by name via AGENT_REGISTRY."""
         if agent_name in self._agents:
             return self._agents[agent_name]
 
@@ -36,7 +36,7 @@ class Orchestrator:
             return None
         agent_cls, _ = entry
 
-        # Конструкторы агентов отличаются зависимостями, разводим явно.
+        # Agent constructors differ in dependencies, handle explicitly.
         if agent_cls is HintAgent:
             agent = agent_cls(self.config)
         else:
@@ -45,11 +45,11 @@ class Orchestrator:
         self._agents[agent_name] = agent
         return agent
 
-    # LLM-агенты, принимающие model_id
+    # LLM agents that accept model_id
     _LLM_AGENTS = frozenset({"tutor", "hint"})
 
     def _resolve_intervention_model(self, context: dict) -> str:
-        """Модель интервенций: config-дефолт, либо выбор сессии при follow_session."""
+        """Intervention model: config default, or session's choice when follow_session."""
         cfg = self.config.agents
         sid = context.get("session_model_id")
         if cfg.interventions_follow_session and sid and cfg.get_entry(sid) is not None:
@@ -57,9 +57,9 @@ class Orchestrator:
         return cfg.intervention_model
 
     async def intervene(self, input_data: InterventionInput) -> OrchestratorResponse:
-        """Проактивная интервенция от SessionMonitor."""
+        """Proactive intervention from SessionMonitor."""
         agent_name = f"intervene_{input_data.intervention_type}"
-        # Ablation: single-agent mode форсит один generalist вместо специализации по типу
+        # Ablation: single-agent mode forces one generalist instead of type-based specialization
         if self.config.learning_analytics.single_agent_mode:
             agent_name = "intervene_tutor"
         resolved = resolve_agent(agent_name)
@@ -110,7 +110,7 @@ class Orchestrator:
             )
 
     def _build_agent_input(self, agent_name: str, input_data: OrchestratorInput):
-        """Построить input для конкретного агента из payload."""
+        """Build input for a specific agent from the payload."""
         entry = AGENT_REGISTRY.get(agent_name)
         if entry is None:
             raise ValueError(f"No input builder for agent: {agent_name}")

@@ -1,10 +1,10 @@
-"""Дефолтный каталог LLM-моделей. Секреты провайдеров подставляются из env."""
+"""Default catalog of LLM models. Provider secrets are substituted from env."""
 
 from config.config_model import ModelEntry
 
 
 def default_catalog() -> list[ModelEntry]:
-    """Сид-каталог: Yandex напрямую + модели через OpenRouter (все tools-capable)."""
+    """Seed catalog: Yandex direct + models via OpenRouter (all tools-capable)."""
     return [
         ModelEntry(
             id="yandex-gpt-5.1",
@@ -48,15 +48,15 @@ def default_catalog() -> list[ModelEntry]:
             provider_ref="openrouter",
             model="deepseek/deepseek-chat-v3.1",
         ),
-        # Free-tier без пополнения баланса OpenRouter (rate-limited).
-        # Named/детерминированная — знаем, какая модель отвечала (важно для экспериментов).
+        # Free-tier, no OpenRouter balance top-up (rate-limited).
+        # Named/deterministic — we know which model answered (important for experiments).
         ModelEntry(
             id="qwen3-next-free",
             label="Qwen3 Next (free)",
             provider_ref="openrouter",
             model="qwen/qwen3-next-80b-a3b-instruct:free",
         ),
-        # Авто-роутер OpenRouter по free-моделям — надёжнее (меньше 429), но недетерминирован.
+        # OpenRouter auto-router over free models — more reliable (fewer 429s), but nondeterministic.
         ModelEntry(
             id="openrouter-free",
             label="OpenRouter Free (auto)",

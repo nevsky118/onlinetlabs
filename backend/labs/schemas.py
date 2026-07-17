@@ -4,14 +4,14 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class SetLabTemplateRequest(BaseModel):
-    """Тело запроса привязки GNS3 template_project_id к лабе."""
+    """Request body for binding a GNS3 template_project_id to a lab."""
 
     template_project_id: str
     variant: Literal["default", "frr", "iosvl2"] = "default"
 
 
 class LabTemplateResponse(BaseModel):
-    """Поля лабы, относящиеся к GNS3-шаблонам."""
+    """Lab fields related to GNS3 templates."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -22,7 +22,7 @@ class LabTemplateResponse(BaseModel):
 
 
 class LabCreate(BaseModel):
-    """Данные для создания лабораторной работы."""
+    """Data for creating a lab."""
 
     slug: str = Field(min_length=1)
     title: str = Field(min_length=1)
@@ -33,7 +33,7 @@ class LabCreate(BaseModel):
 
 
 class LabStepResponse(BaseModel):
-    """Шаг лабораторной работы."""
+    """A lab step."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -44,7 +44,7 @@ class LabStepResponse(BaseModel):
 
 
 class LabResponse(BaseModel):
-    """Лабораторная работа без вложенных шагов."""
+    """Lab without nested steps."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -59,6 +59,6 @@ class LabResponse(BaseModel):
 
 
 class LabDetailResponse(LabResponse):
-    """Лабораторная работа вместе со списком её шагов."""
+    """Lab together with its list of steps."""
 
     steps: list[LabStepResponse]

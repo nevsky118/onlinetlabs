@@ -1,7 +1,7 @@
-"""Хранение истинного латентного режима сим-студента для честной observer-ROC.
+"""Storage of the sim-student's true latent regime for honest observer ROC.
 
-Реюзит RegimeAnnotation с coder_id="sim-truth", is_gold=True. Пишется только для
-is_simulated-сессий (firewall на уровне сессии), помечено как симуляция.
+Reuses RegimeAnnotation with coder_id="sim-truth", is_gold=True. Written only for
+is_simulated sessions (session-level firewall), marked as simulation.
 """
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,7 +13,7 @@ SIM_TRUTH_CODER = "sim-truth"
 async def record_truth(
     db: AsyncSession, session_id: str, window_index: int, true_regime: str
 ) -> None:
-    """Записать истинный режим окна как gold-аннотацию симуляции."""
+    """Record the window's true regime as the simulation's gold annotation."""
     db.add(RegimeAnnotation(
         session_id=session_id, coder_id=SIM_TRUTH_CODER, window_index=window_index,
         regime_label=true_regime, is_gold=True,

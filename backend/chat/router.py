@@ -1,4 +1,4 @@
-"""POST /chat/stream — SSE стриминг тьютора (Vercel AI SDK v1)."""
+"""POST /chat/stream — SSE tutor streaming (Vercel AI SDK v1)."""
 
 import asyncio
 import json
@@ -51,27 +51,27 @@ router = APIRouter()
 
 
 def _activity_emit(app_state, event) -> None:
-    """Безопасно эмитит событие активности, если лог-сервис есть."""
+    """Safely emits an activity event if the log service is available."""
     log = getattr(app_state, "activity_log", None)
     if log is not None:
         log.emit(event)
 
 
-# Максимум раундов tool-вызовов в одном /chat ответе, защита от бесконечной рекурсии.
+# Max tool-call rounds in a single /chat response, guards against infinite recursion.
 MAX_TOOL_ROUNDS = 5
 
-# Сколько последних сообщений диалога отправлять модели. [Задание] и
-# [Текущее состояние лаб-среды] пересобираются заново на каждый запрос —
-# длинная история не нужна и только усиливает "снежный ком" из повторяющихся
-# (возможно неверных) утверждений модели о состоянии среды.
+# How many recent dialogue messages to send to the model. [Задание] and
+# [Текущее состояние лаб-среды] are rebuilt fresh on every request —
+# a long history isn't needed and only amplifies a "snowball" of repeated
+# (possibly wrong) model claims about the environment state.
 MAX_HISTORY_MESSAGES = 6
 
-# Regex для стриппинга thinking-токенов YandexGPT из стримингового контента.
+# Regex for stripping YandexGPT thinking tokens from streamed content.
 _THINKING_RE = re.compile(r"\[START_THINKING\].*?\[END_THINKING\]", re.DOTALL)
 
 
 def build_models_response(can_select: bool) -> dict:
-    """Каталог для UI: только tools-capable; список пуст если выбор запрещён."""
+    """Catalog for the UI: tools-capable only; empty list if selection is disallowed."""
     cfg = settings.agents
     models = (
         [] if not can_select else [{"id": m.id, "label": m.label} for m in cfg.catalog if m.tools]
@@ -81,14 +81,14 @@ def build_models_response(can_select: bool) -> dict:
 
 @router.get("/chat/models")
 async def chat_models(current_user: dict = Depends(get_current_user)):
-    """Доступные для выбора модели текущего пользователя."""
+    """Models available for selection to the current user."""
     return build_models_response(current_user.get("can_select", False))
 
 
 def resolve_chat_model(
     requested: str | None, session_model_id: str | None, can_select: bool
 ) -> str:
-    """Эффективная модель: запрос(если entitled и в каталоге) → session → config-дефолт."""
+    """Effective model: request (if entitled and in the catalog) → session → config default."""
     cfg = settings.agents
     if can_select and requested and cfg.get_entry(requested) is not None:
         return requested
@@ -98,20 +98,20 @@ def resolve_chat_model(
 
 
 def _supports_tool_calling(model_id: str) -> bool:
-    """Поддерживает ли модель нативный OpenAI-style function calling."""
+    """Whether the model supports native OpenAI-style function calling."""
     return model_supports_tools(model_id)
 
 
 async def _fetch_mcp_context(mcp_client, ctx, expected_vpcs: dict | None = None) -> str | None:
-    """Предзагружает состояние среды из MCP и форматирует как текстовый блок.
+    """Preloads environment state from MCP and formats it as a text block.
 
-    Вызывается до первого LLM-раунда, чтобы модель получила реальный контекст
-    даже если не поддерживает нативный tool-calling (например, YandexGPT).
+    Called before the first LLM round so the model gets real context even
+    if it doesn't support native tool-calling (e.g. YandexGPT).
 
-    expected_vpcs: node_name -> {"ip": ..., "gateway": ...} из [Задание] —
-    используется чтобы сразу проставить вердикт «верно/неверно» рядом с
-    фактическим IP, не полагаясь на то, что модель сама сравнит значения
-    (YandexGPT часто игнорирует это и пересказывает ожидаемые значения).
+    expected_vpcs: node_name -> {"ip": ..., "gateway": ...} from [Задание] —
+    used to immediately attach a "correct/incorrect" verdict next to the
+    actual IP, instead of relying on the model to compare values itself
+    (YandexGPT often ignores this and just restates the expected values).
     """
     expected_vpcs = expected_vpcs or {}
     if mcp_client is None:
@@ -130,9 +130,9 @@ async def _fetch_mcp_context(mcp_client, ctx, expected_vpcs: dict | None = None)
             else:
                 parts.append("Компоненты среды: список пуст.")
 
-            # Реальный show ip для запущенных VPCS-узлов — не полагаемся на то,
-            # что модель сама вызовет get_vpcs_ip (часто она этого не делает
-            # и придумывает значения из [Задание]).
+            # Real show ip for started VPCS nodes — don't rely on the model
+            # calling get_vpcs_ip itself (it often doesn't, and instead makes
+            # up values from [Задание]).
             vpcs_nodes = [c for c in components if c.type == "vpcs" and c.status == "started"]
             if vpcs_nodes:
                 ip_results = await asyncio.gather(
@@ -179,7 +179,7 @@ async def _fetch_mcp_context(mcp_client, ctx, expected_vpcs: dict | None = None)
 
 
 async def _fetch_lab_context(db: AsyncSession, lab_slug: str, spec: dict | None) -> str | None:
-    """Загружает описание лабы и ожидаемую конфигурацию из БД и YAML-задания."""
+    """Loads the lab description and expected configuration from the DB and YAML spec."""
     try:
         lab = await db.get(Lab, lab_slug)
         if lab is None:
@@ -234,12 +234,12 @@ async def _stream_one_round(
     session_id: str = "",
     user_id: str = "",
 ) -> AsyncIterator[str]:
-    """Один LLM-round: текст + накопление tool_calls. Обновляет state in-place.
+    """One LLM round: text + tool_calls accumulation. Updates state in-place.
 
     state keys:
-      - assistant_parts: list[dict] — собранные text-парты
+      - assistant_parts: list[dict] — collected text parts
       - usage_info: dict | None
-      - has_tool_calls: bool — есть ли tool_calls в этом раунде
+      - has_tool_calls: bool — whether this round has tool_calls
     """
     create_kwargs: dict = {"model": model, "messages": messages, "stream": True}
     if _supports_tool_calling(model_id):
@@ -266,7 +266,7 @@ async def _stream_one_round(
         if delta is None:
             continue
         if delta.content:
-            # Стрипаем thinking-токены YandexGPT до передачи в стрим.
+            # Strip YandexGPT thinking tokens before passing into the stream.
             content = _THINKING_RE.sub("", delta.content).strip()
             if not content:
                 continue
@@ -318,7 +318,7 @@ async def _stream_one_round(
         except json.JSONDecodeError:
             parsed = {}
         yield tool_input_available(tc_id, tc_name, parsed)
-        # Эмит: инструмент вызывается.
+        # Emit: tool is being called.
         _activity_emit(
             app_state,
             event_tool_call(
@@ -329,7 +329,7 @@ async def _stream_one_round(
             ),
         )
         result = await execute_tool(tc_name, parsed, ctx, mcp_client)
-        # Эмит: результат инструмента.
+        # Emit: tool result.
         _activity_emit(
             app_state,
             event_tool_result(
@@ -349,7 +349,7 @@ async def _stream_one_round(
 async def _finalize_assistant_message(
     db: AsyncSession, session_id: str, parts: list[dict], usage: dict | None, model_id: str
 ) -> None:
-    """Сохранить итоговое сообщение ассистента; ошибки логируем, не пробрасываем (finally-блок)."""
+    """Save the final assistant message; log errors, don't propagate (finally block)."""
     try:
         merged = {**(usage or {}), "model_id": model_id}
         await save_assistant_message(db, session_id, parts, merged)
@@ -366,7 +366,7 @@ async def chat_stream(
     db: AsyncSession = Depends(get_db),
     mcp_client=Depends(get_mcp_client),
 ):
-    """Стримит ответ тьютора по сессии через SSE с поддержкой tool-вызовов."""
+    """Streams the tutor's response for a session via SSE with tool-call support."""
     session = await get_owned_session(db, body.id, current_user["id"])
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -378,7 +378,7 @@ async def chat_stream(
     await save_user_message(db, session.id, body.messages)
 
     async def generate():
-        """Генератор SSE-событий. Прогоняет раунды LLM и сохраняет итог ассистента."""
+        """SSE event generator. Runs LLM rounds and saves the assistant's final message."""
         effective_model_id = resolve_chat_model(
             body.model_id, session.model_id, current_user.get("can_select", False)
         )
@@ -386,7 +386,7 @@ async def chat_stream(
             logger.warning(
                 "chat: model_id '%s' отклонён, фолбэк на '%s'", body.model_id, effective_model_id
             )
-            # Эмит: фолбэк на другую модель.
+            # Emit: fallback to another model.
             _activity_emit(
                 request.app.state,
                 event_fallback(
@@ -397,13 +397,13 @@ async def chat_stream(
                     reason="не в каталоге или нет права выбора",
                 ),
             )
-        # Персист выбора модели на сессию.
+        # Persist the model choice to the session.
         if effective_model_id != session.model_id:
             session.model_id = effective_model_id
             await db.commit()
         client = build_client(effective_model_id)
         model = model_uri(effective_model_id)
-        # Эмит: модель выбрана.
+        # Emit: model selected.
         entry = settings.agents.get_entry(effective_model_id)
         _activity_emit(
             request.app.state,
@@ -415,14 +415,14 @@ async def chat_stream(
             ),
         )
 
-        # Параллельно загружаем: описание лабы + состояние среды из MCP.
+        # Load in parallel: lab description + environment state from MCP.
         spec = load_lab_spec(session.lab_slug)
         expected_vpcs = expected_vpcs_config(spec)
         lab_ctx_text, mcp_ctx_text = await asyncio.gather(
             _fetch_lab_context(db, session.lab_slug, spec),
             _fetch_mcp_context(mcp_client, ctx, expected_vpcs),
         )
-        # Эмит: контекст MCP получен.
+        # Emit: MCP context fetched.
         _activity_emit(
             request.app.state,
             event_mcp_context_fetched(
@@ -474,7 +474,7 @@ async def chat_stream(
                     break
                 tool_round += 1
 
-            # Эмит: ответ завершён.
+            # Emit: response finished.
             usage = state.get("usage_info") or {}
             _activity_emit(
                 request.app.state,

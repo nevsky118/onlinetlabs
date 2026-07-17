@@ -1,4 +1,4 @@
-"""Размеченные сценарии для оценки идентификатора П1 (синтетика + загруженные реальные)."""
+"""Labeled scenarios for evaluating the P1 identifier (synthetic + loaded real)."""
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -6,21 +6,21 @@ from datetime import UTC, datetime
 from agents.analytics.models import SessionFeatures
 from learning_analytics.process_state import ProcessRegime
 
-# Фиксированный момент времени для синтетических снапшотов (computed_at — обязательное поле)
+# Fixed timestamp for synthetic snapshots (computed_at -- a required field)
 _EPOCH = datetime(2026, 1, 1, tzinfo=UTC)
 
 
 @dataclass
 class Snapshot:
-    ts: float  # секунды от старта сессии
+    ts: float  # seconds from session start
     features: SessionFeatures
 
 
 @dataclass
 class LabeledScenario:
     snapshots: list["Snapshot"]
-    onset_ts: float | None  # None ⟺ нормальная сессия
-    onset_window: float  # ±Δ допуск (сек)
+    onset_ts: float | None  # None iff a normal session
+    onset_window: float  # +/-delta tolerance (sec)
     truth_regime: ProcessRegime
     duration_seconds: float
     source: str  # "synthetic" | "real"
@@ -31,8 +31,8 @@ def is_normal(s: "LabeledScenario") -> bool:
 
 
 def _features(ts_index: int, regime: ProcessRegime, fired: bool) -> SessionFeatures:
-    """Benign-фичи; если fired — пробивают правило для regime (дефолтные пороги конфига)."""
-    # Адаптация: SessionFeatures требует computed_at (datetime); user_id/lab_slug отсутствуют в модели
+    """Benign features; if fired, they trip the rule for regime (default config thresholds)."""
+    # Adaptation: SessionFeatures requires computed_at (datetime); user_id/lab_slug aren't in the model
     base = dict(
         avg_inter_action_latency=5.0,
         action_rate_slope=0.0,
@@ -65,7 +65,7 @@ def _features(ts_index: int, regime: ProcessRegime, fired: bool) -> SessionFeatu
         elif regime == ProcessRegime.STUCK_ON_STEP:
             base.update(cycles_failing_unchanged=4)
         elif regime == ProcessRegime.IDLE:
-            # IDLE-правило: idle_periods>порог И action_rate_slope<rate_slope_threshold(-0.5)
+            # IDLE rule: idle_periods > threshold AND action_rate_slope < rate_slope_threshold(-0.5)
             base.update(idle_periods=4, avg_inter_action_latency=120.0, action_rate_slope=-1.0)
     return SessionFeatures(**base)
 

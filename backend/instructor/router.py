@@ -30,7 +30,7 @@ async def cohort_metrics(
     _: dict = Depends(require_instructor),
     db: AsyncSession = Depends(get_db),
 ):
-    """Когортные орг-метрики D3/D4. headline=closed; open+pooled рядом."""
+    """Cohort org metrics D3/D4. headline=closed; open+pooled alongside."""
     horizon = settings.learning_analytics.cohort_horizon_days * 86400.0
     out = await compute_cohort_metrics(db, horizon_seconds=horizon, by_arm=by_arm)
     return cohort_response_from_result(out)
@@ -41,7 +41,7 @@ async def list_students(
     _: dict = Depends(require_instructor),
     db: AsyncSession = Depends(get_db),
 ):
-    """Сводная таблица прогресса всех учеников для преподавателя."""
+    """Summary table of all students' progress for the instructor."""
     result = await get_students_overview(db)
     return StudentsOverviewResponse(
         students=[StudentOverview(**s) for s in result["students"]],
@@ -56,7 +56,7 @@ async def student_detail(
     _: dict = Depends(require_instructor),
     db: AsyncSession = Depends(get_db),
 ):
-    """Детальный прогресс одного ученика с разбивкой по лабам и подсказкам."""
+    """Detailed progress of one student broken down by lab and hints."""
     detail = await get_student_detail(db, user_id)
     if detail is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
@@ -74,7 +74,7 @@ async def list_mcp_audit(
     _: dict = Depends(require_instructor),
     db: AsyncSession = Depends(get_db),
 ):
-    """Журнал MCP-вызовов через контур с фильтрами по сессии и виду (observe/act)."""
+    """Log of MCP calls through the control loop, filterable by session and kind (observe/act)."""
     q = select(MCPAudit).order_by(MCPAudit.ts.desc())
     if session_id is not None:
         q = q.where(MCPAudit.session_id == session_id)
@@ -94,7 +94,7 @@ async def student_session_timeline(
     _: dict = Depends(require_instructor),
     db: AsyncSession = Depends(get_db),
 ):
-    """Таймлайн диалога студента по сессии (чат + интервенции)."""
+    """Timeline of a student's session dialogue (chat + interventions)."""
     session = (
         await db.execute(select(LearningSession).where(LearningSession.id == session_id))
     ).scalar_one_or_none()

@@ -1,4 +1,4 @@
-"""Append-only лог вызовов через контур (observe/act). Act-записи = источник воздействий для J/cohort."""
+"""Append-only log of calls through the control loop (observe/act). Act records = the source of interventions for J/cohort."""
 
 from datetime import UTC, datetime
 from uuid import uuid4

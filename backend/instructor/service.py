@@ -1,8 +1,8 @@
-"""Запросы для кабинета преподавателя.
+"""Queries for the instructor dashboard.
 
-Подсказки считаются как поведенческие события с event_type='intervention' —
-именно так монитор учебной сессии логирует выданные ученику интервенции
-(см. learning_analytics/monitor.py).
+Hints are counted as behavioral events with event_type='intervention' —
+that's how the learning session monitor logs interventions delivered to the
+student (see learning_analytics/monitor.py).
 """
 
 from sqlalchemy import func, select
@@ -19,15 +19,15 @@ HINT_EVENT_TYPE = "intervention"
 
 
 def _avg(scores: list[float]) -> float | None:
-    """Среднее по непустому списку оценок, иначе None."""
+    """Average over a non-empty list of scores, else None."""
     return round(sum(scores) / len(scores), 2) if scores else None
 
 
 async def get_students_overview(db: AsyncSession) -> dict:
-    """Сводка по всем ученикам: прогресс, подсказки, сессии, активность.
+    """Overview of all students: progress, hints, sessions, activity.
 
-    Считает агрегаты пачкой group by, а не запросом на ученика, чтобы
-    таблица кабинета масштабировалась на десятки-сотни учеников.
+    Computes aggregates with a batched group by rather than one query per
+    student, so the dashboard table scales to dozens-to-hundreds of students.
     """
     students_result = await db.execute(
         select(User).where(User.role == "student").order_by(User.name, User.email)
@@ -38,7 +38,7 @@ async def get_students_overview(db: AsyncSession) -> dict:
 
     user_ids = [s.id for s in students]
 
-    # Прогресс по лабам: статусы и оценки на ученика
+    # Lab progress: statuses and scores per student
     progress_result = await db.execute(
         select(LabProgress.user_id, LabProgress.status, LabProgress.score).where(
             LabProgress.user_id.in_(user_ids)
@@ -57,7 +57,7 @@ async def get_students_overview(db: AsyncSession) -> dict:
         if score is not None:
             scores.setdefault(user_id, []).append(score)
 
-    # Подсказки на ученика
+    # Hints per student
     hints_result = await db.execute(
         select(BehavioralEvent.user_id, func.count())
         .where(
@@ -68,7 +68,7 @@ async def get_students_overview(db: AsyncSession) -> dict:
     )
     hints = {user_id: count for user_id, count in hints_result.all()}
 
-    # Сессии и последняя активность на ученика
+    # Sessions and last activity per student
     sessions_result = await db.execute(
         select(
             LearningSession.user_id,
@@ -107,7 +107,7 @@ async def get_students_overview(db: AsyncSession) -> dict:
 
 
 async def get_student_detail(db: AsyncSession, user_id: str) -> dict | None:
-    """Детальная карточка ученика с разбивкой по лабам или None, если ученика нет."""
+    """Detailed student card broken down by lab, or None if the student doesn't exist."""
     user_result = await db.execute(select(User).where(User.id == user_id))
     user = user_result.scalar_one_or_none()
     if user is None:
@@ -120,7 +120,7 @@ async def get_student_detail(db: AsyncSession, user_id: str) -> dict | None:
     )
     progress_rows = list(progress_result.scalars().all())
 
-    # Подсказки по лабам
+    # Hints per lab
     hints_result = await db.execute(
         select(BehavioralEvent.lab_slug, func.count())
         .where(
@@ -131,7 +131,7 @@ async def get_student_detail(db: AsyncSession, user_id: str) -> dict | None:
     )
     hints_by_lab = {lab_slug: count for lab_slug, count in hints_result.all()}
 
-    # Сессии и последняя активность по лабам
+    # Sessions and last activity per lab
     sessions_result = await db.execute(
         select(
             LearningSession.lab_slug,
@@ -147,7 +147,7 @@ async def get_student_detail(db: AsyncSession, user_id: str) -> dict | None:
         sessions_by_lab[lab_slug] = count
         last_active_by_lab[lab_slug] = last_started
 
-    # Попытки по шагам, сгруппированные по лабам
+    # Step attempts grouped by lab
     attempts_result = await db.execute(
         select(StepAttempt.lab_slug, func.count())
         .where(StepAttempt.user_id == user_id)
@@ -155,7 +155,7 @@ async def get_student_detail(db: AsyncSession, user_id: str) -> dict | None:
     )
     attempts_by_lab = {lab_slug: count for lab_slug, count in attempts_result.all()}
 
-    # Счётчики сообщений на сессию
+    # Message counts per session
     msg_counts_result = await db.execute(
         select(ChatMessage.session_id, func.count())
         .join(LearningSession, ChatMessage.session_id == LearningSession.id)
@@ -164,7 +164,7 @@ async def get_student_detail(db: AsyncSession, user_id: str) -> dict | None:
     )
     msg_counts = {sid: c for sid, c in msg_counts_result.all()}
 
-    # Подсказки на сессию
+    # Hints per session
     hint_counts_result = await db.execute(
         select(BehavioralEvent.session_id, func.count())
         .where(BehavioralEvent.user_id == user_id, BehavioralEvent.event_type == HINT_EVENT_TYPE)
@@ -172,7 +172,7 @@ async def get_student_detail(db: AsyncSession, user_id: str) -> dict | None:
     )
     hint_counts = {sid: c for sid, c in hint_counts_result.all()}
 
-    # Сами сессии (desc)
+    # The sessions themselves (desc)
     session_rows_result = await db.execute(
         select(LearningSession)
         .where(LearningSession.user_id == user_id)
@@ -180,7 +180,7 @@ async def get_student_detail(db: AsyncSession, user_id: str) -> dict | None:
     )
     session_rows = list(session_rows_result.scalars().all())
 
-    # Названия лаб — расширяем слугами из сессий
+    # Lab titles — extend with slugs from sessions
     lab_slugs = {p.lab_slug for p in progress_rows} | {s.lab_slug for s in session_rows}
     titles: dict[str, str] = {}
     if lab_slugs:
@@ -238,7 +238,7 @@ async def get_student_detail(db: AsyncSession, user_id: str) -> dict | None:
 
 
 async def build_session_timeline(db: AsyncSession, session_id: str) -> list[dict]:
-    """Слить реплики чата и интервенции сессии в один таймлайн по времени."""
+    """Merge chat messages and session interventions into one timeline by time."""
     items: list[dict] = []
 
     msgs = await db.execute(select(ChatMessage).where(ChatMessage.session_id == session_id))

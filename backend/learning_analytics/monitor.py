@@ -1,4 +1,4 @@
-"""SessionMonitor — замкнутый цикл аналитики обучения: сбор → анализ → интервенция."""
+"""SessionMonitor — closed-loop learning analytics: collect → analyze → intervene."""
 
 import asyncio
 import logging
@@ -29,9 +29,9 @@ from observability.models import (
 
 logger = logging.getLogger(__name__)
 
-# Формулировка «вопроса студента» для tutor-интервенций: TutorInput требует
-# question, но проактивная интервенция инициируется без вопроса — формулируем
-# его от лица студента по типу затруднения.
+# Phrasing of the "student's question" for tutor interventions: TutorInput requires
+# question, but a proactive intervention is triggered without one — we phrase it
+# on the student's behalf based on the struggle type.
 _STRUGGLE_QUESTIONS = {
     "stuck_on_step": "Я застрял на текущем шаге и не понимаю, как двигаться дальше. Подскажи направление.",
     "repeating_errors": "Я повторяю одну и ту же ошибку. Помоги понять, что я делаю не так.",
@@ -42,7 +42,7 @@ _STRUGGLE_QUESTIONS = {
 
 @dataclass
 class PendingIntervention:
-    """Решение об интервенции, готовое к отправке и записи."""
+    """Intervention decision ready for dispatch and persistence."""
 
     analysis: AnalyticsResult
     features: SessionFeatures
@@ -51,7 +51,7 @@ class PendingIntervention:
 
 
 class SessionMonitor:
-    """Один на сессию. Управляет сбором событий, анализом и интервенциями."""
+    """One per session. Manages event collection, analysis, and interventions."""
 
     def __init__(
         self,
@@ -66,7 +66,7 @@ class SessionMonitor:
         control_arm: ControlArm = ControlArm.CLOSED,
         control_interface=None,
     ):
-        """Инициализация с MCP-клиентом, фабрикой БД, оркестратором и конфигом."""
+        """Initialize with an MCP client, DB factory, orchestrator, and config."""
         self._mcp = mcp_client
         self._db_factory = db_factory
         self._orchestrator = orchestrator
@@ -76,7 +76,7 @@ class SessionMonitor:
         self._activity = activity_log
         self._observer = observer
         self._control_arm = control_arm
-        self._control_interface = control_interface  # шов П1 (Task 7)
+        self._control_interface = control_interface  # seam P1 (Task 7)
         self._collector: BehavioralCollector | None = None
         self._feature_extractor = FeatureExtractor(learning_analytics_config)
         self._context_builder = MCPContextBuilder(mcp_client)
@@ -90,7 +90,7 @@ class SessionMonitor:
         self._session_model_id: str | None = None
         self._dwell = DwellTracker()
         self._escalated_in_spell: bool = False
-        # MRT: состояние текущего bad-spell (джиттеренный T_k + id точек решения)
+        # MRT: state of the current bad-spell (jittered T_k + decision point ids)
         self._spell_id: str | None = None
         self._spell_t_k: float | None = None
         self._open_decision_ids: list[str] = []
@@ -102,7 +102,7 @@ class SessionMonitor:
         lab_slug: str,
         ctx,
     ) -> None:
-        """Запуск сбора и анализа для сессии."""
+        """Start collection and analysis for the session."""
         from sqlalchemy import func, select
 
         from models.behavioral_event import BehavioralEvent
@@ -120,7 +120,7 @@ class SessionMonitor:
             result = await session.execute(stmt)
             self._last_event_at = result.scalar_one_or_none()
 
-            # Загружаем model_id сессии для проброса в context интервенции.
+            # Load the session's model_id to pass through into the intervention context.
             from models.session import LearningSession
             ls = await session.get(LearningSession, session_id)
             self._session_model_id = ls.model_id if ls else None
@@ -133,7 +133,7 @@ class SessionMonitor:
         self._analysis_task = asyncio.create_task(self._analysis_loop())
 
     async def stop_session(self) -> None:
-        """Остановка сбора и анализа."""
+        """Stop collection and analysis."""
         self._running = False
         if self._collector:
             await self._collector.stop()
@@ -144,10 +144,10 @@ class SessionMonitor:
             except asyncio.CancelledError:
                 pass
 
-    # Цикл анализа
+    # Analysis loop
 
     async def _analysis_loop(self) -> None:
-        """Периодический анализ с интервалом из конфига."""
+        """Periodic analysis at the interval from config."""
         while self._running:
             await asyncio.sleep(self._learning_analytics_config.analysis_interval)
             if not self._running:
@@ -160,7 +160,7 @@ class SessionMonitor:
                 logger.warning("Цикл анализа: ошибка", exc_info=True)
 
     async def _run_analysis(self) -> None:
-        """Оркестратор цикла: загрузка событий, решение, отправка, запись."""
+        """Cycle orchestrator: load events, decide, dispatch, persist."""
         async with self._db_factory() as db:
             events = await self._load_new_events(db)
         if not events:
@@ -175,7 +175,7 @@ class SessionMonitor:
         if self._learning_analytics_config.latency_capture_enabled:
             await self._record_latency("analysis", (time.perf_counter() - _t0) * 1000.0)
 
-        # Объективная эскалация — arm-нейтрально, до ветки интервенций
+        # Objective escalation — arm-neutral, before the intervention branch
         from learning_analytics.process_state import is_bad
         if is_bad(regime):
             if self._is_escalation(dwell) and not self._escalated_in_spell:
@@ -202,7 +202,7 @@ class SessionMonitor:
         if not self._dwell_ready(regime.value, dwell):
             return
 
-        # Ветка A (open): те же ворота cooldown, что и у закрытой ветки
+        # Arm A (open): same cooldown gates as the closed arm
         if self._control_arm == ControlArm.OPEN:
             if not self._should_trigger_intervention():
                 return
@@ -218,7 +218,7 @@ class SessionMonitor:
         async with self._db_factory() as db:
             await self._persist_intervention(db, pending)
 
-        # act-аудит: best-effort, не ломает dispatch при ошибке
+        # act-audit: best-effort, doesn't break dispatch on error
         try:
             async with self._db_factory() as db:
                 await audit_record(
@@ -241,11 +241,11 @@ class SessionMonitor:
         )
 
     async def _load_new_events(self, db) -> list:
-        """Загрузить новые поведенческие события по курсору.
+        """Load new behavioral events by cursor.
 
-        Собственные интервенции исключаются: иначе каждая записанная
-        интервенция выглядит как «новое событие», анализ перезапускается
-        и порождает следующую интервенцию — самоподдерживающийся цикл.
+        Our own interventions are excluded: otherwise every recorded
+        intervention looks like a "new event", analysis restarts,
+        and spawns the next intervention — a self-sustaining loop.
         """
         from sqlalchemy import func, select
 
@@ -274,7 +274,7 @@ class SessionMonitor:
         return list(reversed(result.scalars().all()))
 
     async def _log_process_state(self, analysis, now):
-        """Записать выборку состояния процесса (режим + dwell) — каждый цикл."""
+        """Record a process state sample (regime + dwell) — every cycle."""
         from learning_analytics.process_state import analysis_to_regime
         from models.process_state_sample import ProcessStateSample
         regime = analysis_to_regime(analysis)
@@ -291,10 +291,10 @@ class SessionMonitor:
     async def _decide_intervention(
         self, analysis: AnalyticsResult, features: SessionFeatures
     ) -> PendingIntervention | None:
-        """Анализ фичей и сборка решения об интервенции, или None."""
+        """Analyze features and assemble an intervention decision, or None."""
         if not analysis.struggle_detected:
             return None
-        # Затруднение обнаружено — эмитим событие
+        # Struggle detected — emit event
         self._emit(event_struggle_detected(
             self._session_id, self._user_id,
             struggle_type=analysis.struggle_type.value if analysis.struggle_type else "unknown",
@@ -302,7 +302,7 @@ class SessionMonitor:
             crossed=[],
         ))
         if not self._should_trigger_intervention():
-            # Cooldown ещё не прошёл — пропускаем интервенцию
+            # Cooldown hasn't elapsed yet — skip the intervention
             elapsed = (
                 (datetime.now(tz=UTC) - self._last_intervention_at).total_seconds()
                 if self._last_intervention_at else 0
@@ -327,7 +327,7 @@ class SessionMonitor:
         )
         if features.dominant_error:
             question += f" Последняя ошибка: {features.dominant_error}"
-        # Берём снапшот прогресса из observer'а если он подключён
+        # Take the progress snapshot from the observer if one is attached
         st = self._observer.current_state() if self._observer else None
         payload = InterventionInput(
             session_id=self._session_id,
@@ -350,7 +350,7 @@ class SessionMonitor:
         return PendingIntervention(analysis=analysis, features=features, payload=payload)
 
     async def _dispatch_intervention(self, pending: PendingIntervention) -> None:
-        """Прогнать интервенцию через оркестратор и отправить клиенту через шлюз."""
+        """Run the intervention through the orchestrator and send it to the client via the gateway."""
         if self._intervention_router:
             response = await self._intervention_router.intervene(pending.payload)
         else:
@@ -358,7 +358,7 @@ class SessionMonitor:
         pending.response = response
         self._last_intervention_at = datetime.now(tz=UTC)
 
-        # Эмит после получения ответа агента
+        # Emit after receiving the agent's response
         self._emit(event_agent_invoked(
             self._session_id, self._user_id,
             agent_name=response.agent_used or "orchestrator",
@@ -405,10 +405,10 @@ class SessionMonitor:
         await self._maybe_grounding_ablation(pending)
 
     async def _maybe_grounding_ablation(self, pending: PendingIntervention) -> None:
-        """Gated: сгенерировать ungrounded-вариант (без MCP-контекста) и записать пару.
+        """Gated: generate an ungrounded variant (without MCP context) and record the pair.
 
-        Grounded-текст берётся из уже сделанного dispatch; ungrounded — один доп. вызов
-        с очищенным agent_context. Дорого → под флагом, best-effort, после доставки.
+        The grounded text comes from the dispatch already made; ungrounded is one extra
+        call with agent_context cleared. Expensive → flag-gated, best-effort, after delivery.
         """
         if not self._learning_analytics_config.grounding_ablation_enabled:
             return
@@ -432,15 +432,15 @@ class SessionMonitor:
             logger.warning("Grounding-ablation не удалось", exc_info=True)
 
     async def _persist_intervention(self, db, pending: PendingIntervention) -> None:
-        """Записать интервенцию в поведенческие события для последующего анализа."""
+        """Record the intervention as a behavioral event for later analysis."""
         if pending.response is None:
             return
         await self._log_intervention_in(db, pending.analysis, pending.response)
 
-    # Логирование интервенций
+    # Intervention logging
 
     async def _log_would_intervene(self, analysis: AnalyticsResult) -> None:
-        """Arm A: записываем would_intervene вместо реальной интервенции."""
+        """Arm A: record would_intervene instead of a real intervention."""
         from models.behavioral_event import BehavioralEvent
 
         action = (
@@ -470,7 +470,7 @@ class SessionMonitor:
             logger.warning("Не удалось записать would_intervene", exc_info=True)
 
     async def _log_intervention_in(self, db, analysis, response) -> None:
-        """Записать интервенцию как поведенческое событие для анализа эффекта."""
+        """Record the intervention as a behavioral event for effect analysis."""
         from models.behavioral_event import BehavioralEvent
 
         try:
@@ -506,16 +506,16 @@ class SessionMonitor:
         except Exception:
             logger.error("Не удалось записать интервенцию", exc_info=True)
 
-    # Вспомогательный emit — никогда не пробрасывает исключение
+    # Helper emit — never propagates an exception
 
     def _emit(self, event) -> None:
         if self._activity:
             self._activity.emit(event)
 
-    # Контроль частоты интервенций
+    # Intervention frequency control
 
     def _dwell_ready(self, regime_value: str, dwell: float) -> bool:
-        """Закон управления: плохой режим и время пребывания >= порога T_k."""
+        """Control law: bad regime and dwell time >= threshold T_k."""
         from learning_analytics.process_state import ProcessRegime, is_bad
         regime = ProcessRegime(regime_value)
         if not is_bad(regime):
@@ -524,11 +524,11 @@ class SessionMonitor:
         return dwell >= t_k
 
     def _is_escalation(self, dwell: float) -> bool:
-        """Объективная эскалация: плохой режим дольше порога."""
+        """Objective escalation: bad regime longer than the threshold."""
         return dwell >= self._learning_analytics_config.escalation_max_dwell
 
     def _should_trigger_intervention(self) -> bool:
-        """Интервенции включены и период охлаждения прошёл."""
+        """Interventions are enabled and the cooldown period has elapsed."""
         if not self._learning_analytics_config.enabled:
             return False
         if self._last_intervention_at is None:
@@ -539,7 +539,7 @@ class SessionMonitor:
         return elapsed >= self._learning_analytics_config.cooldown_period
 
     async def _record_latency(self, stage: str, duration_ms: float) -> None:
-        """Записать латентность стадии цикла (best-effort, gated в вызывающем коде)."""
+        """Record cycle stage latency (best-effort, gated by the caller)."""
         from learning_analytics.latency import record_stage_latency
         try:
             async with self._db_factory() as db:
@@ -549,12 +549,12 @@ class SessionMonitor:
 
     # ── MRT (micro-randomized trial) ─────────────────────────────
     async def _mrt_step(self, analysis, features, regime, dwell: float, now) -> None:
-        """Ветка MRT: жизненный цикл spell + рандомизация точки решения.
+        """MRT branch: spell lifecycle + decision-point randomization.
 
-        Заменяет ветку OPEN/CLOSED, когда mrt_enabled. dwell==0.0 ⇔ режим сменился:
-        закрываем прошлый spell (проставляем exit_ts) и открываем новый на плохом режиме.
-        В eligible-точке (dwell >= джиттеренного T_k, cooldown прошёл) тянем
-        intervene/withhold и пишем точку решения.
+        Replaces the OPEN/CLOSED branch when mrt_enabled. dwell==0.0 ⇔ regime changed:
+        close the previous spell (set exit_ts) and open a new one on a bad regime.
+        At an eligible point (dwell >= jittered T_k, cooldown elapsed) draw
+        intervene/withhold and write the decision point.
         """
         import random
 
@@ -591,7 +591,7 @@ class SessionMonitor:
         self._last_intervention_at = now
 
     def _mrt_open_spell(self, regime_value: str) -> None:
-        """Открыть bad-spell: джиттеренный T_k = base * U[1-f, 1+f], новый spell_id."""
+        """Open a bad-spell: jittered T_k = base * U[1-f, 1+f], new spell_id."""
         import random
         from uuid import uuid4
         base = self._learning_analytics_config.dwell_thresholds.get(regime_value, 0.0)
@@ -603,7 +603,7 @@ class SessionMonitor:
     async def _mrt_record_decision(
         self, regime_value: str, dwell: float, t_k: float, assignment: str, now
     ) -> None:
-        """Записать точку решения MRT."""
+        """Record an MRT decision point."""
         from uuid import uuid4
 
         from models.intervention_decision import InterventionDecision
@@ -619,7 +619,7 @@ class SessionMonitor:
             await db.commit()
 
     async def _mrt_close_spell(self, now) -> None:
-        """Закрыть spell: проставить subsequent_exit_ts открытым точкам решения."""
+        """Close the spell: set subsequent_exit_ts on the open decision points."""
         from sqlalchemy import update
 
         from models.intervention_decision import InterventionDecision

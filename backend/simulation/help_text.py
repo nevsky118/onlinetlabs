@@ -1,12 +1,12 @@
-"""Текст просьбы о помощи сим-студента: LLM (gated) + бюджет-гард + шаблоны.
+"""Sim-student's help-request text: LLM (gated) + budget guard + templates.
 
-Единственное место LLM в симуляции. При выключенном флаге / исчерпанном бюджете /
-ошибке — шаблон.
+The only place LLM is used in the simulation. When the flag is off / budget is
+exhausted / on error — falls back to a template.
 
-Шаблон обязан зависеть от КОНТЕКСТА и НОМЕРА ПОПЫТКИ: раньше он выбирался только по
-чертам профиля, поэтому один студент всю сессию слал дословно одну и ту же фразу, и
-чат-лог превращался в зацикленную ленту. Живой студент, застряв, переспрашивает иначе
-и добавляет подробности.
+The template must depend on CONTEXT and ATTEMPT NUMBER: previously it was chosen
+only by profile traits, so one student sent the exact same phrase all session,
+and the chat log turned into a looping feed. A real student, once stuck, rephrases
+and adds detail.
 """
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
@@ -16,7 +16,7 @@ from simulation.profiles import StudentProfile
 # llm_call(prompt) -> (text, tokens_used)
 LLMCall = Callable[[str], Awaitable[tuple[str, int]]]
 
-# Просьбы по нарастанию: сначала общий вопрос, дальше — с подробностями и досадой.
+# Escalating requests: a general question first, then detail and frustration.
 _ASK_STAGES = [
     "Не пойму, что не так{where}. Подскажешь?",
     "Я ввёл `{tried}`{where}, но проверка всё равно не проходит. Что не так?",
@@ -36,7 +36,7 @@ class HelpTextGen:
     spent_rub: float = field(default=0.0)
 
     async def generate(self, profile: StudentProfile, context: dict) -> str:
-        """Текст просьбы. LLM если включено И бюджет не исчерпан, иначе шаблон."""
+        """Request text. LLM if enabled AND budget not exhausted, else template."""
         if (
             not self.llm_enabled
             or self.llm_call is None
@@ -51,12 +51,12 @@ class HelpTextGen:
             return self._template(profile, context)
 
     def _template(self, profile: StudentProfile, context: dict) -> str:
-        """Фраза зависит от попытки и контекста → одинаковых сообщений подряд не будет."""
+        """Phrase depends on attempt and context → no identical messages back to back."""
         attempt = int(context.get("attempt", 0))
         node = context.get("node")
         tried = context.get("tried")
 
-        # Сдвиг по чертам — разные студенты начинают с разных формулировок.
+        # Shift by traits — different students start with different phrasings.
         offset = int(profile.help_propensity * 10 + profile.skill * 3)
         stage = _ASK_STAGES[(offset + attempt) % len(_ASK_STAGES)]
         if "{tried}" in stage and not tried:

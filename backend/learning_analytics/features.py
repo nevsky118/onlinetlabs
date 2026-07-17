@@ -1,4 +1,4 @@
-"""FeatureExtractor — вычисление поведенческих фич из событий сессии."""
+"""FeatureExtractor — computing behavioral features from session events."""
 
 import json
 import math
@@ -10,14 +10,14 @@ from config.config_model import LearningAnalyticsConfig
 
 
 class FeatureExtractor:
-    """Вычисление SessionFeatures из списка событий. Stateless."""
+    """Computing SessionFeatures from a list of events. Stateless."""
 
     def __init__(self, learning_analytics_config: LearningAnalyticsConfig | None = None):
-        """Принимает LearningAnalyticsConfig для порогов; без него — дефолты."""
+        """Takes a LearningAnalyticsConfig for thresholds; defaults if omitted."""
         self._config = learning_analytics_config or LearningAnalyticsConfig()
 
     def compute(self, session_id: str, events: list) -> SessionFeatures:
-        """Основной метод: события → вектор фич."""
+        """Main method: events → feature vector."""
         now = datetime.now(tz=UTC)
         if not events:
             return self._empty_features(session_id, now)
@@ -58,10 +58,10 @@ class FeatureExtractor:
             computed_at=now,
         )
 
-    # Приватные методы
+    # Private methods
 
     def _empty_features(self, session_id: str, now: datetime) -> SessionFeatures:
-        """Нулевой вектор фич для пустой сессии."""
+        """Zero feature vector for an empty session."""
         return SessionFeatures(
             avg_inter_action_latency=0.0,
             action_rate_slope=0.0,
@@ -87,14 +87,14 @@ class FeatureExtractor:
 
     @staticmethod
     def _inter_action_latencies(events: list) -> list[float]:
-        """Интервалы между соседними событиями (сек)."""
+        """Intervals between adjacent events (sec)."""
         return [
             abs((events[i].timestamp - events[i - 1].timestamp).total_seconds())
             for i in range(1, len(events))
         ]
 
     def _action_rate_slope(self, events: list) -> float:
-        """Slope линейной регрессии actions-per-window. Растёт = ускоряется."""
+        """Slope of linear regression on actions-per-window. Rising = speeding up."""
         if len(events) < 2:
             return 0.0
         total_span = (events[-1].timestamp - events[0].timestamp).total_seconds()
@@ -121,7 +121,7 @@ class FeatureExtractor:
 
     @staticmethod
     def _time_on_current_step(events: list, now: datetime) -> float:
-        """Сек с момента последней смены component_id кластера."""
+        """Seconds since the last component_id cluster change."""
         if not events:
             return 0.0
         last_component = events[-1].component_id
@@ -132,11 +132,11 @@ class FeatureExtractor:
 
     @staticmethod
     def _current_error_run(events: list) -> int:
-        """Длина ТЕКУЩЕЙ серии одинаковых ошибок в конце окна.
+        """Length of the CURRENT run of identical errors at the end of the window.
 
-        Считаем хвост, а не исторический максимум: исправленная студентом
-        ошибка не должна продолжать триггерить интервенции на каждом цикле
-        анализа. Событие check_passed (переход fail→ok) обрывает серию.
+        We count the tail, not the historical max: an error the student already
+        fixed shouldn't keep triggering interventions on every analysis cycle.
+        A check_passed event (fail→ok transition) breaks the run.
         """
         run = 0
         last_message = None
@@ -156,7 +156,7 @@ class FeatureExtractor:
 
     @staticmethod
     def _action_entropy(events: list) -> float:
-        """Нормализованная энтропия Шеннона по action-типам."""
+        """Normalized Shannon entropy over action types."""
         action_names = [event.action for event in events]
         if not action_names:
             return 0.0
@@ -170,7 +170,7 @@ class FeatureExtractor:
 
     @staticmethod
     def _undo_redo_ratio(action_events: list) -> float:
-        """Доля start/stop/start циклов на одном компоненте."""
+        """Fraction of start/stop/start cycles on one component."""
         if len(action_events) < 3:
             return 0.0
         cycle_count = sum(
@@ -183,7 +183,7 @@ class FeatureExtractor:
         return cycle_count / len(action_events)
 
     def _error_frequency(self, error_events: list, all_events: list) -> float:
-        """Ошибок/мин за последние N минут (из конфига)."""
+        """Errors/min over the last N minutes (from config)."""
         if not error_events or not all_events:
             return 0.0
         session_end = all_events[-1].timestamp
@@ -198,7 +198,7 @@ class FeatureExtractor:
 
     @staticmethod
     def _error_frequency_slope(error_events: list) -> float:
-        """Ускорение/замедление ошибок: rate 2й половины − rate 1й."""
+        """Error acceleration/deceleration: rate of 2nd half − rate of 1st."""
         if len(error_events) < 4:
             return 0.0
         midpoint = len(error_events) // 2
@@ -216,13 +216,13 @@ class FeatureExtractor:
 
     @staticmethod
     def _distinct_failing_actuals(events: list) -> int:
-        """Кол-во уникальных actual у доминирующего failing-компонента."""
+        """Count of unique actual values on the dominant failing component."""
         failing = [
             e for e in events if getattr(e, "action", None) in {"check_failing", "check_retry"}
         ]
         if not failing:
             return 0
-        # доминирующий component_id среди failing-событий
+        # dominant component_id among failing events
         dominant_cid = Counter(e.component_id for e in failing if e.component_id).most_common(1)
         if not dominant_cid:
             return 0
@@ -236,7 +236,7 @@ class FeatureExtractor:
 
     @staticmethod
     def _cycles_failing_unchanged(events: list) -> int:
-        """Длина хвостовой серии check_failing на одном component_id."""
+        """Length of the trailing check_failing run on one component_id."""
         run = 0
         ref_cid = None
         for e in reversed(events):
@@ -252,6 +252,6 @@ class FeatureExtractor:
 
     @staticmethod
     def _dominant_error(error_events: list) -> str | None:
-        """Самая частая ошибка."""
+        """Most frequent error."""
         messages = [event.message for event in error_events if event.message]
         return Counter(messages).most_common(1)[0][0] if messages else None

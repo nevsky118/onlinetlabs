@@ -1,4 +1,4 @@
-"""Pydantic-схемы для эндпоинтов согласия."""
+"""Pydantic schemas for the consent endpoints."""
 
 from datetime import datetime
 
@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 
 class ConsentGrantRequest(BaseModel):
-    """Тело POST /users/me/consent."""
+    """Body of POST /users/me/consent."""
 
     scope: str  # study | product
     observe: bool
@@ -15,7 +15,7 @@ class ConsentGrantRequest(BaseModel):
 
 
 class ConsentResponse(BaseModel):
-    """Ответ POST /users/me/consent."""
+    """Response of POST /users/me/consent."""
 
     id: str
     user_id: str
@@ -30,13 +30,13 @@ class ConsentResponse(BaseModel):
 
 
 class ConsentRevokeResponse(BaseModel):
-    """Ответ DELETE /users/me/consent."""
+    """Response of DELETE /users/me/consent."""
 
     revoked: int
 
 
 class ConsentItem(BaseModel):
-    """Элемент списка GET /users/me/consent."""
+    """List item of GET /users/me/consent."""
 
     scope: str
     observe: bool

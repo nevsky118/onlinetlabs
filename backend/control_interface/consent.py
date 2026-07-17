@@ -1,4 +1,4 @@
-"""Проверка/выдача/отзыв согласия. study покрывает всё; product гранулярно."""
+"""Checking/granting/revoking consent. study covers everything; product is granular."""
 
 from datetime import UTC, datetime
 from uuid import uuid4
@@ -21,7 +21,7 @@ async def has_consent(db, user_id: str, kind: ToolKind) -> bool:
     )
     for c in rows:
         if c.scope == "study":
-            return True  # участие в эксперименте покрывает observe+act
+            return True  # experiment participation covers observe+act
         if c.scope == "product":
             if kind == ToolKind.OBSERVE and c.observe:
                 return True
@@ -66,7 +66,7 @@ async def revoke(db, user_id: str, scope: str) -> int:
 
 
 async def list_active(db, user_id: str) -> list[Consent]:
-    """Активные (не отозванные) согласия пользователя."""
+    """Active (non-revoked) consents for the user."""
     result = await db.execute(
         select(Consent)
         .where(Consent.user_id == user_id, Consent.revoked_at.is_(None))

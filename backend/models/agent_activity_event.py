@@ -1,4 +1,4 @@
-"""ORM-строка события активности агентов."""
+"""ORM row for an agent activity event."""
 
 from datetime import UTC, datetime
 from uuid import uuid4
@@ -11,7 +11,7 @@ from models.base import Base
 
 
 class AgentActivityEventRow(Base):
-    """Событие активности ИИ-агента (чат/интервенции) для наблюдения преподом."""
+    """An AI agent activity event (chat/interventions) for instructor observation."""
 
     __tablename__ = "agent_activity_events"
     __table_args__ = (Index("ix_agent_activity_session_ts", "session_id", "ts"),)

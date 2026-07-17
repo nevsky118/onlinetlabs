@@ -1,1 +1,1 @@
-"""Check-handlers для validation runner."""
+"""Check handlers for the validation runner."""

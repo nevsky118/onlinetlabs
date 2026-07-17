@@ -1,4 +1,4 @@
-"""Вычисление итоговых метрик эксперимента при завершении сессии."""
+"""Computing final experiment metrics when a session ends."""
 
 from datetime import datetime
 
@@ -16,10 +16,10 @@ def compute_session_metrics(
     l2_intervention_cap: int = 0,
     is_l2: bool = False,
 ) -> dict:
-    """События + мета сессии → словарь метрик для ExperimentMetrics.
+    """Events + session metadata -> a metrics dict for ExperimentMetrics.
 
-    is_l2: True если вызывающий код определил это L2-holdout сессией.
-    Только тогда вычисляется l2_unassisted_pass; иначе None.
+    is_l2: True if the calling code determined this is an L2-holdout session.
+    Only then is l2_unassisted_pass computed; otherwise None.
     """
     error_events = [e for e in events if e.event_type == "error"]
     intervention_events = [e for e in events if e.event_type == "intervention"]
@@ -35,7 +35,7 @@ def compute_session_metrics(
     final_score = (steps_completed / total_steps * 100.0) if total_steps > 0 else 0.0
     completed = steps_completed >= total_steps
 
-    # Task 8: новые метрики
+    # Task 8: new metrics
     escalations = len([e for e in events if e.event_type == "escalation"])
     would_interventions = len([e for e in events if e.event_type == "would_intervene"])
     l2_unassisted_pass: bool | None = None
@@ -68,7 +68,7 @@ def compute_session_metrics(
 
 
 def _max_consecutive_errors(error_events: list) -> int:
-    """Макс. серия одинаковых ошибок подряд."""
+    """Longest run of consecutive identical errors."""
     best = 0
     run = 1
     prev = None

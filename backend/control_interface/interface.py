@@ -1,7 +1,7 @@
-"""Управляемый шов контура: единая граница observe/act с governance.
+"""The loop's governed seam: a single observe/act boundary with governance.
 
-Порядок гейтов: classify(default-deny) → consent → isolation(owner-guard) →
-open-suppress(плечо, только act) → rate-backstop(cooldown, только act) → audit → вызов.
+Gate order: classify(default-deny) -> consent -> isolation(owner-guard) ->
+open-suppress(arm, act only) -> rate-backstop(cooldown, act only) -> audit -> call.
 """
 from datetime import UTC, datetime
 
@@ -23,9 +23,9 @@ class ControlInterface:
         self._mcp = mcp_client
         self._db_factory = db_factory
         self._cfg = config
-        # session_id → ts последнего act. ВНУТРИПРОЦЕССНО: backstop ниже закона
-        # управления (in-process cooldown монитора), не распределённый гарант.
-        # При multi-worker перенести в Redis/БД (известное ограничение, не overclaim).
+        # session_id -> ts of the last act. IN-PROCESS: a backstop below the control
+        # law (the monitor's in-process cooldown), not a distributed guarantee.
+        # For multi-worker, move to Redis/DB (a known limitation, not overclaimed).
         self._last_act_ts: dict[str, float] = {}
 
     async def _audit(self, user_id, session_id, tool, kind, success, error, lab_slug):
@@ -34,44 +34,44 @@ class ControlInterface:
                          kind=kind, success=success, error=error, lab_slug=lab_slug)
 
     async def observe(self, tool, ctx, arguments, *, user_id, session_id, lab_slug=None):
-        # гейт 1: классификация (default-deny)
+        # gate 1: classification (default-deny)
         if classify(tool) != ToolKind.OBSERVE:
             await self._audit(user_id, session_id, tool, "observe", False, "unclassified", lab_slug)
             raise InterfaceDenied("unclassified")
         async with self._db_factory() as db:
-            # гейт 2: изоляция (owner-guard) — раньше согласия: не раскрывать чужую сессию
+            # gate 2: isolation (owner-guard) -- before consent: don't leak another user's session
             if await get_owned_session(db, session_id, user_id) is None:
                 await self._audit(user_id, session_id, tool, "observe", False, "isolation", lab_slug)
                 raise InterfaceDenied("isolation")
-            # гейт 3: согласие
+            # gate 3: consent
             if not await has_consent(db, user_id, ToolKind.OBSERVE):
                 await self._audit(user_id, session_id, tool, "observe", False, "consent", lab_slug)
                 raise InterfaceDenied("consent")
-        # Типизированная обёртка mcp_client инъектит ctx и сериализует аргументы
-        # (как act() → execute_action). Прямой _call_tool ронял ctx → MCP-ошибка.
+        # The typed mcp_client wrapper injects ctx and serializes arguments
+        # (like act() -> execute_action). A direct _call_tool dropped ctx -> MCP error.
         result = await getattr(self._mcp, tool)(ctx, **arguments)
         await self._audit(user_id, session_id, tool, "observe", True, None, lab_slug)
         return result
 
     async def act(self, tool, ctx, arguments, *, user_id, session_id, arm: ControlArm, lab_slug=None):
-        # гейт 1: классификация (default-deny)
+        # gate 1: classification (default-deny)
         if classify(tool) != ToolKind.ACT:
             await self._audit(user_id, session_id, tool, "act", False, "unclassified", lab_slug)
             raise InterfaceDenied("unclassified")
         async with self._db_factory() as db:
-            # гейт 2: изоляция (owner-guard) — раньше согласия: не раскрывать чужую сессию
+            # gate 2: isolation (owner-guard) -- before consent: don't leak another user's session
             if await get_owned_session(db, session_id, user_id) is None:
                 await self._audit(user_id, session_id, tool, "act", False, "isolation", lab_slug)
                 raise InterfaceDenied("isolation")
-            # гейт 3: согласие
+            # gate 3: consent
             if not await has_consent(db, user_id, ToolKind.ACT):
                 await self._audit(user_id, session_id, tool, "act", False, "consent", lab_slug)
                 raise InterfaceDenied("consent")
-        # гейт 4: open-suppress (defense-in-depth)
+        # gate 4: open-suppress (defense-in-depth)
         if arm == ControlArm.OPEN:
             await self._audit(user_id, session_id, tool, "act", False, "open_arm", lab_slug)
             raise InterfaceDenied("open_arm")
-        # гейт 5: rate-backstop (cooldown_period из конфига)
+        # gate 5: rate-backstop (cooldown_period from config)
         now = datetime.now(UTC).timestamp()
         last = self._last_act_ts.get(session_id)
         if last is not None and now - last < self._cfg.cooldown_period:

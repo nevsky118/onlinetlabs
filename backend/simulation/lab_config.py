@@ -1,17 +1,17 @@
-"""Консольные команды студента, выведенные ИЗ СПЕКИ лабы (не хардкод).
+"""Student console commands derived FROM THE LAB SPEC (not hardcoded).
 
-Детектор режимов кормится провалами spec-проверок (`LabProgressObserver` →
-`check_failing`/`check_retry` как event_type=error). Чтобы сим порождал этот сигнал,
-студент должен реально конфигурировать устройство в консоли: верная команда → проверка
-проходит, неверная → падает. Эталон берём из `expect` самой спеки, поэтому конфиг
-работает для любой VPCS-лабы без правок.
+The regime detector is fed by spec-check failures (`LabProgressObserver` →
+`check_failing`/`check_retry` as event_type=error). For the sim to produce this
+signal, the student must actually configure the device in the console: correct
+command → check passes, wrong → fails. The reference comes from the spec's own
+`expect`, so the config works for any VPCS lab without changes.
 """
 from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
 class NodeTask:
-    """Что студент настраивает на конкретном узле."""
+    """What the student configures on a specific node."""
 
     node: str
     correct_cmd: str
@@ -19,7 +19,7 @@ class NodeTask:
 
 
 def _wrong_ip(ip_cidr: str) -> str:
-    """Правдоподобная ошибка студента: тот же адрес, но чужая подсеть."""
+    """A plausible student mistake: same address, wrong subnet."""
     addr, _, prefix = ip_cidr.partition("/")
     octets = addr.split(".")
     if len(octets) != 4:
@@ -33,7 +33,7 @@ def _wrong_ip(ip_cidr: str) -> str:
 
 
 def _static_task(node: str, expect: dict) -> NodeTask | None:
-    """`vpcs.show_ip` — студент задаёт статический адрес вручную."""
+    """`vpcs.show_ip` — student sets a static address manually."""
     ip_cidr = expect.get("ip")
     if not ip_cidr:
         return None
@@ -45,8 +45,8 @@ def _static_task(node: str, expect: dict) -> NodeTask | None:
 
 
 def _dhcp_task(node: str, expect: dict) -> NodeTask | None:
-    """`vpcs.ip_in_subnet` — адрес выдаёт DHCP: верно `ip dhcp`, ошибка — статика
-    в чужой подсети (адрес есть, но проверка подсети падает)."""
+    """`vpcs.ip_in_subnet` — DHCP assigns the address: correct is `ip dhcp`, the mistake
+    is a static address in the wrong subnet (address present, but the subnet check fails)."""
     subnet = expect.get("subnet")
     if not subnet:
         return None
@@ -73,11 +73,11 @@ _BUILDERS = {
 
 
 def build_node_tasks(spec: dict) -> list[NodeTask]:
-    """Из spec-проверок → консольные команды студента (верная и ошибочная).
+    """From spec checks → student console commands (correct and wrong).
 
-    Поддержаны оба способа адресации: статический (`vpcs.show_ip`) и DHCP
-    (`vpcs.ip_in_subnet`). Проверки связности (`vpcs.ping`) задачи не дают —
-    связность возникает как следствие правильной адресации.
+    Both addressing modes are supported: static (`vpcs.show_ip`) and DHCP
+    (`vpcs.ip_in_subnet`). Connectivity checks (`vpcs.ping`) don't produce a task —
+    connectivity follows as a consequence of correct addressing.
     """
     tasks: list[NodeTask] = []
     seen: set[str] = set()

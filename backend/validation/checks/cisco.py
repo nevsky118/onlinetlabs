@@ -1,10 +1,10 @@
 """Cisco IOS check-handlers — `cisco.ospf_neighbor`, `cisco.route_in_table`,
 `cisco.interface_brief`.
 
-Хендлеры подключаются telnet'ом к dynamips-консоли узла и выполняют
-`show ...` команды. Парсинг живёт в чистых функциях
+Handlers connect via telnet to the node's dynamips console and run
+`show ...` commands. Parsing lives in the pure functions
 `_parse_cisco_neighbor` / `_parse_cisco_route` / `_parse_cisco_interface`,
-чтобы их можно было покрыть unit-тестами без сетевых вызовов.
+so they can be covered by unit tests without network calls.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from validation.checks.registry import CheckContext, CheckResult
 _CISCO_NEIGHBOR_LINE_RE = re.compile(r"^\s*(\S+)\s+\d+\s+(\S+)")
 
 # `O    192.168.110.0/24 [110/20] via 10.0.0.2, FastEthernet0/1`
-# code часть — буквы и `*`, не цифры (отбрасываем сами заголовки "Codes:" и т.п.).
+# the code part is letters and `*`, not digits (drops header lines like "Codes:" etc).
 _CISCO_ROUTE_LINE_RE = re.compile(r"^\s*([A-Z][A-Z*]*)\s+(\d+\.\d+\.\d+\.\d+/\d+)\b")
 
 # `FastEthernet0/0.10  192.168.10.1    YES manual up                    up`
@@ -30,9 +30,9 @@ _PROMPT_TAIL = b"#"
 
 
 def _parse_cisco_neighbor(stdout: str, neighbor_id: str) -> str | None:
-    """Вернуть значение колонки State (например `FULL/BDR`) для соседа.
+    """Return the State column value (e.g. `FULL/BDR`) for the neighbor.
 
-    Возвращает None, если соседа нет в выводе.
+    Returns None if the neighbor isn't in the output.
     """
     for raw_line in stdout.splitlines():
         line = raw_line.rstrip()
@@ -50,18 +50,18 @@ def _parse_cisco_neighbor(stdout: str, neighbor_id: str) -> str | None:
 
 
 def _parse_cisco_route(stdout: str, prefix: str) -> tuple[str, str] | None:
-    """Вернуть `(code, full_line)` маршрута с заданным префиксом.
+    """Return `(code, full_line)` for the route with the given prefix.
 
-    code — первая колонка, напр. `O` или `O*E2`. None, если префикс не найден.
+    code is the first column, e.g. `O` or `O*E2`. None if the prefix isn't found.
     """
     for raw_line in stdout.splitlines():
         line = raw_line.rstrip()
         if not line:
             continue
         stripped = line.lstrip()
-        # `Codes: ...` шапка и подобный текст матчатся первой группой,
-        # но второй группы (префикса) у них нет — re.match даст None или
-        # mismatch по prefix. Дополнительно отсечь явные header-строки.
+        # A `Codes: ...` header and similar text can match the first group,
+        # but they have no second group (prefix) — re.match gives None or a
+        # prefix mismatch. Explicitly skip obvious header lines too.
         if stripped.startswith(("Codes:", "Gateway of last resort")):
             continue
         m = _CISCO_ROUTE_LINE_RE.match(line)
@@ -73,24 +73,24 @@ def _parse_cisco_route(stdout: str, prefix: str) -> tuple[str, str] | None:
 
 
 def _parse_cisco_interface(stdout: str, interface: str) -> dict | None:
-    """Вернуть `{ip, status, protocol}` строки `show ip interface brief`.
+    """Return `{ip, status, protocol}` for a `show ip interface brief` line.
 
-    None, если интерфейс не найден.
+    None if the interface isn't found.
     """
     for raw_line in stdout.splitlines():
         line = raw_line.rstrip()
         if not line:
             continue
-        # Первая колонка — имя. Сравниваем строго.
-        # Формат строки фиксированный: <name> <ip> <ok-method-2cols> <status> <protocol>.
+        # The first column is the name. Compare it strictly.
+        # Fixed line format: <name> <ip> <ok-method-2cols> <status> <protocol>.
         parts = line.split()
         if len(parts) < 6:
             continue
         if parts[0] != interface:
             continue
         # parts: [name, ip, ok, method, status, protocol]
-        # Status может быть `administratively down` (2 слова) — разрулим.
-        # Попробуем формат с 6 полями, если status = одно слово.
+        # Status can be `administratively down` (2 words) — handle that.
+        # Try the 6-field format if status is a single word.
         if len(parts) == 6:
             return {
                 "interface": parts[0],
@@ -99,14 +99,14 @@ def _parse_cisco_interface(stdout: str, interface: str) -> dict | None:
                 "protocol": parts[5],
             }
         if len(parts) == 7:
-            # `administratively down` — двусловный статус.
+            # `administratively down` — a two-word status.
             return {
                 "interface": parts[0],
                 "ip": parts[1],
                 "status": f"{parts[4]} {parts[5]}",
                 "protocol": parts[6],
             }
-        # fallback — отдадим что нашли.
+        # fallback — return whatever we found.
         return {
             "interface": parts[0],
             "ip": parts[1],
@@ -117,7 +117,7 @@ def _parse_cisco_interface(stdout: str, interface: str) -> dict | None:
 
 
 def _missing_param(name: str, expect: dict) -> CheckResult:
-    """Сформировать проваленный результат об отсутствующем параметре."""
+    """Build a failed result for a missing parameter."""
     return CheckResult(
         ok=False,
         expected=expect,
@@ -127,7 +127,7 @@ def _missing_param(name: str, expect: dict) -> CheckResult:
 
 
 async def _drain_until_prompt(reader: asyncio.StreamReader, timeout: float) -> bytes:
-    """Читать с консоли пока не встретится Cisco-приглашение (# или >) или истечёт таймаут."""
+    """Read from the console until a Cisco prompt (# or >) appears or the timeout elapses."""
     buf = bytearray()
     try:
         async with asyncio.timeout(timeout):
@@ -136,11 +136,11 @@ async def _drain_until_prompt(reader: asyncio.StreamReader, timeout: float) -> b
                 if not chunk:
                     break
                 buf.extend(chunk)
-                # Cisco prompt оканчивается на `#` (privileged) или `>` (user).
-                # Достаточно проверить хвост последней строки.
+                # A Cisco prompt ends with `#` (privileged) or `>` (user).
+                # It's enough to check the tail of the last line.
                 tail = buf[-3:]
                 if _PROMPT_TAIL in tail or b"> " in tail or tail[-1:] == b">":
-                    # Дать ещё чуть-чуть подтянуть остаток.
+                    # Give it a bit more time to pull in the rest.
                     await asyncio.sleep(0.1)
                     while True:
                         try:
@@ -160,9 +160,9 @@ async def _drain_until_prompt(reader: asyncio.StreamReader, timeout: float) -> b
 async def _exec_cisco(
     ctx: CheckContext, node_name: str, command: str, expect: dict
 ) -> tuple[str | None, CheckResult | None]:
-    """Подключиться к консоли узла, отключить пагинатор и выполнить команду.
+    """Connect to the node's console, disable the pager, and run the command.
 
-    Возвращает `(stdout_text, None)` при успехе, `(None, error_result)` иначе.
+    Returns `(stdout_text, None)` on success, `(None, error_result)` otherwise.
     """
     port = ctx.node_console_port(node_name)
     if not port:
@@ -186,23 +186,23 @@ async def _exec_cisco(
         )
 
     try:
-        # Разбудить консоль.
+        # Wake up the console.
         writer.write(b"\r\n")
         await writer.drain()
         await asyncio.sleep(0.3)
         await _drain_until_prompt(reader, timeout=1.0)
 
-        # Войти в enable (у dynamips обычно без пароля).
+        # Enter enable mode (dynamips usually has no password).
         writer.write(b"enable\r\n")
         await writer.drain()
         await _drain_until_prompt(reader, timeout=1.5)
 
-        # Отключить пагинатор.
+        # Disable the pager.
         writer.write(b"terminal length 0\r\n")
         await writer.drain()
         await _drain_until_prompt(reader, timeout=1.5)
 
-        # Сама команда.
+        # The actual command.
         writer.write(command.encode() + b"\r\n")
         await writer.drain()
         raw = await _drain_until_prompt(reader, timeout=_READ_TIMEOUT)
@@ -217,11 +217,11 @@ async def _exec_cisco(
 
 
 async def cisco_ospf_neighbor(ctx: CheckContext, params: dict, expect: dict) -> CheckResult:
-    """`show ip ospf neighbor` → проверка state конкретного соседа.
+    """`show ip ospf neighbor` -> check the state of a specific neighbor.
 
     params: `{node: "R1"}`
     expect: `{neighbor_id: "2.2.2.2", state: "FULL"}`
-            Сравнение state через `startswith`, так что `FULL` покрывает
+            State comparison via `startswith`, so `FULL` covers
             `FULL/BDR`, `FULL/DR`, `FULL/DROTHER`.
     """
     node_name = params.get("node")
@@ -248,11 +248,11 @@ async def cisco_ospf_neighbor(ctx: CheckContext, params: dict, expect: dict) -> 
 
 
 async def cisco_route_in_table(ctx: CheckContext, params: dict, expect: dict) -> CheckResult:
-    """`show ip route ospf` → проверка наличия маршрута с нужным protocol-кодом.
+    """`show ip route ospf` -> check that a route with the given protocol code exists.
 
     params: `{node: "R1"}`
     expect: `{prefix: "192.168.110.0/24", protocol: "O"}`
-            Сравнение protocol через `startswith` → `O` покрывает `O*E2` и пр.
+            Protocol comparison via `startswith` -> `O` covers `O*E2` etc.
     """
     node_name = params.get("node")
     if not node_name:
@@ -282,10 +282,10 @@ async def cisco_route_in_table(ctx: CheckContext, params: dict, expect: dict) ->
 
 
 async def cisco_interface_brief(ctx: CheckContext, params: dict, expect: dict) -> CheckResult:
-    """`show ip interface brief` → проверка IP/status конкретного интерфейса.
+    """`show ip interface brief` -> check the IP/status of a specific interface.
 
     params: `{node: "R1", interface: "FastEthernet0/0.10"}`
-    expect: `{status: "up", ip: "192.168.10.1"}` — `ip` опционален.
+    expect: `{status: "up", ip: "192.168.10.1"}` — `ip` is optional.
     """
     node_name = params.get("node")
     interface = params.get("interface")

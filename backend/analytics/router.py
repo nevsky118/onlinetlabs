@@ -21,9 +21,9 @@ async def ingest_events(
     db: AsyncSession = Depends(get_db),
     current_user: dict | None = Depends(get_current_user_optional),
 ):
-    """Принимает пачку событий телеметрии платформы и сохраняет их в БД."""
+    """Accepts a batch of platform telemetry events and saves them to the DB."""
     user_id = current_user["id"] if current_user else None
-    request.state.user = current_user  # чтобы рейт-лимитер мог ключевать по user_id
+    request.state.user = current_user  # so the rate limiter can key by user_id
     now = datetime.now(UTC)
 
     for evt in body.events:

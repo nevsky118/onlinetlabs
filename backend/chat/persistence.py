@@ -1,4 +1,4 @@
-"""Персист сообщений чата в chat_messages."""
+"""Persists chat messages to chat_messages."""
 
 from sqlalchemy import select
 
@@ -6,7 +6,7 @@ from models.chat_message import ChatMessage
 
 
 def to_openai_messages(sdk_messages: list[dict]) -> list[dict]:
-    """Преобразует сообщения SDK в формат OpenAI с ролью и текстовым содержимым."""
+    """Converts SDK messages to OpenAI format with role and text content."""
     converted: list[dict] = []
     for msg in sdk_messages:
         role = msg.get("role", "user")
@@ -22,7 +22,7 @@ def to_openai_messages(sdk_messages: list[dict]) -> list[dict]:
 
 
 async def save_user_message(db, session_id: str, sdk_messages: list[dict]) -> None:
-    """Сохраняет последнее сообщение пользователя из списка в базу."""
+    """Saves the last user message from the list to the database."""
     last = sdk_messages[-1] if sdk_messages else None
     if not last or last.get("role") != "user":
         return
@@ -34,7 +34,7 @@ async def save_user_message(db, session_id: str, sdk_messages: list[dict]) -> No
 async def save_assistant_message(
     db, session_id: str, parts: list[dict], usage: dict | None
 ) -> None:
-    """Сохраняет сообщение ассистента с его частями и расходом токенов."""
+    """Saves the assistant message with its parts and token usage."""
     if not parts:
         return
     db.add(ChatMessage(session_id=session_id, role="assistant", parts=parts, usage=usage))
@@ -42,7 +42,7 @@ async def save_assistant_message(
 
 
 async def get_chat_history(db, session_id: str) -> list["ChatMessage"]:
-    """Возвращает все сообщения сессии по возрастанию времени создания."""
+    """Returns all session messages ordered by creation time ascending."""
     result = await db.execute(
         select(ChatMessage)
         .where(ChatMessage.session_id == session_id)

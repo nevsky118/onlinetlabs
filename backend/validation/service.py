@@ -1,4 +1,4 @@
-"""Сервисный слой валидации — owner-guard, прогон runner'а, запись результата."""
+"""Validation service layer — owner-guard, running the runner, recording the result."""
 
 from collections.abc import AsyncIterator
 from urllib.parse import urlparse
@@ -15,31 +15,31 @@ from validation.stream import Event
 
 
 class ValidationError(Exception):
-    """Базовая ошибка валидации лабы."""
+    """Base lab validation error."""
 
     pass
 
 
 class SessionNotFound(ValidationError):
-    """Сессия не найдена или не принадлежит пользователю."""
+    """Session not found or doesn't belong to the user."""
 
     pass
 
 
 class LabSpecNotFound(ValidationError):
-    """Для лабы нет YAML-спецификации проверок."""
+    """No YAML checks spec exists for the lab."""
 
     pass
 
 
 class GNS3SessionMissing(ValidationError):
-    """У сессии нет активной GNS3-сессии для прогона проверок."""
+    """The session has no active GNS3 session to run checks against."""
 
     pass
 
 
 def _gns3_host_from_settings(settings) -> str:
-    """Определить хост GNS3 для исходящих соединений из настроек."""
+    """Determine the GNS3 host for outbound connections from settings."""
     gns3 = getattr(settings, "gns3", None)
     if gns3 is not None:
         node_host = getattr(gns3, "node_host", "") or ""
@@ -60,7 +60,7 @@ async def prepare_validation(
     lab_slug: str,
     user_id: str,
 ) -> tuple[dict, str]:
-    """Pre-flight: owner-guard + загрузка YAML + проверка gns3 session.
+    """Pre-flight: owner-guard + loading the YAML + checking the gns3 session.
 
     Returns: `(spec, gns3_service_session_id)`.
     Raises: SessionNotFound, LabSpecNotFound, GNS3SessionMissing.
@@ -81,7 +81,7 @@ async def prepare_validation(
 
 
 async def build_check_context(gns3_client, gns3_sid: str, settings) -> CheckContext:
-    """Состояние GNS3-сессии → CheckContext для прогона проверок."""
+    """GNS3 session state -> CheckContext for running checks."""
     state = await gns3_client.get_state(gns3_sid)
     nodes = state.get("nodes") or []
     nodes_by_name = {n.get("name"): n for n in nodes if n.get("name")}
@@ -103,7 +103,7 @@ async def stream_validation(
     settings,
     gns3_client: Gns3ServiceClient,
 ) -> AsyncIterator[Event]:
-    """Гонит runner и пишет финальный результат в БД."""
+    """Drives the runner and writes the final result to the DB."""
     ctx = await build_check_context(gns3_client, gns3_sid, settings)
 
     run_id = await create_run(db, session_id, lab_slug)
@@ -121,8 +121,8 @@ async def stream_validation(
             yield event
     finally:
         await finish_run(db, run_id, final_status, final_steps)
-        # Прогон валидации — единственный сигнал о прогрессе по лабе: переносим
-        # его итог в LabProgress (оценка + статус), откуда читают ученик и кабинет
-        # преподавателя.
+        # The validation run is the only signal of lab progress: carry
+        # its outcome into LabProgress (score + status), which is what the
+        # student and the instructor dashboard read from.
         if final_steps:
             await record_lab_validation(db, user_id, lab_slug, final_steps)

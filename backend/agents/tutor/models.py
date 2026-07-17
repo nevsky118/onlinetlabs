@@ -1,4 +1,4 @@
-"""Модели TutorAgent."""
+"""TutorAgent models."""
 
 from pydantic import BaseModel, Field
 
@@ -6,7 +6,7 @@ from learning_analytics.context import AgentContext
 
 
 class TutorInput(BaseModel):
-    """Вопрос студента к тьютору."""
+    """Student's question to the tutor."""
 
     session_id: str
     user_id: str
@@ -19,7 +19,7 @@ class TutorInput(BaseModel):
 
 
 class TutorResponse(BaseModel):
-    """Ответ тьютора."""
+    """Tutor's answer."""
 
     answer: str
     follow_up_questions: list[str] = Field(default_factory=list)

@@ -1,4 +1,4 @@
-"""Модели HintAgent."""
+"""HintAgent models."""
 
 from pydantic import BaseModel, Field
 
@@ -6,7 +6,7 @@ from learning_analytics.context import AgentContext
 
 
 class HintInput(BaseModel):
-    """Запрос подсказки."""
+    """Hint request."""
 
     session_id: str
     user_id: str
@@ -19,7 +19,7 @@ class HintInput(BaseModel):
 
 
 class HintResponse(BaseModel):
-    """Подсказка от агента."""
+    """Hint from the agent."""
 
     hint: str
     hint_level: int = Field(ge=1, le=3, description="1=общая, 2=направляющая, 3=конкретная")

@@ -1,4 +1,4 @@
-"""POST /labs/{slug}/sessions/{sid}/validate — SSE-стрим валидации."""
+"""POST /labs/{slug}/sessions/{sid}/validate — SSE validation stream."""
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -27,7 +27,7 @@ async def validate_lab(
     db: AsyncSession = Depends(get_db),
     gns3_client=Depends(get_gns3_client),
 ):
-    """Запустить валидацию лабы и отдать ход проверок как SSE-стрим."""
+    """Start lab validation and stream check progress as SSE."""
     try:
         spec, gns3_sid = await prepare_validation(
             db=db, session_id=sid, lab_slug=slug, user_id=current_user["id"]
@@ -40,7 +40,7 @@ async def validate_lab(
         raise HTTPException(status_code=400, detail="GNS3 session is not active")
 
     async def stream():
-        """Переложить события валидации в SSE-кадры."""
+        """Convert validation events into SSE frames."""
         async for event in stream_validation(
             db=db,
             session_id=sid,

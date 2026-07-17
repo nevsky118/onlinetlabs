@@ -1,4 +1,4 @@
-"""Настройка Prometheus-метрик. Публикует /metrics на FastAPI-приложении."""
+"""Prometheus metrics setup. Exposes /metrics on the FastAPI app."""
 
 from prometheus_client import Counter, Gauge, Histogram
 from prometheus_fastapi_instrumentator import Instrumentator
@@ -32,7 +32,7 @@ idle_reclaimed_counter = Counter(
 
 
 def configure_metrics(app) -> None:
-    """Подключает инструментирование Prometheus к приложению и публикует эндпоинт /metrics."""
+    """Wires Prometheus instrumentation into the app and exposes the /metrics endpoint."""
     Instrumentator(
         should_group_status_codes=True,
         excluded_handlers=["/health", "/metrics"],

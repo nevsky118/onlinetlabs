@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 class MCPAuditRow(BaseModel):
-    """Одна запись аудита MCP-вызовов через контур."""
+    """A single audit record of MCP calls through the control loop."""
 
     id: str
     user_id: str
@@ -21,7 +21,7 @@ class MCPAuditRow(BaseModel):
 
 
 class SessionSummary(BaseModel):
-    """Сессия ученика для списка в карточке преподавателя."""
+    """A student session for the list in the instructor dashboard."""
 
     session_id: str
     lab_slug: str
@@ -34,7 +34,7 @@ class SessionSummary(BaseModel):
 
 
 class StudentOverview(BaseModel):
-    """Сводка по одному ученику для общей таблицы кабинета преподавателя."""
+    """Overview of one student for the instructor dashboard's overview table."""
 
     user_id: str
     name: str | None
@@ -49,7 +49,7 @@ class StudentOverview(BaseModel):
 
 
 class StudentsOverviewResponse(BaseModel):
-    """Список учеников со сводной статистикой и агрегатами по группе."""
+    """List of students with summary stats and group-level aggregates."""
 
     students: list[StudentOverview]
     total_students: int
@@ -57,7 +57,7 @@ class StudentsOverviewResponse(BaseModel):
 
 
 class LabProgressRow(BaseModel):
-    """Прогресс ученика по одной лабе с числом подсказок и попыток."""
+    """Student's progress on one lab with hint and attempt counts."""
 
     lab_slug: str
     lab_title: str
@@ -73,7 +73,7 @@ class LabProgressRow(BaseModel):
 
 
 class StudentDetailResponse(BaseModel):
-    """Детальная карточка ученика: профиль и прогресс по всем лабам."""
+    """Detailed student card: profile and progress across all labs."""
 
     user_id: str
     name: str | None
@@ -89,7 +89,7 @@ class StudentDetailResponse(BaseModel):
 
 
 class TimelineItem(BaseModel):
-    """Элемент таймлайна сессии: реплика чата или проактивная интервенция."""
+    """A session timeline item: a chat message or a proactive intervention."""
 
     kind: str  # student | tutor | intervention
     ts: datetime
@@ -101,11 +101,11 @@ class TimelineItem(BaseModel):
     struggle_type: str | None = None
 
 
-# --- Когортные орг-метрики Task 8 ---
+# --- Cohort org metrics Task 8 ---
 
 
 class TimeToCompetenceSchema(BaseModel):
-    """Зеркало dataclass TimeToCompetence."""
+    """Mirror of the TimeToCompetence dataclass."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -119,7 +119,7 @@ class TimeToCompetenceSchema(BaseModel):
 
 
 class AutonomySchema(BaseModel):
-    """Зеркало dataclass AutonomyMetrics."""
+    """Mirror of the AutonomyMetrics dataclass."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -129,7 +129,7 @@ class AutonomySchema(BaseModel):
 
 
 class OrgEffectSchema(BaseModel):
-    """Зеркало dataclass OrgEffectTrend; note-строка передаётся как есть."""
+    """Mirror of the OrgEffectTrend dataclass; the note string passes through as-is."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -141,7 +141,7 @@ class OrgEffectSchema(BaseModel):
 
 
 class CohortCellSchema(BaseModel):
-    """Зеркало dataclass CohortCell."""
+    """Mirror of the CohortCell dataclass."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -154,7 +154,7 @@ class CohortCellSchema(BaseModel):
 
 
 class CohortMetricsResponse(BaseModel):
-    """Ответ GET /instructor/cohort-metrics."""
+    """Response for GET /instructor/cohort-metrics."""
 
     by_skill: list[CohortCellSchema]
     pooled: CohortCellSchema
@@ -163,12 +163,12 @@ class CohortMetricsResponse(BaseModel):
 
 
 def _cell_schema(cell) -> CohortCellSchema:
-    """Конвертирует CohortCell dataclass → CohortCellSchema."""
+    """Converts a CohortCell dataclass to CohortCellSchema."""
     return CohortCellSchema.model_validate(cell)
 
 
 def cohort_response_from_result(out: dict) -> CohortMetricsResponse:
-    """Маппит результат aggregate_cohort → CohortMetricsResponse."""
+    """Maps the aggregate_cohort result to CohortMetricsResponse."""
     return CohortMetricsResponse(
         by_skill=[_cell_schema(c) for c in out["by_skill"]],
         pooled=_cell_schema(out["pooled"]),

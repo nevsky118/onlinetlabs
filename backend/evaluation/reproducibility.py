@@ -1,4 +1,4 @@
-"""Reproducibility-bundle: анонимизированный экспорт реальных MRT-данных для ре-анализа."""
+"""Reproducibility bundle: anonymized export of real MRT data for re-analysis."""
 import hashlib
 
 from sqlalchemy import func, select
@@ -11,15 +11,15 @@ from models.user import User
 
 
 def _anon(value: str) -> str:
-    """Стабильный анонимный id (sha256, 12 hex) — консистентен по таблицам."""
+    """Stable anonymous id (sha256, 12 hex) -- consistent across tables."""
     return hashlib.sha256(value.encode()).hexdigest()[:12]
 
 
 async def build_reproducibility_bundle(db: AsyncSession) -> dict:
-    """Bundle реальных MRT-данных для независимого ре-анализа.
+    """Bundle of real MRT data for independent re-analysis.
 
-    FIREWALL: данные is_simulated-юзеров ИСКЛЮЧЕНЫ — сим-прогоны никогда не текут
-    в «реальные результаты». Персональные id заменяются хэшами.
+    FIREWALL: data from is_simulated users is EXCLUDED -- simulation runs never
+    flow into "real results". Personal ids are replaced with hashes.
     """
     sim_users = select(User.id).where(User.is_simulated.is_(True)).scalar_subquery()
     sim_sessions = (

@@ -2,7 +2,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 class LabSummary(BaseModel):
-    """Краткое описание лабораторной работы в составе курса."""
+    """Brief description of a lab within a course."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -14,7 +14,7 @@ class LabSummary(BaseModel):
 
 
 class CourseResponse(BaseModel):
-    """Курс без вложенных лабораторных работ."""
+    """Course without nested labs."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -27,6 +27,6 @@ class CourseResponse(BaseModel):
 
 
 class CourseDetailResponse(CourseResponse):
-    """Курс вместе со списком его лабораторных работ."""
+    """Course together with its list of labs."""
 
     labs: list[LabSummary]

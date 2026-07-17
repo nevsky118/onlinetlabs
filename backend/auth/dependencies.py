@@ -12,12 +12,12 @@ logger = logging.getLogger(__name__)
 
 security = HTTPBearer()
 
-# Короткое окно. Токен обновляется фронтом через /auth/exchange перед каждым запросом.
+# Short window. Token is refreshed by the frontend via /auth/exchange before every request.
 TOKEN_EXPIRE_MINUTES = 5
 
 
 def may_select_model(role: str, can_select_model: bool | None, selectable_roles: set[str]) -> bool:
-    """Право на выбор модели: per-user тоггл важнее, иначе роль-дефолт."""
+    """Right to select a model: per-user toggle takes precedence, otherwise role default."""
     if can_select_model is not None:
         return can_select_model
     return role in selectable_roles
@@ -26,14 +26,14 @@ def may_select_model(role: str, can_select_model: bool | None, selectable_roles:
 def may_view_agent_logs(
     role: str, can_view_agent_logs: bool | None, viewer_roles: set[str]
 ) -> bool:
-    """Право видеть лог агентов: per-user тоггл важнее, иначе роль-дефолт."""
+    """Right to view agent logs: per-user toggle takes precedence, otherwise role default."""
     if can_view_agent_logs is not None:
         return can_view_agent_logs
     return role in viewer_roles
 
 
 def can_view_session_activity(user: dict, session) -> bool:
-    """Видит ли пользователь активность данной сессии."""
+    """Whether the user can see this session's activity."""
     if not user.get("can_view_logs"):
         return False
     return session.user_id == user["id"] or user.get("role") in ("instructor", "admin")
@@ -46,7 +46,7 @@ def create_backend_token(
     can_view_logs: bool = False,
     is_active: bool = False,
 ) -> str:
-    """Выдать HS256 JWT с claims sub, role, can_select, can_view_logs, is_active, время жизни 5 минут."""
+    """Issues an HS256 JWT with claims sub, role, can_select, can_view_logs, is_active, 5-minute lifetime."""
     now = datetime.now(UTC)
     payload = {
         "sub": user_id,
@@ -61,14 +61,14 @@ def create_backend_token(
 
 
 def decode_backend_token(token: str, secret: str) -> dict:
-    """Декодировать и проверить HS256 JWT."""
+    """Decodes and verifies an HS256 JWT."""
     return jwt.decode(token, secret, algorithms=["HS256"])
 
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> dict:
-    """FastAPI зависимость. Извлекает пользователя из backend JWT."""
+    """FastAPI dependency. Extracts the user from the backend JWT."""
     try:
         payload = decode_backend_token(credentials.credentials, settings.api.jwt_secret)
         user_id = payload.get("sub")
@@ -91,7 +91,7 @@ async def get_current_user(
 async def get_current_user_optional(
     credentials: HTTPAuthorizationCredentials | None = Depends(HTTPBearer(auto_error=False)),
 ) -> dict | None:
-    """FastAPI зависимость. Возвращает пользователя из JWT или None без ошибки."""
+    """FastAPI dependency. Returns the user from the JWT or None without raising."""
     if credentials is None:
         return None
     try:
@@ -112,17 +112,17 @@ async def get_current_user_optional(
 
 
 def require_admin(current_user: dict = Depends(get_current_user)) -> dict:
-    """FastAPI зависимость. Пропускает только роль admin."""
+    """FastAPI dependency. Allows only the admin role."""
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin only")
     return current_user
 
 
 def require_instructor(current_user: dict = Depends(get_current_user)) -> dict:
-    """FastAPI зависимость. Пропускает преподавателя или админа.
+    """FastAPI dependency. Allows an instructor or admin.
 
-    Используется для кабинета преподавателя: просмотр прогресса учеников
-    доступен ролям instructor и admin, но не student.
+    Used for the instructor dashboard: viewing student progress
+    is available to the instructor and admin roles, but not student.
     """
     if current_user.get("role") not in ("instructor", "admin"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Instructor only")
@@ -130,7 +130,7 @@ def require_instructor(current_user: dict = Depends(get_current_user)) -> dict:
 
 
 def require_active_user(current_user: dict = Depends(get_current_user)) -> dict:
-    """Пропускает только активированных пользователей. Иначе 403."""
+    """Allows only activated users. Otherwise 403."""
     if not current_user.get("is_active"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Аккаунт не активирован")
     return current_user
@@ -139,11 +139,11 @@ def require_active_user(current_user: dict = Depends(get_current_user)) -> dict:
 def require_internal_caller(
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> None:
-    """Авторизует server-to-server вызовы (Next.js в backend /auth/exchange).
+    """Authorizes server-to-server calls (Next.js to backend /auth/exchange).
 
-    Сверяет Authorization Bearer INTERNAL_API_TOKEN с общим секретом. При
-    несовпадении возвращает 401, поэтому утёкший client-side вызов не сможет
-    выдать backend JWT. Тот же токен используется на канале backend gns3-service.
+    Compares Authorization Bearer INTERNAL_API_TOKEN against the shared secret. On
+    mismatch returns 401, so a leaked client-side call can't obtain a
+    backend JWT. The same token is used on the backend gns3-service channel.
     """
     expected = settings.security.internal_api_token
     if not expected or not secrets.compare_digest(credentials.credentials, expected):
@@ -154,7 +154,7 @@ def require_internal_caller(
 
 
 async def verify_jwt_for_ws(token: str | None) -> dict | None:
-    """Проверяет JWT и возвращает пользователя или None при ошибке. Для WS-хендлеров."""
+    """Verifies the JWT and returns the user or None on error. For WS handlers."""
     if not token:
         return None
     try:

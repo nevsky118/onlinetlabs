@@ -5,19 +5,19 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class LearningSessionCreate(BaseModel):
-    """Данные для создания учебной сессии по slug лабораторной."""
+    """Data for creating a learning session by lab slug."""
 
     lab_slug: str
 
 
 class LearningSessionUpdate(BaseModel):
-    """Изменение статуса учебной сессии."""
+    """Learning session status change."""
 
     status: str
 
 
 class SessionMeta(BaseModel):
-    """Метаданные сессии GNS3 с зашифрованными паролем и JWT."""
+    """GNS3 session metadata with encrypted password and JWT."""
 
     gns3_service_session_id: str
     gns3_user_id: str
@@ -28,7 +28,7 @@ class SessionMeta(BaseModel):
 
 
 class LearningSessionResponse(BaseModel):
-    """Учебная сессия в ответе API."""
+    """Learning session in the API response."""
 
     id: str
     lab_slug: str
@@ -40,7 +40,7 @@ class LearningSessionResponse(BaseModel):
 
 
 class LaunchResponse(BaseModel):
-    """Ответ на запуск сессии с доступами и ссылками на GNS3."""
+    """Session launch response with GNS3 credentials and links."""
 
     session_id: str
     status: str
@@ -51,7 +51,7 @@ class LaunchResponse(BaseModel):
 
 
 class CredentialsResponse(BaseModel):
-    """Доступы и ссылки на GNS3 для активной сессии."""
+    """GNS3 credentials and links for the active session."""
 
     gns3_username: str
     gns3_password: str
@@ -60,7 +60,7 @@ class CredentialsResponse(BaseModel):
 
 
 class NodeStateSchema(BaseModel):
-    """Состояние узла топологии GNS3."""
+    """State of a GNS3 topology node."""
 
     id: str
     name: str
@@ -75,7 +75,7 @@ class NodeStateSchema(BaseModel):
 
 
 class LinkEndpointSchema(BaseModel):
-    """Конец связи с указанием узла, адаптера и порта."""
+    """Link endpoint specifying node, adapter, and port."""
 
     node_id: str = Field(alias="nodeId")
     adapter_number: int = Field(alias="adapterNumber")
@@ -85,14 +85,14 @@ class LinkEndpointSchema(BaseModel):
 
 
 class LinkStateSchema(BaseModel):
-    """Связь между двумя концами узлов топологии."""
+    """Link between two topology node endpoints."""
 
     id: str
     nodes: list[LinkEndpointSchema]
 
 
 class SessionMetricsSchema(BaseModel):
-    """Сводные метрики топологии сессии."""
+    """Summary metrics of the session topology."""
 
     nodes_total: int = Field(alias="nodesTotal")
     nodes_started: int = Field(alias="nodesStarted")
@@ -103,14 +103,14 @@ class SessionMetricsSchema(BaseModel):
 
 
 class LabRef(BaseModel):
-    """Краткая ссылка на лабораторную по slug и заголовку."""
+    """Short reference to a lab by slug and title."""
 
     slug: str
     title: str | None = None
 
 
 class FullSessionStateResponse(BaseModel):
-    """Полное состояние сессии с узлами, связями и метриками."""
+    """Full session state with nodes, links, and metrics."""
 
     session_id: str = Field(alias="sessionId")
     status: Literal["provisioning", "active", "ended", "error"]
@@ -119,14 +119,14 @@ class FullSessionStateResponse(BaseModel):
     nodes: list[NodeStateSchema]
     links: list[LinkStateSchema]
     metrics: SessionMetricsSchema
-    # L2-холдаут: проактивные подсказки подавлены (unassisted near-transfer)
+    # L2 holdout: proactive hints suppressed (unassisted near-transfer)
     no_assist: bool = Field(default=False, alias="noAssist")
 
     model_config = {"populate_by_name": True}
 
 
 class ActivityEventSchema(BaseModel):
-    """Событие активности в рамках сессии."""
+    """Activity event within a session."""
 
     timestamp: datetime
     event_type: str = Field(alias="eventType")
@@ -137,7 +137,7 @@ class ActivityEventSchema(BaseModel):
 
 
 class ActivityResponseSchema(BaseModel):
-    """Лента событий активности с курсором для подгрузки."""
+    """Activity event feed with a cursor for pagination."""
 
     events: list[ActivityEventSchema]
     next_cursor: str | None = Field(alias="nextCursor")
@@ -146,7 +146,7 @@ class ActivityResponseSchema(BaseModel):
 
 
 class ChatMessageResponse(BaseModel):
-    """Сообщение чата сессии в ответе API."""
+    """Session chat message in the API response."""
 
     id: str
     role: str

@@ -1,18 +1,18 @@
-"""Реестр инструментов контура: default-deny классификация OBSERVE/ACT.
+"""Registry of loop tools: default-deny OBSERVE/ACT classification.
 
-Аннотации самих MCP-инструментов считаются недоверенными — классификация задаётся здесь.
-Неклассифицированный инструмент НЕ вызывается (тем более как ACT). allowlist = этот реестр.
+The MCP tools' own annotations are considered untrusted -- classification is set here.
+An unclassified tool is NOT called (let alone as ACT). allowlist = this registry.
 """
 
 from enum import Enum
 
 
 class ToolKind(str, Enum):
-    OBSERVE = "observe"  # read-only наблюдение (П1)
-    ACT = "act"  # воздействие на среду (П2)
+    OBSERVE = "observe"  # read-only observation (P1)
+    ACT = "act"  # intervention on the environment (P2)
 
 
-# Единый default-deny реестр (он же allowlist). Только перечисленные инструменты вызываемы.
+# Single default-deny registry (also the allowlist). Only the listed tools can be called.
 _REGISTRY: dict[str, ToolKind] = {
     "list_components": ToolKind.OBSERVE,
     "get_component": ToolKind.OBSERVE,
@@ -24,5 +24,5 @@ _REGISTRY: dict[str, ToolKind] = {
 
 
 def classify(tool: str) -> ToolKind | None:
-    """Вид инструмента или None, если не классифицирован (запрещён)."""
+    """The tool's kind, or None if unclassified (forbidden)."""
     return _REGISTRY.get(tool)

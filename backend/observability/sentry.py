@@ -1,4 +1,4 @@
-"""Инициализация Sentry для FastAPI. Sample rate 10 процентов в prod, 100 в dev."""
+"""Sentry initialization for FastAPI. Sample rate 10 percent in prod, 100 in dev."""
 
 import os
 
@@ -8,7 +8,7 @@ from sentry_sdk.integrations.starlette import StarletteIntegration
 
 
 def configure_sentry(service: str, environment: str = "dev") -> None:
-    """Инициализирует Sentry, если задан SENTRY_DSN. Без DSN тихо выходит."""
+    """Initializes Sentry if SENTRY_DSN is set. Silently exits without a DSN."""
     dsn = os.getenv("SENTRY_DSN")
     if not dsn:
         return

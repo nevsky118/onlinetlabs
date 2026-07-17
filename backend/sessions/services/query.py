@@ -9,7 +9,7 @@ from models.session import LearningSession
 
 
 async def get_user_sessions(db: AsyncSession, user_id: str) -> list[LearningSession]:
-    """Возвращает все сессии пользователя от новых к старым."""
+    """Returns all user sessions from newest to oldest."""
     result = await db.execute(
         select(LearningSession)
         .where(LearningSession.user_id == user_id)
@@ -19,7 +19,7 @@ async def get_user_sessions(db: AsyncSession, user_id: str) -> list[LearningSess
 
 
 async def get_active_session(db, user_id: str, lab_slug: str):
-    """Возвращает активную сессию пользователя по данной лабораторной, если есть."""
+    """Returns the user's active session for the given lab, if any."""
     result = await db.execute(
         select(LearningSession).where(
             LearningSession.user_id == user_id,
@@ -31,7 +31,7 @@ async def get_active_session(db, user_id: str, lab_slug: str):
 
 
 async def get_owned_session(db, session_id: str, user_id: str):
-    """Возвращает сессию, проверяя что она принадлежит пользователю."""
+    """Returns the session, verifying it belongs to the user."""
     result = await db.execute(
         select(LearningSession).where(
             LearningSession.id == session_id,
@@ -42,16 +42,16 @@ async def get_owned_session(db, session_id: str, user_id: str):
 
 
 async def get_session(db, session_id: str, user_id: str) -> LearningSession | None:
-    """Возвращает сессию пользователя по идентификатору."""
+    """Returns the user's session by identifier."""
     return await get_owned_session(db, session_id, user_id)
 
 
 async def get_session_state(
     db, session_id: str, user_id: str, gns3_client, state_cache
 ) -> dict | None:
-    """Возвращает обогащённое состояние сессии (с кэшем). None если сессия не найдена или чужая.
+    """Returns the enriched session state (with caching). None if not found or not owned.
 
-    Owner-check выполняется до похода в кэш, чтобы исключить cross-user попадания.
+    The owner check runs before hitting the cache, to rule out cross-user hits.
     """
     session = await get_owned_session(db, session_id, user_id)
     if session is None:
@@ -66,9 +66,9 @@ async def get_session_state(
         raw = await gns3_client.get_state(gns3_sid)
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code == 404:
-            # GNS3-сессия исчезла (например, инфраструктуру GNS3 перезапустили).
-            # Платформенная сессия осиротела — помечаем завершённой, чтобы
-            # пользователь не застрял и следующий запуск поднял свежую среду.
+            # The GNS3 session disappeared (e.g. GNS3 infrastructure was restarted).
+            # The platform session is orphaned — mark it ended so the user
+            # doesn't get stuck and the next launch brings up a fresh environment.
             session.status = "ended"
             session.ended_at = datetime.now(UTC)
             await db.commit()

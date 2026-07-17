@@ -1,4 +1,4 @@
-"""CRUD для validation_runs."""
+"""CRUD for validation_runs."""
 
 from datetime import UTC, datetime
 from uuid import uuid4
@@ -12,7 +12,7 @@ from models.validation_run import ValidationRun
 async def list_for_session(
     db: AsyncSession, session_id: str, limit: int = 20
 ) -> list[ValidationRun]:
-    """Вернуть последние прогоны валидации сессии, новые сверху."""
+    """Return the session's most recent validation runs, newest first."""
     result = await db.execute(
         select(ValidationRun)
         .where(ValidationRun.session_id == session_id)
@@ -23,12 +23,12 @@ async def list_for_session(
 
 
 async def get_one(db: AsyncSession, run_id: str) -> ValidationRun | None:
-    """Вернуть прогон по идентификатору. None, если такого нет."""
+    """Return the run by id. None if it doesn't exist."""
     return await db.get(ValidationRun, run_id)
 
 
 async def create_run(db: AsyncSession, session_id: str, lab_slug: str) -> str:
-    """Создать прогон в статусе running и вернуть его идентификатор."""
+    """Create a run in running status and return its id."""
     run_id = str(uuid4())
     row = ValidationRun(
         id=run_id,
@@ -43,7 +43,7 @@ async def create_run(db: AsyncSession, session_id: str, lab_slug: str) -> str:
 
 
 async def finish_run(db: AsyncSession, run_id: str, status: str, steps: list) -> None:
-    """Завершить прогон: записать статус, шаги и время окончания."""
+    """Finish the run: record status, steps, and finish time."""
     row = await db.get(ValidationRun, run_id)
     if row is None:
         return

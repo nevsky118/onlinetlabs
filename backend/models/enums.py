@@ -2,7 +2,7 @@ from enum import Enum
 
 
 class Difficulty(str, Enum):
-    """Уровень сложности курса или лабы от начального до продвинутого."""
+    """Difficulty level of a course or lab, from beginner to advanced."""
 
     BEGINNER = "beginner"
     INTERMEDIATE = "intermediate"
@@ -10,7 +10,7 @@ class Difficulty(str, Enum):
 
 
 class ProgressStatus(str, Enum):
-    """Статус прохождения курса или лабы. Не начато, в процессе, завершено."""
+    """Progress status of a course or lab. Not started, in progress, completed."""
 
     NOT_STARTED = "not_started"
     IN_PROGRESS = "in_progress"
@@ -18,7 +18,7 @@ class ProgressStatus(str, Enum):
 
 
 class AttemptResult(str, Enum):
-    """Итог попытки прохождения шага. Зачтено, провалено, частично."""
+    """Outcome of a step attempt. Passed, failed, partial."""
 
     PASS = "pass"
     FAIL = "fail"
@@ -26,7 +26,7 @@ class AttemptResult(str, Enum):
 
 
 class SessionStatus(str, Enum):
-    """Статус учебной сессии. Активна, завершена, заброшена."""
+    """Learning session status. Active, completed, abandoned."""
 
     ACTIVE = "active"
     COMPLETED = "completed"
@@ -34,7 +34,7 @@ class SessionStatus(str, Enum):
 
 
 class EnvironmentType(str, Enum):
-    """Тип среды лабы. GNS3, Docker или без среды."""
+    """Lab environment type. GNS3, Docker, or none."""
 
     GNS3 = "gns3"
     DOCKER = "docker"

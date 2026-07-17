@@ -1,8 +1,8 @@
-"""Оркестратор когорты: пул из N одновременных сессий + очередь, 50 всего по циклу.
+"""Cohort orchestrator: pool of N concurrent sessions + queue, 50 total per cycle.
 
-Создаёт is_simulated-юзеров, гоняет каждого через policy→actor, пишет ground-truth.
-GNS3-специфика (launch лабы + построение actor) инжектится через `provision` —
-чтобы тестировать без реального GNS3 и заменить fake-адаптером (power-анализ, follow-on).
+Creates is_simulated users, runs each through policy→actor, writes ground truth.
+GNS3-specific logic (launching the lab + building the actor) is injected via
+`provision` — testable without real GNS3, swappable for a fake adapter (power analysis, follow-on).
 """
 import asyncio
 import random
@@ -16,7 +16,7 @@ _CMD = {"correct_cmd": "config-correct", "wrong_cmd": "config-wrong", "repeat_er
 
 
 def _default_command_for(action, state) -> str:
-    """v1-заглушка команды; реальные per-lab команды — lab-config (T8.3)."""
+    """v1 command stub; real per-lab commands come from lab-config (T8.3)."""
     return _CMD.get(action.value, "")
 
 
@@ -33,9 +33,9 @@ async def run_cohort(
     record_truth=None, command_for=_default_command_for, max_steps: int = 200,
     finalize=None,
 ) -> RunReport:
-    """Прогнать n сим-студентов, ≤concurrency одновременно. provision(profile, seed, user_id)
+    """Run n sim-students, ≤concurrency at a time. provision(profile, seed, user_id)
     -> (session_id, actor). record_truth(session_id, window, regime).
-    finalize(session_id, user_id, profile, state) — завершение сессии (LabProgress + end_session)."""
+    finalize(session_id, user_id, profile, state) — session completion (LabProgress + end_session)."""
     sem = asyncio.Semaphore(concurrency)
     profiles = sample_cohort(n, base_seed)
     peak = {"cur": 0, "max": 0}
@@ -75,7 +75,7 @@ async def run_cohort(
                     {"user_id": user_id, "session_id": session_id, "windows": window}
                 )
             except Exception as exc:
-                # Единичный сбой провижна (напр. GNS3 ACL 500) не роняет всю когорту.
+                # A single provision failure (e.g. GNS3 ACL 500) doesn't sink the whole cohort.
                 failures.append({"i": i, "error": f"{type(exc).__name__}: {exc}"})
             finally:
                 peak["cur"] -= 1

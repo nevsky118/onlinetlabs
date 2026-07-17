@@ -15,7 +15,7 @@ MAX_CONCURRENT_SESSIONS_PER_USER = 2
 
 
 async def count_active_sessions(db, user_id: str) -> int:
-    """Считает активные и провижинящиеся сессии пользователя."""
+    """Counts the user's active and provisioning sessions."""
     result = await db.execute(
         select(func.count(LearningSession.id)).where(
             LearningSession.user_id == user_id,
@@ -26,7 +26,7 @@ async def count_active_sessions(db, user_id: str) -> int:
 
 
 async def _create_provisioning_row(db_factory, user_id: str, lab_slug: str):
-    """Создаёт строку сессии в статусе provisioning в отдельной транзакции."""
+    """Creates a session row with status provisioning in a separate transaction."""
     async with db_factory() as db:
         await assign_experiment_group_if_needed(db, user_id)
         session = LearningSession(user_id=user_id, lab_slug=lab_slug, status="provisioning")
@@ -37,7 +37,7 @@ async def _create_provisioning_row(db_factory, user_id: str, lab_slug: str):
 
 
 async def _finalize_session_row(db_factory, session_id: str, status: str, meta: dict | None):
-    """Обновляет статус и метаданные сессии после провижининга."""
+    """Updates the session's status and metadata after provisioning."""
     async with db_factory() as db:
         session = await db.get(LearningSession, session_id)
         session.status = status
@@ -51,10 +51,11 @@ async def _finalize_session_row(db_factory, session_id: str, status: str, meta: 
 async def launch_session(
     db, user_id: str, lab_slug: str, gns3_client, db_factory
 ) -> tuple[LearningSession, dict]:
-    """Запускает сессию лабораторной.
+    """Launches a lab session.
 
-    Возвращает существующую активную сессию или создаёт новую через провижининг
-    GNS3, проверяя лимит одновременных сессий и наличие шаблона лабораторной.
+    Returns the existing active session, or creates a new one via GNS3
+    provisioning, checking the concurrent session limit and the presence
+    of a lab template.
     """
     existing = await get_active_session(db, user_id, lab_slug)
     if existing:
@@ -96,7 +97,7 @@ async def launch_session(
         if not template_pid:
             raise ValueError(f"Lab '{lab_slug}' не имеет gns3_template_project_id")
 
-    # Прод-сценарий split-tx. Отпускаем DB-транзакцию на время вызова gns3.
+    # Production split-tx scenario. Release the DB transaction during the gns3 call.
     session = await _create_provisioning_row(db_factory, user_id, lab_slug)
     try:
         result = await gns3_client.create_session(user_id, template_pid)

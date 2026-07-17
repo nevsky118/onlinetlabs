@@ -1,4 +1,4 @@
-"""Admin-роутер: /admin/overview, /admin/identifier-eval, /admin/tk-sensitivity, /admin/users."""
+"""Admin router: /admin/overview, /admin/identifier-eval, /admin/tk-sensitivity, /admin/users."""
 from typing import Literal
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
@@ -44,22 +44,22 @@ from models.user import User, UserRole
 
 router = APIRouter()
 
-# Сетка T_k для operating_curve (сек).
+# T_k grid for operating_curve (sec).
 _T_K_GRID = [0.0, 15.0, 30.0, 60.0, 90.0, 120.0, 150.0, 180.0, 240.0, 300.0]
 
-# Отношения стоимостей для кривой чувствительности.
+# Cost ratios for the sensitivity curve.
 _RATIOS = [0.2, 0.5, 1.0, 2.0, 5.0]
 
 
 def require_admin(current_user: dict = Depends(get_current_user)) -> dict:
-    """Только администратор (зеркало experiment/router._require_admin)."""
+    """Admin only (mirrors experiment/router._require_admin)."""
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin only")
     return current_user
 
 
 def _build_synthetic_scenarios():
-    """Синтетические сценарии идентификатора (4 типа × 3 onset + 5 нормальных)."""
+    """Synthetic identifier scenarios (4 types x 3 onsets + 5 normal)."""
     scns = []
     for regime in [
         ProcessRegime.REPEATING_ERRORS,
@@ -75,7 +75,7 @@ def _build_synthetic_scenarios():
 
 
 def _build_synthetic_sessions():
-    """Синтетические сессии для кривой T_k (зеркало derive_thresholds.__main__)."""
+    """Synthetic sessions for the T_k curve (mirrors derive_thresholds.__main__)."""
     def _session(spell_len: int, regime: str = "stuck_on_step", t_step: int = 15) -> dict:
         samples, t, dwell = [], 0, 0.0
         while t <= spell_len:
@@ -92,12 +92,12 @@ def _build_synthetic_sessions():
 
 
 def _default_la_config() -> LearningAnalyticsConfig:
-    """Конфиг LA без ENV: дефолтные значения Pydantic."""
+    """LA config without ENV: default Pydantic values."""
     return LearningAnalyticsConfig()
 
 
 def build_identifier_eval(cfg: LearningAnalyticsConfig | None = None) -> dict:
-    """Строит operating-кривую + матрицу + first-match на синтетике. preliminary=True."""
+    """Builds the operating curve + matrix + first-match on synthetic data. preliminary=True."""
     if cfg is None:
         cfg = _default_la_config()
 
@@ -110,11 +110,11 @@ def build_identifier_eval(cfg: LearningAnalyticsConfig | None = None) -> dict:
     curve = operating_curve(scns, _T_K_GRID, cfg, costs)
     opt = j_optimal(curve)
 
-    # confusion_matrix: запускаем harness @ j_optimal_t_k
+    # confusion_matrix: run harness @ j_optimal_t_k
     from evaluation.harness import run_identifier
     pairs = [(scn, run_identifier(scn, opt.t_k, cfg)) for scn in scns]
     cm_raw = confusion_matrix(pairs)
-    # сериализуем ключи в str
+    # serialize keys to str
     cm_ser = {r.value: {c.value: v for c, v in row.items()} for r, row in cm_raw.items()}
 
     fm = first_match_diagnostics(scns, cfg)
@@ -138,13 +138,13 @@ def build_identifier_eval(cfg: LearningAnalyticsConfig | None = None) -> dict:
             "c_intervention": cfg.cost_intervention,
             "c_false": cfg.cost_false_intervention,
         },
-        # синтетика → всегда предварительно
+        # synthetic → always preliminary
         "preliminary": True,
     }
 
 
 def build_tk_sensitivity(cfg: LearningAnalyticsConfig | None = None) -> dict:
-    """Кривая чувствительности T_k по ratios стоимостей на синтетических сессиях."""
+    """T_k sensitivity curve over cost ratios on synthetic sessions."""
     if cfg is None:
         cfg = _default_la_config()
 
@@ -163,7 +163,7 @@ def build_tk_sensitivity(cfg: LearningAnalyticsConfig | None = None) -> dict:
 
     points = []
     for ratio, tk_dict, j in curve:
-        # tk_dict: {regime: float}; берём stuck_on_step как представительный
+        # tk_dict: {regime: float}; take stuck_on_step as representative
         t_k_val = tk_dict.get("stuck_on_step", 0.0)
         points.append({"ratio": ratio, "t_k": t_k_val, "J": j})
 
@@ -177,7 +177,7 @@ def build_tk_sensitivity(cfg: LearningAnalyticsConfig | None = None) -> dict:
 
 
 async def build_overview(db: AsyncSession) -> dict:
-    """KPI-агрегат из БД. Числа — из чистых функций."""
+    """KPI aggregate from the DB. Numbers come from pure functions."""
     from cohort.service import compute_cohort_metrics
     from experiment.analysis import compute_arm_analysis
 
@@ -187,18 +187,18 @@ async def build_overview(db: AsyncSession) -> dict:
     metrics = (await db.execute(select(ExperimentMetrics))).scalars().all()
     ab = compute_arm_analysis(metrics, mentor_seconds=la_cfg.mentor_handling_seconds)
 
-    # Когорта
+    # Cohort
     cohort = await compute_cohort_metrics(
         db,
         horizon_seconds=la_cfg.cohort_horizon_days * 86400,
         by_arm=False,
     )
-    # pooled: aggregate_cohort отдаёт готовую pooled-ячейку (CohortCell), не dict.
+    # pooled: aggregate_cohort returns a ready-made pooled cell (CohortCell), not a dict.
     pooled_cell = cohort.get("pooled")
     pooled_reach = pooled_cell.time_to_competence.reach_rate if pooled_cell else 0.0
     pooled_n = pooled_cell.n if pooled_cell else 0
 
-    # Идентификатор (синтетика)
+    # Identifier (synthetic)
     eval_data = build_identifier_eval(la_cfg)
 
     # Ops
@@ -208,7 +208,7 @@ async def build_overview(db: AsyncSession) -> dict:
     total_ivs = (await db.execute(
         select(func.coalesce(func.sum(ExperimentMetrics.interventions_received), 0))
     )).scalar() or 0
-    labeled_n = len(metrics)  # реальных записей с метриками
+    labeled_n = len(metrics)  # real records with metrics
 
     return {
         "ab": {
@@ -243,7 +243,7 @@ async def get_overview(
     db: AsyncSession = Depends(get_db),
     _: dict = Depends(require_admin),
 ):
-    """KPI-агрегат: A/B, когорта, идентификатор, ops."""
+    """KPI aggregate: A/B, cohort, identifier, ops."""
     data = await build_overview(db)
     return OverviewResponse(
         ab=OverviewAb(**data["ab"]),
@@ -255,7 +255,7 @@ async def get_overview(
 
 @router.get("/identifier-eval", response_model=IdentifierEvalResponse)
 def get_identifier_eval(_: dict = Depends(require_admin)):
-    """Operating-кривая идентификатора (синтетика, preliminary=True)."""
+    """Identifier operating curve (synthetic, preliminary=True)."""
     data = build_identifier_eval()
     return IdentifierEvalResponse(
         curve=[CurvePoint(**p) for p in data["curve"]],
@@ -269,7 +269,7 @@ def get_identifier_eval(_: dict = Depends(require_admin)):
 
 @router.get("/tk-sensitivity", response_model=TkSensitivityResponse)
 def get_tk_sensitivity(_: dict = Depends(require_admin)):
-    """Кривая чувствительности T_k по стоимостям (синтетика)."""
+    """T_k sensitivity curve over costs (synthetic)."""
     data = build_tk_sensitivity()
     return TkSensitivityResponse(
         points=[TkPoint(**p) for p in data["points"]],
@@ -288,7 +288,7 @@ async def list_users(
     db: AsyncSession = Depends(get_db),
     _: dict = Depends(require_admin),
 ) -> UserListResponse:
-    """Список пользователей с пагинацией, сортировкой, поиском и фильтром по роли."""
+    """List of users with pagination, sorting, search, and role filter."""
     col = getattr(User, sort)
     order_col = col.asc() if order == "asc" else col.desc()
 
@@ -333,7 +333,7 @@ async def update_user(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_admin),
 ) -> UserListItem:
-    """Обновить роль/флаги пользователя. Нельзя менять собственную роль."""
+    """Update a user's role/flags. Can't change your own role."""
     user = await db.get(User, user_id)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
@@ -394,7 +394,7 @@ async def list_admin_labs(
     db: AsyncSession = Depends(get_db),
     _: dict = Depends(require_admin),
 ) -> list[AdminLab]:
-    """Список лаб для администратора."""
+    """List of labs for the administrator."""
     labs = await get_all_labs(db)
     return [_to_admin_lab(lab) for lab in labs]
 
@@ -406,7 +406,7 @@ async def patch_admin_lab(
     db: AsyncSession = Depends(get_db),
     _: dict = Depends(require_admin),
 ) -> AdminLab:
-    """Обновить enabled/gns3_template_project_id* лабы."""
+    """Update enabled/gns3_template_project_id* of a lab."""
     fields = body.model_dump(exclude_unset=True)
     lab = await update_lab(db, slug, fields)
     if lab is None:
@@ -415,7 +415,7 @@ async def patch_admin_lab(
 
 
 async def _rebuild_worker(slug: str, gns3_client, session_factory=async_session) -> None:
-    """Фоновая задача: строит шаблон и обновляет статус лабы в БД."""
+    """Background task: builds the template and updates the lab's status in the DB."""
     try:
         template_id = await gns3_client.build_template(slug)
         new_status, tid = "ready", template_id
@@ -440,7 +440,7 @@ async def rebuild_lab_template(
     session_factory=Depends(get_session_factory),
     _: dict = Depends(require_admin),
 ) -> dict:
-    """Запустить пересборку GNS3-шаблона для лабы. Idempotent, возвращает 202."""
+    """Trigger a rebuild of the GNS3 template for a lab. Idempotent, returns 202."""
     lab = await get_lab_by_slug(db, slug)
     if lab is None:
         raise HTTPException(404, "Лаба не найдена")
@@ -465,7 +465,7 @@ async def get_admin_data(
     db: AsyncSession = Depends(get_db),
     _: dict = Depends(require_admin),
 ) -> AdminDataResponse:
-    """Универсальный эндпоинт для чтения whitelisted log-таблиц."""
+    """Generic endpoint for reading whitelisted log tables."""
     spec = ADMIN_TABLES.get(table)
     if spec is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown table")

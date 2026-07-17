@@ -1,4 +1,4 @@
-"""Эндпоинты управления согласием обучаемого."""
+"""Endpoints for managing the learner's consent."""
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,7 +22,7 @@ async def grant_consent(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Выдаёт или обновляет согласие текущего пользователя."""
+    """Grants or updates consent for the current user."""
     c = await grant(db, current_user["id"], req.scope, req.observe, req.act, req.data_policy)
     return ConsentResponse.model_validate(c)
 
@@ -32,7 +32,7 @@ async def list_consent(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Возвращает активные согласия текущего пользователя."""
+    """Returns the current user's active consents."""
     return await list_active(db, current_user["id"])
 
 
@@ -42,6 +42,6 @@ async def revoke_consent(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Отзывает активные согласия указанного scope."""
+    """Revokes active consents for the given scope."""
     n = await revoke(db, current_user["id"], scope)
     return ConsentRevokeResponse(revoked=n)

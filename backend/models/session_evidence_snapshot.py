@@ -9,11 +9,11 @@ from models.base import Base
 
 
 class SessionEvidenceSnapshot(Base):
-    """Сырое свидетельство сессии для слепой человеческой разметки.
+    """Raw session evidence for blind human annotation.
 
-    Реплеябельный поток (упорядочен по ts), DISJOINT от 16 признаков и от правил:
-    разметчик кодирует режим из сырья (MCP-наблюдения / топология / консоль), а не
-    из вектора признаков — иначе тавтология F1=1.0 возвращается. kind — вид свидетельства.
+    A replayable stream (ordered by ts), DISJOINT from the 16 features and from the rules:
+    the annotator codes the regime from raw material (MCP observations / topology / console),
+    not from the feature vector — otherwise a tautological F1=1.0 results. kind is the evidence type.
     """
 
     __tablename__ = "session_evidence_snapshots"

@@ -1,4 +1,4 @@
-"""CLI для шифрования и расшифровки .env через openssl aes-256-cbc."""
+"""CLI for encrypting and decrypting .env via openssl aes-256-cbc."""
 
 import argparse
 import os
@@ -7,7 +7,7 @@ import sys
 
 
 def encrypt_file(filepath: str, password: str) -> str:
-    """Зашифровать файл в .aes через openssl и вернуть путь результата."""
+    """Encrypt a file into .aes via openssl and return the result path."""
     if not os.path.isfile(filepath):
         raise FileNotFoundError(f"File not found: {filepath}")
     output = filepath + ".aes"
@@ -31,7 +31,7 @@ def encrypt_file(filepath: str, password: str) -> str:
 
 
 def decrypt_file(filepath: str, password: str) -> str:
-    """Расшифровать .aes-файл через openssl и вернуть путь результата."""
+    """Decrypt a .aes file via openssl and return the result path."""
     if not filepath.endswith(".aes"):
         raise ValueError("File must have .aes extension")
     if not os.path.isfile(filepath):
@@ -58,7 +58,7 @@ def decrypt_file(filepath: str, password: str) -> str:
 
 
 def main() -> None:
-    """Точка входа CLI: разобрать аргументы и зашифровать или расшифровать файл."""
+    """CLI entry point: parse arguments and encrypt or decrypt the file."""
     parser = argparse.ArgumentParser(description="Encrypt/decrypt .env files")
     parser.add_argument("action", choices=["encrypt", "decrypt"])
     parser.add_argument("file", help="Path to .env (encrypt) or .env.aes (decrypt)")

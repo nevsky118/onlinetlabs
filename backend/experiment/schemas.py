@@ -1,4 +1,4 @@
-"""Pydantic-схемы для API эксперимента."""
+"""Pydantic schemas for the experiment API."""
 
 from datetime import datetime
 
@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 
 class ArmAnalysisResponse(BaseModel):
-    """Результат сравнения open vs closed arm."""
+    """Result of comparing the open vs closed arm."""
 
     l2_pass_rate_open: float
     l2_pass_rate_closed: float
@@ -17,7 +17,7 @@ class ArmAnalysisResponse(BaseModel):
 
 
 class ExperimentStatusResponse(BaseModel):
-    """Статус эксперимента."""
+    """Experiment status."""
 
     total_participants: int
     group_a_count: int
@@ -27,7 +27,7 @@ class ExperimentStatusResponse(BaseModel):
 
 
 class ParticipantResponse(BaseModel):
-    """Участник эксперимента."""
+    """Experiment participant."""
 
     user_id: str
     email: str | None
@@ -39,13 +39,13 @@ class ParticipantResponse(BaseModel):
 
 
 class GroupUpdateRequest(BaseModel):
-    """Запрос на смену группы."""
+    """Request to change group."""
 
     group: str
 
 
 class TimelineEventResponse(BaseModel):
-    """Событие в таймлайне сессии."""
+    """Event in the session timeline."""
 
     timestamp: datetime
     event_type: str

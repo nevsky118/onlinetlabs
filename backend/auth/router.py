@@ -40,7 +40,7 @@ async def register(
     req: RegisterRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Регистрирует нового пользователя. При занятом email возвращает 409."""
+    """Registers a new user. Returns 409 if the email is taken."""
     existing = await get_user_by_email(db, req.email)
     if existing:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
@@ -64,7 +64,7 @@ async def login(
     req: LoginRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Проверяет email и пароль. При неверных данных возвращает 401."""
+    """Verifies email and password. Returns 401 on invalid credentials."""
     user = await get_user_by_email(db, req.email)
     if not user or not user.password_hash:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
@@ -78,12 +78,12 @@ async def login(
 
 
 async def _stash_exchange_subject(request: FastAPIRequest) -> None:
-    """Кладёт email из тела в request.state до проверки лимита.
+    """Stashes the email from the body into request.state before the rate limit check.
 
-    Читает body через request.json() (Starlette кэширует его, поэтому повторный
-    разбор в ExchangeRequest берёт из кэша). Не объявляем body-параметр, иначе
-    FastAPI завернул бы два body-поля в {req: {...}} и сломал плоский контракт.
-    Нужно для per-user ключа лимита exchange_rate_limit_key.
+    Reads the body via request.json() (Starlette caches it, so the repeat
+    parse in ExchangeRequest reads from cache). We don't declare a body parameter,
+    otherwise FastAPI would wrap two body fields into {req: {...}} and break the flat contract.
+    Needed for the per-user rate limit key exchange_rate_limit_key.
     """
     try:
         body = await request.json()
@@ -101,12 +101,12 @@ async def exchange(
     _: None = Depends(require_internal_caller),
     __: None = Depends(_stash_exchange_subject),
 ):
-    """Обмен Better Auth сессии на backend-JWT.
+    """Exchanges a Better Auth session for a backend JWT.
 
-    Вызывающая сторона обязана передать Authorization Bearer INTERNAL_API_TOKEN.
-    Это подтверждает что запрос пришёл с Next.js сервера, который уже проверил
-    better-auth сессию. Идентификатор пользователя это email из доверенного канала,
-    backend выдаёт JWT на свой канонический User.id.
+    The caller must pass Authorization Bearer INTERNAL_API_TOKEN.
+    This confirms the request came from the Next.js server, which already verified
+    the better-auth session. The user identifier is the email from a trusted channel,
+    the backend issues a JWT against its canonical User.id.
     """
     user = await get_user_by_email(db, req.email)
     if not user:
@@ -134,7 +134,7 @@ async def delete_user_endpoint(
     db: AsyncSession = Depends(get_db),
     _: dict = Depends(require_admin),
 ):
-    """Удаляет пользователя по id (только для admin). При отсутствии возвращает 404."""
+    """Deletes a user by id (admin only). Returns 404 if not found."""
     deleted = await delete_user(db, user_id)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -146,10 +146,10 @@ async def github_callback(
     db: AsyncSession = Depends(get_db),
     _: None = Depends(require_internal_caller),
 ):
-    """Создаёт или обновляет пользователя по данным GitHub и возвращает его профиль.
+    """Creates or updates a user from GitHub data and returns their profile.
 
-    Только server-to-server. Вызывающая сторона обязана передать Authorization
-    Bearer INTERNAL_API_TOKEN, иначе любой браузер мог бы создавать пользователей.
+    Server-to-server only. The caller must pass Authorization
+    Bearer INTERNAL_API_TOKEN, otherwise any browser could create users.
     """
     user = await upsert_github_user(
         db=db,
@@ -169,7 +169,7 @@ async def activate(
     db: AsyncSession = Depends(get_db),
     _: None = Depends(require_internal_caller),
 ):
-    """Активирует аккаунт пользователя по email. Только server-to-server."""
+    """Activates a user's account by email. Server-to-server only."""
     user = await get_user_by_email(db, req.email)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")

@@ -1,16 +1,16 @@
-"""GNS3-исполнитель: действие студента → реальная консоль устройства / chat / idle.
+"""GNS3 executor: student action → real device console / chat / idle.
 
-КАК ЗАМЫКАЕТСЯ КОНТУР. Детектор режимов кормится провалами spec-проверок:
-`LabProgressObserver` периодически гоняет проверки лабы (`vpcs.show_ip`, `vpcs.ping` —
-они телнетятся в консоль узла) и эмитит `check_failing` / `check_retry` / `check_regressed`
-как поведенческие события event_type=error. Отсюда берутся `error_repeat_count`,
-`distinct_failing_actuals`, `cycles_failing_unchanged` — 4 из 6 правил детектора.
+HOW THE LOOP CLOSES. The regime detector is fed by spec-check failures:
+`LabProgressObserver` periodically runs the lab's checks (`vpcs.show_ip`, `vpcs.ping` —
+they telnet into the node's console) and emits `check_failing` / `check_retry` / `check_regressed`
+as behavioral events with event_type=error. From these come `error_repeat_count`,
+`distinct_failing_actuals`, `cycles_failing_unchanged` — 4 of the detector's 6 rules.
 
-Поэтому студент КОНФИГУРИРУЕТ устройство в консоли (верная команда → проверка проходит,
-неверная → падает), а узлы остаются запущенными: потушенный узел = недоступная консоль
-= проверки просто висят, и сигнала нет.
+That's why the student CONFIGURES the device in the console (correct command → check
+passes, wrong → fails), and the nodes stay running: a stopped node means an
+unreachable console, meaning checks just hang and there's no signal.
 
-Просьба о помощи идёт в реальный chat (+ ответ тьютора → полный диалог в чат-логе).
+The help request goes to the real chat (+ tutor's reply → a full dialogue in the chat log).
 """
 import asyncio
 
@@ -34,13 +34,13 @@ class GNS3Actor:
         self._help_gen = help_gen
         self._profile = profile
         self._save_user_message = save_user_message
-        self._save_assistant_message = save_assistant_message  # ответ тьютора → чат-лог
+        self._save_assistant_message = save_assistant_message  # tutor's reply → chat log
         self._tutor_reply = tutor_reply
         self._console_timeout = console_timeout
-        self._i = 0  # текущий узел: CORRECT продвигает, WRONG/REPEAT бьют в него же
-        self._ask_count = 0  # номер просьбы о помощи — фразы не повторяются дословно
-        # Что и где студент ввёл последним — узел и команда идут в диалог ПАРОЙ,
-        # иначе тьютор цитирует команду от одного узла, а говорит про другой.
+        self._i = 0  # current node: CORRECT advances it, WRONG/REPEAT hit the same one
+        self._ask_count = 0  # help-request number — phrases don't repeat verbatim
+        # What and where the student typed last — node and command travel together into
+        # the dialogue, otherwise the tutor quotes a command from one node while talking about another.
         self._last_cmd: str | None = None
         self._last_node: str | None = None
 
@@ -56,7 +56,7 @@ class GNS3Actor:
             msgs = [{"role": "user", "parts": [{"type": "text", "text": text}]}]
             async with self._db_factory() as db:
                 await self._save_user_message(db, self._backend_session_id, msgs)
-            # Ответ тьютора → полный диалог в чат-логе (LLM если доступен, иначе шаблон).
+            # Tutor's reply → full dialogue in the chat log (LLM if available, else template).
             if self._tutor_reply is not None and self._save_assistant_message is not None:
                 reply = await self._tutor_reply(text, context)
                 async with self._db_factory() as db:
@@ -66,17 +66,17 @@ class GNS3Actor:
                     )
         elif action == Action.IDLE:
             await asyncio.sleep(self._idle_seconds())
-        # SUBMIT: завершение обрабатывает оркестратор
+        # SUBMIT: completion is handled by the orchestrator
 
     def _help_context(self, base: dict | None) -> dict:
-        """Контекст диалога: узел, что студент ввёл, какая это по счёту просьба.
+        """Dialogue context: node, what the student typed, which request number this is.
 
-        Без него шаблоны вырождались в одну фразу, и чат-лог зацикливался.
+        Without it templates degenerated into one phrase and the chat log looped.
         """
         context = dict(base or {})
         context.setdefault("attempt", self._ask_count)
-        # Узел берём тот, на котором студент только что работал (а не «следующий»),
-        # чтобы процитированная команда и узел в диалоге относились к одному и тому же.
+        # Use the node the student just worked on (not the "next" one), so the
+        # quoted command and the node in the dialogue refer to the same thing.
         node = self._last_node
         if node is None and self._tasks:
             node = self._tasks[self._i % len(self._tasks)].node
@@ -87,17 +87,17 @@ class GNS3Actor:
         return context
 
     async def _configure(self, action: Action) -> None:
-        """Пишет конфиг в консоль узла. REPEAT_ERROR — та же неверная команда снова
-        (проверка падает с тем же actual → `check_failing` → error_repeat_count)."""
+        """Writes config to the node's console. REPEAT_ERROR resends the same wrong command
+        (check fails with the same actual → `check_failing` → error_repeat_count)."""
         if not self._tasks:
             return
         task = self._tasks[self._i % len(self._tasks)]
         if action == Action.CORRECT_CMD:
             cmd = task.correct_cmd
-            self._i += 1  # настроил узел — переходит к следующему
+            self._i += 1  # node configured — move to the next one
         else:
             cmd = task.wrong_cmd
-        self._last_cmd, self._last_node = cmd, task.node  # контекст диалога с тьютором
+        self._last_cmd, self._last_node = cmd, task.node  # context for the tutor dialogue
         await self._send_console(task.node, cmd)
 
     async def _send_console(self, node: str, cmd: str) -> None:
@@ -110,7 +110,7 @@ class GNS3Actor:
                 asyncio.open_connection(host, port), timeout=self._console_timeout
             )
         except Exception:
-            return  # консоль недоступна — прогон не роняем
+            return  # console unreachable — don't fail the run
         try:
             writer.write((cmd + "\r\n").encode())
             await writer.drain()
@@ -124,5 +124,5 @@ class GNS3Actor:
                 pass
 
     def _idle_seconds(self) -> float:
-        """Пауза простоя: медленнее у низкого темпа."""
+        """Idle pause: slower for lower pace."""
         return 0.1 + (1.0 - self._profile.pace)

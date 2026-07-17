@@ -1,1 +1,1 @@
-"""Управление: критерий и вывод порогов."""
+"""Control: criterion and threshold derivation."""

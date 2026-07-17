@@ -1,4 +1,4 @@
-"""Модель события активности ИИ-агентов для observability."""
+"""AI agent activity event model for observability."""
 
 from datetime import UTC, datetime
 from enum import Enum
@@ -47,7 +47,7 @@ class AgentActivityEvent(BaseModel):
 
 
 def event_struggle_detected(session_id, user_id, *, struggle_type, confidence, crossed):
-    """Событие: классификатор определил затруднение."""
+    """Event: the classifier detected a struggle."""
     return AgentActivityEvent(
         session_id=session_id,
         user_id=user_id,
@@ -60,7 +60,7 @@ def event_struggle_detected(session_id, user_id, *, struggle_type, confidence, c
 
 
 def event_model_selected(session_id, user_id, *, model_id, provider):
-    """Событие: выбрана модель для генерации."""
+    """Event: a model was selected for generation."""
     return AgentActivityEvent(
         session_id=session_id,
         user_id=user_id,
@@ -74,7 +74,7 @@ def event_model_selected(session_id, user_id, *, model_id, provider):
 def event_mcp_context_fetched(
     session_id, user_id, *, component_count, error_count, verdict_summary
 ):
-    """Событие: контекст MCP получен."""
+    """Event: MCP context was fetched."""
     return AgentActivityEvent(
         session_id=session_id,
         user_id=user_id,
@@ -90,7 +90,7 @@ def event_mcp_context_fetched(
 
 
 def event_tool_call(session_id, user_id, *, name, args_preview):
-    """Событие: вызов инструмента."""
+    """Event: tool call."""
     return AgentActivityEvent(
         session_id=session_id,
         user_id=user_id,
@@ -102,7 +102,7 @@ def event_tool_call(session_id, user_id, *, name, args_preview):
 
 
 def event_tool_result(session_id, user_id, *, name, result_preview, success):
-    """Событие: результат инструмента."""
+    """Event: tool result."""
     return AgentActivityEvent(
         session_id=session_id,
         user_id=user_id,
@@ -114,7 +114,7 @@ def event_tool_result(session_id, user_id, *, name, result_preview, success):
 
 
 def event_fallback(session_id, user_id, *, original_model, fallback_model, reason):
-    """Событие: переключение на резервную модель."""
+    """Event: switched to a fallback model."""
     return AgentActivityEvent(
         session_id=session_id,
         user_id=user_id,
@@ -130,7 +130,7 @@ def event_fallback(session_id, user_id, *, original_model, fallback_model, reaso
 
 
 def event_response_finished(session_id, user_id, *, model_id, total_tokens, stop_reason):
-    """Событие: ответ завершён."""
+    """Event: response finished."""
     return AgentActivityEvent(
         session_id=session_id,
         user_id=user_id,
@@ -142,7 +142,7 @@ def event_response_finished(session_id, user_id, *, model_id, total_tokens, stop
 
 
 def event_cooldown_skip(session_id, user_id, *, reason, remaining_seconds):
-    """Событие: интервенция пропущена из-за cooldown."""
+    """Event: intervention skipped due to cooldown."""
     return AgentActivityEvent(
         session_id=session_id,
         user_id=user_id,
@@ -155,7 +155,7 @@ def event_cooldown_skip(session_id, user_id, *, reason, remaining_seconds):
 
 
 def event_agent_invoked(session_id, user_id, *, agent_name, model_id, parameters_preview):
-    """Событие: агент вызван."""
+    """Event: agent invoked."""
     return AgentActivityEvent(
         session_id=session_id,
         user_id=user_id,
@@ -172,7 +172,7 @@ def event_agent_invoked(session_id, user_id, *, agent_name, model_id, parameters
 
 
 def event_hint_generated(session_id, user_id, *, level, hint_type, model_used):
-    """Событие: подсказка сгенерирована."""
+    """Event: hint generated."""
     return AgentActivityEvent(
         session_id=session_id,
         user_id=user_id,
@@ -185,7 +185,7 @@ def event_hint_generated(session_id, user_id, *, level, hint_type, model_used):
 
 
 def event_dispatched(session_id, user_id, *, intervention_type, target_agent, status):
-    """Событие: интервенция отправлена пользователю."""
+    """Event: intervention dispatched to the user."""
     return AgentActivityEvent(
         session_id=session_id,
         user_id=user_id,
@@ -202,7 +202,7 @@ def event_dispatched(session_id, user_id, *, intervention_type, target_agent, st
 
 
 def event_error(session_id, user_id, *, source, error, agent=None):
-    """Событие: ошибка обработки."""
+    """Event: processing error."""
     return AgentActivityEvent(
         session_id=session_id,
         user_id=user_id,

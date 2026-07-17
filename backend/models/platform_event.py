@@ -9,7 +9,7 @@ from models.base import Base
 
 
 class PlatformEvent(Base):
-    """Событие платформы по имени с привязкой к пользователю, сессии и устройству."""
+    """A named platform event tied to a user, session, and device."""
 
     __tablename__ = "platform_events"
     __table_args__ = (

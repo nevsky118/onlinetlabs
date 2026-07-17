@@ -1,4 +1,4 @@
-"""Схемы ответов admin-эндпоинтов."""
+"""Response schemas for admin endpoints."""
 
 from pydantic import BaseModel
 

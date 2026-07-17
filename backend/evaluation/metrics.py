@@ -1,4 +1,4 @@
-"""Метрики оценки идентификатора в терминах управления: задержка, ложные/час, recall, CI."""
+"""Identifier evaluation metrics in control terms: latency, false/hour, recall, CI."""
 
 import random
 import statistics
@@ -49,7 +49,7 @@ def bootstrap_ci(values: list[float], n_resamples: int = 1000, seed: int = 0):
         sample = [rng.choice(values) for _ in values]
         meds.append(statistics.median(sample))
     meds.sort()
-    # перцентильные индексы по базе (n-1), верхний клампим в границы
+    # percentile indices on the (n-1) base, clamp the upper one to bounds
     lo = meds[int(0.025 * (n_resamples - 1))]
     hi = meds[min(n_resamples - 1, int(0.975 * (n_resamples - 1)))]
     return (lo, hi)
@@ -58,7 +58,7 @@ def bootstrap_ci(values: list[float], n_resamples: int = 1000, seed: int = 0):
 def _p90(values: list[float]) -> float | None:
     if not values:
         return None
-    # Hyndman-Fan Type 7 (numpy/R default), см. evaluation.stats.percentile
+    # Hyndman-Fan Type 7 (numpy/R default), see evaluation.stats.percentile
     return percentile(values, 90)
 
 
@@ -86,14 +86,14 @@ def evaluate(pairs) -> "DetectionMetrics":
 def confusion_matrix(
     pairs: list[tuple[LabeledScenario, Detection]],
 ) -> dict[ProcessRegime, dict[ProcessRegime, int]]:
-    """Матрица ошибок 5×5 (строки=truth, столбцы=detected; None-детект→PRODUCTIVE)."""
+    """5x5 confusion matrix (rows=truth, columns=detected; None-detection -> PRODUCTIVE)."""
     regimes = list(ProcessRegime)
     cm: dict[ProcessRegime, dict[ProcessRegime, int]] = {
         r: dict.fromkeys(regimes, 0) for r in regimes
     }
     for scn, d in pairs:
         truth = scn.truth_regime
-        # нет детекта → PRODUCTIVE (не распознан)
+        # no detection -> PRODUCTIVE (unrecognized)
         detected = (
             d.detected_regime
             if (d.detected and d.detected_regime is not None)
@@ -105,7 +105,7 @@ def confusion_matrix(
 
 @dataclass
 class OperatingPoint:
-    """Точка рабочей кривой идентификатора при заданном пороге T_k."""
+    """A point on the identifier's operating curve at a given threshold T_k."""
 
     t_k: float
     latency_median: float | None
@@ -115,12 +115,12 @@ class OperatingPoint:
 
 
 def operating_curve(scenarios, t_k_grid, config, costs) -> list[OperatingPoint]:
-    """Рабочая кривая: метрики + J как функция порога dwell T_k."""
+    """Operating curve: metrics + J as a function of the dwell threshold T_k."""
     from control.criterion import BAD_REGIMES
     from control.derive_thresholds import total_J
     from evaluation.harness import run_identifier
 
-    # строим сессии однократно (структура не зависит от t_k)
+    # build sessions once (structure doesn't depend on t_k)
     sessions: list[dict] = []
     for scn in scenarios:
         samples: list[dict] = []
@@ -147,7 +147,7 @@ def operating_curve(scenarios, t_k_grid, config, costs) -> list[OperatingPoint]:
 
 
 def j_optimal(curve: list[OperatingPoint]) -> OperatingPoint:
-    """Точка кривой с минимальным J."""
+    """The curve point with minimal J."""
     return min(curve, key=lambda p: p.J)
 
 
@@ -155,20 +155,20 @@ def first_match_diagnostics(
     scenarios: list[LabeledScenario],
     config,
 ) -> dict:
-    """Диагностика мульти-совпадений: multi_match_rate, order_sensitive_rate, total_firing_snapshots.
+    """Multi-match diagnostics: multi_match_rate, order_sensitive_rate, total_firing_snapshots.
 
-    Для каждого снапшота считает, сколько предикатов STRUGGLE_RULES срабатывает.
-    multi_match ≥2 → порядок правил определяет результат (order-sensitive).
-    Доли считаются от firing-снапшотов (где ≥1 правило сработало).
+    For each snapshot, counts how many STRUGGLE_RULES predicates fire.
+    multi_match >=2 -> rule order determines the result (order-sensitive).
+    Rates are computed over firing snapshots (where >=1 rule fired).
     """
-    from agents.analytics.agent import STRUGGLE_RULES  # отложенный импорт — нет цикла
+    from agents.analytics.agent import STRUGGLE_RULES  # deferred import -- avoids a cycle
 
-    firing = 0  # снапшотов, где сработало ≥1 правило
-    multi = 0  # снапшотов, где сработало ≥2 правил
+    firing = 0  # snapshots where >=1 rule fired
+    multi = 0  # snapshots where >=2 rules fired
 
     for scn in scenarios:
         for snap in scn.snapshots:
-            # каждый элемент STRUGGLE_RULES — кортеж (predicate, stype, interv, conf_fn)
+            # each STRUGGLE_RULES element is a tuple (predicate, stype, interv, conf_fn)
             n_match = sum(1 for pred, *_ in STRUGGLE_RULES if pred(snap.features, config))
             if n_match >= 1:
                 firing += 1
@@ -179,6 +179,6 @@ def first_match_diagnostics(
     return {
         "total_firing_snapshots": firing,
         "multi_match_rate": rate,
-        # order-sensitive ⟺ ≥2 предиката сработало (first-match выбирает первый из них)
+        # order-sensitive iff >=2 predicates fired (first-match picks the first of them)
         "order_sensitive_rate": rate,
     }

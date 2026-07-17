@@ -26,7 +26,7 @@ from tools.env_cipher import decrypt_file
 
 logger = logging.getLogger(__name__)
 
-# Обязательные URL-ключи — без них запуск невозможен.
+# Required URL keys — startup is impossible without them.
 _REQUIRED_URL_KEYS = (
     "FRONTEND_URL",
     "GNS3_SERVICE_URL",
@@ -37,13 +37,13 @@ _REQUIRED_URL_KEYS = (
 
 
 def _str2bool(value: str) -> bool:
-    """Преобразует строковое значение из env в булево."""
+    """Converts a string value from env into a boolean."""
     return value.strip().lower() in ("true", "1", "yes")
 
 
 def build_agents_config(values: dict[str, str | None]) -> AgentsConfig:
-    """Собирает AgentsConfig из env: провайдеры из секретов, каталог из кода, фильтр по кредам."""
-    # Back-compat: старые AGENTS_* без новых ключей → одиночный провайдер.
+    """Builds AgentsConfig from env: providers from secrets, catalog from code, filtered by creds."""
+    # Back-compat: old AGENTS_* without the new keys → single provider.
     if values.get("AGENTS_PROVIDER") and not values.get("AGENTS_CHAT_MODEL"):
         provider = LlmProvider(values["AGENTS_PROVIDER"])
         ref = provider.value
@@ -136,14 +136,14 @@ def build_agents_config(values: dict[str, str | None]) -> AgentsConfig:
 
 
 def _build(values: dict[str, str | None]) -> ConfigModel:
-    """Собирает и валидирует корневую конфигурацию из словаря переменных окружения."""
-    # Fail-fast: проверяем все обязательные URL-ключи сразу.
+    """Builds and validates the root configuration from a dict of environment variables."""
+    # Fail-fast: check all required URL keys upfront.
     missing = [k for k in _REQUIRED_URL_KEYS if not values.get(k)]
     if missing:
         raise ValueError(f"Missing required env vars: {', '.join(missing)}")
 
     def _req(key: str) -> str:
-        """Возвращает обязательную переменную окружения или падает с KeyError, если её нет."""
+        """Returns a required environment variable or raises KeyError if it's missing."""
         v = values.get(key)
         if v is None:
             raise KeyError(f"Required env var not set: {key}")
@@ -169,7 +169,7 @@ def _build(values: dict[str, str | None]) -> ConfigModel:
     agents = build_agents_config(values)
     openclaw = OpenClawConfig(
         enabled=_str2bool(values.get("OPENCLAW_ENABLED", "false")),
-        base_url=values.get("OPENCLAW_BASE_URL") or "",  # Task 2: поле станет str|None
+        base_url=values.get("OPENCLAW_BASE_URL") or "",  # Task 2: field will become str|None
         token=values.get("OPENCLAW_TOKEN") or None,
         model=values.get("OPENCLAW_MODEL", "openclaw"),
         timeout_seconds=float(values.get("OPENCLAW_TIMEOUT_SECONDS", "30")),
@@ -205,7 +205,7 @@ def _build(values: dict[str, str | None]) -> ConfigModel:
 
 
 def _resolve_env_file() -> Path | None:
-    """Определяет путь к env-файлу из ENV_FILE. Возвращает None, если переменная не задана."""
+    """Resolves the path to the env file from ENV_FILE. Returns None if the variable isn't set."""
     env_file_name = os.getenv("ENV_FILE")
     if env_file_name is None:
         return None
@@ -219,9 +219,9 @@ def _resolve_env_file() -> Path | None:
 
 @lru_cache(maxsize=1)
 def load_settings() -> ConfigModel:
-    """Загружает конфигурацию из окружения или env-файла, расшифровывая .aes при необходимости.
+    """Loads config from the environment or an env file, decrypting .aes if needed.
 
-    Результат кэшируется на всё время жизни процесса.
+    The result is cached for the lifetime of the process.
     """
     env_path = _resolve_env_file()
     if env_path is None:
@@ -236,12 +236,12 @@ def load_settings() -> ConfigModel:
 
 
 class _LazySettings:
-    """Ленивый прокси к конфигурации. Загружает настройки при первом обращении к атрибуту."""
+    """Lazy proxy to the config. Loads settings on first attribute access."""
 
     _instance: ConfigModel | None = None
 
     def __getattr__(self, name: str):
-        """Возвращает атрибут конфигурации, загружая её при первом доступе."""
+        """Returns a config attribute, loading it on first access."""
         if _LazySettings._instance is None:
             _LazySettings._instance = load_settings()
         return getattr(_LazySettings._instance, name)

@@ -12,14 +12,14 @@ _log = structlog.get_logger("request")
 
 
 class RequestIDMiddleware(BaseHTTPMiddleware):
-    """Middleware, проставляющий X-Request-ID для каждого запроса и логирующий его обработку."""
+    """Middleware that stamps X-Request-ID on every request and logs its handling."""
 
     async def dispatch(self, request: Request, call_next):
-        """Привязывает request_id к structlog-контексту, обрабатывает запрос и возвращает заголовок в ответе."""
+        """Binds request_id to the structlog context, handles the request, and returns the header in the response."""
         rid = request.headers.get("x-request-id") or uuid.uuid4().hex
-        # structlog contextvars живут на task-локальном уровне, но воркер
-        # переиспользует одну и ту же задачу для последующих запросов.
-        # Чистим явно, чтобы между запросами не утекали user_id и session_id.
+        # structlog contextvars live at the task-local level, but the worker
+        # reuses the same task for subsequent requests.
+        # Clear explicitly so user_id and session_id don't leak between requests.
         structlog.contextvars.clear_contextvars()
         structlog.contextvars.bind_contextvars(
             request_id=rid, path=request.url.path, method=request.method

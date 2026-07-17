@@ -9,7 +9,7 @@ from models.base import Base
 
 
 class ChatMessage(Base):
-    """Сообщение чата в рамках учебной сессии с ролью, частями и расходом токенов."""
+    """A chat message within a learning session with role, parts, and token usage."""
 
     __tablename__ = "chat_messages"
 

@@ -1,7 +1,7 @@
-"""WebSocket gateway — управление соединениями и доставка интервенций.
+"""WebSocket gateway — connection management and intervention delivery.
 
-Объединяет per-session connections для интервенций и глобальный реестр всех
-активных сокетов для graceful shutdown (forward gns3 events + интервенции).
+Combines per-session connections for interventions with a global registry
+of all active sockets for graceful shutdown (forward gns3 events + interventions).
 """
 
 from __future__ import annotations
@@ -18,17 +18,17 @@ _active_connections: set[WebSocket] = set()
 
 
 def register_connection(ws: WebSocket) -> None:
-    """Добавляет сокет в глобальный реестр активных соединений."""
+    """Adds the socket to the global registry of active connections."""
     _active_connections.add(ws)
 
 
 def unregister_connection(ws: WebSocket) -> None:
-    """Убирает сокет из глобального реестра активных соединений."""
+    """Removes the socket from the global registry of active connections."""
     _active_connections.discard(ws)
 
 
 async def close_all_connections(timeout: float = 5.0) -> None:
-    """Закрыть все активные клиентские WS с кодом 1012 (service restart)."""
+    """Closes all active client WS connections with code 1012 (service restart)."""
     for ws in list(_active_connections):
         try:
             await ws.close(code=1012)
@@ -39,21 +39,21 @@ async def close_all_connections(timeout: float = 5.0) -> None:
 
 
 class WebSocketGateway:
-    """Управление WebSocket-соединениями по session_id для интервенций и наблюдений."""
+    """Manages WebSocket connections by session_id for interventions and observations."""
 
     def __init__(self):
-        """Хранит словарь активных WebSocket-соединений по идентификатору сессии."""
+        """Stores a dict of active WebSocket connections by session identifier."""
         self._connections: dict[str, WebSocket] = {}
         self._observers: dict[str, set[WebSocket]] = {}
 
     async def connect(self, session_id: str, websocket: WebSocket) -> None:
-        """Зарегистрировать WebSocket для сессии."""
+        """Registers a WebSocket for the session."""
         await websocket.accept()
         self._connections[session_id] = websocket
         register_connection(websocket)
 
     def disconnect(self, session_id: str, websocket: WebSocket | None = None) -> None:
-        """Удалить WebSocket сессии. Если передан websocket, удаляет только совпадающий сокет."""
+        """Removes the session's WebSocket. If websocket is given, removes only the matching socket."""
         current = self._connections.get(session_id)
         if current is None:
             return
@@ -63,7 +63,7 @@ class WebSocketGateway:
         unregister_connection(current)
 
     async def send_intervention(self, session_id: str, intervention_data: dict) -> None:
-        """Отправить интервенцию студенту через WebSocket."""
+        """Sends an intervention to the student over WebSocket."""
         websocket = self._connections.get(session_id)
         if not websocket:
             logger.warning("WebSocket не найден для сессии %s", session_id)
@@ -83,12 +83,12 @@ class WebSocketGateway:
             self.disconnect(session_id)
 
     def connect_observer(self, session_id: str, websocket: WebSocket) -> None:
-        """Подключить наблюдателя для события активности сессии."""
+        """Connects an observer for the session's activity events."""
         self._observers.setdefault(session_id, set()).add(websocket)
         register_connection(websocket)
 
     def disconnect_observer(self, session_id: str, websocket: WebSocket) -> None:
-        """Отключить наблюдателя от сессии."""
+        """Disconnects the observer from the session."""
         observers = self._observers.get(session_id)
         if observers:
             observers.discard(websocket)
@@ -97,10 +97,10 @@ class WebSocketGateway:
         unregister_connection(websocket)
 
     def observers(self, session_id: str) -> set[WebSocket]:
-        """Вернуть множество наблюдателей сессии (пусто, если никого)."""
+        """Returns the set of the session's observers (empty if none)."""
         return self._observers.get(session_id, set())
 
     @property
     def active_sessions(self) -> list[str]:
-        """Список активных session_id."""
+        """List of active session_id values."""
         return list(self._connections.keys())

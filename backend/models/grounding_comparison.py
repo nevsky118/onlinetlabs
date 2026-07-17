@@ -8,10 +8,10 @@ from models.base import Base
 
 
 class GroundingComparison(Base):
-    """Пара вариантов помощи (с живым MCP-контекстом vs только текст задачи).
+    """A pair of help variants (with live MCP context vs. task text only).
 
-    Для слепой экспертной оценки: изолирует единственную новизну «заземление в
-    живом состоянии среды» метрикой, которую нельзя вычислить из правил.
+    For blind expert evaluation: isolates the single novelty of "grounding in
+    live environment state" with a metric that can't be computed from the rules.
     """
 
     __tablename__ = "grounding_comparisons"

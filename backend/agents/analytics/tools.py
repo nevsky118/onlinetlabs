@@ -1,4 +1,4 @@
-"""Инструменты батч-аналитики прогресса по StepAttempt."""
+"""Batch progress analytics tools over StepAttempt."""
 
 from collections import Counter, defaultdict
 
@@ -8,14 +8,14 @@ from agents.analytics.models import StudentMetrics
 
 
 class AnalyticsTools:
-    """Инструменты для аналитики прогресса студента."""
+    """Tools for student progress analytics."""
 
     def __init__(self, db: AsyncSession | None):
-        """Сохраняет сессию БД для запросов попыток и прогресса."""
+        """Stores the DB session for querying attempts and progress."""
         self._db = db
 
     async def get_attempts(self, user_id: str, lab_slug: str) -> list:
-        """Получить все StepAttempt для студента по лабе."""
+        """Get all StepAttempt records for a student on a lab."""
         from sqlalchemy import select
 
         from models.progress import StepAttempt
@@ -29,7 +29,7 @@ class AnalyticsTools:
         return list(result.scalars().all())
 
     def compute_metrics(self, attempts: list) -> StudentMetrics:
-        """Вычислить метрики из списка StepAttempt."""
+        """Compute metrics from a list of StepAttempt."""
         if not attempts:
             return StudentMetrics(
                 total_attempts=0,
@@ -42,7 +42,7 @@ class AnalyticsTools:
         successes = sum(1 for a in attempts if a.result == "pass")
         success_rate = successes / total
 
-        # Среднее время
+        # Average time
         times = []
         for a in attempts:
             if a.started_at and a.ended_at:
@@ -50,7 +50,7 @@ class AnalyticsTools:
                 times.append(delta)
         avg_time = sum(times) / len(times) if times else 0.0
 
-        # Struggling steps: >2 последовательных неудач на одном шаге
+        # Struggling steps: >2 consecutive failures on the same step
         consecutive_fails: dict[str, int] = defaultdict(int)
         max_consecutive: dict[str, int] = defaultdict(int)
 
@@ -73,7 +73,7 @@ class AnalyticsTools:
         )
 
     def detect_error_patterns(self, attempts: list) -> list[str]:
-        """Найти повторяющиеся паттерны ошибок (>= 2 повторений)."""
+        """Find recurring error patterns (>= 2 repetitions)."""
         errors = [a.error_details for a in attempts if a.error_details is not None]
         counts = Counter(errors)
         return [err for err, count in counts.items() if count >= 2]

@@ -1,4 +1,4 @@
-"""Pydantic-схемы для validation_runs API."""
+"""Pydantic schemas for the validation_runs API."""
 
 from datetime import datetime
 
@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 
 class ValidationRunListItem(BaseModel):
-    """Элемент списка прогонов: статус, длительность и сводка по проверкам."""
+    """A run list item: status, duration, and checks summary."""
 
     id: str
     lab_slug: str
@@ -19,7 +19,7 @@ class ValidationRunListItem(BaseModel):
 
 
 class ValidationRunDetail(BaseModel):
-    """Детальный прогон валидации с полным списком шагов."""
+    """A detailed validation run with the full list of steps."""
 
     id: str
     lab_slug: str

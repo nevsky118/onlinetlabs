@@ -1,4 +1,4 @@
-"""Структурное логирование через structlog с JSON- или консольным форматтером."""
+"""Structured logging via structlog with a JSON or console formatter."""
 
 import logging
 import sys
@@ -11,11 +11,11 @@ _CONSOLE_ENVIRONMENTS = {"local", "development"}
 def configure_logging(
     service_name: str, level: str = "INFO", environment: str = "production"
 ) -> None:
-    """Настраивает structlog и stdlib-логирование, пробрасывает uvicorn.error в root.
+    """Configures structlog and stdlib logging, propagates uvicorn.error to root.
 
-    Рендерер зависит от окружения: цветной консольный в local/development,
-    JSON — иначе. uvicorn.access не пробрасывается и не пишет: каждый запрос
-    уже логирует RequestIDMiddleware одной строкой с request_id и duration.
+    The renderer depends on the environment: colored console in local/development,
+    JSON otherwise. uvicorn.access is not propagated and doesn't write: every request
+    is already logged by RequestIDMiddleware as one line with request_id and duration.
     """
     shared_processors = [
         structlog.contextvars.merge_contextvars,
@@ -51,15 +51,15 @@ def configure_logging(
     root = logging.getLogger()
     root.handlers = [handler]
     root.setLevel(getattr(logging, level.upper()))
-    # uvicorn/uvicorn.error пробрасываем в root, иначе форматтер к ним не применится.
+    # Propagate uvicorn/uvicorn.error to root, otherwise the formatter won't apply to them.
     for name in ("uvicorn", "uvicorn.error"):
         lg = logging.getLogger(name)
         lg.handlers = []
         lg.propagate = True
-    # uvicorn.access отключаем: с ним каждый запрос логировался бы дважды
-    # (свой access-лог + request_handled из RequestIDMiddleware). Dockerfile
-    # запускает uvicorn с --no-access-log; propagate=False — страховка на
-    # случай прямого запуска uvicorn без этого флага.
+    # Disable uvicorn.access: with it, every request would be logged twice
+    # (its own access log + request_handled from RequestIDMiddleware). The Dockerfile
+    # runs uvicorn with --no-access-log; propagate=False is a safeguard in
+    # case uvicorn is run directly without that flag.
     access_logger = logging.getLogger("uvicorn.access")
     access_logger.handlers = []
     access_logger.propagate = False

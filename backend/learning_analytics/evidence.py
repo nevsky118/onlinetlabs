@@ -1,4 +1,4 @@
-"""D4: запись сырых evidence-снимков для слепой разметки (disjoint от признаков)."""
+"""D4: recording raw evidence snapshots for blind annotation (disjoint from features)."""
 import json
 from datetime import UTC, datetime
 from uuid import uuid4
@@ -12,10 +12,10 @@ async def capture_snapshot(
     db: AsyncSession, session_id: str, user_id: str, lab_slug: str,
     kind: str, payload: dict,
 ) -> None:
-    """Записать сырой evidence-снимок.
+    """Record a raw evidence snapshot.
 
-    payload приводится к JSON-safe (`default=str` покрывает datetime и пр.),
-    чтобы произвольные MCP-наблюдения сериализовались без падения.
+    payload is coerced to JSON-safe (`default=str` covers datetime etc.)
+    so arbitrary MCP observations serialize without failing.
     """
     safe = json.loads(json.dumps(payload, default=str))
     db.add(SessionEvidenceSnapshot(

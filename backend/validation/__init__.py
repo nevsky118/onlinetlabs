@@ -1,1 +1,1 @@
-"""Auto-валидация лаб: YAML-driven checks → SSE stream."""
+"""Lab auto-validation: YAML-driven checks -> SSE stream."""

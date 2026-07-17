@@ -1,4 +1,4 @@
-"""Прогон идентификатора П1 (полный конвейер feature→rule→dwell) по сценарию при пороге T_k."""
+"""Runs the P1 identifier (full feature->rule->dwell pipeline) over a scenario at threshold T_k."""
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -8,7 +8,7 @@ from config.config_model import LearningAnalyticsConfig
 from evaluation.scenarios import LabeledScenario
 from learning_analytics.process_state import DwellTracker, ProcessRegime, analysis_to_regime, is_bad
 
-# Фикс. база для перевода snap.ts (float, сек) → datetime
+# Fixed base for converting snap.ts (float, seconds) -> datetime
 _BASE = datetime(2026, 1, 1, tzinfo=UTC)
 
 
@@ -22,7 +22,7 @@ class Detection:
 def run_identifier(
     scenario: LabeledScenario, t_k: float, config: LearningAnalyticsConfig
 ) -> Detection:
-    """Прогоняет полный конвейер по снапшотам сценария при пороге dwell T_k."""
+    """Runs the full pipeline over the scenario's snapshots at dwell threshold T_k."""
     tracker = DwellTracker()
     for snap in scenario.snapshots:
         result = identify_regime(snap.features, config)

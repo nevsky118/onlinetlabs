@@ -1,1 +1,1 @@
-# Admin API: эндпоинты дашборда (только для admin).
+# Admin API: dashboard endpoints (admin only).

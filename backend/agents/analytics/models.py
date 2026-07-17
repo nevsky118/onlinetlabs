@@ -1,4 +1,4 @@
-"""Модели identify_regime и батч-аналитики прогресса."""
+"""Models for identify_regime and batch progress analytics."""
 
 from datetime import datetime
 from enum import Enum
@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 
 class StudentMetrics(BaseModel):
-    """Метрики студента по лабе."""
+    """Student metrics for a lab."""
 
     total_attempts: int
     success_rate: float = Field(ge=0.0, le=1.0)
@@ -16,7 +16,7 @@ class StudentMetrics(BaseModel):
 
 
 class DifficultyRecommendation(BaseModel):
-    """Рекомендация по сложности."""
+    """Difficulty recommendation."""
 
     current_difficulty: str
     recommended_difficulty: str
@@ -26,7 +26,7 @@ class DifficultyRecommendation(BaseModel):
 
 
 class DifficultyLevel(str, Enum):
-    """Уровни сложности."""
+    """Difficulty levels."""
 
     BEGINNER = "beginner"
     INTERMEDIATE = "intermediate"
@@ -34,7 +34,7 @@ class DifficultyLevel(str, Enum):
 
 
 class StruggleType(str, Enum):
-    """Типы затруднений студента: застрял на шаге, повтор ошибок, простой, метод проб и ошибок."""
+    """Student struggle types: stuck on step, repeating errors, idle, trial and error."""
 
     STUCK_ON_STEP = "stuck_on_step"
     REPEATING_ERRORS = "repeating_errors"
@@ -43,7 +43,7 @@ class StruggleType(str, Enum):
 
 
 class SuggestedIntervention(str, Enum):
-    """Рекомендуемые интервенции: подсказка, тьютор, упрощение или ничего."""
+    """Suggested interventions: hint, tutor, simplify, or none."""
 
     HINT = "hint"
     TUTOR = "tutor"
@@ -52,38 +52,38 @@ class SuggestedIntervention(str, Enum):
 
 
 class SessionFeatures(BaseModel):
-    """Вычисленные фичи сессии на момент времени."""
+    """Computed session features at a point in time."""
 
-    # Темпоральные
+    # Temporal
     avg_inter_action_latency: float
     action_rate_slope: float
     idle_periods: int
     total_active_time: float
     time_on_current_step: float
-    # Последовательные
+    # Sequential
     error_repeat_count: int
     error_repeat_rate: float
     action_sequence_entropy: float
     undo_redo_ratio: float
-    # Ошибки
+    # Errors
     error_frequency: float
     error_frequency_slope: float
     unique_error_types: int
     dominant_error: str | None
-    # Прогресс
+    # Progress
     components_touched: int
     action_diversity: float
     events_total: int
-    # Признаки spec-проверок
+    # Spec-check features
     distinct_failing_actuals: int = 0
     cycles_failing_unchanged: int = 0
-    # Мета
+    # Meta
     session_id: str
     computed_at: datetime
 
 
 class AnalyticsResult(BaseModel):
-    """Результат аналитики сессии в реальном времени."""
+    """Real-time session analytics result."""
 
     difficulty_recommendation: DifficultyRecommendation
     struggle_detected: bool

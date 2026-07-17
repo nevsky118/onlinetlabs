@@ -1,6 +1,6 @@
-"""Сборщик простаивающих сессий. Останавливает узлы после 30 минут без активности.
+"""Idle session reclaimer. Stops nodes after 30 minutes of inactivity.
 
-Освобождает RAM на gns3-server. Студент может перезапустить узлы при возврате.
+Frees RAM on gns3-server. The student can restart nodes upon return.
 """
 
 import asyncio
@@ -16,12 +16,12 @@ from observability.metrics import idle_reclaimed_counter
 logger = logging.getLogger(__name__)
 
 IDLE_THRESHOLD_MIN = 30
-# Раз в N секунд сборщик закрывает сессии без активности более 30 минут.
+# Every N seconds, the reclaimer closes sessions inactive for more than 30 minutes.
 RECLAIM_INTERVAL_SEC = 300
 
 
 async def idle_reclaim_loop(gns3_client) -> None:
-    """Фоновый цикл, периодически освобождающий простаивающие сессии."""
+    """Background loop that periodically reclaims idle sessions."""
     while True:
         try:
             await asyncio.sleep(RECLAIM_INTERVAL_SEC)
@@ -33,7 +33,7 @@ async def idle_reclaim_loop(gns3_client) -> None:
 
 
 async def _reclaim_idle_sessions(gns3_client) -> None:
-    """Останавливает узлы активных сессий без активности дольше порога простоя."""
+    """Stops nodes of active sessions inactive longer than the idle threshold."""
     cutoff = datetime.now(UTC) - timedelta(minutes=IDLE_THRESHOLD_MIN)
     async with async_session() as db:
         result = await db.execute(select(LearningSession).where(LearningSession.status == "active"))
@@ -66,7 +66,7 @@ async def _reclaim_idle_sessions(gns3_client) -> None:
 
 
 async def _last_activity_at(gns3_client, session) -> datetime | None:
-    """Возвращает время последней активности сессии в gns3 или None если её нет."""
+    """Returns the session's last activity time in gns3, or None if there is none."""
     gns3_sid = (session.meta or {}).get("gns3_service_session_id")
     if not gns3_sid:
         return None

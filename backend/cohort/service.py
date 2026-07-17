@@ -1,4 +1,4 @@
-"""Сборка LearnerOutcome из БД и расчёт когортных метрик. Единый источник (эндпоинт/скрипт/вью)."""
+"""Building LearnerOutcome from the DB and computing cohort metrics. A single source (endpoint/script/view)."""
 
 from sqlalchemy import select
 
@@ -11,7 +11,7 @@ from models.session import LearningSession
 
 
 async def _skill_of(db, lab_slug: str, cache: dict) -> str | None:
-    """Кешированный skill_tag по slug лабы."""
+    """Cached skill_tag by lab slug."""
     if lab_slug not in cache:
         lab = (await db.execute(select(Lab).where(Lab.slug == lab_slug))).scalar_one_or_none()
         cache[lab_slug] = skill_tag(lab) if lab else None
@@ -21,7 +21,7 @@ async def _skill_of(db, lab_slug: str, cache: dict) -> str | None:
 async def _sessions_for_skill(
     sessions: list, user_id: str, skill: str, skill_cache: dict, db
 ) -> list:
-    """Сессии пользователя по навыку (без await в list comprehension)."""
+    """User's sessions for a skill (no await inside a list comprehension)."""
     result = []
     for s in sessions:
         if s.user_id != user_id:
@@ -33,20 +33,20 @@ async def _sessions_for_skill(
 
 
 async def compute_cohort_metrics(db, horizon_seconds: float, by_arm: bool = False) -> dict:
-    """Строит LearnerOutcome по (user, skill) из БД и агрегирует когортные метрики."""
+    """Builds LearnerOutcome per (user, skill) from the DB and aggregates cohort metrics."""
     skill_cache: dict = {}
     progresses = (await db.execute(select(LabProgress))).scalars().all()
     sessions = (await db.execute(select(LearningSession))).scalars().all()
     metrics = (await db.execute(select(ExperimentMetrics))).scalars().all()
 
-    # индекс: (user_id, lab_slug) → первая запись ExperimentMetrics
+    # index: (user_id, lab_slug) -> the first ExperimentMetrics record
     em_by_user_lab: dict = {}
     for m in metrics:
         key = (m.user_id, m.lab_slug)
         if key not in em_by_user_lab:
             em_by_user_lab[key] = m
 
-    # группировка прогресса по (user_id, skill)
+    # group progress by (user_id, skill)
     grouped: dict = {}
     for lp in progresses:
         skill = await _skill_of(db, lp.lab_slug, skill_cache)
@@ -56,12 +56,12 @@ async def compute_cohort_metrics(db, horizon_seconds: float, by_arm: bool = Fals
 
     records: list[LearnerOutcome] = []
     for (user_id, skill), labs in grouped.items():
-        # сортируем по времени начала
+        # sort by start time
         labs_sorted = sorted(labs, key=lambda x: (x.started_at or x.updated_at))
         l1 = labs_sorted[0]
         l1_start = l1.started_at
 
-        # L2 = другая лаба того же навыка с l2_unassisted_pass=True
+        # L2 = another lab of the same skill with l2_unassisted_pass=True
         l2_lp = None
         for lp in labs_sorted:
             if lp.lab_slug == l1.lab_slug:
@@ -72,10 +72,10 @@ async def compute_cohort_metrics(db, horizon_seconds: float, by_arm: bool = Fals
                 break
         reached = l2_lp is not None
 
-        # сессии пользователя по навыку
+        # user's sessions for the skill
         user_skill_sessions = await _sessions_for_skill(sessions, user_id, skill, skill_cache, db)
 
-        # сессии до (включая) момента L2-pass
+        # sessions up to (and including) the L2-pass moment
         l2_time = l2_lp.completed_at if reached else None
         rel_sessions = [
             s
@@ -91,8 +91,8 @@ async def compute_cohort_metrics(db, horizon_seconds: float, by_arm: bool = Fals
             or None
         )
 
-        # время наблюдения: последняя активность − l1_start. Без завершённых сессий
-        # фолбэк на завершение/обновление L1 (не на l1_start → не схлопывать цензур в 0).
+        # observation time: last activity - l1_start. With no completed sessions,
+        # falls back to L1's completion/update time (not l1_start -- avoids collapsing censoring to 0).
         last_end = max((s.ended_at for s in user_skill_sessions if s.ended_at), default=None)
         obs_ref = last_end or l1.completed_at or l1.updated_at or l1_start
         observation = (obs_ref - l1_start).total_seconds() if (obs_ref and l1_start) else 0.0

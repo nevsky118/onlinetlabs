@@ -8,7 +8,7 @@ from models.base import Base
 
 
 class ProcessStateSample(Base):
-    """Снимок состояния управляемого процесса (time-series)."""
+    """A snapshot of the controlled process state (time series)."""
 
     __tablename__ = "process_state_samples"
     __table_args__ = (Index("ix_process_state_samples_session_ts", "session_id", "ts"),)

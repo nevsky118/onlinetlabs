@@ -9,7 +9,7 @@ from models.base import Base
 
 
 class LearningSession(Base):
-    """Учебная сессия пользователя в лабе с её статусом и временем."""
+    """A user's learning session in a lab with its status and timing."""
 
     __tablename__ = "learning_sessions"
     __table_args__ = (

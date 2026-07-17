@@ -8,10 +8,10 @@ from models.base import Base
 
 
 class InterventionDecision(Base):
-    """Точка решения MRT: eligible-момент + рандомизированное назначение + исход spell.
+    """An MRT decision point: eligible moment + randomized assignment + spell outcome.
 
-    Прямой вход в hazard-модель (P4). Не-конфаундленный контраст intervene/withhold
-    по диапазону dwell восстанавливается группировкой по spell_id.
+    Direct input to the hazard model (P4). An unconfounded intervene/withhold contrast
+    over the dwell range is recovered by grouping on spell_id.
     """
 
     __tablename__ = "intervention_decisions"

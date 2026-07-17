@@ -9,7 +9,7 @@ from models.base import Base
 
 
 class BehavioralEvent(Base):
-    """Поведенческое событие в лабе. Действие над компонентом, команда и результат."""
+    """A behavioral event in a lab. Action on a component, command, and result."""
 
     __tablename__ = "behavioral_events"
     __table_args__ = (

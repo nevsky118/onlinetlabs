@@ -21,13 +21,13 @@ LAB_CAPS = {
 }
 GLOBAL_CAP = 50
 ACTIVE_TTL = 7 * 24 * 3600  # 7d crash-safety on counters
-# Средняя длительность провижининга одной сессии, используется для ETA в очереди.
+# Average provisioning duration of one session, used for the queue ETA.
 QUEUE_AVG_PROVISION_SEC = 30
 
-# Атомарный захват слота. Под нагрузкой 50+/sec обычная пара GET/INCR
-# протекает квоту, потому что между чтением и инкрементом успевает зайти
-# параллельный запрос. Lua выполняется в Redis монолитно — счётчики
-# либо инкрементятся вместе, либо запрос отказывает.
+# Atomic slot acquisition. Under 50+/sec load, a plain GET/INCR pair leaks
+# the quota because a concurrent request can slip in between the read and
+# the increment. Lua runs atomically in Redis — counters either increment
+# together, or the request is rejected.
 LUA_TRY_ACQUIRE = """
 local lab_key = KEYS[1]
 local total_key = KEYS[2]
@@ -51,30 +51,30 @@ return 1
 
 
 class SessionQueueService:
-    """Очередь сессий и счётчики активных сессий поверх Redis.
+    """Session queue and active session counters on top of Redis.
 
-    Атомарно захватывает и освобождает слоты под лимиты по лаборатории и общий,
-    ведёт FIFO-очередь ожидающих по каждой лаборатории.
+    Atomically acquires and releases slots against per-lab and global limits,
+    and maintains a FIFO queue of waiters per lab.
     """
 
     def __init__(self, redis_url: str | None = None) -> None:
-        """Создаёт клиент Redis из переданного URL или настроек."""
+        """Creates a Redis client from the given URL or settings."""
         self._redis = aioredis.from_url(redis_url or settings.redis.url, decode_responses=True)
 
     def _active_key(self, lab_slug: str) -> str:
-        """Ключ Redis со счётчиком активных сессий лаборатории."""
+        """Redis key for the lab's active session counter."""
         return f"active_sessions:{lab_slug}"
 
     def _queue_key(self, lab_slug: str) -> str:
-        """Ключ Redis с очередью ожидающих по лаборатории."""
+        """Redis key for the lab's queue of waiters."""
         return f"queue:{lab_slug}"
 
     def _total_key(self) -> str:
-        """Ключ Redis с общим счётчиком активных сессий."""
+        """Redis key for the global active session counter."""
         return "active_sessions_total"
 
     async def try_acquire(self, user_id: str, lab_slug: str) -> bool:
-        """Пытается атомарно занять слот сессии. True если слот захвачен, иначе False."""
+        """Tries to atomically acquire a session slot. True if acquired, False otherwise."""
         per_lab_cap = LAB_CAPS.get(lab_slug, GLOBAL_CAP)
         result = await self._redis.eval(
             LUA_TRY_ACQUIRE,
@@ -88,14 +88,14 @@ class SessionQueueService:
         return int(result) == 1
 
     async def release(self, lab_slug: str) -> None:
-        """Освобождает слот, уменьшая счётчики лаборатории и общий."""
+        """Releases a slot, decrementing the lab counter and the global one."""
         async with self._redis.pipeline(transaction=True) as pipe:
             await pipe.decr(self._active_key(lab_slug))
             await pipe.decr(self._total_key())
             await pipe.execute()
 
     async def enqueue(self, user_id: str, lab_slug: str) -> int:
-        """Добавляет пользователя в конец очереди и возвращает её длину."""
+        """Appends the user to the end of the queue and returns its length."""
         await self._redis.rpush(
             self._queue_key(lab_slug),
             json.dumps({"user_id": user_id, "ts": int(time.time())}),
@@ -103,7 +103,7 @@ class SessionQueueService:
         return await self._redis.llen(self._queue_key(lab_slug))
 
     async def position(self, user_id: str, lab_slug: str) -> int | None:
-        """Возвращает позицию пользователя в очереди начиная с 1 или None если его нет."""
+        """Returns the user's 1-based position in the queue, or None if absent."""
         items = await self._redis.lrange(self._queue_key(lab_slug), 0, -1)
         for i, raw in enumerate(items):
             if json.loads(raw)["user_id"] == user_id:
@@ -111,21 +111,21 @@ class SessionQueueService:
         return None
 
     async def queue_depth(self, lab_slug: str) -> int:
-        """Возвращает текущее число ожидающих в очереди лаборатории."""
+        """Returns the current number of waiters in the lab's queue."""
         return await self._redis.llen(self._queue_key(lab_slug))
 
 
-# Модульный синглтон и DI-провайдер.
+# Module-level singleton and DI provider.
 #
-# Сервис создаётся в lifespan и кладётся в app.state.session_queue.
-# get_queue_service() читает его через FastAPI Request. Если состояния нет
-# (тесты, фоновые задачи без app), фоллбекаем на lazy-инициализированный
-# модульный синглтон, чтобы старые callers не падали.
+# The service is created in lifespan and stored on app.state.session_queue.
+# get_queue_service() reads it via the FastAPI Request. If there's no state
+# (tests, background tasks without an app), fall back to a lazily
+# initialized module singleton so old callers don't break.
 _queue_singleton: SessionQueueService | None = None
 
 
 def _get_or_create_singleton() -> SessionQueueService:
-    """Лениво создаёт и возвращает модульный синглтон сервиса очереди."""
+    """Lazily creates and returns the module-level queue service singleton."""
     global _queue_singleton
     if _queue_singleton is None:
         _queue_singleton = SessionQueueService()
@@ -133,11 +133,11 @@ def _get_or_create_singleton() -> SessionQueueService:
 
 
 def get_queue_service(request: Request) -> SessionQueueService:
-    """FastAPI-зависимость: возвращает session_queue из app.state.
+    """FastAPI dependency: returns session_queue from app.state.
 
-    В lifespan кладём SessionQueueService в app.state. Если по какой-то
-    причине его там нет (старый код, миграция), фоллбекаем на ленивый
-    модульный синглтон, чтобы не уронить запрос.
+    In lifespan we store SessionQueueService on app.state. If for some
+    reason it's not there (old code, migration), fall back to the lazy
+    module singleton so the request doesn't fail.
     """
     existing = getattr(request.app.state, "session_queue", None)
     if existing is not None:

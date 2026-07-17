@@ -1,7 +1,7 @@
-"""Реестр агентов для маршрутизации без поздних импортов.
+"""Agent registry for routing without late imports.
 
-Каждая запись хранит класс агента и тип входной модели. Конструкторы у агентов
-отличаются (mcp_client, db), поэтому фабрикой агента занимается оркестратор.
+Each entry stores the agent class and its input model type. Agent constructors
+differ (mcp_client, db), so the orchestrator handles agent construction.
 """
 
 from agents.hint.agent import HintAgent

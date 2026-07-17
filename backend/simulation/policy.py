@@ -1,10 +1,10 @@
-"""Генеративная политика студента.
+"""Generative student policy.
 
-Ключ анти-тавтологии: студент имеет ЛАТЕНТНЫЙ mode (истинный режим), который
-эволюционирует стохастически по чертам (skill/persistence/strategy). Действия
-эмитятся УСЛОВНО по mode. То есть mode — ПРИЧИНА, действия — следствие. Детектор
-наблюдает действия и пытается вывести mode; поскольку mode порождён независимо
-(не из порогов признаков детектора), сравнение детектор(действия) vs mode честно.
+Anti-tautology key: the student has a LATENT mode (true regime) that evolves
+stochastically based on traits (skill/persistence/strategy). Actions are emitted
+CONDITIONAL on mode — mode is the CAUSE, actions are the effect. The detector
+observes actions and tries to infer mode; since mode is generated independently
+(not from the detector's feature thresholds), comparing detector(actions) vs mode is honest.
 """
 import random
 from dataclasses import dataclass
@@ -34,7 +34,7 @@ class TrueRegime(str, Enum):
 class StudentState:
     total_steps: int = 5
     step: int = 0
-    progress: float = 0.0          # прогресс по текущему шагу [0,1]
+    progress: float = 0.0          # progress on the current step [0,1]
     mode: TrueRegime = TrueRegime.PRODUCTIVE
     frustration: float = 0.0
     just_helped: bool = False
@@ -42,14 +42,14 @@ class StudentState:
 
 
 def _pick_struggle(profile: StudentProfile, rng: random.Random) -> TrueRegime:
-    """Тип затруднения по чертам: низкая strategy → перебор/повтор; иначе застревание."""
+    """Struggle type from traits: low strategy → trial-and-error/repeat; else stuck."""
     if profile.strategy < 0.4:
         return rng.choice((TrueRegime.TRIAL_AND_ERROR, TrueRegime.REPEATING_ERRORS))
     return rng.choice((TrueRegime.STUCK_ON_STEP, TrueRegime.IDLE))
 
 
 def _transition_mode(profile: StudentProfile, state: StudentState, rng: random.Random) -> None:
-    """Стохастический переход латентного mode по чертам (semi-Markov-ish)."""
+    """Stochastic transition of the latent mode based on traits (semi-Markov-ish)."""
     if state.mode == TrueRegime.PRODUCTIVE:
         if rng.random() < (1.0 - profile.skill) * 0.25:
             state.mode = _pick_struggle(profile, rng)
@@ -66,7 +66,7 @@ def _transition_mode(profile: StudentProfile, state: StudentState, rng: random.R
 def next_step(
     profile: StudentProfile, state: StudentState, rng: random.Random
 ) -> tuple[Action, TrueRegime, StudentState]:
-    """Один шаг: перейти mode, эмитить действие по mode, обновить состояние."""
+    """One step: transition mode, emit an action based on mode, update state."""
     if state.step >= state.total_steps:
         state.done = True
         return Action.SUBMIT, TrueRegime.PRODUCTIVE, state
@@ -85,7 +85,7 @@ def next_step(
                 state.done = True
                 return Action.SUBMIT, mode, state
     else:
-        # в затруднении — шанс попросить помощь (склонность + фрустрация)
+        # while struggling — chance to ask for help (propensity + frustration)
         if rng.random() < profile.help_propensity * 0.4 + state.frustration * 0.2:
             action = Action.ASK_HELP
             state.just_helped = True

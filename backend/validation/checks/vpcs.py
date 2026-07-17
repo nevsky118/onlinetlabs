@@ -9,11 +9,11 @@ from validation.checks.registry import CheckContext, CheckResult
 _IP_RE = re.compile(r"IP/MASK\s*:\s*(\S+)", re.IGNORECASE)
 _GW_RE = re.compile(r"GATEWAY\s*:\s*(\S+)", re.IGNORECASE)
 
-# Каждая успешная строка ответа VPCS-ping выглядит как:
+# Each successful VPCS-ping reply line looks like:
 #   `84 bytes from 192.168.20.10 icmp_seq=1 ttl=62 time=2.345 ms`
 _PING_REPLY_RE = re.compile(r"^\s*\d+\s+bytes\s+from\s+\S+", re.MULTILINE)
 _PING_TTL_RE = re.compile(r"\bttl=(\d+)", re.IGNORECASE)
-# `>=N` / `>N` / `==N` / `=N` / `N`. По умолчанию строгое равенство.
+# `>=N` / `>N` / `==N` / `=N` / `N`. Strict equality by default.
 _COMPARE_RE = re.compile(r"^\s*(>=|<=|==|=|>|<)?\s*(\d+)\s*$")
 
 _CONNECT_TIMEOUT = 5.0
@@ -23,7 +23,7 @@ _PROMPT = b"> "
 
 
 async def _drain_until_prompt(reader: asyncio.StreamReader, timeout: float) -> bytes:
-    """Читать с консоли пока не встретится VPCS-приглашение или истечёт таймаут."""
+    """Read from the console until a VPCS prompt appears or the timeout elapses."""
     buf = bytearray()
     try:
         async with asyncio.timeout(timeout):
@@ -40,7 +40,7 @@ async def _drain_until_prompt(reader: asyncio.StreamReader, timeout: float) -> b
 
 
 async def vpcs_show_ip(ctx: CheckContext, params: dict, expect: dict) -> CheckResult:
-    """Подключается telnet'ом к VPCS-консоли, парсит `show ip`."""
+    """Connects via telnet to the VPCS console and parses `show ip`."""
     node_name = params.get("node")
     if not node_name:
         return CheckResult(
@@ -75,7 +75,7 @@ async def vpcs_show_ip(ctx: CheckContext, params: dict, expect: dict) -> CheckRe
         writer.write(b"\r\n")
         await writer.drain()
         await asyncio.sleep(0.3)
-        # Стряхиваем накопленный prompt/echo.
+        # Shake off the accumulated prompt/echo.
         await _drain_until_prompt(reader, timeout=0.5)
 
         writer.write(b"show ip\r\n")
@@ -101,10 +101,10 @@ async def vpcs_show_ip(ctx: CheckContext, params: dict, expect: dict) -> CheckRe
 
 
 def _parse_ping(text: str) -> dict:
-    """Извлечь received / ttl из вывода VPCS-команды `ping`.
+    """Extract received / ttl from the output of the VPCS `ping` command.
 
-    Каждая успешная строка имеет вид `N bytes from <addr> icmp_seq=K ttl=M time=...`.
-    Возвращает `{received: int, ttl: int | None}`.
+    Each successful line has the form `N bytes from <addr> icmp_seq=K ttl=M time=...`.
+    Returns `{received: int, ttl: int | None}`.
     """
     received = len(_PING_REPLY_RE.findall(text))
     ttls = _PING_TTL_RE.findall(text)
@@ -112,9 +112,9 @@ def _parse_ping(text: str) -> dict:
 
 
 def _matches(actual: int | None, expected) -> bool:
-    """Сравнить число с ожиданием.
+    """Compare a number against an expectation.
 
-    `expected` может быть int или строкой типа `">=4"`, `"=5"`, `"5"`.
+    `expected` can be an int or a string like `">=4"`, `"=5"`, `"5"`.
     """
     if actual is None:
         return False
@@ -138,10 +138,10 @@ def _matches(actual: int | None, expected) -> bool:
 
 
 def _parse_show_ip(text: str) -> dict:
-    """Извлечь ip и gateway из вывода VPCS-команды `show ip`.
+    """Extract ip and gateway from the output of the VPCS `show ip` command.
 
-    `IP/MASK` имеет вид `192.168.10.10/24` (с префиксом), `GATEWAY` — голый адрес.
-    Возвращает `{ip, gateway}` со строками; отсутствующее поле — пустая строка.
+    `IP/MASK` has the form `192.168.10.10/24` (with prefix), `GATEWAY` is a bare address.
+    Returns `{ip, gateway}` as strings; a missing field is an empty string.
     """
     ip_match = _IP_RE.search(text)
     gw_match = _GW_RE.search(text)
@@ -152,7 +152,7 @@ def _parse_show_ip(text: str) -> dict:
 
 
 def _ip_in_subnet(ip_with_mask: str, subnet: str) -> bool:
-    """True, если адрес из `IP/MASK` (или голый адрес) принадлежит CIDR `subnet`."""
+    """True if the address from `IP/MASK` (or a bare address) belongs to CIDR `subnet`."""
     addr = ip_with_mask.split("/", 1)[0].strip()
     if not addr:
         return False
@@ -163,10 +163,10 @@ def _ip_in_subnet(ip_with_mask: str, subnet: str) -> bool:
 
 
 async def vpcs_ping(ctx: CheckContext, params: dict, expect: dict) -> CheckResult:
-    """Отправить ICMP с VPCS-узла и проверить received / ttl.
+    """Send ICMP from a VPCS node and check received / ttl.
 
     params: `{from: PC1, to: "192.168.20.10"}`
-    expect: `{received: ">=4"}` или `{received: 5, ttl: 62}`
+    expect: `{received: ">=4"}` or `{received: 5, ttl: 62}`
     """
     src_name = params.get("from")
     target = params.get("to")
@@ -232,8 +232,8 @@ async def vpcs_ping(ctx: CheckContext, params: dict, expect: dict) -> CheckResul
 
 
 async def vpcs_ip_in_subnet(ctx: CheckContext, params: dict, expect: dict) -> CheckResult:
-    """Подключается telnet'ом к VPCS-консоли, парсит `show ip`,
-    проверяет принадлежность адреса подсети и совпадение шлюза.
+    """Connects via telnet to the VPCS console, parses `show ip`,
+    and checks the address's subnet membership and gateway match.
 
     params: `{node: PC1}`
     expect: `{subnet: "192.168.10.0/24", gateway: "192.168.10.1"}`

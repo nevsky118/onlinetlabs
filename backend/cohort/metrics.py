@@ -1,4 +1,4 @@
-"""Когортные орг-метрики D3/D4. Чистое ядро (без БД): KM с цензурированием + агрегаторы."""
+"""Cohort org metrics D3/D4. Pure core (no DB): censored KM + aggregators."""
 
 from dataclasses import dataclass
 
@@ -41,7 +41,7 @@ class AutonomyMetrics:
 
 
 def _survival_steps(durations: list[float], events: list[bool]) -> list[tuple[float, float]]:
-    """Точки кривой выживания KM: [(t, S(t))...] по возрастанию t. S падает только на событиях."""
+    """KM survival curve points: [(t, S(t))...] ascending by t. S drops only at events."""
     if not durations:
         return []
     paired = sorted(zip(durations, events), key=lambda x: x[0])
@@ -51,8 +51,8 @@ def _survival_steps(durations: list[float], events: list[bool]) -> list[tuple[fl
     i = 0
     times = sorted({t for t, _ in paired})
     for t in times:
-        d_i = sum(1 for tt, ev in paired if tt == t and ev)  # события в момент t
-        c_i = sum(1 for tt, ev in paired if tt == t)  # все выбывшие (события + цензур)
+        d_i = sum(1 for tt, ev in paired if tt == t and ev)  # events at time t
+        c_i = sum(1 for tt, ev in paired if tt == t)  # all exits (events + censored)
         if n_at_risk > 0 and d_i > 0:
             surv *= 1.0 - d_i / n_at_risk
         steps.append((t, surv))
@@ -63,8 +63,8 @@ def _survival_steps(durations: list[float], events: list[bool]) -> list[tuple[fl
 def kaplan_meier_median(
     durations: list[float], events: list[bool], reach_rate: float | None = None
 ) -> float | None:
-    """Медиана = первый t с S(t) < 0.5. None, если <50% дошли (разрежённая страта).
-    reach_rate — авторитетная доля дошедших по полной популяции; иначе sum(events)/len."""
+    """Median = the first t with S(t) < 0.5. None if <50% reached it (sparse stratum).
+    reach_rate -- the authoritative reach fraction over the full population; else sum(events)/len."""
     if not events:
         return None
     r = reach_rate if reach_rate is not None else sum(events) / len(events)
@@ -77,7 +77,7 @@ def kaplan_meier_median(
 
 
 def reach_rate_at(durations: list[float], events: list[bool], horizon: float) -> float:
-    """Доля достигших события к horizon = 1 - S(horizon)."""
+    """Fraction reaching the event by horizon = 1 - S(horizon)."""
     steps = _survival_steps(durations, events)
     if not steps:
         return 0.0
@@ -91,7 +91,7 @@ def reach_rate_at(durations: list[float], events: list[bool], horizon: float) ->
 
 
 def restricted_mean(durations: list[float], events: list[bool], horizon: float) -> float:
-    """RMST = площадь под S(t) на [0, horizon] (трапеции по ступеням)."""
+    """RMST = area under S(t) on [0, horizon] (trapezoids over the steps)."""
     steps = _survival_steps(durations, events)
     if not steps:
         return 0.0
@@ -99,18 +99,18 @@ def restricted_mean(durations: list[float], events: list[bool], horizon: float) 
     prev_t, prev_s = 0.0, 1.0
     for t, s in steps:
         seg_t = min(t, horizon)
-        area += prev_s * (seg_t - prev_t)  # S ступенчата: до t держится prev_s
+        area += prev_s * (seg_t - prev_t)  # S is a step function: holds prev_s until t
         prev_t, prev_s = seg_t, s
         if t >= horizon:
             return area
-    area += prev_s * (horizon - prev_t)  # хвост до горизонта
+    area += prev_s * (horizon - prev_t)  # tail up to the horizon
     return area
 
 
 def _durations_events(
     records: list["LearnerOutcome"], active: bool
 ) -> tuple[list[float], list[bool]]:
-    """(durations, events) для KM: достигшие → time_to_l2/active + event=True; цензур → observation + False."""
+    """(durations, events) for KM: reached -> time_to_l2/active + event=True; censored -> observation + False."""
     durations, events = [], []
     for r in records:
         if r.reached_l2:
@@ -135,7 +135,7 @@ def time_to_competence(
     reached = sum(1 for r in records if r.reached_l2)
     reach = (reached / n) if n else 0.0
     return TimeToCompetence(
-        # авторитетная доля reach (по полной популяции) → решение о фолбэке медианы
+        # authoritative reach fraction (over the full population) -> decides the median fallback
         median_calendar_seconds=kaplan_meier_median(cal_d, cal_e, reach_rate=reach),
         median_active_seconds=kaplan_meier_median(act_d, act_e, reach_rate=reach),
         reach_rate=reach,
@@ -163,7 +163,7 @@ def autonomy_metrics(records: list["LearnerOutcome"]) -> "AutonomyMetrics":
     )
 
 
-# Task 4: D4 описательный тренд L1→L2 + survivorship-пометка
+# Task 4: D4 descriptive L1->L2 trend + survivorship flag
 SURVIVORSHIP_NOTE = (
     "Описательный/разведочный тренд: считается по дошедшим до L2 (= успешные), "
     "возможен survivorship bias + регрессия к среднему. НЕ доказательство снижения "
@@ -195,7 +195,7 @@ def org_effect_trend(records: list["LearnerOutcome"]) -> "OrgEffectTrend":
     )
 
 
-# Task 5: агрегация по стратам (skill + опц. arm) + pooled + headline=closed
+# Task 5: aggregation by strata (skill + optional arm) + pooled + headline=closed
 @dataclass
 class CohortCell:
     skill: str | None
@@ -242,7 +242,7 @@ def aggregate_cohort(
     }
 
 
-# Task 6: retention-метрика (year-1 помечена смещённой)
+# Task 6: retention metric (year-1 flagged as biased)
 RETENTION_NOTE = (
     "Оппортунистический/смещённый/предварительный показатель: самоселекция "
     "(ретестятся мотивированные) → крошечная смещённая выборка. НЕ результат. "

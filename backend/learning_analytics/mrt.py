@@ -1,4 +1,4 @@
-"""MRT: операции над точками решения на уровне сессии (censoring при завершении)."""
+"""MRT: session-level operations on decision points (censoring on completion)."""
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -6,10 +6,10 @@ from models.intervention_decision import InterventionDecision
 
 
 async def censor_open_decisions(db: AsyncSession, session_id: str) -> int:
-    """Пометить censored=True точки решения сессии с незакрытым spell (exit_ts IS NULL).
+    """Mark censored=True on the session's decision points with an open spell (exit_ts IS NULL).
 
-    Вызывается при завершении сессии: spell, не закрывшийся до конца сессии,
-    правоцензурирован для hazard-модели. Возвращает число помеченных строк.
+    Called on session completion: a spell that didn't close before the session ended
+    is right-censored for the hazard model. Returns the number of rows marked.
     """
     result = await db.execute(
         update(InterventionDecision)

@@ -1,14 +1,14 @@
-"""CLI: прогнать сим-когорту на ЖИВОМ стеке (реальный GNS3, пул+очередь).
+"""CLI: run a sim cohort on the LIVE stack (real GNS3, pool+queue).
 
-Требует поднятого стека: `make up-db` (корень) + gns3-стек (`cd gns3 && docker compose up -d`).
-_live_provision собирает живые deps как в приложении (main.py lifespan / deps.py):
-mcp_client / gateway / orchestrator / gns3_client / monitor_registry, затем
-launch_session → build_session_context → monitor_registry.start → GNS3Actor из node_ids.
+Requires the stack to be up: `make up-db` (root) + the gns3 stack (`cd gns3 && docker compose up -d`).
+_live_provision assembles live deps the same way the app does (main.py lifespan / deps.py):
+mcp_client / gateway / orchestrator / gns3_client / monitor_registry, then
+launch_session → build_session_context → monitor_registry.start → GNS3Actor from node_ids.
 
-FIREWALL: все юзеры is_simulated=True; данные отрезаны от reproducibility-bundle.
-Удалить: `rm -rf backend/simulation` + `DELETE FROM users WHERE is_simulated`.
+FIREWALL: all users are is_simulated=True; data is cut off from the reproducibility
+bundle. To remove: `rm -rf backend/simulation` + `DELETE FROM users WHERE is_simulated`.
 
-Запуск: `ENV_FILE=../deployment/local/backend.env poetry run python -m simulation.run --n 3 --concurrency 2`
+Run: `ENV_FILE=../deployment/local/backend.env poetry run python -m simulation.run --n 3 --concurrency 2`
 """
 import argparse
 import asyncio
@@ -17,36 +17,36 @@ from datetime import UTC
 from simulation.ground_truth import record_truth
 from simulation.orchestrator import run_cohort
 
-# Прайс YandexGPT (руб/1k токенов) — уточнить по актуальному тарифу; бюджет 500р.
+# YandexGPT price (rub/1k tokens) — verify against the current rate; budget 500 rub.
 _PRICE_PER_1K_RUB = 1.20
 _BUDGET_RUB = 500.0
 
-# Ожидание слота очереди (GLOBAL_CAP=50 одновременных сессий).
+# Waiting for a queue slot (GLOBAL_CAP=50 concurrent sessions).
 _QUEUE_ACQUIRE_TRIES = 90
 _QUEUE_ACQUIRE_WAIT_SEC = 2.0
 
-# Пауза после старта узлов: VPCS поднимает консоль не мгновенно.
+# Pause after starting nodes: VPCS doesn't bring the console up instantly.
 _CONSOLE_WARMUP_SEC = 6.0
 
 
 def _build_deps():
-    """Живые зависимости приложения (1:1 с main.py lifespan)."""
+    """Live app dependencies (1:1 with main.py lifespan)."""
     from config import settings
-    # Приборы MRT-трека выключены по умолчанию (gated-off). Сим существует, чтобы их
-    # прогнать: включаем decision-log/evidence/latency на живом контуре.
+    # MRT-track instruments are off by default (gated-off). The sim exists to
+    # exercise them: enable decision-log/evidence/latency on the live loop.
     settings.learning_analytics.mrt_enabled = True
     settings.learning_analytics.evidence_capture_enabled = True
     settings.learning_analytics.latency_capture_enabled = True
-    # Сжатие времени: сим-сессия ~40с против минут у живого студента. Детектор idle
-    # настроен на реальное время (idle_gap=60с) → в сжатом прогоне idle-периоды не
-    # набираются. Масштабируем под сим, чтобы idle-паузы регистрировались и struggle
-    # детектировался (де-риск прибора decision-log; НЕ валидация детектора).
+    # Time compression: a sim session is ~40s vs minutes for a live student. The idle
+    # detector is tuned for real time (idle_gap=60s) → in a compressed run idle
+    # periods never accumulate. We scale it for the sim so idle pauses register and
+    # struggle gets detected (de-risking the decision-log instrument; NOT detector validation).
     settings.learning_analytics.idle_gap_seconds = 0.5
     settings.learning_analytics.idle_threshold = 2
     settings.learning_analytics.rate_slope_threshold = 1.0
-    # LabProgressObserver даёт события только со ВТОРОГО цикла (первый — базовый
-    # снапшот). При дефолте 25с за сжатую сим-сессию второго цикла не случается —
-    # spec-проверки не превращаются в check_failing, и детектор слепнет.
+    # LabProgressObserver only emits events from the SECOND cycle onward (the first
+    # is the baseline snapshot). At the 25s default a compressed sim session never reaches
+    # a second cycle — spec checks never turn into check_failing, and the detector goes blind.
     settings.learning_analytics.progress_poll_interval = 6.0
     from agents.orchestrator.agent import Orchestrator
     from db.session import async_session
@@ -72,8 +72,8 @@ def _build_deps():
 
 
 def _console_host(node: dict) -> str:
-    """Хост консоли: контейнерные loopback-адреса недостижимы с хоста → localhost.
-    Консольный диапазон gns3-server опубликован (см. gns3/docker-compose.yml)."""
+    """Console host: container loopback addresses are unreachable from the host →
+    localhost. The gns3-server console range is published (see gns3/docker-compose.yml)."""
     host = (node.get("console_host") or "").strip()
     if not host or host in ("0.0.0.0", "::", "127.0.0.1", "localhost"):
         return "localhost"
@@ -93,12 +93,12 @@ def _make_provision(settings, gns3_client, monitor_registry, lab_slug, tutor_rep
     from validation.runner import load_lab_spec
 
     async def provision(profile, seed, user_id):
-        # Сим-юзер должен иметь study-consent, иначе шов режет observe → пустой конвейер.
+        # The sim user must have study-consent, otherwise the seam cuts observe → empty pipeline.
         async with async_session() as db:
             await grant_consent(db, user_id, scope="study", observe=True, act=True)
 
-        # Занимаем слот очереди, как реальный студент: end_lab на завершении делает
-        # release (сырой DECR), поэтому без acquire счётчики ёмкости ушли бы в минус.
+        # Take a queue slot like a real student: end_lab on completion does a
+        # release (raw DECR), so without acquire the capacity counters would go negative.
         queue = _get_or_create_queue()
         acquired = False
         for _ in range(_QUEUE_ACQUIRE_TRIES):
@@ -115,7 +115,7 @@ def _make_provision(settings, gns3_client, monitor_registry, lab_slug, tutor_rep
                     db, user_id, lab_slug, gns3_client, db_factory=async_session
                 )
         except Exception:
-            await queue.release(lab_slug)  # провижн упал → слот не должен утечь
+            await queue.release(lab_slug)  # provision failed → the slot must not leak
             raise
         if session.status != "active":
             await queue.release(lab_slug)
@@ -125,8 +125,8 @@ def _make_provision(settings, gns3_client, monitor_registry, lab_slug, tutor_rep
 
         gsess = (session.meta or {})["gns3_service_session_id"]
 
-        # Узлы должны РАБОТАТЬ: spec-проверки читают конфиг через консоль, а у
-        # потушенного узла консоли нет → проверки висят и детектор слепнет.
+        # Nodes must be RUNNING: spec checks read config via the console, and a
+        # stopped node has no console → checks hang and the detector goes blind.
         await gns3_client.bulk_node_action(gsess, "start")
         await asyncio.sleep(_CONSOLE_WARMUP_SEC)
 
@@ -154,17 +154,17 @@ def _make_provision(settings, gns3_client, monitor_registry, lab_slug, tutor_rep
 
 
 def _make_finalize(lab_slug, l2_lab, gns3_client, monitor_registry, settle_sec: float = 12.0):
-    """Полный протокол исследования: L1 (ассист) → L2 (near-transfer, БЕЗ ассиста).
-    l2_lab — пара того же навыка (или None → только L1, если у навыка нет пары).
+    """Full study protocol: L1 (assisted) → L2 (near-transfer, WITHOUT assistance).
+    l2_lab is a pair of the same skill (or None → L1 only, if the skill has no pair).
 
-    L1 закрывается ТЕМ ЖЕ путём, что и у реального студента — `end_lab`: стоп монитора →
-    ExperimentMetrics + цензура MRT → teardown GNS3 → освобождение слота очереди.
-    L2 — синтетическая сессия переноса (нет GNS3/монитора/слота), поэтому `end_session`:
-    снимаются только измерения.
+    L1 closes via the SAME path as a real student — `end_lab`: stop the monitor →
+    ExperimentMetrics + MRT censoring → teardown GNS3 → release the queue slot.
+    L2 is a synthetic transfer session (no GNS3/monitor/slot), so `end_session`:
+    only measurements are taken.
 
-    INTEGRITY: L2-pass моделируется ТОЛЬКО от навыка студента, БЕЗ зашитого эффекта arm
-    (иначе это «засеянный A/B»). Плечи выйдут ≈равны по l2_pass — честный null для симуляции.
-    Данные is_simulated → отрезаны от reproducibility-бандла."""
+    INTEGRITY: L2-pass is modeled ONLY from the student's skill, WITHOUT a baked-in
+    arm effect (otherwise it's a "seeded A/B"). Arms should come out ≈equal on l2_pass — an honest null for the simulation.
+    is_simulated data is cut off from the reproducibility bundle."""
     from datetime import datetime
     from uuid import uuid4
 
@@ -182,7 +182,7 @@ def _make_finalize(lab_slug, l2_lab, gns3_client, monitor_registry, settle_sec: 
     total2 = _total(l2_lab) if l2_lab else 0
 
     async def _write_progress(user_id, lab, steps, total, started, completed_at) -> bool:
-        """LabProgress пишем ДО финализации: метрики читают из него steps_completed."""
+        """We write LabProgress BEFORE finalization: metrics read steps_completed from it."""
         completed = steps >= total
         async with async_session() as db:
             db.add(LabProgress(
@@ -197,28 +197,28 @@ def _make_finalize(lab_slug, l2_lab, gns3_client, monitor_registry, settle_sec: 
     async def finalize(session_id, user_id, profile, state):
         from datetime import timedelta
         now = datetime.now(UTC)
-        # Таймстемпы: L1 раньше L2, положительная длительность в горизонте когорты.
+        # Timestamps: L1 before L2, positive duration within the cohort's horizon.
         l1_start, l1_end = now - timedelta(minutes=14), now - timedelta(minutes=9)
         l2_start, l2_end = now - timedelta(minutes=6), now - timedelta(minutes=1)
 
-        # L1 (ассистируется живым монитором): почти все завершают.
+        # L1 (assisted by the live monitor): almost everyone completes.
         l1_steps = total1 if profile.skill > 0.2 else max(0, total1 - 1)
         l1_done = await _write_progress(
             user_id, lab_slug, l1_steps, total1, l1_start, l1_end)
 
-        # Живой студент не закрывает лабу в ту же миллисекунду, когда перестал
-        # действовать: монитор успевает добрать хвост событий (poll_interval=5с) и
-        # при необходимости вмешаться. В сжатом прогоне даём ему это время явно —
-        # иначе end_lab гасит монитор раньше, чем события доедут из истории GNS3.
+        # A live student doesn't close the lab the same millisecond they stop
+        # acting: the monitor has time to pick up trailing events (poll_interval=5s)
+        # and intervene if needed. In a compressed run we give it that time explicitly
+        # — otherwise end_lab kills the monitor before events arrive from GNS3 history.
         await asyncio.sleep(settle_sec)
 
         async with async_session() as db:
             await end_lab(db, session_id, user_id, gns3_client, monitor_registry)
 
         if not l1_done or not l2_lab:
-            return  # нет завершённой L1 или у навыка нет near-transfer пары → только L1
+            return  # no completed L1, or the skill has no near-transfer pair → L1 only
 
-        # L2 (near-transfer, БЕЗ ассиста): pass ⇐ навык (порог выше — сложнее без помощи).
+        # L2 (near-transfer, WITHOUT assistance): pass ⇐ skill (higher threshold — harder without help).
         l2_steps = total2 if profile.skill > 0.5 else max(0, total2 - 1)
         async with async_session() as db:
             l2 = LearningSession(
@@ -236,12 +236,12 @@ def _make_finalize(lab_slug, l2_lab, gns3_client, monitor_registry, settle_sec: 
 
 
 def _make_tutor_reply(settings, lab_slug):
-    """Ответ тьютора для чат-лога: LLM (короткий таймаут) → прогрессивный шаблон-фолбэк.
+    """Tutor's reply for the chat log: LLM (short timeout) → progressive template fallback.
 
-    Фолбэк ОБЯЗАН зависеть от номера попытки: раньше шаблон выбирался как
-    `len(question) % N`, а вопрос был константным → тьютор дословно повторял один и тот
-    же ответ, и диалог зацикливался. Живой тьютор ведёт студента по нарастающей: сначала
-    уточняет, потом наводит, и только затем даёт конкретику (как HintAgent с уровнями).
+    The fallback MUST depend on the attempt number: previously the template was chosen
+    as `len(question) % N`, and the question was constant → the tutor repeated the exact
+    same answer verbatim, and the dialogue looped. A live tutor escalates gradually:
+    first clarifying, then hinting, and only then giving specifics (like HintAgent's levels).
     """
     import asyncio as _asyncio
 
@@ -256,16 +256,16 @@ def _make_tutor_reply(settings, lab_slug):
         tried_part = f"Ты ввёл `{tried}`. " if tried else ""
 
         stages = [
-            # 1. Уточнение — тьютор не выдаёт ответ сразу.
+            # 1. Clarification — the tutor doesn't give the answer right away.
             f"Расскажи, что показывает `show ip` на {node}? "
             "Сверим то, что применилось, с тем, что требует задание.",
-            # 2. Наводка на класс ошибки.
+            # 2. Hint toward the error class.
             f"{tried_part}Сравни третий октет своего адреса с планом лабы: "
             f"похоже, {node} оказался в другой подсети, поэтому проверка и не проходит.",
-            # 3. Конкретная механика.
+            # 3. Concrete mechanics.
             f"На {node} задай адрес из нужной подсети командой `ip <адрес>/<маска>` "
             "и проверь результат через `show ip` — маска должна совпасть с заданием.",
-            # 4. Прямая подсказка после нескольких неудач.
+            # 4. Direct hint after several failures.
             f"{tried_part}Адрес не из той сети. Возьми подсеть из условия шага и "
             f"назначь {node} адрес внутри неё — после этого проверка станет зелёной.",
         ]
@@ -277,7 +277,7 @@ def _make_tutor_reply(settings, lab_slug):
         tried = context.get("tried")
         tried_part = f" Студент ввёл команду `{tried}`." if tried else ""
         try:
-            # max_retries=0: yandex может быть недоступен → мгновенный фолбэк на шаблон.
+            # max_retries=0: yandex may be unreachable → instant fallback to the template.
             client = build_client(model).with_options(max_retries=0, timeout=6)
             resp = await _asyncio.wait_for(client.chat.completions.create(
                 model=model_uri(model), stream=False, max_tokens=180, temperature=0.6,
@@ -305,7 +305,7 @@ def _make_tutor_reply(settings, lab_slug):
 
 
 async def _find_l2_pair(lab_slug):
-    """Другая enabled-лаба того же навыка (meta.skill) → near-transfer L2. None если пары нет."""
+    """Another enabled lab with the same skill (meta.skill) → near-transfer L2. None if no pair."""
     from sqlalchemy import select
 
     from db.session import async_session
@@ -359,8 +359,8 @@ async def _run(args) -> None:
         for f in report.failures:
             print(f"  FAIL i={f['i']} {f['error']}")
     finally:
-        # Дать мониторам добрать хвост событий (poll_interval=5с) перед остановкой:
-        # действия сжаты во времени, последние node.updated попадают в историю с лагом.
+        # Give monitors time to pick up trailing events (poll_interval=5s) before stopping:
+        # actions are time-compressed, the last node.updated lands in history with a lag.
         await asyncio.sleep(args.drain_sec)
         await monitor_registry.stop_all()
         await gns3_client.close()

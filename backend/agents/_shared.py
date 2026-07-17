@@ -1,8 +1,8 @@
-"""Общие хелперы, переиспользуемые несколькими агентами."""
+"""Shared helpers reused across multiple agents."""
 
 
 def format_failing_check(fc: dict) -> str:
-    """Отформатировать провалившуюся spec-проверку в строку для промпта LLM."""
+    """Format a failed spec check into a string for the LLM prompt."""
     node = fc.get("params", {}).get("node") if isinstance(fc.get("params"), dict) else None
     node_str = f" на {node}" if node else ""
     return (

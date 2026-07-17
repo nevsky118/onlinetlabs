@@ -1,4 +1,4 @@
-"""Базовый класс для всех агентов платформы."""
+"""Base class for all platform agents."""
 
 from pydantic import BaseModel
 from pydantic_ai import Agent
@@ -10,18 +10,18 @@ from llm.client import build_client, model_uri, resolve_model
 
 
 class BaseAgent:
-    """Базовый агент. Наследники переопределяют system_prompt() и run()."""
+    """Base agent. Subclasses override system_prompt() and run()."""
 
     def __init__(self, config: ConfigModel):
         self.config = config
         self.agents_config = config.agents
 
     def _agent_for(self, model_id: str) -> Agent:
-        """Свежий pydantic-ai Agent под model_id (2.x поддерживает model= per run, кэш не нужен)."""
+        """Fresh pydantic-ai Agent for model_id (2.x supports model= per run, no cache needed)."""
         return Agent(model=self._build_model(model_id), system_prompt=self.system_prompt())
 
     def _build_model(self, model_id: str) -> OpenAIChatModel:
-        """OpenAI-совместимая модель (yandex/openrouter) по кредам провайдера."""
+        """OpenAI-compatible model (yandex/openrouter) from provider credentials."""
         creds, _ = resolve_model(model_id)
         if creds.provider == LlmProvider.YANDEX and not creds.yandex_folder:
             raise ValueError(f"yandex_folder required for YANDEX provider, model {model_id}")
@@ -29,9 +29,9 @@ class BaseAgent:
         return OpenAIChatModel(model_uri(model_id), provider=OpenAIProvider(openai_client=client))
 
     def system_prompt(self) -> str:
-        """System prompt. Переопределяется в каждом агенте."""
+        """System prompt. Overridden in each agent."""
         raise NotImplementedError
 
     async def run(self, input_data: BaseModel) -> BaseModel:
-        """Основной метод. Переопределяется в каждом агенте."""
+        """Main method. Overridden in each agent."""
         raise NotImplementedError
