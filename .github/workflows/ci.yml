@@ -50,6 +50,12 @@ jobs:
       - name: Ruff lint
         continue-on-error: true
         run: poetry run ruff check .
+      # Informational until the type-error backlog (baseline ~100 errors) is worked
+      # down. Remove continue-on-error once the backlog is ratcheted to zero.
+      - name: Mypy
+        if: matrix.package == 'backend'
+        continue-on-error: true
+        run: poetry run mypy .
       - name: Alembic migrate + drift check
         if: matrix.package == 'backend'
         env:
