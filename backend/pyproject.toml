@@ -42,6 +42,7 @@ respx = "^0.23.1"
 target-version = "py311"
 line-length = 100
 extend-exclude = ["migrations", "alembic"]
+force-exclude = true  # keep excludes honored when lefthook passes explicit staged paths
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "UP", "B", "C4", "SIM", "ASYNC", "DTZ", "T20", "RUF"]

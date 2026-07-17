@@ -5,3 +5,23 @@ pre-commit:
       glob: "*.{ts,tsx,js,jsx,json}"
       run: npx biome check --write --no-errors-on-unmatched {staged_files}
       stage_fixed: true
+    ruff-backend:
+      root: "backend/"
+      glob: "*.py"
+      run: poetry run ruff check --fix {staged_files} && poetry run ruff format {staged_files}
+      stage_fixed: true
+    ruff-gns3-mcp:
+      root: "gns3/gns3-mcp/"
+      glob: "*.py"
+      run: poetry run ruff check --fix {staged_files} && poetry run ruff format {staged_files}
+      stage_fixed: true
+    ruff-gns3-service:
+      root: "gns3/gns3-service/"
+      glob: "*.py"
+      run: poetry run ruff check --fix {staged_files} && poetry run ruff format {staged_files}
+      stage_fixed: true
+    ruff-mcp-sdk:
+      root: "mcp-sdk/"
+      glob: "*.py"
+      run: poetry run ruff check --fix {staged_files} && poetry run ruff format {staged_files}
+      stage_fixed: true
