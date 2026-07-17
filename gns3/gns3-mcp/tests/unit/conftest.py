@@ -1,6 +1,3 @@
-import pytest
-
-
 def build_gns3_node(**overrides) -> dict:
     defaults = {
         "node_id": "node-1",

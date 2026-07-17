@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections import deque
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from mcp_sdk.models import ErrorEntry, LogEntry, LogLevel
 
@@ -30,7 +30,7 @@ class LogBuffer:
     def _add_entry(self, level: LogLevel, message: str, source: str = "gns3") -> None:
         """Добавить запись в буфер. Вызывается из WS listener."""
         entry = LogEntry(
-            timestamp=datetime.now(tz=timezone.utc),
+            timestamp=datetime.now(tz=UTC),
             level=level,
             source=source,
             message=message,
@@ -47,9 +47,11 @@ class LogBuffer:
     async def _listen(self, ws_url: str, jwt: str | None = None) -> None:
         """Фоновый WS listener. Фильтрует log.* события."""
         import json
-        from urllib.parse import urlencode, urlparse, urlunparse, parse_qs
+        from urllib.parse import urlparse, urlunparse
+
         try:
             import websockets
+
             # GNS3 WebSocket auth требует токен как query-параметр ?token=...
             # (не заголовок Authorization: Bearer), см. get_current_active_user_from_websocket.
             if jwt:
@@ -82,11 +84,13 @@ class LogBuffer:
                 continue
             if since and entry.timestamp < since:
                 continue
-            result.append(ErrorEntry(
-                timestamp=entry.timestamp,
-                level=entry.level,
-                message=entry.message,
-            ))
+            result.append(
+                ErrorEntry(
+                    timestamp=entry.timestamp,
+                    level=entry.level,
+                    message=entry.message,
+                )
+            )
         return result
 
     def get_logs(self, level: LogLevel = LogLevel.ALL, limit: int = 100) -> list[LogEntry]:

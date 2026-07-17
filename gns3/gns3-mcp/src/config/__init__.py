@@ -42,4 +42,4 @@ class _LazySettings:
 
 
 settings = _LazySettings()
-__all__ = ["settings", "GNS3MCPConfigModel"]
+__all__ = ["GNS3MCPConfigModel", "settings"]

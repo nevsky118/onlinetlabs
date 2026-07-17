@@ -1,13 +1,12 @@
 from unittest.mock import AsyncMock
 
 import pytest
-
 from mcp_sdk.context import SessionContext
 from mcp_sdk.errors import ActionExecutionError, SessionContextError
 from mcp_sdk.testing import autotest
 
 from src.server import ACTIONS, GNS3Server
-from tests.unit.conftest import build_gns3_link, build_gns3_node, build_gns3_version
+from tests.unit.conftest import build_gns3_link, build_gns3_node
 
 pytestmark = [pytest.mark.unit]
 
@@ -91,9 +90,7 @@ class TestExecuteAction:
             server = GNS3Server(api_client=api)
 
         with autotest.step("Выполняем start_node"):
-            result = await server.execute_action(
-                _make_ctx(), "start_node", {"node_id": NODE_ID}
-            )
+            result = await server.execute_action(_make_ctx(), "start_node", {"node_id": NODE_ID})
 
         with autotest.step("Проверяем диспатч и успех"):
             api.start_node.assert_awaited_once_with(PROJECT_ID, NODE_ID)
@@ -154,9 +151,7 @@ class TestSessionContextErrors:
     async def test_missing_project_id_raises(self):
         with autotest.step("Контекст без project_id"):
             server = GNS3Server(api_client=_make_api_mock())
-            ctx = SessionContext(
-                user_id="u1", session_id="s1", environment_url=GNS3_URL
-            )
+            ctx = SessionContext(user_id="u1", session_id="s1", environment_url=GNS3_URL)
 
         with autotest.step("Проверяем SessionContextError"):
             with pytest.raises(SessionContextError):

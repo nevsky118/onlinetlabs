@@ -1,10 +1,8 @@
 # GNS3 connection manager для SDK ConnectionPool.
 
 import httpx
-
 from mcp_sdk.connection import BaseConnectionManager
 from mcp_sdk.context import SessionContext
-from mcp_sdk.errors import TargetSystemConnectionError
 
 from src.api_client import GNS3ApiClient
 

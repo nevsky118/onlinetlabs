@@ -1,11 +1,11 @@
-import pytest
 import httpx
+import pytest
 import respx
-
 from mcp_sdk.context import SessionContext
+from mcp_sdk.testing import autotest
+
 from src.api_client import GNS3ApiClient
 from src.connection import GNS3ConnectionManager
-from mcp_sdk.testing import autotest
 from tests.unit.conftest import build_gns3_version
 
 pytestmark = [pytest.mark.unit, pytest.mark.connection]
@@ -15,7 +15,8 @@ GNS3_URL = "http://gns3-test:3080"
 
 def _make_ctx(**overrides) -> SessionContext:
     defaults = dict(
-        user_id="u1", session_id="s1",
+        user_id="u1",
+        session_id="s1",
         environment_url=GNS3_URL,
     )
     return SessionContext(**(defaults | overrides))
@@ -72,9 +73,7 @@ class TestGNS3ConnectionManager:
     @autotest.name("GNS3ConnectionManager.health_check: False при ошибке")
     async def test_health_check_fail(self):
         with autotest.step("Мокаем ConnectError"):
-            respx.get(f"{GNS3_URL}/v3/version").mock(
-                side_effect=httpx.ConnectError("refused")
-            )
+            respx.get(f"{GNS3_URL}/v3/version").mock(side_effect=httpx.ConnectError("refused"))
             mgr = GNS3ConnectionManager()
             client = await mgr.connect(_make_ctx())
 

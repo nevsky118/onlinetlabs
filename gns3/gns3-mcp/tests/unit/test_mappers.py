@@ -1,6 +1,7 @@
 import pytest
-
 from mcp_sdk.models import Component, ComponentDetail, SystemOverview
+from mcp_sdk.testing import autotest
+
 from src.mappers import (
     build_system_overview,
     link_to_component,
@@ -8,7 +9,6 @@ from src.mappers import (
     node_to_component,
     node_to_component_detail,
 )
-from mcp_sdk.testing import autotest
 from tests.unit.conftest import build_gns3_link, build_gns3_node, build_gns3_version
 
 pytestmark = [pytest.mark.unit, pytest.mark.mappers]

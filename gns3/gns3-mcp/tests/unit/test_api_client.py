@@ -1,10 +1,10 @@
-import pytest
 import httpx
+import pytest
 import respx
-
 from mcp_sdk.errors import TargetSystemAPIError, TargetSystemConnectionError
-from src.api_client import GNS3ApiClient
 from mcp_sdk.testing import autotest
+
+from src.api_client import GNS3ApiClient
 from tests.unit.conftest import build_gns3_node, build_gns3_version
 
 pytestmark = [pytest.mark.unit, pytest.mark.api_client]
@@ -29,9 +29,7 @@ class TestApiClientRequests:
     async def test_get_version(self, api_client):
         with autotest.step("Мокаем /v3/version"):
             data = build_gns3_version()
-            respx.get(f"{BASE_URL}/v3/version").mock(
-                return_value=httpx.Response(200, json=data)
-            )
+            respx.get(f"{BASE_URL}/v3/version").mock(return_value=httpx.Response(200, json=data))
 
         with autotest.step("Вызываем get_version"):
             result = await api_client.get_version()
@@ -147,9 +145,7 @@ class TestApiClientErrors:
     @autotest.name("GNS3ApiClient: ConnectError → TargetSystemConnectionError")
     async def test_connection_error(self, api_client):
         with autotest.step("Мокаем ConnectError"):
-            respx.get(f"{BASE_URL}/v3/version").mock(
-                side_effect=httpx.ConnectError("refused")
-            )
+            respx.get(f"{BASE_URL}/v3/version").mock(side_effect=httpx.ConnectError("refused"))
 
         with autotest.step("Проверяем исключение"):
             with pytest.raises(TargetSystemConnectionError):
@@ -161,9 +157,7 @@ class TestApiClientErrors:
     @autotest.name("GNS3ApiClient: ReadTimeout → TargetSystemConnectionError")
     async def test_timeout(self, api_client):
         with autotest.step("Мокаем ReadTimeout"):
-            respx.get(f"{BASE_URL}/v3/version").mock(
-                side_effect=httpx.ReadTimeout("timeout")
-            )
+            respx.get(f"{BASE_URL}/v3/version").mock(side_effect=httpx.ReadTimeout("timeout"))
 
         with autotest.step("Проверяем исключение"):
             with pytest.raises(TargetSystemConnectionError):

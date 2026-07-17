@@ -1,9 +1,10 @@
-import pytest
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
+import pytest
 from mcp_sdk.models import LogLevel
-from src.log_buffer import LogBuffer
 from mcp_sdk.testing import autotest
+
+from src.log_buffer import LogBuffer
 
 pytestmark = [pytest.mark.unit, pytest.mark.log_buffer]
 
@@ -64,7 +65,7 @@ class TestLogBuffer:
             buf._add_entry(LogLevel.ERROR, "new error")
 
         with autotest.step("Фильтруем по since (в будущем)"):
-            future = datetime.now(tz=timezone.utc) + timedelta(seconds=1)
+            future = datetime.now(tz=UTC) + timedelta(seconds=1)
             errors = buf.get_errors(since=future)
             assert len(errors) == 0
 

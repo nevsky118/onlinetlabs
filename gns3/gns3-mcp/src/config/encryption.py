@@ -35,6 +35,7 @@ def decrypt_file(filepath: str, password: str) -> str:
         raise FileNotFoundError(f"File not found: {filepath}")
     import atexit
     import tempfile
+
     fd, output = tempfile.mkstemp(suffix=".env")
     os.close(fd)
     atexit.register(lambda p=output: os.unlink(p) if os.path.exists(p) else None)
@@ -69,9 +70,7 @@ def main() -> None:
     )
     args = parser.parse_args()
     if not args.password:
-        print(
-            "Error: provide --password or set CONFIG_PASSWORD env var", file=sys.stderr
-        )
+        print("Error: provide --password or set CONFIG_PASSWORD env var", file=sys.stderr)
         sys.exit(1)
     if args.action == "encrypt":
         result = encrypt_file(args.file, args.password)

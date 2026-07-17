@@ -68,7 +68,10 @@ def link_to_component_detail(link: dict, node_names: dict[str, str]) -> Componen
 
 
 def build_system_overview(
-    nodes: list[dict], links: list[dict], version: dict, project_name: str,
+    nodes: list[dict],
+    links: list[dict],
+    version: dict,
+    project_name: str,
 ) -> SystemOverview:
     type_counts = Counter(node["node_type"] for node in nodes)
     type_counts["link"] = len(links)

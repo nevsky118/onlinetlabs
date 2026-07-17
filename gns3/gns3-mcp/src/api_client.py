@@ -1,7 +1,6 @@
 # Thin httpx wrapper for GNS3 REST API v3.
 
 import httpx
-
 from mcp_sdk.errors import (
     TargetSystemAPIError,
     TargetSystemConnectionError,
@@ -62,9 +61,7 @@ class GNS3ApiClient:
         return await self._request("GET", f"/v3/projects/{project_id}/nodes")
 
     async def get_node(self, project_id: str, node_id: str) -> dict:
-        return await self._request(
-            "GET", f"/v3/projects/{project_id}/nodes/{node_id}"
-        )
+        return await self._request("GET", f"/v3/projects/{project_id}/nodes/{node_id}")
 
     async def start_node(self, project_id: str, node_id: str) -> dict:
         return await self._request(
@@ -112,9 +109,7 @@ class GNS3ApiClient:
         )
 
     async def reset_console(self, project_id: str, node_id: str) -> None:
-        await self._request(
-            "POST", f"/v3/projects/{project_id}/nodes/{node_id}/console/reset"
-        )
+        await self._request("POST", f"/v3/projects/{project_id}/nodes/{node_id}/console/reset")
 
     # -- Links --
     async def list_links(self, project_id: str) -> list[dict]:
@@ -126,9 +121,7 @@ class GNS3ApiClient:
         )
 
     async def delete_link(self, project_id: str, link_id: str) -> None:
-        await self._request(
-            "DELETE", f"/v3/projects/{project_id}/links/{link_id}"
-        )
+        await self._request("DELETE", f"/v3/projects/{project_id}/links/{link_id}")
 
     async def start_capture(self, project_id: str, link_id: str) -> dict:
         return await self._request(
@@ -142,9 +135,7 @@ class GNS3ApiClient:
             f"/v3/projects/{project_id}/links/{link_id}/capture/stop",
         )
 
-    async def set_link_filter(
-        self, project_id: str, link_id: str, filters: dict
-    ) -> dict:
+    async def set_link_filter(self, project_id: str, link_id: str, filters: dict) -> dict:
         return await self._request(
             "PUT",
             f"/v3/projects/{project_id}/links/{link_id}",
@@ -157,9 +148,7 @@ class GNS3ApiClient:
 
     # -- Snapshots --
     async def list_snapshots(self, project_id: str) -> list[dict]:
-        return await self._request(
-            "GET", f"/v3/projects/{project_id}/snapshots"
-        )
+        return await self._request("GET", f"/v3/projects/{project_id}/snapshots")
 
     async def create_snapshot(self, project_id: str, name: str) -> dict:
         return await self._request(
@@ -168,9 +157,7 @@ class GNS3ApiClient:
             json={"name": name},
         )
 
-    async def restore_snapshot(
-        self, project_id: str, snapshot_id: str
-    ) -> dict:
+    async def restore_snapshot(self, project_id: str, snapshot_id: str) -> dict:
         return await self._request(
             "POST",
             f"/v3/projects/{project_id}/snapshots/{snapshot_id}/restore",
