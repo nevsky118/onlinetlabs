@@ -34,13 +34,19 @@ async def session_interventions_ws(
         await websocket.close(code=4401)
         return
 
+    async with async_session() as db:
+        session = await get_session(db, session_id, user_id)
+    if session is None:
+        await websocket.close(code=4404)
+        return
+
     gateway = websocket.app.state.gateway
     await gateway.connect(session_id, websocket)
     try:
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
-        gateway.disconnect(session_id)
+        gateway.disconnect(session_id, websocket)
 
 
 @router.websocket("/ws/{session_id}/events")

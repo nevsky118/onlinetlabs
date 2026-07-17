@@ -52,11 +52,15 @@ class WebSocketGateway:
         self._connections[session_id] = websocket
         register_connection(websocket)
 
-    def disconnect(self, session_id: str) -> None:
-        """Удалить WebSocket сессии."""
-        ws = self._connections.pop(session_id, None)
-        if ws is not None:
-            unregister_connection(ws)
+    def disconnect(self, session_id: str, websocket: WebSocket | None = None) -> None:
+        """Удалить WebSocket сессии. Если передан websocket, удаляет только совпадающий сокет."""
+        current = self._connections.get(session_id)
+        if current is None:
+            return
+        if websocket is not None and current is not websocket:
+            return
+        self._connections.pop(session_id, None)
+        unregister_connection(current)
 
     async def send_intervention(self, session_id: str, intervention_data: dict) -> None:
         """Отправить интервенцию студенту через WebSocket."""
