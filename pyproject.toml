@@ -1,0 +1,5 @@
+[tool.uv.workspace]
+members = ["backend", "gns3/gns3-mcp", "gns3/gns3-service", "mcp-sdk"]
+
+[tool.uv.sources]
+mcp_sdk = { workspace = true }

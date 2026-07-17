@@ -35,27 +35,28 @@ jobs:
         working-directory: ${{ matrix.package }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v8
         with:
           python-version: "3.11"
-      - name: Install Poetry
-        run: pipx install poetry
-      - name: Install dependencies
-        run: poetry install --no-interaction
+      # Workspace has one root lock; sync it once at repo root regardless of
+      # which member this matrix leg is testing.
+      - name: Install dependencies (uv workspace)
+        working-directory: .
+        run: uv sync --locked
       # Ruff steps are informational until the in-flight MRT WIP is committed and
       # the full tree is formatted. Remove continue-on-error to make them blocking.
       - name: Ruff format check
         continue-on-error: true
-        run: poetry run ruff format --check .
+        run: uv run ruff format --check .
       - name: Ruff lint
         continue-on-error: true
-        run: poetry run ruff check .
+        run: uv run ruff check .
       # Informational until the type-error backlog (baseline ~100 errors) is worked
       # down. Remove continue-on-error once the backlog is ratcheted to zero.
       - name: Mypy
         if: matrix.package == 'backend'
         continue-on-error: true
-        run: poetry run mypy .
+        run: uv run mypy .
       - name: Alembic migrate + drift check
         if: matrix.package == 'backend'
         env:
@@ -80,13 +81,13 @@ jobs:
           GNS3_INTERNAL_URL: http://localhost:3080
           MCP_SERVER_URL: http://localhost:8100
         run: |
-          poetry run alembic upgrade head
-          test "$(poetry run alembic heads | wc -l)" -eq 1
-          poetry run alembic check
+          uv run alembic upgrade head
+          test "$(uv run alembic heads | wc -l)" -eq 1
+          uv run alembic check
       - name: Tests
         run: |
           if [ -d tests ]; then
-            poetry run pytest tests -q
+            uv run pytest tests -q
           else
             echo "no tests directory in ${{ matrix.package }} (covered elsewhere)"
           fi

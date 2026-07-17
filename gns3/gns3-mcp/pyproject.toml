@@ -1,22 +1,26 @@
-[tool.poetry]
+[project]
 name = "gns3-mcp-server"
 version = "0.1.0"
 description = "MCP-сервер для GNS3"
 authors = []
-packages = [{include = "src"}]
+requires-python = ">=3.11"
+dependencies = [
+    "mcp_sdk",
+    "httpx>=0.28.0,<0.29.0",
+    "python-dotenv>=1.0.0,<2.0.0",
+    "websockets>=16.0,<17.0",
+]
 
-[tool.poetry.dependencies]
-python = "^3.11"
-mcp_sdk = {path = "../../mcp-sdk", develop = true}
-httpx = "^0.28.0"
-python-dotenv = "^1.0.0"
-websockets = "^16.0"
+[dependency-groups]
+dev = [
+    "pytest>=9.0.0,<10.0.0",
+    "pytest-asyncio>=1.0.0,<2.0.0",
+    "ruff>=0.14.0,<0.15.0",
+    "respx>=0.23.1,<0.24.0",
+]
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^9.0.0"
-pytest-asyncio = "^1.0.0"
-ruff = "^0.14.0"
-respx = "^0.23.1"
+[tool.uv]
+package = false
 
 [tool.ruff]
 target-version = "py311"
@@ -35,6 +39,3 @@ ignore = [
 "tests/**" = ["S101", "ARG", "PLR2004", "T20", "B017"]
 "scripts/**" = ["T20"]
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"

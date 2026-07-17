@@ -36,7 +36,7 @@ jobs:
             -in gns3/.env.prod.aes -out gns3/.env.prod \
             -pass pass:"${{ secrets.CONFIG_PASSWORD }}"
 
-      - name: Sync gns3 + mcp-sdk + .dockerignore (images/ и runtime/ на сервере — не трогаем)
+      - name: Sync gns3 + mcp-sdk + workspace manifest + .dockerignore (images/ и runtime/ на сервере — не трогаем)
         run: |
           DST="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
           ssh "$DST" 'mkdir -p /opt/onlinetlabs/gns3'
@@ -48,6 +48,11 @@ jobs:
           # gns3-service/gns3-mcp собираются с контекстом=корень репо → нужны mcp-sdk/ + .dockerignore
           rsync -az --delete --exclude '**/__pycache__' --exclude '**/.pytest_cache' \
             mcp-sdk/ "$DST:/opt/onlinetlabs/mcp-sdk/"
+          # uv workspace: root manifest + lock — Dockerfiles resolve `--package
+          # gns3-mcp-server`/`gns3-service` against these with --frozen, which
+          # only needs the target package's + its workspace-source deps'
+          # manifests present (verified: backend/ is NOT required here).
+          scp pyproject.toml uv.lock "$DST:/opt/onlinetlabs/"
           scp .dockerignore "$DST:/opt/onlinetlabs/.dockerignore"
 
       - name: Build + up (layered compose, KVM, общая сеть)
