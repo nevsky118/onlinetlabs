@@ -6,13 +6,11 @@
 ASGIWebSocketTransport), а не через прямой вызов хендлера — так же, как ходил бы
 браузер (JWT в query, реальный accept/close).
 
-Примечание: сам хендлер (sessions/routers/ws.py:session_activity_observe_ws) после
-accept() слушает только activity.subscribe()-очередь (`while True: await q.get()`) и
-никогда не вызывает websocket.receive() — поэтому он не замечает клиентский
-disconnect и утечёт как зависшая asyncio-задача, пока сервер не остановят. Это не
-баг теста: чтобы штатный `async with aconnect_ws(...)` не подвесил teardown
-навечно, тест ограничивает всю сессию таймаутом и трактует TimeoutError как
-допустимый (а не обязательный) способ завершения соединения.
+Хендлер (sessions/routers/ws.py:session_activity_observe_ws) гонит _pump (очередь
+activity) против _watch_disconnect (websocket.receive), так что клиентский
+disconnect замечается даже на пустой очереди и подписка снимается (см. тест
+disconnect_cleans_up_subscription). asyncio.timeout в тестах — страховка от
+регресса этой утечки, а не ожидаемый путь.
 """
 
 import asyncio
@@ -136,3 +134,35 @@ class TestSessionActivityObserveWs:
             assert_equal(received["type"], "agent_activity", "type=agent_activity")
             assert_equal(received["session_id"], _SESSION_ID, "session_id форвардится")
             assert_equal(received["summary"], "test hint", "summary форвардится")
+
+    @autotest.num("2652")
+    @autotest.external_id("e3d9c3a0-6557-4c68-85a8-7d89d6926def")
+    @autotest.name(
+        "session_activity_observe_ws: отключение клиента снимает подписку (нет утечки задачи)"
+    )
+    async def test_e3d9c3a0_disconnect_cleans_up_subscription(self):
+        activity = self.app.state.activity_log
+        token = self._token(can_view_logs=True)
+        transport = ASGIWebSocketTransport(app=self.app)
+
+        with autotest.step("Act: наблюдатель подключается, дожидается подписки, затем отключается"):
+            # asyncio.timeout — страховка: до фикса хендлер завис бы на q.get() и
+            # unsubscribe не вызвался бы никогда, тест упал бы по таймауту.
+            async with asyncio.timeout(5):
+                async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+                    async with aconnect_ws(f"/ws/observe/{_SESSION_ID}?token={token}", client):
+                        for _ in range(500):
+                            if _SESSION_ID in activity._subs:
+                                break
+                            await asyncio.sleep(0)
+                        else:
+                            pytest.fail("хендлер не подписался вовремя")
+                    # вышли из aconnect_ws → клиент отключился; хендлер должен
+                    # заметить disconnect и снять подписку.
+                    for _ in range(500):
+                        if _SESSION_ID not in activity._subs:
+                            break
+                        await asyncio.sleep(0)
+
+        with autotest.step("Assert: подписка снята после disconnect (хендлер не завис)"):
+            assert _SESSION_ID not in activity._subs, "подписка должна быть снята после disconnect"

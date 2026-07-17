@@ -1,5 +1,7 @@
 """WebSocket-эндпоинты сессии: интервенции и поток событий из gns3-service."""
 
+import asyncio
+import contextlib
 import logging
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
@@ -119,11 +121,31 @@ async def session_activity_observe_ws(
     gateway.connect_observer(session_id, websocket)
     q = activity.subscribe(session_id)
     try:
-        while True:
-            event = await q.get()
-            await websocket.send_json({"type": "agent_activity", **event.model_dump(mode="json")})
-    except WebSocketDisconnect:
-        pass
+
+        async def _pump() -> None:
+            while True:
+                event = await q.get()
+                await websocket.send_json(
+                    {"type": "agent_activity", **event.model_dump(mode="json")}
+                )
+
+        async def _watch_disconnect() -> None:
+            # receive() поднимает WebSocketDisconnect при отключении клиента,
+            # даже пока _pump заблокирован на пустой очереди — иначе хендлер
+            # висел бы вечно, утекая задачей и подпиской.
+            while True:
+                await websocket.receive()
+
+        pump = asyncio.create_task(_pump())
+        watch = asyncio.create_task(_watch_disconnect())
+        done, pending = await asyncio.wait({pump, watch}, return_when=asyncio.FIRST_COMPLETED)
+        for task in pending:
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
+        for task in done:
+            with contextlib.suppress(WebSocketDisconnect, asyncio.CancelledError):
+                task.result()
     finally:
         activity.unsubscribe(session_id, q)
         gateway.disconnect_observer(session_id, websocket)
