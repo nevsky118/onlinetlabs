@@ -1,25 +1,26 @@
-"""Структурное логирование через structlog с JSON-форматтером."""
+"""Структурное логирование через structlog с JSON- или консольным форматтером."""
 
 import logging
 import sys
-from contextvars import ContextVar
 
 import structlog
 
-request_id_ctx: ContextVar[str] = ContextVar("request_id", default="-")
+_CONSOLE_ENVIRONMENTS = {"local", "development"}
 
 
-def _add_request_id(_: object, __: str, event_dict: dict) -> dict:
-    """Processor structlog, добавляющий текущий request_id из contextvar в каждую запись лога."""
-    event_dict["request_id"] = request_id_ctx.get()
-    return event_dict
+def configure_logging(
+    service_name: str, level: str = "INFO", environment: str = "production"
+) -> None:
+    """Настраивает structlog и stdlib-логирование, пробрасывает uvicorn.error в root.
 
-
-def configure_logging(service_name: str, level: str = "INFO") -> None:
-    """Настраивает structlog и stdlib-логирование на JSON-вывод и пробрасывает логи uvicorn в root."""
+    Рендерер зависит от окружения: цветной консольный в local/development,
+    JSON — иначе. uvicorn.access не пробрасывается и не пишет: каждый запрос
+    уже логирует RequestIDMiddleware одной строкой с request_id и duration.
+    """
     shared_processors = [
         structlog.contextvars.merge_contextvars,
-        _add_request_id,
+        structlog.stdlib.add_logger_name,
+        structlog.stdlib.ExtraAdder(),
         structlog.processors.add_log_level,
         structlog.processors.TimeStamper(fmt="iso"),
     ]
@@ -33,11 +34,16 @@ def configure_logging(service_name: str, level: str = "INFO") -> None:
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
+    renderer = (
+        structlog.dev.ConsoleRenderer(colors=True)
+        if environment in _CONSOLE_ENVIRONMENTS
+        else structlog.processors.JSONRenderer()
+    )
     formatter = structlog.stdlib.ProcessorFormatter(
         foreign_pre_chain=shared_processors,
         processors=[
             structlog.stdlib.ProcessorFormatter.remove_processors_meta,
-            structlog.processors.JSONRenderer(),
+            renderer,
         ],
     )
     handler = logging.StreamHandler(sys.stdout)
@@ -45,9 +51,16 @@ def configure_logging(service_name: str, level: str = "INFO") -> None:
     root = logging.getLogger()
     root.handlers = [handler]
     root.setLevel(getattr(logging, level.upper()))
-    # Заставляем uvicorn-логгеры пробрасывать в root, иначе JSON-форматтер не применится.
-    for name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+    # uvicorn/uvicorn.error пробрасываем в root, иначе форматтер к ним не применится.
+    for name in ("uvicorn", "uvicorn.error"):
         lg = logging.getLogger(name)
         lg.handlers = []
         lg.propagate = True
+    # uvicorn.access отключаем: с ним каждый запрос логировался бы дважды
+    # (свой access-лог + request_handled из RequestIDMiddleware). Dockerfile
+    # запускает uvicorn с --no-access-log; propagate=False — страховка на
+    # случай прямого запуска uvicorn без этого флага.
+    access_logger = logging.getLogger("uvicorn.access")
+    access_logger.handlers = []
+    access_logger.propagate = False
     structlog.contextvars.bind_contextvars(service=service_name)

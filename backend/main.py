@@ -16,7 +16,11 @@ from observability.logging import configure_logging
 from observability.metrics import configure_metrics
 from observability.sentry import configure_sentry
 
-configure_logging("backend", level=getattr(getattr(settings, "log", None), "log_level", "INFO"))
+configure_logging(
+    "backend",
+    level=getattr(getattr(settings, "log", None), "log_level", "INFO"),
+    environment=getattr(getattr(settings, "api", None), "environment", "production"),
+)
 configure_sentry("backend", environment=os.getenv("ENVIRONMENT", "dev"))
 
 from admin.router import router as admin_router

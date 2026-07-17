@@ -1,4 +1,4 @@
-"""X-Request-ID middleware: read incoming or generate UUID, attach to contextvar."""
+"""X-Request-ID middleware: read incoming or generate UUID, bind to structlog contextvars."""
 
 import time
 import uuid
@@ -8,8 +8,6 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
-from observability.logging import request_id_ctx
-
 _log = structlog.get_logger("request")
 
 
@@ -17,9 +15,8 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
     """Middleware, проставляющий X-Request-ID для каждого запроса и логирующий его обработку."""
 
     async def dispatch(self, request: Request, call_next):
-        """Привязывает request_id к контексту логов, обрабатывает запрос и возвращает заголовок в ответе."""
+        """Привязывает request_id к structlog-контексту, обрабатывает запрос и возвращает заголовок в ответе."""
         rid = request.headers.get("x-request-id") or uuid.uuid4().hex
-        token = request_id_ctx.set(rid)
         # structlog contextvars живут на task-локальном уровне, но воркер
         # переиспользует одну и ту же задачу для последующих запросов.
         # Чистим явно, чтобы между запросами не утекали user_id и session_id.
@@ -39,7 +36,6 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
                 duration_ms=duration_ms,
             )
         finally:
-            request_id_ctx.reset(token)
             structlog.contextvars.clear_contextvars()
         response.headers["x-request-id"] = rid
         return response
