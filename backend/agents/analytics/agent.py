@@ -1,4 +1,4 @@
-"""identify_regime — pure real-time session analysis, struggle detection."""
+"""identify_regime: pure real-time session analysis and struggle detection."""
 
 from collections.abc import Callable
 
@@ -13,8 +13,7 @@ from agents.analytics.models import (
 )
 from config.config_model import LearningAnalyticsConfig
 
-# Struggle detection rules
-# (predicate, struggle_type, intervention, confidence_fn)
+# struggle rules as (predicate, struggle_type, intervention, confidence_fn) tuples
 
 StruggleRule = tuple[
     Callable[[SessionFeatures, LearningAnalyticsConfig], bool],
@@ -30,14 +29,14 @@ STRUGGLE_RULES: list[StruggleRule] = [
         SuggestedIntervention.HINT,
         lambda f, c: min(f.error_repeat_count / (c.error_repeat_threshold + 2), 1.0),
     ),
-    # Direct signal: many unique wrong answers → trial-and-error (Table 1)
+    # many unique wrong answers means trial-and-error (Table 1)
     (
         lambda f, c: f.distinct_failing_actuals > c.distinct_actuals_threshold,
         StruggleType.TRIAL_AND_ERROR,
         SuggestedIntervention.TUTOR,
         lambda f, c: min(f.distinct_failing_actuals / 4, 1.0),
     ),
-    # Direct signal: cycles without change → stuck (Table 1)
+    # cycles without change means stuck (Table 1)
     (
         lambda f, c: f.cycles_failing_unchanged >= c.unchanged_cycles_threshold,
         StruggleType.STUCK_ON_STEP,
@@ -84,9 +83,7 @@ def _detect_struggle(
     return None, SuggestedIntervention.NONE, 0.0
 
 
-def identify_regime(
-    features: SessionFeatures, config: LearningAnalyticsConfig
-) -> AnalyticsResult:
+def identify_regime(features: SessionFeatures, config: LearningAnalyticsConfig) -> AnalyticsResult:
     """Real-time session analysis. Rule-based struggle detection."""
     metrics = StudentMetrics(
         total_attempts=features.events_total,

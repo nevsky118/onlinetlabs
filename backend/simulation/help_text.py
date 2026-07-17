@@ -1,13 +1,14 @@
 """Sim-student's help-request text: LLM (gated) + budget guard + templates.
 
-The only place LLM is used in the simulation. When the flag is off / budget is
-exhausted / on error — falls back to a template.
+The only place LLM is used in the simulation. When the flag is off, the budget is
+exhausted, or a call errors, it falls back to a template.
 
 The template must depend on CONTEXT and ATTEMPT NUMBER: previously it was chosen
 only by profile traits, so one student sent the exact same phrase all session,
 and the chat log turned into a looping feed. A real student, once stuck, rephrases
 and adds detail.
 """
+
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 
@@ -37,11 +38,7 @@ class HelpTextGen:
 
     async def generate(self, profile: StudentProfile, context: dict) -> str:
         """Request text. LLM if enabled AND budget not exhausted, else template."""
-        if (
-            not self.llm_enabled
-            or self.llm_call is None
-            or self.spent_rub >= self.budget_rub
-        ):
+        if not self.llm_enabled or self.llm_call is None or self.spent_rub >= self.budget_rub:
             return self._template(profile, context)
         try:
             text, tokens = await self.llm_call(self._prompt(profile, context))
@@ -56,7 +53,7 @@ class HelpTextGen:
         node = context.get("node")
         tried = context.get("tried")
 
-        # Shift by traits — different students start with different phrasings.
+        # Shift by traits, so different students start with different phrasings.
         offset = int(profile.help_propensity * 10 + profile.skill * 3)
         stage = _ASK_STAGES[(offset + attempt) % len(_ASK_STAGES)]
         if "{tried}" in stage and not tried:

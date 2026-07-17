@@ -32,7 +32,7 @@ class SessionMonitorRegistry:
         self._activity_log = activity_log
         self._gns3_client = gns3_client
         self._monitors: dict[str, SessionMonitor] = {}
-        # observer outlives the monitor — the registry owns it
+        # the observer outlives the monitor, so the registry owns it directly
         self._observers: dict[str, object] = {}
 
     async def start(self, session_id: str, user_id: str, lab_slug: str, ctx) -> None:
@@ -72,7 +72,7 @@ class SessionMonitorRegistry:
         async with self._db_factory() as db:
             arm = await effective_arm(db, user_id, lab_slug)
 
-        # Control-loop seam: one instance per session, reuses the same dependencies
+        # control-loop seam; one instance per session, reusing the same dependencies
         control_interface = ControlInterface(
             self._mcp_client, self._db_factory, self._config.learning_analytics
         )

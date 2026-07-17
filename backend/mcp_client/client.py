@@ -37,7 +37,6 @@ class MCPClient:
     """
 
     def __init__(self, server_url: str, timeout: float = 30.0):
-        """Stores the MCP server URL and the call timeout."""
         self._server_url = server_url.rstrip("/")
         self._mcp_url = f"{self._server_url}/mcp"
         self._timeout = timeout
@@ -93,7 +92,7 @@ class MCPClient:
 
         return None
 
-    # StateProvider — topology state
+    # StateProvider (topology state)
 
     async def list_components(self, ctx: SessionContext) -> list[Component]:
         """Get the list of topology components from the MCP server."""
@@ -108,7 +107,7 @@ class MCPClient:
         )
         return ComponentDetail.model_validate(data)
 
-    # ActionProvider — actions on nodes
+    # ActionProvider (actions on nodes)
 
     async def execute_action(
         self, ctx: SessionContext, action_name: str, params: dict[str, Any]
@@ -120,12 +119,12 @@ class MCPClient:
         )
         return ActionResult.model_validate(data)
 
-    # LogProvider — logs and errors
+    # LogProvider (logs and errors)
 
     async def list_errors(
         self, ctx: SessionContext, since: datetime | None = None
     ) -> list[ErrorEntry]:
-        """Get environment errors, optionally starting from the since moment."""
+        """Get environment errors, optionally since a given timestamp."""
         args: dict[str, Any] = {"ctx": self._ctx_dict(ctx)}
         if since is not None:
             args["since"] = since.isoformat()
@@ -144,7 +143,7 @@ class MCPClient:
         items = data.get("result", data) if isinstance(data, dict) else data
         return [LogEntry.model_validate(item) for item in items]
 
-    # HistoryProvider — user actions
+    # HistoryProvider (user actions)
 
     async def list_user_actions(self, ctx: SessionContext, limit: int = 50) -> list[UserAction]:
         """Get the history of user actions in the environment."""
@@ -161,6 +160,5 @@ class MCPToolError(Exception):
     """Error raised when calling an MCP tool."""
 
     def __init__(self, tool_name: str, message: str):
-        """Stores the tool name and builds the error message."""
         self.tool_name = tool_name
         super().__init__(f"MCP tool '{tool_name}' failed: {message}")

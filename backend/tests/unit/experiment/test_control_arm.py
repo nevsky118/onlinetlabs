@@ -10,7 +10,7 @@ pytestmark = [pytest.mark.unit]
 class TestControlArm:
     @autotest.num("1032")
     @autotest.external_id("a929abc0-26b5-4f8b-a70c-7d84616f21bb")
-    @autotest.name("ControlArm: значения enum — open и closed")
+    @autotest.name("ControlArm: значения enum это open и closed")
     def test_a929abc0_arm_values(self):
         with autotest.step("Act: собрать значения enum"):
             values = {a.value for a in ControlArm}

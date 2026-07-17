@@ -35,7 +35,7 @@ class TestTutorAgentLLM:
 
     @autotest.num("561")
     @autotest.external_id("65e37fbf-3605-4faa-a9d1-65a2ebe1d8b7")
-    @autotest.name("TutorAgent: run с agent_context — реальный Agent.run даёт ответ из output")
+    @autotest.name("TutorAgent: run с agent_context, реальный Agent.run даёт ответ из output")
     async def test_65e37fbf_run_with_context(self, config_model, monkeypatch):
         with autotest.step("Создаём агент с контекстом, подменяем _build_model на TestModel"):
             agent = TutorAgent(config_model, mcp_client=None)
@@ -52,7 +52,7 @@ class TestTutorAgentLLM:
                 agent_context=context,
             )
 
-        with autotest.step("Вызываем run (без сети — модель подменена на TestModel)"):
+        with autotest.step("Вызываем run (без сети, модель подменена на TestModel)"):
             result = await agent.run(inp, model_id=mid)
 
         with autotest.step("Ответ собран из result.output реального прогона"):

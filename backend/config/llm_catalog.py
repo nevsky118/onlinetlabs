@@ -49,14 +49,14 @@ def default_catalog() -> list[ModelEntry]:
             model="deepseek/deepseek-chat-v3.1",
         ),
         # Free-tier, no OpenRouter balance top-up (rate-limited).
-        # Named/deterministic — we know which model answered (important for experiments).
+        # Named and deterministic, so we know which model answered (important for experiments).
         ModelEntry(
             id="qwen3-next-free",
             label="Qwen3 Next (free)",
             provider_ref="openrouter",
             model="qwen/qwen3-next-80b-a3b-instruct:free",
         ),
-        # OpenRouter auto-router over free models — more reliable (fewer 429s), but nondeterministic.
+        # OpenRouter auto-router over free models, more reliable (fewer 429s) but nondeterministic.
         ModelEntry(
             id="openrouter-free",
             label="OpenRouter Free (auto)",

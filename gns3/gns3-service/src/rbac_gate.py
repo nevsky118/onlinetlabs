@@ -15,14 +15,14 @@ _LOCK_KEY = "lock:gns3_rbac_write"
 class RbacGate:
     """Lets writes into GNS3 RBAC through strictly one at a time.
 
-    The GNS3 server returns 500 on concurrent `POST /v3/access/acl` — its RBAC storage
+    The GNS3 server returns 500 on concurrent `POST /v3/access/acl`; its RBAC storage
     can't handle concurrent writes. Retries don't help: competing provisions
     collide again (with 5 simultaneous students, ~60% of sessions failed to be created).
     So user creation and ACL creation are run through the gate.
 
     A local `asyncio.Lock` serializes within the process; a Redis lock (if a URL is given)
     adds serialization across gns3-service replicas. The heavy `duplicate_project`
-    does NOT go through the gate — it doesn't touch RBAC and should stay parallel.
+    does NOT go through the gate; it doesn't touch RBAC and should stay parallel.
     """
 
     def __init__(

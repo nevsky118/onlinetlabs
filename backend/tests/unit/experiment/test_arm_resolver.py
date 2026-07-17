@@ -68,7 +68,9 @@ class TestArmResolver:
 
     @autotest.num("1125")
     @autotest.external_id("9973c6f2-6271-423e-93ed-0febcb672226")
-    @autotest.name("resolve_control_arm: несуществующий user_id — UserNotFound (детерминированность)")
+    @autotest.name(
+        "resolve_control_arm: несуществующий user_id, UserNotFound (детерминированность)"
+    )
     async def test_9973c6f2_unknown_user_raises_user_not_found(self, db_setup):
         with autotest.step("Act+Assert: resolve для несуществующего пользователя падает"):
             session_factory = db_setup

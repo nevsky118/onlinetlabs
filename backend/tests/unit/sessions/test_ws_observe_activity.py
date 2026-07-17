@@ -3,7 +3,7 @@
 Verifies can_view_session_activity (closes 4403 without the can_view_logs right) and
 that a real AgentActivityLog.emit reaches the subscribed observer as
 {"type": "agent_activity", ...}. Goes through the real ASGI stack (httpx-ws +
-ASGIWebSocketTransport) rather than a direct handler call — the same way a
+ASGIWebSocketTransport) rather than a direct handler call, the same way a
 browser would (JWT in query, real accept/close).
 
 The handler (sessions/routers/ws.py:session_activity_observe_ws) races _pump
@@ -70,7 +70,7 @@ class TestSessionActivityObserveWs:
     @autotest.num("2650")
     @autotest.external_id("420ec7d3-0fe6-4b34-a81d-f643f363e211")
     @autotest.name(
-        "session_activity_observe_ws: без can_view_logs — close(4403), can_view_session_activity"
+        "session_activity_observe_ws: без can_view_logs, close(4403), can_view_session_activity"
     )
     async def test_420ec7d3_rejects_user_without_view_permission(self):
         with autotest.step("Arrange: валидный JWT владельца сессии, но без права can_view_logs"):
@@ -126,7 +126,7 @@ class TestSessionActivityObserveWs:
                             received = await ws.receive_json()
             except TimeoutError:
                 # Expected way to break out of a hung server task (see the module
-                # docstring) — the assert below would already have run by this point.
+                # docstring), the assert below would already have run by this point.
                 pass
 
         with autotest.step("Assert: событие форвардится как agent_activity с полями исходного"):
@@ -146,7 +146,7 @@ class TestSessionActivityObserveWs:
         transport = ASGIWebSocketTransport(app=self.app)
 
         with autotest.step("Act: наблюдатель подключается, дожидается подписки, затем отключается"):
-            # asyncio.timeout — safeguard: before the fix, the handler would hang on
+            # asyncio.timeout is a safeguard: before the fix, the handler would hang on
             # q.get() and unsubscribe would never be called, so the test would time out.
             async with asyncio.timeout(5):
                 async with AsyncClient(transport=transport, base_url="http://testserver") as client:

@@ -1,4 +1,4 @@
-"""POST /labs/{slug}/sessions/{sid}/validate — SSE validation stream."""
+"""POST /labs/{slug}/sessions/{sid}/validate (SSE validation stream)."""
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse

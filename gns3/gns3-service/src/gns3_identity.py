@@ -3,13 +3,13 @@
 import hashlib
 
 _PREFIX = "student-"
-_DIGEST_LEN = 16  # 64 bits — collisions are practically excluded
+_DIGEST_LEN = 16  # 64 bits, collisions are practically excluded
 
 
 def gns3_username_for(user_id: str) -> str:
     """Unique GNS3 username derived from the student's FULL user_id.
 
-    It used to be `f"student-{user_id[:8]}"` — an 8-character prefix is NOT unique.
+    It used to be `f"student-{user_id[:8]}"`, but an 8-character prefix is NOT unique.
     Two students with a shared prefix got the same name, and "orphan cleanup" during
     the second one's provisioning DELETED the first one's GNS3 user right in the
     middle of their session; their ACL then failed with `FOREIGN KEY constraint failed`,

@@ -116,7 +116,7 @@ class TestGNS3ActorConsole:
                 await actor.execute(Action.REPEAT_ERROR)
                 await actor.execute(Action.REPEAT_ERROR)
 
-        with autotest.step("Assert: команда идентична — проверка упадёт с тем же actual"):
+        with autotest.step("Assert: команда идентична, проверка упадёт с тем же actual"):
             sent = [call.args[0] for call in writer.write.call_args_list]
             assert_equal(sent, [b"ip 192.168.2.11/24\r\n", b"ip 192.168.2.11/24\r\n"], "команды")
 
@@ -188,7 +188,7 @@ class TestGNS3ActorConsole:
                 await actor.execute(Action.CORRECT_CMD)  # PC1, index moved on to PC2
                 await actor.execute(Action.ASK_HELP)
 
-        with autotest.step("Assert: узел и процитированная команда — про PC1"):
+        with autotest.step("Assert: узел и процитированная команда про PC1"):
             assert_equal(captured.get("node"), "PC1", "узел в контексте")
             assert_equal(captured.get("tried"), "ip 192.168.1.11/24", "команда в контексте")
             assert_equal(captured.get("attempt"), 0, "номер попытки")

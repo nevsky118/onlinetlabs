@@ -58,7 +58,7 @@ def test_e7a24847_openrouter_only_fallback_when_default_model_missing():
                 "OPENROUTER_API_KEY": "ork",
             }
         )
-    with autotest.step("chat_model и intervention_model — openrouter-модели из каталога"):
+    with autotest.step("chat_model и intervention_model это openrouter-модели из каталога"):
         assert cfg.chat_model in {m.id for m in cfg.catalog}
         assert cfg.intervention_model in {m.id for m in cfg.catalog}
         assert all(m.provider_ref == "openrouter" for m in cfg.catalog)

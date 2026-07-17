@@ -39,8 +39,8 @@ class CheckContext:
         if not node:
             return self.gns3_host
         host = node.get("console_host") or ""
-        # GNS3 returns "0.0.0.0" as the listening address inside the container —
-        # useless for outbound TCP connections. Fall back to gns3_host.
+        # GNS3 returns "0.0.0.0" as the listening address inside the container,
+        # which is useless for outbound TCP connections. Fall back to gns3_host.
         if not host or host in ("0.0.0.0", "::"):
             return self.gns3_host
         return host

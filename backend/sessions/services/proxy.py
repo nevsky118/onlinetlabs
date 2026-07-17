@@ -12,7 +12,7 @@ _BULK_GNS3_SEMAPHORE = asyncio.Semaphore(12)
 
 
 def get_bulk_semaphore(request: Request) -> asyncio.Semaphore:
-    """DI: returns the semaphore from app.state, or the module-level fallback.
+    """Returns the semaphore from app.state, or the module-level fallback, for dependency injection.
 
     Tests override app.state.bulk_gns3_semaphore so parallel test scenarios
     aren't blocked by the production semaphore's limit.
@@ -31,7 +31,7 @@ def existing_gns3_deep_url(session) -> str:
     """Returns a deep link to the session's project in the GNS3 web UI.
 
     Goes through auth-relay.html (see gns3/gns3-server/auth-relay.html): a
-    direct jump to /controller/1/project/<id> hits the GNS3 login form —
+    direct jump to /controller/1/project/<id> hits the GNS3 login form;
     the relay fills it with the temporary gns3_username/gns3_password and
     gets the student to the project's returnUrl with a single "Log in" click.
     """

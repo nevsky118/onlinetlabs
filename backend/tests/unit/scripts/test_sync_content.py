@@ -1,4 +1,4 @@
-"""Task 1: sync_content tests — environment_type, CONTENT_DIR, idempotent upsert."""
+"""Task 1: sync_content tests, environment_type, CONTENT_DIR, idempotent upsert."""
 
 import importlib.util
 import textwrap

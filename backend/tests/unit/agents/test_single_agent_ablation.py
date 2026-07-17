@@ -1,4 +1,4 @@
-"""#7 extra: single-vs-multi-agent ablation — the intervention routing toggle."""
+"""#7 extra: single-vs-multi-agent ablation, the intervention routing toggle."""
 
 from unittest.mock import MagicMock, patch
 

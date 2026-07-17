@@ -39,7 +39,7 @@ class AgentActivityLog:
                 try:
                     q.put_nowait(event)
                 except asyncio.QueueFull:
-                    pass  # slow observer — drop the frame
+                    pass  # slow observer, drop the frame
             asyncio.create_task(self._persist(event))
         except Exception:
             logger.warning("activity emit failed", exc_info=True)

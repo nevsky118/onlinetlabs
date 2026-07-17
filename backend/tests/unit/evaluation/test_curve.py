@@ -37,11 +37,11 @@ class TestCurve:
                 all(fph[i] >= fph[i + 1] for i in range(len(fph) - 1)),
                 "ложные/час не растут с T_k",
             )
-            assert_true(best in curve, "J-оптимум — точка кривой")
+            assert_true(best in curve, "J-оптимум это точка кривой")
 
     @autotest.num("2601")
     @autotest.external_id("b3e7f2a1-04dc-4e8f-93b0-6d1c5e9f3a72")
-    @autotest.name("curve: J не вырожден — раннее вмешательство лучше позднего при дорогом stuck")
+    @autotest.name("curve: J не вырожден, раннее вмешательство лучше позднего при дорогом stuck")
     def test_b3e7f2a1_j_non_degenerate(self):
         with autotest.step("Arrange: длинные спеллы + высокий c_stuck"):
             scns = [
@@ -54,7 +54,7 @@ class TestCurve:
             costs = Costs(c_stuck=2.0, c_intervention=1.0, c_false=2.0)
         with autotest.step("Act"):
             curve = operating_curve(scns, [0.0, 15.0, 300.0], cfg, costs)
-        with autotest.step("Assert: J(t_k=0) < J(t_k=300) — усечение устраняет вырождение"):
+        with autotest.step("Assert: J(t_k=0) < J(t_k=300), усечение устраняет вырождение"):
             assert_equal(len(curve), 3, "три точки по сетке")
             assert_true(
                 curve[0].J < curve[-1].J,

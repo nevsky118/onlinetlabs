@@ -43,7 +43,7 @@ class TestDataRegistry:
     @autotest.external_id("f4d5e6a7-b8c9-4012-defa-123456789023")
     @autotest.name("sortable/searchable/masked ⊆ columns для каждой таблицы")
     def test_f4d5e6a7_column_sets_subset_of_columns(self):
-        with autotest.step("Assert: все наборы колонок — подмножества columns"):
+        with autotest.step("Assert: все наборы колонок это подмножества columns"):
             for slug, spec in ADMIN_TABLES.items():
                 cols = set(spec.columns)
                 assert_true(spec.sortable <= cols, f"{slug}.sortable ⊆ columns")

@@ -62,7 +62,6 @@ async def _run_vpcs_show_ip(node_name: str, ctx, mcp_client) -> dict:
     """Connects via telnet to the VPCS console and runs show ip."""
     from validation.checks.vpcs import _drain_until_prompt, _parse_show_ip
 
-    # Find the node by name
     components = await mcp_client.list_components(ctx)
     node = next((c for c in components if c.name == node_name and c.type == "vpcs"), None)
     if node is None:
@@ -73,7 +72,6 @@ async def _run_vpcs_show_ip(node_name: str, ctx, mcp_client) -> dict:
             "status": node.status,
         }
 
-    # Get the console port
     detail = await mcp_client.get_component(ctx, node.id)
     console_port = detail.properties.get("console")
     console_host = detail.properties.get("console_host") or ""
@@ -81,7 +79,7 @@ async def _run_vpcs_show_ip(node_name: str, ctx, mcp_client) -> dict:
     if not console_port:
         return {"error": f"Нет консольного порта у узла '{node_name}'"}
 
-    # GNS3 returns 0.0.0.0 as the listening address — use the host from the URL
+    # GNS3 returns 0.0.0.0 as the listening address, so use the host from the URL instead
     if not console_host or console_host in ("0.0.0.0", "::"):
         derived = urlparse(ctx.environment_url).hostname
         if not derived:

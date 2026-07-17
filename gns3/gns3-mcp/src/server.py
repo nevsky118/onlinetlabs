@@ -1,4 +1,4 @@
-# GNS3Server — implementation of SDK protocols.
+# GNS3Server implements the SDK protocols.
 
 from __future__ import annotations
 
@@ -141,7 +141,7 @@ class GNS3Server:
     """Implementation of SDK protocols for GNS3.
 
     Receives api_client from outside (from ConnectionPool or directly).
-    When pool is present — resolves the client per-session through the pool.
+    When pool is present, resolves the client per-session through the pool.
     """
 
     def __init__(

@@ -19,7 +19,7 @@ limiter = Limiter(key_func=_rate_limit_key)
 
 
 def exchange_rate_limit_key(request: Request) -> str:
-    """Ключ лимита для /auth/exchange — по email субъекта, не по IP.
+    """Ключ лимита для /auth/exchange строится по email субъекта, а не по IP.
 
     Это доверенный server-to-server вызов из Next BFF, поэтому все запросы идут с
     одного IP. Ключ по IP схлопнул бы всех пользователей в одно глобальное ведро.

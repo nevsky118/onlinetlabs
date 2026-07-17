@@ -67,7 +67,7 @@ async def get_session_state(
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code == 404:
             # The GNS3 session disappeared (e.g. GNS3 infrastructure was restarted).
-            # The platform session is orphaned — mark it ended so the user
+            # The platform session is orphaned; mark it ended so the user
             # doesn't get stuck and the next launch brings up a fresh environment.
             session.status = "ended"
             session.ended_at = datetime.now(UTC)
@@ -76,6 +76,7 @@ async def get_session_state(
         raise
     lab = await db.get(Lab, session.lab_slug)
     from experiment.assignment import is_l2_session
+
     no_assist = await is_l2_session(db, user_id, session.lab_slug)
     enriched = {
         "session_id": str(session.id),

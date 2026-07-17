@@ -1,6 +1,6 @@
 """Real pydantic-ai Agent.run() (2.x) execution without mocking Agent.run.
 
-_build_model is swapped for TestModel — the run is real
+_build_model is swapped for TestModel, the run is real
 (prompt -> Agent.run -> result.output -> Response), no network involved.
 _agent_for no longer caches the Agent by model_id (pydantic-ai 2.x gets the
 model per-run), so TestModel is substituted via _build_model.
@@ -21,7 +21,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.agents]
 
 
 class TestAgentsRunPath:
-    """Real pydantic-ai Agent.run() via TestModel — checks compatibility with 2.x."""
+    """Real pydantic-ai Agent.run() via TestModel, checks compatibility with 2.x."""
 
     @autotest.num("2520")
     @autotest.external_id("9945ed45-b6be-4aa2-9715-2e5f018e041d")

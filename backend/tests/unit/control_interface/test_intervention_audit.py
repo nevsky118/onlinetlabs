@@ -170,7 +170,7 @@ class TestInterventionAudit:
                 if call_count[0] <= 1:
                     # _persist_intervention uses the first call
                     return beh_cap
-                # act-audit — real session
+                # act-audit, real session
                 return session_factory()
 
             m = _make_monitor(db_factory)
@@ -226,7 +226,7 @@ class TestInterventionAudit:
     @autotest.external_id("a56f5633-0466-4e49-9b83-97a733b05b1a")
     @autotest.name("intervention audit: open-arm НЕ пишет act-аудит (подавление)")
     async def test_a56f5633_open_arm_no_act_audit(self, audit_engine):
-        with autotest.step("Arrange: монитор OPEN — dispatch не вызывается"):
+        with autotest.step("Arrange: монитор OPEN, dispatch не вызывается"):
             session_factory = async_sessionmaker(audit_engine, expire_on_commit=False)
 
             class _Cap:

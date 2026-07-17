@@ -15,8 +15,8 @@ class TestControlConfig:
         with autotest.step("Act: создать конфиг по умолчанию"):
             c = LearningAnalyticsConfig()
 
-        with autotest.step("Assert: dwell_thresholds — словарь, stuck_on_step >= 0, costs > 0"):
-            assert_is_instance(c.dwell_thresholds, dict, "dwell_thresholds — dict")
+        with autotest.step("Assert: dwell_thresholds словарь, stuck_on_step >= 0, costs > 0"):
+            assert_is_instance(c.dwell_thresholds, dict, "dwell_thresholds is dict")
             assert_true(c.dwell_thresholds.get("stuck_on_step", 0.0) >= 0.0, "stuck_on_step >= 0")
             assert_true(c.cost_stuck > 0, "cost_stuck > 0")
             assert_true(c.cost_intervention > 0, "cost_intervention > 0")

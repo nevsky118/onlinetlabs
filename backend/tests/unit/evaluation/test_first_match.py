@@ -28,7 +28,7 @@ class TestFirstMatch:
 
     @autotest.num("1691")
     @autotest.external_id("afa65da7-bcbb-4413-8a33-50c182a057dc")
-    @autotest.name("first_match: нормальный сценарий — нет срабатываний")
+    @autotest.name("first_match: нормальный сценарий, нет срабатываний")
     def test_afa65da7_no_firing_normal(self):
         with autotest.step("Arrange: нормальная сессия (benign-фичи)"):
             s = make_normal_scenario(n=8)

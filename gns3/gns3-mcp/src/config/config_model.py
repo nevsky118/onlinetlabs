@@ -15,8 +15,8 @@ class MCPConfig(BaseModel):
 class PoolConfig(BaseModel):
     """Pool of per-(environment_url, user_id) connections to GNS3.
 
-    max_size — ceiling on SIMULTANEOUSLY alive connections (not all served users):
-    idle ones close via idle_ttl, LRU is evicted when space runs out.
+    max_size caps simultaneously alive connections, not total served users.
+    Idle ones close via idle_ttl; LRU entries get evicted once space runs out.
     """
 
     max_size: int = Field(default=200, description="Потолок одновременных соединений")

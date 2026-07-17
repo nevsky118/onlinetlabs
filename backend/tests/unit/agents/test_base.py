@@ -26,7 +26,7 @@ class TestBaseAgent:
 
     @autotest.num("401")
     @autotest.external_id("2883db9b-dd6b-4bb1-9b29-7373034ad968")
-    @autotest.name("BaseAgent: _agent_for не кэширует — pydantic-ai 2.x получает model per run")
+    @autotest.name("BaseAgent: _agent_for не кэширует, pydantic-ai 2.x получает model per run")
     def test_2883db9b_agent_for_no_cache(self, config_model):
         with autotest.step("Создаём _Dummy агент"):
             agent = _Dummy(config_model)
@@ -35,7 +35,7 @@ class TestBaseAgent:
             m1 = agent._agent_for("yandex-gpt-5.1")
             m2 = agent._agent_for("yandex-gpt-5.1")
 
-        with autotest.step("Каждый вызов создаёт новый Agent — кэш не нужен"):
+        with autotest.step("Каждый вызов создаёт новый Agent, кэш не нужен"):
             assert_true(m1 is not m2, "_agent_for не должен переиспользовать инстанс")
 
     @autotest.num("402")
@@ -56,7 +56,7 @@ class TestBaseAgent:
                 f"ожидался OpenAIChatModel, получен {type(model)}",
             )
 
-        with autotest.step("Проверяем model_name — gpt://<folder>/<model>"):
+        with autotest.step("Проверяем model_name gpt://<folder>/<model>"):
             # resolve_model reads global settings built from env; YANDEX_FOLDER=test-folder in conftest env
             assert_equal(
                 model.model_name,
@@ -94,7 +94,7 @@ class TestBaseAgent:
 
     @autotest.num("406")
     @autotest.external_id("fdbc94b5-03b1-4868-8548-e4a4e6493b62")
-    @autotest.name("BaseAgent: _build_model — base_url/заголовки/model-uri для yandex")
+    @autotest.name("BaseAgent: _build_model, base_url/заголовки/model-uri для yandex")
     def test_fdbc94b5_build_model_yandex_characterization(self, config_model):
         with autotest.step("Создаём _Dummy агент"):
             agent = _Dummy(config_model)
@@ -106,7 +106,7 @@ class TestBaseAgent:
             assert_equal(
                 str(model.client.base_url),
                 "https://ai.api.cloud.yandex.net/v1/",
-                "base_url — дефолтный yandex endpoint",
+                "base_url, дефолтный yandex endpoint",
             )
             assert_equal(
                 model.client._custom_headers.get("x-folder-id"),
@@ -116,12 +116,14 @@ class TestBaseAgent:
             assert_equal(
                 model.model_name,
                 "gpt://test-folder/yandexgpt/latest",
-                "model_name — gpt:// URI",
+                "model_name, gpt:// URI",
             )
 
     @autotest.num("407")
     @autotest.external_id("74ebaf3a-6499-46e6-8b98-a5d950bb8673")
-    @autotest.name("BaseAgent: _build_model — base_url/заголовки/model-uri для openai-совместимой модели")
+    @autotest.name(
+        "BaseAgent: _build_model, base_url/заголовки/model-uri для openai-совместимой модели"
+    )
     def test_74ebaf3a_build_model_openai_compatible_characterization(self, config_model):
         from config.config_model import LlmProvider, ModelEntry, ProviderCreds
         from config.env_config_loader import settings
@@ -153,18 +155,18 @@ class TestBaseAgent:
                 assert_equal(
                     str(model.client.base_url),
                     "https://openrouter.ai/api/v1/",
-                    "base_url — из ProviderCreds",
+                    "base_url, из ProviderCreds",
                 )
                 assert_equal(
                     model.client._custom_headers.get("X-Title"),
                     "onlinetlabs",
                     "extra_headers прокинуты",
                 )
-                assert_equal(model.client.api_key, "sk-or-test", "api_key — из ProviderCreds")
+                assert_equal(model.client.api_key, "sk-or-test", "api_key, из ProviderCreds")
                 assert_equal(
                     model.model_name,
                     "some-vendor/some-model",
-                    "model_name — слаг каталога",
+                    "model_name, слаг каталога",
                 )
         finally:
             settings.agents.providers.clear()
@@ -173,7 +175,9 @@ class TestBaseAgent:
 
     @autotest.num("408")
     @autotest.external_id("8dc27f60-fe66-4195-a58e-8c96dc39588b")
-    @autotest.name("BaseAgent: без кэша два вызова с разными model_id используют каждый свою модель")
+    @autotest.name(
+        "BaseAgent: без кэша два вызова с разными model_id используют каждый свою модель"
+    )
     def test_8dc27f60_agent_for_no_cache_picks_right_model_per_call(self, config_model):
         from config.config_model import LlmProvider, ModelEntry, ProviderCreds
         from config.env_config_loader import settings
@@ -185,7 +189,9 @@ class TestBaseAgent:
                 base_url="https://openrouter.ai/api/v1",
             )
             entry = ModelEntry(
-                id="second-model", label="second", provider_ref="second-provider",
+                id="second-model",
+                label="second",
+                provider_ref="second-provider",
                 model="vendor/second-model",
             )
             original_providers = settings.agents.providers.copy()

@@ -133,7 +133,7 @@ class TestLaunchSessionDisabledLab:
             monkeypatch.setattr(launch_mod, "get_active_session", _no_session)
             monkeypatch.setattr(launch_mod, "count_active_sessions", _zero_count)
 
-        with autotest.step("Вызываем launch_session — ожидаем ValueError"):
+        with autotest.step("Вызываем launch_session, ожидаем ValueError"):
             async with self.session_factory() as db:
                 with pytest.raises(ValueError, match="Лаба отключена"):
                     await launch_session(

@@ -18,7 +18,7 @@ from datetime import UTC
 from simulation.ground_truth import record_truth
 from simulation.orchestrator import run_cohort
 
-# YandexGPT price (rub/1k tokens) — verify against the current rate; budget 500 rub.
+# YandexGPT price (rub/1k tokens), verify against the current rate; budget 500 rub.
 _PRICE_PER_1K_RUB = 1.20
 _BUDGET_RUB = 500.0
 
@@ -48,7 +48,7 @@ def _build_deps():
     settings.learning_analytics.rate_slope_threshold = 1.0
     # LabProgressObserver only emits events from the SECOND cycle onward (the first
     # is the baseline snapshot). At the 25s default a compressed sim session never reaches
-    # a second cycle — spec checks never turn into check_failing, and the detector goes blind.
+    # a second cycle, so spec checks never turn into check_failing and the detector goes blind.
     settings.learning_analytics.progress_poll_interval = 6.0
     from agents.orchestrator.agent import Orchestrator
     from db.session import async_session
@@ -169,14 +169,14 @@ def _make_finalize(lab_slug, l2_lab, gns3_client, monitor_registry, settle_sec: 
     """Full study protocol: L1 (assisted) → L2 (near-transfer, WITHOUT assistance).
     l2_lab is a pair of the same skill (or None → L1 only, if the skill has no pair).
 
-    L1 closes via the SAME path as a real student — `end_lab`: stop the monitor →
+    L1 closes via the SAME path as a real student, `end_lab`: stop the monitor →
     ExperimentMetrics + MRT censoring → teardown GNS3 → release the queue slot.
     L2 is a synthetic transfer session (no GNS3/monitor/slot), so `end_session`:
     only measurements are taken.
 
     INTEGRITY: L2-pass is modeled ONLY from the student's skill, WITHOUT a baked-in
-    arm effect (otherwise it's a "seeded A/B"). Arms should come out ≈equal on l2_pass — an honest null for the simulation.
-    is_simulated data is cut off from the reproducibility bundle."""
+    arm effect (otherwise it's a "seeded A/B"). Arms should come out ≈equal on l2_pass,
+    an honest null for the simulation. is_simulated data is cut off from the reproducibility bundle."""
     from datetime import datetime
     from uuid import uuid4
 
@@ -226,8 +226,8 @@ def _make_finalize(lab_slug, l2_lab, gns3_client, monitor_registry, settle_sec: 
 
         # A live student doesn't close the lab the same millisecond they stop
         # acting: the monitor has time to pick up trailing events (poll_interval=5s)
-        # and intervene if needed. In a compressed run we give it that time explicitly
-        # — otherwise end_lab kills the monitor before events arrive from GNS3 history.
+        # and intervene if needed. In a compressed run we give it that time explicitly,
+        # otherwise end_lab kills the monitor before events arrive from GNS3 history.
         await asyncio.sleep(settle_sec)
 
         async with async_session() as db:
@@ -236,7 +236,7 @@ def _make_finalize(lab_slug, l2_lab, gns3_client, monitor_registry, settle_sec: 
         if not l1_done or not l2_lab:
             return  # no completed L1, or the skill has no near-transfer pair → L1 only
 
-        # L2 (near-transfer, WITHOUT assistance): pass ⇐ skill (higher threshold — harder without help).
+        # L2 (near-transfer, WITHOUT assistance): pass ⇐ skill (higher threshold, harder without help).
         l2_steps = total2 if profile.skill > 0.5 else max(0, total2 - 1)
         async with async_session() as db:
             l2 = LearningSession(
@@ -277,7 +277,7 @@ def _make_tutor_reply(settings, lab_slug):
         tried_part = f"Ты ввёл `{tried}`. " if tried else ""
 
         stages = [
-            # 1. Clarification — the tutor doesn't give the answer right away.
+            # 1. Clarification, the tutor doesn't give the answer right away.
             f"Расскажи, что показывает `show ip` на {node}? "
             "Сверим то, что применилось, с тем, что требует задание.",
             # 2. Hint toward the error class.

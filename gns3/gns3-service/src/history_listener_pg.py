@@ -91,7 +91,7 @@ class HistoryPgListener:
             backoff = min(30, backoff * 2)
 
     def _on_notify(self, conn, pid, channel, payload) -> None:
-        """asyncpg callback — schedules a publish task."""
+        """asyncpg callback that schedules a publish task."""
         try:
             data = json.loads(payload)
         except (json.JSONDecodeError, TypeError):

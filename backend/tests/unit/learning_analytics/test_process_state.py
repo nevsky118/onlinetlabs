@@ -23,7 +23,7 @@ class TestProcessState:
             bad = is_bad(ProcessRegime.PRODUCTIVE)
 
         with autotest.step("Assert: режим PRODUCTIVE, is_bad=False"):
-            assert_equal(regime, ProcessRegime.PRODUCTIVE, "режим — PRODUCTIVE")
+            assert_equal(regime, ProcessRegime.PRODUCTIVE, "режим PRODUCTIVE")
             assert_false(bad, "PRODUCTIVE не является плохим режимом")
 
     @autotest.num("1573")
@@ -37,6 +37,6 @@ class TestProcessState:
             r = analysis_to_regime(a)
 
         with autotest.step("Assert: режим STUCK_ON_STEP, value=stuck_on_step, is_bad=True"):
-            assert_equal(r, ProcessRegime.STUCK_ON_STEP, "режим — STUCK_ON_STEP")
-            assert_equal(r.value, "stuck_on_step", "value enum — stuck_on_step")
+            assert_equal(r, ProcessRegime.STUCK_ON_STEP, "режим STUCK_ON_STEP")
+            assert_equal(r.value, "stuck_on_step", "value enum stuck_on_step")
             assert_true(is_bad(r), "STUCK_ON_STEP является плохим режимом")

@@ -54,7 +54,7 @@ class TestExchangeRateLimitKey:
             second = exchange_rate_limit_key(_request("same@example.com"))
 
         with autotest.step("Assert: ключ стабилен"):
-            assert_equal(first, second, "один юзер — один ключ")
+            assert_equal(first, second, "один юзер, один ключ")
 
     @autotest.num("723")
     @autotest.external_id("07080910-0b0c-4d4e-8f56-890abcdef012")

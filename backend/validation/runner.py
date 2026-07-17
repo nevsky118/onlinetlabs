@@ -11,7 +11,7 @@ from validation.stream import Event
 
 
 async def _eval_check(ctx: CheckContext, check: dict) -> CheckResult:
-    """Run a single check — shared logic for run_validation and evaluate_spec."""
+    """Run a single check. Shared logic for run_validation and evaluate_spec."""
     kind = check.get("kind", "")
     params = {k: v for k, v in check.items() if k not in {"kind", "expect"}}
     expect = check.get("expect") or {}

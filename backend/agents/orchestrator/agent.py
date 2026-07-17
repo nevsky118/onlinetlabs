@@ -1,4 +1,4 @@
-"""Orchestrator — routes requests to agents."""
+"""Routes requests to agents."""
 
 import logging
 
@@ -49,7 +49,7 @@ class Orchestrator:
     _LLM_AGENTS = frozenset({"tutor", "hint"})
 
     def _resolve_intervention_model(self, context: dict) -> str:
-        """Intervention model: config default, or session's choice when follow_session."""
+        """Config's default model, or the session's own choice when follow_session is on."""
         cfg = self.config.agents
         sid = context.get("session_model_id")
         if cfg.interventions_follow_session and sid and cfg.get_entry(sid) is not None:
@@ -59,7 +59,7 @@ class Orchestrator:
     async def intervene(self, input_data: InterventionInput) -> OrchestratorResponse:
         """Proactive intervention from SessionMonitor."""
         agent_name = f"intervene_{input_data.intervention_type}"
-        # Ablation: single-agent mode forces one generalist instead of type-based specialization
+        # single-agent mode (ablation) forces one generalist instead of type-based specialization
         if self.config.learning_analytics.single_agent_mode:
             agent_name = "intervene_tutor"
         resolved = resolve_agent(agent_name)

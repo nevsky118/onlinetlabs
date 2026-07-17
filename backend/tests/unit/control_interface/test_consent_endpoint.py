@@ -1,4 +1,4 @@
-"""Tests for the handler logic of consent and audit-query endpoints — without spinning up FastAPI."""
+"""Tests for the handler logic of consent and audit-query endpoints, without spinning up FastAPI."""
 
 from datetime import UTC
 
@@ -116,7 +116,7 @@ class TestConsentEndpointLogic:
     @autotest.external_id("d5e6f7a8-b9c0-4d12-3456-7e8f90123456")
     @autotest.name("audit GET: фильтр по kind=act возвращает только act-строки")
     async def test_d5e6f7a8_audit_filter_kind(self, endpoint_db):
-        with autotest.step("Arrange: два audit-вызова — observe и act"):
+        with autotest.step("Arrange: два audit-вызова, observe и act"):
             from datetime import datetime
             from uuid import uuid4
 

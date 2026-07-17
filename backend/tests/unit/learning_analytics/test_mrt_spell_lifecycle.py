@@ -1,4 +1,4 @@
-"""MRT: spell lifecycle on real sqlite — exit_ts on close + censoring."""
+"""MRT: spell lifecycle on real sqlite, exit_ts on close plus censoring."""
 
 from datetime import UTC, datetime
 from types import SimpleNamespace
@@ -87,7 +87,7 @@ def _monitor(session_factory):
     cfg = LearningAnalyticsConfig()
     cfg.dwell_thresholds = {"idle": 0.0}
     cfg.mrt_enabled = True
-    cfg.mrt_hold_probability = 1.0  # always withhold — no dispatch pulled into this test
+    cfg.mrt_hold_probability = 1.0  # always withhold, no dispatch pulled into this test
     cfg.mrt_t_k_jitter_frac = 0.0
     m = SessionMonitor(
         mcp_client=MagicMock(),
@@ -110,7 +110,7 @@ class TestMRTSpellLifecycle:
     @autotest.num("1973")
     @autotest.external_id("472db8c1-dfcd-4951-bcde-0bc48220a268")
     @autotest.name(
-        "MRT: смена режима на productive закрывает spell — проставляет subsequent_exit_ts"
+        "MRT: смена режима на productive закрывает spell, проставляет subsequent_exit_ts"
     )
     async def test_472db8c1_spell_exit_sets_exit_ts(self):
         with autotest.step("Arrange: реальная sqlite, монитор MRT, analyze: struggle→productive"):

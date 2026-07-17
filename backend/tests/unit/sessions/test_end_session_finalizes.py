@@ -30,7 +30,7 @@ async def db_factory():
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
 
     async with engine.begin() as conn:
-        # disable FK in SQLite — tables are created independently
+        # disable FK in SQLite, tables are created independently
         await conn.execute(text("PRAGMA foreign_keys = OFF"))
         await conn.run_sync(User.__table__.create)
         await conn.run_sync(Lab.__table__.create)

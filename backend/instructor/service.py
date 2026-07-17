@@ -1,8 +1,8 @@
 """Queries for the instructor dashboard.
 
-Hints are counted as behavioral events with event_type='intervention' —
-that's how the learning session monitor logs interventions delivered to the
-student (see learning_analytics/monitor.py).
+Hints are counted as behavioral events with event_type='intervention'; that's
+how the learning session monitor logs interventions delivered to the student
+(see learning_analytics/monitor.py).
 """
 
 from sqlalchemy import func, select
@@ -180,7 +180,7 @@ async def get_student_detail(db: AsyncSession, user_id: str) -> dict | None:
     )
     session_rows = list(session_rows_result.scalars().all())
 
-    # Lab titles — extend with slugs from sessions
+    # Lab titles, including slugs that only show up in sessions
     lab_slugs = {p.lab_slug for p in progress_rows} | {s.lab_slug for s in session_rows}
     titles: dict[str, str] = {}
     if lab_slugs:

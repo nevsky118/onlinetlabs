@@ -1,4 +1,4 @@
-"""Characterization: cohort_response_from_result — full model_dump() pixel-for-pixel."""
+"""Characterization: cohort_response_from_result, full model_dump() pixel-for-pixel."""
 
 import pytest
 from mcp_sdk.testing import autotest

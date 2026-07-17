@@ -26,7 +26,7 @@ QUEUE_AVG_PROVISION_SEC = 30
 
 # Atomic slot acquisition. Under 50+/sec load, a plain GET/INCR pair leaks
 # the quota because a concurrent request can slip in between the read and
-# the increment. Lua runs atomically in Redis — counters either increment
+# the increment. Lua runs atomically in Redis; counters either increment
 # together, or the request is rejected.
 LUA_TRY_ACQUIRE = """
 local lab_key = KEYS[1]
@@ -133,7 +133,7 @@ def _get_or_create_singleton() -> SessionQueueService:
 
 
 def get_queue_service(request: Request) -> SessionQueueService:
-    """FastAPI dependency: returns session_queue from app.state.
+    """Returns session_queue from app.state as a FastAPI dependency.
 
     In lifespan we store SessionQueueService on app.state. If for some
     reason it's not there (old code, migration), fall back to the lazy

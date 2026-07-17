@@ -94,7 +94,7 @@ class TestControlInterface:
             patch("control_interface.interface.has_consent", new=AsyncMock(return_value=True)),
             patch("control_interface.interface.record", new=AsyncMock()),
         ):
-            # first call — success
+            # first call succeeds
             await iface.act(
                 _TOOL_ACT,
                 ctx=None,
@@ -107,7 +107,7 @@ class TestControlInterface:
         with autotest.step("Assert: execute_action вызван первый раз"):
             mcp.execute_action.assert_awaited_once()
 
-        # second call immediately — should fail with rate
+        # second call immediately should fail with rate limit
         with (
             patch(
                 "control_interface.interface.get_owned_session",

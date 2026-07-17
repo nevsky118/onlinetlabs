@@ -134,7 +134,7 @@ class TestModelConstraints:
             assert_true(isinstance(ls.started_at, datetime), "started_at is datetime")
             assert_is_none(ls.ended_at, "ended_at is None")
 
-        with autotest.step("Удаляем User — LearningSession должен исчезнуть"):
+        with autotest.step("Удаляем User, LearningSession должен исчезнуть"):
             await session.delete(user)
             await session.commit()
             rows = (await session.execute(select(LearningSession))).scalars().all()

@@ -62,9 +62,9 @@ class TestKaplanMeier:
     @autotest.name("KaplanMeier: пустые входы безопасны")
     def test_a2e72872_empty_inputs_safe(self):
         with autotest.step("Act + Assert: пустые списки не падают"):
-            assert_is_none(kaplan_meier_median([], []), "median на пустом — None")
-            assert_equal(reach_rate_at([], [], 10.0), 0.0, "reach_rate на пустом — 0.0")
-            assert_equal(restricted_mean([], [], 10.0), 0.0, "restricted_mean на пустом — 0.0")
+            assert_is_none(kaplan_meier_median([], []), "median на пустом это None")
+            assert_equal(reach_rate_at([], [], 10.0), 0.0, "reach_rate на пустом это 0.0")
+            assert_equal(restricted_mean([], [], 10.0), 0.0, "restricted_mean на пустом это 0.0")
 
     @autotest.num("797")
     @autotest.external_id("5ab5f95c-ad98-435a-bb46-27a232559827")

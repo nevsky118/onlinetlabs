@@ -1,7 +1,7 @@
 """Exec endpoint: run commands inside GNS3 docker nodes (vtysh, ping, etc.).
 
 The online validation backend calls this endpoint to poll FRR nodes:
-- POST /v1/exec/vtysh — runs `vtysh -c "<command>"` inside the node's container.
+- POST /v1/exec/vtysh runs `vtysh -c "<command>"` inside the node's container.
 
 Flow:
 1. GET /v3/projects/{pid}/nodes/{nid} (via the admin client) → properties.container_id.

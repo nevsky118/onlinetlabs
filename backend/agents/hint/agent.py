@@ -1,4 +1,4 @@
-"""HintAgent — progressive hints agent backed by LLM."""
+"""Progressive hints agent backed by an LLM."""
 
 import logging
 

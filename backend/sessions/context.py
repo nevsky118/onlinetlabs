@@ -17,7 +17,7 @@ def build_session_context(session: LearningSession) -> SessionContext:
         project_id=meta.get("gns3_project_id"),
         metadata={
             "gns3_jwt": decrypt_secret(meta["enc_jwt"]),
-            # gns3-service session id — the actual history key (ctx.session_id = backend id).
+            # gns3-service session id, the actual history key (ctx.session_id is the backend id).
             "gns3_session_id": meta.get("gns3_service_session_id"),
         },
     )

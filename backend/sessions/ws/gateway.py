@@ -1,4 +1,4 @@
-"""WebSocket gateway — connection management and intervention delivery.
+"""WebSocket gateway for connection management and intervention delivery.
 
 Combines per-session connections for interventions with a global registry
 of all active sockets for graceful shutdown (forward gns3 events + interventions).

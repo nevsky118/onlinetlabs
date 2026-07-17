@@ -32,7 +32,7 @@ def is_normal(s: "LabeledScenario") -> bool:
 
 def _features(ts_index: int, regime: ProcessRegime, fired: bool) -> SessionFeatures:
     """Benign features; if fired, they trip the rule for regime (default config thresholds)."""
-    # Adaptation: SessionFeatures requires computed_at (datetime); user_id/lab_slug aren't in the model
+    # SessionFeatures requires computed_at (datetime); user_id/lab_slug aren't in the model
     base = dict(
         avg_inter_action_latency=5.0,
         action_rate_slope=0.0,

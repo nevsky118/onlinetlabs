@@ -1,4 +1,4 @@
-"""MCPContextBuilder — assembling context from MCP for agent prompts."""
+"""MCPContextBuilder assembles context from MCP for agent prompts."""
 
 import asyncio
 import logging

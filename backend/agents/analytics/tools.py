@@ -8,8 +8,6 @@ from agents.analytics.models import StudentMetrics
 
 
 class AnalyticsTools:
-    """Tools for student progress analytics."""
-
     def __init__(self, db: AsyncSession | None):
         """Stores the DB session for querying attempts and progress."""
         self._db = db
@@ -50,7 +48,7 @@ class AnalyticsTools:
                 times.append(delta)
         avg_time = sum(times) / len(times) if times else 0.0
 
-        # Struggling steps: >2 consecutive failures on the same step
+        # a step is struggling once it fails more than 2 times in a row
         consecutive_fails: dict[str, int] = defaultdict(int)
         max_consecutive: dict[str, int] = defaultdict(int)
 

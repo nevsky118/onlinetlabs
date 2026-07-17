@@ -1,4 +1,4 @@
-"""HelpTextGen: student's help-request text — LLM (gated) with a budget guard and template fallback."""
+"""HelpTextGen: student's help-request text, LLM (gated) with a budget guard and template fallback."""
 
 from unittest.mock import AsyncMock
 
@@ -78,7 +78,7 @@ class TestHelpTextGen:
 
     @autotest.num("2040")
     @autotest.external_id("7f9614af-c1c7-41be-882a-61713b2ee0c1")
-    @autotest.name("help_text: падение LLM не роняет прогон — уходим в шаблон")
+    @autotest.name("help_text: падение LLM не роняет прогон, уходим в шаблон")
     async def test_7f9614af_llm_error_falls_back_to_template(self):
         with autotest.step("Arrange: LLM недоступен"):
             llm = AsyncMock(side_effect=RuntimeError("llm down"))
@@ -117,7 +117,7 @@ class TestHelpTextGen:
 
     @autotest.num("2043")
     @autotest.external_id("2209167b-acac-48c9-ab71-faa31a4af823")
-    @autotest.name("help_text: просьба содержит контекст — узел и введённую команду")
+    @autotest.name("help_text: просьба содержит контекст, узел и введённую команду")
     async def test_2209167b_ask_carries_dialogue_context(self):
         with autotest.step("Arrange: генератор на шаблонах"):
             generator = _generator(llm_enabled=False)

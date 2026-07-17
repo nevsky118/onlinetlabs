@@ -279,4 +279,4 @@ class TestOpenLoop:
             )
 
         with autotest.step("Assert: _control_arm == CLOSED"):
-            assert_equal(m._control_arm, ControlArm.CLOSED, "дефолт — CLOSED")
+            assert_equal(m._control_arm, ControlArm.CLOSED, "дефолт CLOSED")

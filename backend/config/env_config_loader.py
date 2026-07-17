@@ -26,7 +26,7 @@ from tools.env_cipher import decrypt_file
 
 logger = logging.getLogger(__name__)
 
-# Required URL keys — startup is impossible without them.
+# Required URL keys, startup is impossible without them.
 _REQUIRED_URL_KEYS = (
     "FRONTEND_URL",
     "GNS3_SERVICE_URL",

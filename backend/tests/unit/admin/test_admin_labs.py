@@ -120,15 +120,15 @@ class TestAdminLabsEndpoints:
             items = resp.json()
             assert_equal(len(items), 3, "3 лабы")
 
-        with autotest.step("Assert: template_ready для none-env — True"):
+        with autotest.step("Assert: template_ready для none-env дает True"):
             none_item = next(i for i in items if i["slug"] == "none-lab")
             assert_true(none_item["template_ready"] is True, "none env → template_ready True")
 
-        with autotest.step("Assert: template_ready для gns3+id — True"):
+        with autotest.step("Assert: template_ready для gns3+id дает True"):
             gns3_with = next(i for i in items if i["slug"] == "gns3-lab-with-tpl")
             assert_true(gns3_with["template_ready"] is True, "gns3 with tpl → template_ready True")
 
-        with autotest.step("Assert: template_ready для gns3 без id — False"):
+        with autotest.step("Assert: template_ready для gns3 без id дает False"):
             gns3_no = next(i for i in items if i["slug"] == "gns3-lab-no-tpl")
             assert_true(gns3_no["template_ready"] is False, "gns3 no tpl → template_ready False")
 
@@ -243,7 +243,7 @@ class TestRebuildTemplate:
 
         self.app = app
 
-        # student app — needs same overrides so FastAPI resolves deps before 403
+        # student app needs same overrides so FastAPI resolves deps before 403
         student_app = FastAPI()
         student_app.include_router(admin_router, prefix="/admin")
         student_app.dependency_overrides[get_db] = _override_db
@@ -312,7 +312,7 @@ class TestRebuildTemplate:
     @autotest.external_id("0fb8df28-9c53-406b-9156-f7ad9fbdb142")
     @autotest.name("POST rebuild-template: gns3 лаба → 202, building в ответе")
     async def test_0fb8df28_rebuild_gns3_202_meta_building(self):
-        # stub raises so worker sets "error" — lets us assert the endpoint
+        # stub raises so worker sets "error", lets us assert the endpoint
         # committed "building" synchronously (confirmed by 202 response) without
         # racing against the background task overwriting the DB state.
         self.stub_client.build_template = AsyncMock(side_effect=RuntimeError("stubbed"))
@@ -327,7 +327,7 @@ class TestRebuildTemplate:
         with autotest.step("Assert: 202, status=building в ответе"):
             assert_equal(resp.status_code, 202, "202")
             assert_equal(resp.json()["status"], "building", "status=building")
-        with autotest.step("Assert: meta.template_status в БД — building→error (worker ran)"):
+        with autotest.step("Assert: meta.template_status в БД building→error (worker ran)"):
             async with self.session_factory() as db:
                 from labs.service import get_lab_by_slug
 
@@ -341,7 +341,7 @@ class TestRebuildTemplate:
 
     @autotest.num("1942")
     @autotest.external_id("b03fa068-bbc3-469c-9625-33eb5af3c628")
-    @autotest.name("POST rebuild-template: idempotent — не запускает второй билд")
+    @autotest.name("POST rebuild-template: idempotent, не запускает второй билд")
     async def test_b03fa068_rebuild_idempotent(self):
         await self._seed(
             [
@@ -365,7 +365,7 @@ class TestRebuildTemplate:
 
     @autotest.num("1943")
     @autotest.external_id("a836dbf5-a71f-4fc3-88bd-c02ac9636810")
-    @autotest.name("Worker: успех — записывает template_id и status=ready")
+    @autotest.name("Worker: успех, записывает template_id и status=ready")
     async def test_a836dbf5_worker_success(self):
         await self._seed(
             [

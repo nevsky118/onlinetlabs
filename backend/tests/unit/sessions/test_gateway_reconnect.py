@@ -3,7 +3,7 @@
 Regression: disconnect(session_id) removed the _connections entry keyed only by
 session_id, without checking which socket was actually stored there. On reconnect
 (page refresh), connect() overwrites _connections[session_id] with the new socket,
-but the old socket can send a delayed WebSocketDisconnect AFTER the reconnect — its
+but the old socket can send a delayed WebSocketDisconnect after the reconnect, and its
 disconnect(session_id) would evict the new (live) socket, and interventions would
 silently stop reaching the student.
 """
@@ -51,7 +51,7 @@ class TestGatewayReconnect:
 
     @autotest.num("2421")
     @autotest.external_id("175fcb15-48b5-4d74-8142-e1b512679a2f")
-    @autotest.name("disconnect: тот же сокет, что подключён — удаляется из _connections")
+    @autotest.name("disconnect: тот же сокет, что подключён, удаляется из _connections")
     async def test_175fcb15_disconnect_same_socket_removes_connection(self):
         with autotest.step("Arrange: gateway с одним подключённым сокетом"):
             gw = WebSocketGateway()

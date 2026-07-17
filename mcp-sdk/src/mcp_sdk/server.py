@@ -73,7 +73,7 @@ class OnlinetlabsMCPServer:
 
     def _discover_and_register(self) -> None:
         """Introspect protocols and register the corresponding MCP tools."""
-        # StateProvider — always (checked in _validate_minimum)
+        # StateProvider is always registered (checked in _validate_minimum)
         self._capabilities.add("state")
         self._register_state_tools()
 
@@ -89,7 +89,7 @@ class OnlinetlabsMCPServer:
             self._capabilities.add("actions")
             self._register_action_tools()
 
-        # Meta tool — always
+        # Always register the meta tool
         self._register_capabilities_tool()
 
     # State tools

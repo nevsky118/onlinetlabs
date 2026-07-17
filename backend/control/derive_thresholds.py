@@ -1,4 +1,5 @@
 """Offline derivation of dwell thresholds T_k from historical sessions."""
+
 from __future__ import annotations
 
 import sys
@@ -50,9 +51,7 @@ def simulate_interventions(
     return interventions
 
 
-def _truncate_at_interventions(
-    samples: list[dict], interventions: list[dict]
-) -> list[dict]:
+def _truncate_at_interventions(samples: list[dict], interventions: list[dict]) -> list[dict]:
     """For offline evaluation: an intervention is treated as ending the spell.
 
     Bad-regime samples AFTER the intervention (and until the spell ends) are
@@ -103,7 +102,9 @@ def total_J(
         # bad_duration from the counterfactual: the intervention's effect on the outcome
         truncated = counterfactual(s["samples"], ivs)
         total += compute_J(
-            s["samples"], ivs, costs,
+            s["samples"],
+            ivs,
+            costs,
             bad_duration_samples=truncated,
         ).J
     return total
@@ -119,9 +120,7 @@ def derive_T_k(
     """Selects the best T_k for each regime independently over a candidate grid."""
     # Initialize thresholds with the grid's first values
     current_thresholds: dict[str, float] = {
-        regime: candidates[0]
-        for regime, candidates in grid.items()
-        if candidates
+        regime: candidates[0] for regime, candidates in grid.items() if candidates
     }
 
     result: dict[str, float] = {}
@@ -210,20 +209,18 @@ if __name__ == "__main__":
         with open(sys.argv[1]) as f:
             sessions = json.load(f)
     else:
-        # Data with variation: short self-exits (30-90s) and long spells (120-600s).
-        # base_c_intervention=60 -> intervention cost = 1 min; c_stuck in s^-1;
-        # at ratio=c_stuck/c_int, indifference point: D* = c_int/(c_stuck) = 1/ratio min.
-        # ratio=0.2 -> D*=5 min=300s; ratio=5 -> D*=12s -- the curve bends within the range.
-        # Mix of spells: short (30-60s, self-exits) and long (120-600s).
-        # D*(ratio) = 60/ratio sec: ratio=0.2->300s, ratio=5->12s -- the curve bends.
+        # Mix of spells: short self-exits (30-60s) and long ones (120-600s).
+        # base_c_intervention=60 -> intervention cost = 1 min; c_stuck in s^-1.
+        # indifference point D*(ratio) = c_int/c_stuck = 60/ratio sec:
+        # ratio=0.2 -> D*=300s, ratio=5 -> D*=12s (the curve bends within the range).
         sessions = [
-            _build_session(30),    # 30s -- short
+            _build_session(30),  # 30s -- short
             _build_session(30),
-            _build_session(60),    # 60s
-            _build_session(120),   # 120s
-            _build_session(180),   # 3 min
-            _build_session(300),   # 5 min
-            _build_session(600),   # 10 min
+            _build_session(60),  # 60s
+            _build_session(120),  # 120s
+            _build_session(180),  # 3 min
+            _build_session(300),  # 5 min
+            _build_session(600),  # 10 min
         ]
 
     grid: dict[str, list[float]] = {
@@ -231,15 +228,16 @@ if __name__ == "__main__":
     }
     ratios = [0.2, 0.5, 1.0, 2.0, 5.0]
 
-    # time_unit_seconds=60: ratio is interpreted as "minutes stuck / intervention";
-    # indifference point D*(ratio) = 60/ratio sec -- fits within the spell range (12..300s).
     best = derive_T_k(sessions, _costs_from_config, grid, cooldown_seconds=_cooldown)
     curve = sensitivity_curve(
-        sessions, ratios, grid,
+        sessions,
+        ratios,
+        grid,
         base_c_intervention=_cfg.cost_intervention,
         c_false=_cfg.cost_false_intervention,
         cooldown_seconds=_cooldown,
-        time_unit_seconds=60.0,  # ratio in min^-1; D*(ratio)=60/ratio sec
+        # ratio in min^-1; D*(ratio) = 60/ratio sec, fits the 12-300s spell range
+        time_unit_seconds=60.0,
     )
 
     # Write the report

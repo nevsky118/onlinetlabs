@@ -53,9 +53,9 @@ class TestMonitorStateLog:
             r2, d2 = await monitor._log_process_state(a, t + timedelta(seconds=15))
 
         with autotest.step("Assert: режимы и dwell корректны, записи добавлены в БД"):
-            assert_equal(r1, ProcessRegime.IDLE, "первый режим — IDLE")
-            assert_equal(d1, 0.0, "первый dwell — 0.0")
-            assert_equal(d2, 15.0, "второй dwell — 15.0")
+            assert_equal(r1, ProcessRegime.IDLE, "первый режим IDLE")
+            assert_equal(d1, 0.0, "первый dwell 0.0")
+            assert_equal(d2, 15.0, "второй dwell 15.0")
             assert_equal(len(cap.added), 2, "два объекта добавлено в сессию")
-            assert_equal(cap.added[0].regime, "idle", "первая запись — режим idle")
-            assert_equal(cap.added[0].dwell_seconds, 0.0, "первая запись — dwell 0.0")
+            assert_equal(cap.added[0].regime, "idle", "первая запись, режим idle")
+            assert_equal(cap.added[0].dwell_seconds, 0.0, "первая запись, dwell 0.0")

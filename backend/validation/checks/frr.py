@@ -1,4 +1,4 @@
-"""FRR check-handlers — `frr.ospf_neighbor`, `frr.route_in_table`.
+"""FRR check handlers: `frr.ospf_neighbor`, `frr.route_in_table`.
 
 Handlers go through `ctx.frr_client.exec_vtysh(project_id, node_id, command)`
 (a thin wrapper over gns3-service `POST /v1/exec/vtysh`).

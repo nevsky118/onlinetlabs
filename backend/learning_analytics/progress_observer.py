@@ -1,4 +1,4 @@
-"""LabProgressObserver — periodic run of spec checks, current step."""
+"""LabProgressObserver polls spec checks periodically and tracks the current step."""
 
 import asyncio
 import json
@@ -95,7 +95,7 @@ def diff_snapshots(prev: list[dict] | None, curr: list[dict]) -> list[dict]:
                         }
                     )
                 else:
-                    # different error — student is trying
+                    # different error, student is still trying
                     events.append(
                         {
                             "event_type": "error",

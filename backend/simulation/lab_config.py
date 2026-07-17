@@ -6,6 +6,7 @@ signal, the student must actually configure the device in the console: correct
 command → check passes, wrong → fails. The reference comes from the spec's own
 `expect`, so the config works for any VPCS lab without changes.
 """
+
 from dataclasses import dataclass
 
 
@@ -33,7 +34,7 @@ def _wrong_ip(ip_cidr: str) -> str:
 
 
 def _static_task(node: str, expect: dict) -> NodeTask | None:
-    """`vpcs.show_ip` — student sets a static address manually."""
+    """`vpcs.show_ip`: student sets a static address manually."""
     ip_cidr = expect.get("ip")
     if not ip_cidr:
         return None
@@ -45,7 +46,7 @@ def _static_task(node: str, expect: dict) -> NodeTask | None:
 
 
 def _dhcp_task(node: str, expect: dict) -> NodeTask | None:
-    """`vpcs.ip_in_subnet` — DHCP assigns the address: correct is `ip dhcp`, the mistake
+    """`vpcs.ip_in_subnet`: DHCP assigns the address, correct is `ip dhcp`. The mistake
     is a static address in the wrong subnet (address present, but the subnet check fails)."""
     subnet = expect.get("subnet")
     if not subnet:
@@ -76,7 +77,7 @@ def build_node_tasks(spec: dict) -> list[NodeTask]:
     """From spec checks → student console commands (correct and wrong).
 
     Both addressing modes are supported: static (`vpcs.show_ip`) and DHCP
-    (`vpcs.ip_in_subnet`). Connectivity checks (`vpcs.ping`) don't produce a task —
+    (`vpcs.ip_in_subnet`). Connectivity checks (`vpcs.ping`) don't produce a task,
     connectivity follows as a consequence of correct addressing.
     """
     tasks: list[NodeTask] = []

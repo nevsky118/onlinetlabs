@@ -22,7 +22,7 @@ _CREDS = {
 class TestLaunchSlotRelease:
     @pytest.fixture(autouse=True)
     def _disable_limiter(self):
-        # Call the handler directly — mute the slowapi decorator for the test.
+        # Call the handler directly, mute the slowapi decorator for the test.
         prev = limiter.enabled
         limiter.enabled = False
         yield

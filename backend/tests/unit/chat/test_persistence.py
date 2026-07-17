@@ -105,7 +105,7 @@ class _DBTestBase:
 
     @pytest.fixture(autouse=True)
     async def setup(self):
-        # We don't need the FK on learning_sessions — SQLite doesn't
+        # We don't need the FK on learning_sessions, SQLite doesn't
         # enforce FKs by default, and we leave it that way.
         self.engine = create_async_engine("sqlite+aiosqlite:///:memory:")
         self.session_factory = async_sessionmaker(self.engine, expire_on_commit=False)
@@ -143,7 +143,7 @@ class TestSaveUserMessage(_DBTestBase):
     @autotest.external_id("d2e8b1c4-9f3a-4b88-8d12-5b9c0e2f1a33")
     @autotest.name("save_user_message: последнее сообщение assistant → не сохраняем")
     async def test_d2e8b1c4_skips_when_last_is_assistant(self):
-        with autotest.step("Последнее сообщение — assistant"):
+        with autotest.step("Последнее сообщение от assistant"):
             sdk_messages = [
                 {"role": "user", "content": "hi"},
                 {"role": "assistant", "content": "answer"},
@@ -245,7 +245,7 @@ class TestGetChatHistory(_DBTestBase):
             async with self.session_factory() as db:
                 rows = await get_chat_history(db, "sess-h")
 
-        with autotest.step("Порядок — ASC по created_at"):
+        with autotest.step("Порядок ASC по created_at"):
             assert_equal(len(rows), 3, "rows count")
             assert_equal(rows[0].parts[0]["text"], "first", "rows[0]")
             assert_equal(rows[1].parts[0]["text"], "second", "rows[1]")

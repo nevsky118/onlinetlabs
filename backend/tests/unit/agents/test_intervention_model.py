@@ -19,7 +19,7 @@ class TestResolveInterventionModel:
         with autotest.step("Создаём оркестратор"):
             orch = Orchestrator(config_model)
 
-        with autotest.step("Резолв без context — дефолт"):
+        with autotest.step("Резолв без context дает дефолт"):
             result = orch._resolve_intervention_model(context={})
             assert result == config_model.agents.intervention_model
 
@@ -65,7 +65,7 @@ class TestResolveInterventionModel:
             config_model.agents.interventions_follow_session = True
             orch = Orchestrator(config_model)
 
-        with autotest.step("Пустой payload без session_model_id — не должен бросить KeyError"):
+        with autotest.step("Пустой payload без session_model_id не должен бросить KeyError"):
             result = orch._resolve_intervention_model(context={})
             assert result == config_model.agents.intervention_model
 
@@ -93,7 +93,7 @@ class TestInterventionMetadata:
     @pytest.mark.asyncio
     async def test_c12c25db_intervene_llm_metadata(self, config_model):
         """Full intervene requires MCP/DB; this test checks the metadata assembly via
-        resolve_model — the same branch executed in intervene for LLM agents."""
+        resolve_model, the same branch executed in intervene for LLM agents."""
         with autotest.step("Резолвим model_id через resolve_model с тестовым конфигом"):
             orch = Orchestrator(config_model)
             model_id = orch._resolve_intervention_model(context={})

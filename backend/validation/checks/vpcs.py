@@ -1,4 +1,4 @@
-"""VPCS check-handlers — `vpcs.show_ip`, `vpcs.ping`."""
+"""VPCS check handlers: `vpcs.show_ip`, `vpcs.ping`."""
 
 import asyncio
 import ipaddress

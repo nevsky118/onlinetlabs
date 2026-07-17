@@ -2,8 +2,8 @@
 
 Duplicates (idempotently, via setdefault) the env bootstrap from tests/unit/conftest.py,
 so tests outside tests/unit/ also get default env vars before importing
-config-dependent modules. We don't touch tests/unit/conftest.py — existing unit
-tests already depend on it, migrating it would add risk without benefit.
+config-dependent modules. We don't touch tests/unit/conftest.py itself, since
+existing unit tests already depend on it and migrating it would add risk without benefit.
 """
 
 import os
@@ -40,7 +40,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 # Kill switch (see REFACTOR_ANALYSIS.md §5.8): unit tests must never hit a real
 # LLM. Agent tests swap in pydantic_ai.models.test.TestModel, which doesn't call
-# check_allow_model_requests() — ALLOW_MODEL_REQUESTS=False doesn't affect them.
+# check_allow_model_requests(), so ALLOW_MODEL_REQUESTS=False doesn't affect them.
 # Real models (agents/base.py, the OpenAI-compatible client, incl. Yandex GPT)
 # call check_allow_model_requests() inside Model.request/request_stream and will
 # raise RuntimeError if a test accidentally forgets to swap the model.
@@ -58,8 +58,8 @@ async def sqlite_session_factory():
             db.add(User(...))
             await db.commit()
 
-    Can be called multiple times in the same test — each call creates its own
-    independent engine; all of them are disposed at the end of the test.
+    Can be called multiple times in the same test; each call creates its own
+    independent engine, and all of them are disposed at the end of the test.
     """
     engines: list = []
 
@@ -67,7 +67,7 @@ async def sqlite_session_factory():
         engine = create_async_engine("sqlite+aiosqlite:///:memory:")
         async with engine.begin() as conn:
             # SQLite doesn't enforce FKs by default, but existing tests
-            # explicitly disable it — keep the same behavior for new tables with FKs.
+            # explicitly disable it too, keeping the same behavior for new tables with FKs.
             await conn.execute(text("PRAGMA foreign_keys = OFF"))
             for table in tables:
                 await conn.run_sync(table.create)

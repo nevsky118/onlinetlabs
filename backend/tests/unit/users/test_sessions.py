@@ -99,7 +99,7 @@ class TestSessionEndpoints:
             assert_equal(len(body["sessions"]), 2, "sessions len=2")
             ids = {s["id"] for s in body["sessions"]}
             assert_true("s1" in ids and "s2" in ids, "только s1 и s2")
-            assert_true("s3" not in ids, "s3 чужая — не возвращается")
+            assert_true("s3" not in ids, "s3 чужая, не возвращается")
 
     @autotest.num("1946")
     @autotest.external_id("696f19c2-bab1-43a8-9b55-b99373e9e55e")

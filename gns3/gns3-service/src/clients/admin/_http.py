@@ -120,7 +120,7 @@ class HttpMixin:
         """Generic authorized request to the GNS3 admin API.
 
         Transparently mixes in Authorization, forwards the rest of the kwargs
-        to httpx.AsyncClient.request. Doesn't call raise_for_status — that's
+        to httpx.AsyncClient.request. Doesn't call raise_for_status; that's
         the caller's responsibility, so it can decide what counts as an error.
         """
         headers = kwargs.pop("headers", None) or {}

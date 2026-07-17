@@ -38,7 +38,7 @@ class TestScoreFromSteps:
 
     @autotest.num("761")
     @autotest.external_id("7b9c375d-4d9b-4d28-8d17-116c1d5be5e8")
-    @autotest.name("score_from_steps: частичное — 3 из 4 проверок = 75")
+    @autotest.name("score_from_steps: частичное, 3 из 4 проверок = 75")
     def test_partial_checks(self):
         with autotest.step("Act: 3 из 4 проверок пройдены"):
             score, all_passed = score_from_steps(_steps([True, True], [True, False]))

@@ -1,4 +1,4 @@
-"""Session state-change endpoints: launch, stop, restart, reset, end, patch, node actions."""
+"""Session state-change endpoints for launch, stop, restart, reset, end, patch, and node actions."""
 
 import logging
 from typing import Literal
@@ -64,7 +64,7 @@ async def launch_endpoint(
     # logs within this request automatically carry these fields.
     structlog.contextvars.bind_contextvars(user_id=current_user["id"], lab_slug=body.lab_slug)
     # Relaunching an already-active session must not take a queue slot or
-    # double-count: slot/monitoring/gauge are only touched for a new launch.
+    # double-count it; slot/monitoring/gauge are only touched for a new launch.
     existing = await get_active_session(db, current_user["id"], body.lab_slug)
     is_new_launch = existing is None
 

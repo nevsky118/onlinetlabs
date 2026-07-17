@@ -22,7 +22,7 @@ class GNS3ConnectionManager(BaseConnectionManager):
         return GNS3ApiClient(client)
 
     async def health_check(self, connection: GNS3ApiClient) -> bool:
-        """GET /v3/version — if it responds, the connection is alive."""
+        """Connection is alive if GET /v3/version responds."""
         try:
             version = await connection.get_version()
             return "version" in version

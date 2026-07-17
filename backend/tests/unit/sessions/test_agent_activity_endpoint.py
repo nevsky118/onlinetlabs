@@ -57,7 +57,7 @@ async def test_get_agent_activity_entitled():
     session = SimpleNamespace(user_id="u1")
     user = {"id": "u1", "role": "student", "can_view_logs": True}
 
-    # db.get returns a fake session — patched directly via DI arguments
+    # db.get returns a fake session, patched directly via DI arguments
     class _FakeDB:
         async def get(self, model_cls, pk):
             return session

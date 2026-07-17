@@ -41,7 +41,7 @@ class TestRunCohort:
                 peak["current"] += 1
                 peak["max"] = max(peak["max"], peak["current"])
                 try:
-                    await asyncio.sleep(0)  # yield — lets concurrency show up
+                    await asyncio.sleep(0)  # yield so concurrency can show up
                 finally:
                     peak["current"] -= 1
                 return f"sess-{user_id}", actor

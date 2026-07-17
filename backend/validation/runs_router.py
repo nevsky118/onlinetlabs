@@ -1,4 +1,4 @@
-"""GET /sessions/{sid}/validation-runs[/{runId}] — run history."""
+"""GET /sessions/{sid}/validation-runs[/{runId}] (run history)."""
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession

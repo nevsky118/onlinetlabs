@@ -1,14 +1,14 @@
 """Characterization of the session routers' route table.
 
 Pins the exact set of (method, path) registered under /users/me/sessions
-(via sessions.router) and separately under /sessions (agent_activity — registered
+(via sessions.router) and separately under /sessions (agent_activity, registered
 in main.py via a separate include_router with a different prefix, NOT via sessions.router).
 Separately pins that the literal `/queue-status` resolves before the catch-all
-`/{session_id}` — with the wrong registration order, queue-status would be
+`/{session_id}`. With the wrong registration order, queue-status would be
 swallowed by the query router's catch-all.
 
-The test must stay green BEFORE and AFTER consolidating the 8 router files
-into commands.py/queries.py/ws.py — that is exactly the point of this characterization.
+The test must stay green before and after consolidating the 8 router files
+into commands.py/queries.py/ws.py, that is exactly the point of this characterization.
 """
 
 from fastapi import FastAPI

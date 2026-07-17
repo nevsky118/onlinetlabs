@@ -17,9 +17,8 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         """Binds request_id to the structlog context, handles the request, and returns the header in the response."""
         rid = request.headers.get("x-request-id") or uuid.uuid4().hex
-        # structlog contextvars live at the task-local level, but the worker
-        # reuses the same task for subsequent requests.
-        # Clear explicitly so user_id and session_id don't leak between requests.
+        # structlog contextvars are task-local, but the worker reuses the same task across
+        # requests, so clear explicitly or user_id/session_id leak between them.
         structlog.contextvars.clear_contextvars()
         structlog.contextvars.bind_contextvars(
             request_id=rid, path=request.url.path, method=request.method

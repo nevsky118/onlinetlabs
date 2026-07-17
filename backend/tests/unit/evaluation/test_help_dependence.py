@@ -1,4 +1,4 @@
-"""#8 backend: help-dependence — dynamics of learner-initiated help requests."""
+"""#8 backend: help-dependence, dynamics of learner-initiated help requests."""
 
 import pytest
 from mcp_sdk.testing import autotest

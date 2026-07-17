@@ -1,4 +1,4 @@
-"""SessionMonitor — closed-loop learning analytics: collect → analyze → intervene."""
+"""SessionMonitor runs the closed learning-analytics loop: collect, analyze, intervene."""
 
 import asyncio
 import logging
@@ -29,9 +29,8 @@ from observability.models import (
 
 logger = logging.getLogger(__name__)
 
-# Phrasing of the "student's question" for tutor interventions: TutorInput requires
-# question, but a proactive intervention is triggered without one — we phrase it
-# on the student's behalf based on the struggle type.
+# TutorInput requires a question, but proactive interventions don't have one,
+# so we phrase it on the student's behalf based on the struggle type.
 _STRUGGLE_QUESTIONS = {
     "stuck_on_step": "Я застрял на текущем шаге и не понимаю, как двигаться дальше. Подскажи направление.",
     "repeating_errors": "Я повторяю одну и ту же ошибку. Помоги понять, что я делаю не так.",
@@ -122,11 +121,14 @@ class SessionMonitor:
 
             # Load the session's model_id to pass through into the intervention context.
             from models.session import LearningSession
+
             ls = await session.get(LearningSession, session_id)
             self._session_model_id = ls.model_id if ls else None
 
         self._collector = BehavioralCollector(
-            self._mcp, self._db_factory, self._learning_analytics_config,
+            self._mcp,
+            self._db_factory,
+            self._learning_analytics_config,
             control_interface=self._control_interface,
         )
         await self._collector.start(session_id, user_id, lab_slug, ctx)
@@ -168,6 +170,7 @@ class SessionMonitor:
 
         self._last_event_at = events[-1].timestamp
         import time
+
         _t0 = time.perf_counter()
         features = self._feature_extractor.compute(self._session_id, events)
         analysis = identify_regime(features, self._learning_analytics_config)
@@ -175,16 +178,21 @@ class SessionMonitor:
         if self._learning_analytics_config.latency_capture_enabled:
             await self._record_latency("analysis", (time.perf_counter() - _t0) * 1000.0)
 
-        # Objective escalation — arm-neutral, before the intervention branch
+        # Objective escalation is arm-neutral, runs before the intervention branch
         from learning_analytics.process_state import is_bad
+
         if is_bad(regime):
             if self._is_escalation(dwell) and not self._escalated_in_spell:
                 self._escalated_in_spell = True
                 from escalation.service import record_escalation
+
                 try:
                     async with self._db_factory() as db:
                         await record_escalation(
-                            db, self._session_id, self._user_id, self._lab_slug,
+                            db,
+                            self._session_id,
+                            self._user_id,
+                            self._lab_slug,
                             source="objective",
                         )
                 except Exception:
@@ -194,7 +202,10 @@ class SessionMonitor:
 
         if self._learning_analytics_config.mrt_enabled:
             await self._mrt_step(
-                analysis, features, regime, dwell,
+                analysis,
+                features,
+                regime,
+                dwell,
                 datetime.now(tz=UTC),
             )
             return
@@ -243,9 +254,8 @@ class SessionMonitor:
     async def _load_new_events(self, db) -> list:
         """Load new behavioral events by cursor.
 
-        Our own interventions are excluded: otherwise every recorded
-        intervention looks like a "new event", analysis restarts,
-        and spawns the next intervention — a self-sustaining loop.
+        Our own interventions are excluded, otherwise every recorded intervention looks
+        like a "new event", analysis restarts, and spawns the next one: a self-sustaining loop.
         """
         from sqlalchemy import func, select
 
@@ -274,17 +284,23 @@ class SessionMonitor:
         return list(reversed(result.scalars().all()))
 
     async def _log_process_state(self, analysis, now):
-        """Record a process state sample (regime + dwell) — every cycle."""
+        """Record a process state sample (regime and dwell) each cycle."""
         from learning_analytics.process_state import analysis_to_regime
         from models.process_state_sample import ProcessStateSample
+
         regime = analysis_to_regime(analysis)
         dwell = self._dwell.observe(regime, now)
         async with self._db_factory() as db:
-            db.add(ProcessStateSample(
-                session_id=self._session_id, user_id=self._user_id,
-                lab_slug=self._lab_slug, ts=now,
-                regime=regime.value, dwell_seconds=dwell,
-            ))
+            db.add(
+                ProcessStateSample(
+                    session_id=self._session_id,
+                    user_id=self._user_id,
+                    lab_slug=self._lab_slug,
+                    ts=now,
+                    regime=regime.value,
+                    dwell_seconds=dwell,
+                )
+            )
             await db.commit()
         return regime, dwell
 
@@ -294,25 +310,32 @@ class SessionMonitor:
         """Analyze features and assemble an intervention decision, or None."""
         if not analysis.struggle_detected:
             return None
-        # Struggle detected — emit event
-        self._emit(event_struggle_detected(
-            self._session_id, self._user_id,
-            struggle_type=analysis.struggle_type.value if analysis.struggle_type else "unknown",
-            confidence=analysis.confidence,
-            crossed=[],
-        ))
+        # struggle detected, emit event
+        self._emit(
+            event_struggle_detected(
+                self._session_id,
+                self._user_id,
+                struggle_type=analysis.struggle_type.value if analysis.struggle_type else "unknown",
+                confidence=analysis.confidence,
+                crossed=[],
+            )
+        )
         if not self._should_trigger_intervention():
-            # Cooldown hasn't elapsed yet — skip the intervention
+            # cooldown hasn't elapsed yet, skip the intervention
             elapsed = (
                 (datetime.now(tz=UTC) - self._last_intervention_at).total_seconds()
-                if self._last_intervention_at else 0
+                if self._last_intervention_at
+                else 0
             )
             remaining = max(0.0, self._learning_analytics_config.cooldown_period - elapsed)
-            self._emit(event_cooldown_skip(
-                self._session_id, self._user_id,
-                reason="cooldown",
-                remaining_seconds=int(remaining),
-            ))
+            self._emit(
+                event_cooldown_skip(
+                    self._session_id,
+                    self._user_id,
+                    reason="cooldown",
+                    remaining_seconds=int(remaining),
+                )
+            )
             return None
 
         context = await self._context_builder.build(
@@ -359,32 +382,44 @@ class SessionMonitor:
         self._last_intervention_at = datetime.now(tz=UTC)
 
         # Emit after receiving the agent's response
-        self._emit(event_agent_invoked(
-            self._session_id, self._user_id,
-            agent_name=response.agent_used or "orchestrator",
-            model_id=response.metadata.get("model", "unknown"),
-            parameters_preview={"intervention_type": pending.payload.intervention_type},
-        ))
+        self._emit(
+            event_agent_invoked(
+                self._session_id,
+                self._user_id,
+                agent_name=response.agent_used or "orchestrator",
+                model_id=response.metadata.get("model", "unknown"),
+                parameters_preview={"intervention_type": pending.payload.intervention_type},
+            )
+        )
         if response.success:
-            self._emit(event_hint_generated(
-                self._session_id, self._user_id,
-                level=response.data.get("hint_level", 1) if response.data else 1,
-                hint_type=pending.payload.intervention_type,
-                model_used=response.metadata.get("model", "unknown"),
-            ))
-            self._emit(event_dispatched(
-                self._session_id, self._user_id,
-                intervention_type=pending.payload.intervention_type,
-                target_agent=response.agent_used or "orchestrator",
-                status="success",
-            ))
+            self._emit(
+                event_hint_generated(
+                    self._session_id,
+                    self._user_id,
+                    level=response.data.get("hint_level", 1) if response.data else 1,
+                    hint_type=pending.payload.intervention_type,
+                    model_used=response.metadata.get("model", "unknown"),
+                )
+            )
+            self._emit(
+                event_dispatched(
+                    self._session_id,
+                    self._user_id,
+                    intervention_type=pending.payload.intervention_type,
+                    target_agent=response.agent_used or "orchestrator",
+                    status="success",
+                )
+            )
         else:
-            self._emit(event_error(
-                self._session_id, self._user_id,
-                source=ActivitySource.INTERVENTION,
-                error=response.error or "unknown error",
-                agent=response.agent_used,
-            ))
+            self._emit(
+                event_error(
+                    self._session_id,
+                    self._user_id,
+                    source=ActivitySource.INTERVENTION,
+                    error=response.error or "unknown error",
+                    agent=response.agent_used,
+                )
+            )
 
         if response.success and self._gateway:
             analysis = pending.analysis
@@ -392,8 +427,7 @@ class SessionMonitor:
                 self._session_id,
                 {
                     "intervention_type": analysis.suggested_intervention.value,
-                    "content": response.data.get("hint")
-                    or response.data.get("answer", ""),
+                    "content": response.data.get("hint") or response.data.get("answer", ""),
                     "hint_level": response.data.get("hint_level"),
                     "struggle_type": analysis.struggle_type.value
                     if analysis.struggle_type
@@ -415,6 +449,7 @@ class SessionMonitor:
         if not (pending.response and pending.response.success):
             return
         from evaluation.grounding import record_grounding_comparison
+
         try:
             grounded_text = (pending.response.data or {}).get("hint", "")
             ungrounded_payload = pending.payload.model_copy(deep=True)
@@ -444,26 +479,29 @@ class SessionMonitor:
         from models.behavioral_event import BehavioralEvent
 
         action = (
-            analysis.suggested_intervention.value
-            if analysis.suggested_intervention else "none"
+            analysis.suggested_intervention.value if analysis.suggested_intervention else "none"
         )
         try:
             async with self._db_factory() as db:
-                db.add(BehavioralEvent(
-                    id=str(uuid4()),
-                    session_id=self._session_id,
-                    user_id=self._user_id,
-                    lab_slug=self._lab_slug,
-                    timestamp=datetime.now(tz=UTC),
-                    event_type="would_intervene",
-                    action=action,
-                    success=False,
-                    extra_data={
-                        "struggle_type": analysis.struggle_type.value if analysis.struggle_type else None,
-                        "confidence": analysis.confidence,
-                        "control_arm": ControlArm.OPEN.value,
-                    },
-                ))
+                db.add(
+                    BehavioralEvent(
+                        id=str(uuid4()),
+                        session_id=self._session_id,
+                        user_id=self._user_id,
+                        lab_slug=self._lab_slug,
+                        timestamp=datetime.now(tz=UTC),
+                        event_type="would_intervene",
+                        action=action,
+                        success=False,
+                        extra_data={
+                            "struggle_type": analysis.struggle_type.value
+                            if analysis.struggle_type
+                            else None,
+                            "confidence": analysis.confidence,
+                            "control_arm": ControlArm.OPEN.value,
+                        },
+                    )
+                )
                 await db.commit()
             logger.debug("Arm A: would_intervene action=%s", action)
         except Exception:
@@ -492,9 +530,7 @@ class SessionMonitor:
                         "confidence": analysis.confidence,
                         "agent_used": response.agent_used,
                         "agent_backend": response.agent_backend,
-                        "experiment_group": response.metadata.get(
-                            "experiment_group"
-                        ),
+                        "experiment_group": response.metadata.get("experiment_group"),
                         "latency_ms": response.latency_ms,
                         "error_code": response.metadata.get("error_code"),
                         "model": response.metadata.get("model"),
@@ -506,7 +542,7 @@ class SessionMonitor:
         except Exception:
             logger.error("Не удалось записать интервенцию", exc_info=True)
 
-    # Helper emit — never propagates an exception
+    # Helper emit, never propagates an exception
 
     def _emit(self, event) -> None:
         if self._activity:
@@ -517,6 +553,7 @@ class SessionMonitor:
     def _dwell_ready(self, regime_value: str, dwell: float) -> bool:
         """Control law: bad regime and dwell time >= threshold T_k."""
         from learning_analytics.process_state import ProcessRegime, is_bad
+
         regime = ProcessRegime(regime_value)
         if not is_bad(regime):
             return False
@@ -533,14 +570,13 @@ class SessionMonitor:
             return False
         if self._last_intervention_at is None:
             return True
-        elapsed = (
-            datetime.now(tz=UTC) - self._last_intervention_at
-        ).total_seconds()
+        elapsed = (datetime.now(tz=UTC) - self._last_intervention_at).total_seconds()
         return elapsed >= self._learning_analytics_config.cooldown_period
 
     async def _record_latency(self, stage: str, duration_ms: float) -> None:
         """Record cycle stage latency (best-effort, gated by the caller)."""
         from learning_analytics.latency import record_stage_latency
+
         try:
             async with self._db_factory() as db:
                 await record_stage_latency(db, self._session_id, stage, duration_ms)
@@ -594,6 +630,7 @@ class SessionMonitor:
         """Open a bad-spell: jittered T_k = base * U[1-f, 1+f], new spell_id."""
         import random
         from uuid import uuid4
+
         base = self._learning_analytics_config.dwell_thresholds.get(regime_value, 0.0)
         j = self._learning_analytics_config.mrt_t_k_jitter_frac
         self._spell_t_k = base * random.uniform(1.0 - j, 1.0 + j)
@@ -607,10 +644,17 @@ class SessionMonitor:
         from uuid import uuid4
 
         from models.intervention_decision import InterventionDecision
+
         row = InterventionDecision(
-            id=str(uuid4()), session_id=self._session_id, user_id=self._user_id,
-            lab_slug=self._lab_slug, spell_id=self._spell_id, ts=now,
-            regime=regime_value, dwell_seconds=dwell, t_k_applied=t_k,
+            id=str(uuid4()),
+            session_id=self._session_id,
+            user_id=self._user_id,
+            lab_slug=self._lab_slug,
+            spell_id=self._spell_id,
+            ts=now,
+            regime=regime_value,
+            dwell_seconds=dwell,
+            t_k_applied=t_k,
             assignment=assignment,
         )
         self._open_decision_ids.append(row.id)
@@ -623,6 +667,7 @@ class SessionMonitor:
         from sqlalchemy import update
 
         from models.intervention_decision import InterventionDecision
+
         ids = self._open_decision_ids
         self._spell_id = None
         self._spell_t_k = None

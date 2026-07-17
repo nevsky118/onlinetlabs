@@ -43,6 +43,6 @@ class TestMetrics:
     @autotest.name("metrics: бутстрэп-CI None на одном значении")
     def test_14b97f36_ci_small(self):
         with autotest.step("Act+Assert"):
-            assert_is_none(bootstrap_ci([5.0]), "одно значение — нет CI")
+            assert_is_none(bootstrap_ci([5.0]), "одно значение, нет CI")
             lo, hi = bootstrap_ci([10.0, 12.0, 14.0, 16.0, 18.0])
             assert_true(lo <= hi, "CI упорядочен")

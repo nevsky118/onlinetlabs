@@ -1,4 +1,4 @@
-"""Escalation = a request for a mentor. Arm-neutral: button or objective."""
+"""Escalation is a request for a mentor, arm-neutral (button press or objective trigger)."""
 
 from datetime import UTC, datetime
 from uuid import uuid4

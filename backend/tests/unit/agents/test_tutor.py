@@ -97,11 +97,11 @@ class TestTutorAgent:
         with autotest.step("Проверяем TutorResponse"):
             assert_true(isinstance(result, TutorResponse), f"тип: {type(result)}")
             assert_greater(len(result.answer), 0, "ответ не пустой")
-            assert_true(isinstance(result.follow_up_questions, list), "follow_up — список")
+            assert_true(isinstance(result.follow_up_questions, list), "follow_up это список")
 
     @autotest.num("446")
     @autotest.external_id("a7b8c9d0-e1f2-4a3b-4c5d-e6f7a8b9c0d1")
-    @autotest.name("TutorAgent: LLM failure — re-raise, без шаблона")
+    @autotest.name("TutorAgent: LLM failure re-raise, без шаблона")
     async def test_a7b8c9d0_run_llm_failure_raises(self, config_model, monkeypatch):
         with autotest.step("Мок LLM выбрасывает"):
             agent = TutorAgent(config_model)

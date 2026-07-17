@@ -21,7 +21,7 @@ async def escalate_session(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Manual escalation: the "need a mentor" button."""
+    """Manual escalation via the "need a mentor" button."""
     session = await get_session(db, session_id, current_user["id"])
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")

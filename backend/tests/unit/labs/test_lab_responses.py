@@ -1,4 +1,4 @@
-"""Characterization: GET /labs, GET /labs/{slug}, POST /labs — exact response JSON."""
+"""Characterization of GET /labs, GET /labs/{slug} and POST /labs: exact response JSON."""
 
 import pytest
 from fastapi import FastAPI

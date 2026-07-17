@@ -102,8 +102,8 @@ class TestBehavioralCollectorNormalization:
             collector._cfg = LearningAnalyticsConfig()
             key = collector._dedup_key(ts, "start_node", "n1")
 
-        with autotest.step("Первое событие — новое"):
+        with autotest.step("Первое событие новое"):
             assert_true(collector._is_new(key), "первый раз = новое")
 
-        with autotest.step("Второе событие — дубликат"):
+        with autotest.step("Второе событие, дубликат"):
             assert_true(not collector._is_new(key), "второй раз = дубликат")

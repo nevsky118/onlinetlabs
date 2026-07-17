@@ -31,7 +31,7 @@ class TestHintAgentLLM:
 
     @autotest.num("571")
     @autotest.external_id("558d9d41-3c35-46d2-b520-f7c53ce35002")
-    @autotest.name("HintAgent: run с agent_context — реальный Agent.run даёт подсказку из output")
+    @autotest.name("HintAgent: run с agent_context, реальный Agent.run даёт подсказку из output")
     async def test_558d9d41_run_with_context(self, config_model, monkeypatch):
         with autotest.step("Создаём агент с контекстом, подменяем _build_model на TestModel"):
             agent = HintAgent(config_model)
@@ -52,7 +52,7 @@ class TestHintAgentLLM:
                 agent_context=context,
             )
 
-        with autotest.step("Вызываем run (без сети — модель подменена на TestModel)"):
+        with autotest.step("Вызываем run (без сети, модель подменена на TestModel)"):
             result = await agent.run(inp, model_id=mid)
 
         with autotest.step("Подсказка собрана из result.output реального прогона"):

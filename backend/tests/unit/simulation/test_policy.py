@@ -95,7 +95,7 @@ class TestGenerativePolicy:
 
     @autotest.num("2036")
     @autotest.external_id("e68a9ba1-4ad1-46b2-9415-f4462170de34")
-    @autotest.name("policy: истинный режим — латентный mode, режимы разнообразны")
+    @autotest.name("policy: истинный режим это латентный mode, режимы разнообразны")
     async def test_e68a9ba1_regime_is_latent_mode_diverse(self):
         with autotest.step("Arrange: слабый профиль (режимы должны переключаться)"):
             from simulation.policy import TrueRegime
@@ -105,7 +105,7 @@ class TestGenerativePolicy:
         with autotest.step("Act: прогоняем траекторию"):
             _, regimes = _run(profile, seed=2)
 
-        with autotest.step("Assert: режим не константа — есть продуктивный и другие"):
+        with autotest.step("Assert: режим не константа, есть продуктивный и другие"):
             kinds = set(regimes)
             assert_true(TrueRegime.PRODUCTIVE in kinds, "продуктивный режим встречается")
             assert_true(len(kinds) >= 2, "у слабого студента режимы разнообразны")

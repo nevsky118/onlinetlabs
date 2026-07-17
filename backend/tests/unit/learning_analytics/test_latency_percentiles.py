@@ -1,4 +1,4 @@
-"""Latency: p50/p95/p99 percentiles (Hyndman-Fan Type 7, numpy/R default) — not the mean."""
+"""Latency: p50/p95/p99 percentiles (Hyndman-Fan Type 7, numpy/R default), not the mean."""
 
 import pytest
 from mcp_sdk.testing import autotest

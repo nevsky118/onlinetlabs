@@ -1,4 +1,4 @@
-"""FeatureExtractor — computing behavioral features from session events."""
+"""FeatureExtractor computes behavioral features from session events."""
 
 import json
 import math

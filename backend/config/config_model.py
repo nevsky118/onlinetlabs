@@ -43,9 +43,7 @@ class RedisConfig(BaseModel):
 class ApiConfig(BaseModel):
     """API server settings."""
 
-    environment: str = Field(
-        description="Environment: local | development | production | test"
-    )
+    environment: str = Field(description="Environment: local | development | production | test")
     debug: bool = Field(default=False, description="Debug mode")
     api_port: int = Field(default=8000, description="API port")
     frontend_url: str = Field(description="Frontend URL for CORS")
@@ -64,9 +62,7 @@ class ApiConfig(BaseModel):
 class LogConfig(BaseModel):
     """Logging settings."""
 
-    log_level: str = Field(
-        description="Level: DEBUG | INFO | WARNING | ERROR | CRITICAL"
-    )
+    log_level: str = Field(description="Level: DEBUG | INFO | WARNING | ERROR | CRITICAL")
 
     @field_validator("log_level")
     @classmethod
@@ -119,9 +115,7 @@ class AgentsConfig(BaseModel):
     temperature: float = Field(default=0.3, ge=0.0, le=2.0)
     max_tokens: int = Field(default=4096, ge=1)
     request_timeout: int = Field(default=30, ge=1)
-    selectable_roles: set[str] = Field(
-        default_factory=lambda: {"student", "instructor", "admin"}
-    )
+    selectable_roles: set[str] = Field(default_factory=lambda: {"student", "instructor", "admin"})
 
     def get_entry(self, model_id: str) -> "ModelEntry | None":
         """Find a catalog entry by id."""
@@ -142,10 +136,14 @@ class AgentsConfig(BaseModel):
         for ref, creds in self.providers.items():
             if creds.provider in (LlmProvider.ANTHROPIC, LlmProvider.OPENAI) and not creds.api_key:
                 raise ValueError(f"provider '{ref}' requires api_key")
-            if creds.provider == LlmProvider.YANDEX and (not creds.api_key or not creds.yandex_folder):
+            if creds.provider == LlmProvider.YANDEX and (
+                not creds.api_key or not creds.yandex_folder
+            ):
                 raise ValueError(f"provider '{ref}' (yandex) requires api_key and yandex_folder")
             if creds.provider == LlmProvider.OLLAMA and not creds.base_url:
-                creds.base_url = "http://localhost:11434/v1"  # Ollama — local LLM server, localhost is canonical
+                creds.base_url = (
+                    "http://localhost:11434/v1"  # Ollama runs locally, localhost is canonical
+                )
         return self
 
 
@@ -155,9 +153,7 @@ class LearningAnalyticsConfig(BaseModel):
     # Cycles
     poll_interval: float = Field(default=5.0, description="Интервал опроса MCP (сек)")
     analysis_interval: float = Field(default=15.0, description="Интервал анализа (сек)")
-    cooldown_period: float = Field(
-        default=60.0, description="Мин. пауза между интервенциями (сек)"
-    )
+    cooldown_period: float = Field(default=60.0, description="Мин. пауза между интервенциями (сек)")
     enabled: bool = Field(
         default=True, description="Включить интервенции (False для контрольной группы)"
     )
@@ -206,15 +202,11 @@ class LearningAnalyticsConfig(BaseModel):
     error_repeat_threshold: int = Field(
         default=3, description="Повторов одной ошибки для срабатывания"
     )
-    idle_threshold: int = Field(
-        default=3, description="Кол-во idle-периодов для детекции"
-    )
+    idle_threshold: int = Field(default=3, description="Кол-во idle-периодов для детекции")
     entropy_threshold: float = Field(
         default=0.7, description="Порог энтропии действий (trial-and-error)"
     )
-    error_freq_threshold: float = Field(
-        default=0.4, description="Ошибок/мин для детекции flailing"
-    )
+    error_freq_threshold: float = Field(default=0.4, description="Ошибок/мин для детекции flailing")
     distinct_actuals_threshold: int = Field(
         default=2, description="Мин. уникальных неверных ответов для trial-and-error (Table 1)"
     )
@@ -230,24 +222,20 @@ class LearningAnalyticsConfig(BaseModel):
     min_latency_floor: float = Field(
         default=30.0, description="Мин. базовая латентность для stuck (сек)"
     )
-    min_idle_for_stuck: int = Field(
-        default=2, description="Мин. idle-периодов для stuck"
-    )
+    min_idle_for_stuck: int = Field(default=2, description="Мин. idle-периодов для stuck")
 
     # Feature parameters
-    idle_gap_seconds: float = Field(
-        default=60.0, description="Gap > N сек = idle период"
-    )
+    idle_gap_seconds: float = Field(default=60.0, description="Gap > N сек = idle период")
     rate_window_seconds: float = Field(
         default=120.0, description="Окно для подсчёта action rate (сек)"
     )
     min_rate_windows: int = Field(default=3, description="Мин. окон для расчёта slope")
-    error_freq_window_minutes: float = Field(
-        default=5.0, description="Окно частоты ошибок (мин)"
-    )
+    error_freq_window_minutes: float = Field(default=5.0, description="Окно частоты ошибок (мин)")
 
     # Progress observer
-    progress_poll_interval: float = Field(default=25.0, description="Интервал опроса spec-проверок (сек)")
+    progress_poll_interval: float = Field(
+        default=25.0, description="Интервал опроса spec-проверок (сек)"
+    )
 
     # Collector
     dedup_max_size: int = Field(default=10_000, description="Макс. размер dedup-кэша")
@@ -259,28 +247,51 @@ class LearningAnalyticsConfig(BaseModel):
     # production values are derived by minimizing J (control/derive_thresholds.py).
     dwell_thresholds: dict[str, float] = Field(
         default_factory=lambda: {
-            "stuck_on_step": 0.0, "repeating_errors": 0.0,
-            "idle": 0.0, "trial_and_error": 0.0,
+            "stuck_on_step": 0.0,
+            "repeating_errors": 0.0,
+            "idle": 0.0,
+            "trial_and_error": 0.0,
         },
         description="T_k: порог dwell-time по режиму (сек), выводится из J",
     )
     # Costs for the J criterion (uniform units; the ratio is economically justified).
-    cost_stuck: float = Field(default=1.0, description="c_застр: стоимость единицы длительности затруднения")
-    cost_intervention: float = Field(default=1.0, description="c_возд: стоимость одного воздействия")
-    cost_false_intervention: float = Field(default=0.5, description="c_ложн: штраф за ложное вмешательство")
+    cost_stuck: float = Field(
+        default=1.0, description="c_застр: стоимость единицы длительности затруднения"
+    )
+    cost_intervention: float = Field(
+        default=1.0, description="c_возд: стоимость одного воздействия"
+    )
+    cost_false_intervention: float = Field(
+        default=0.5, description="c_ложн: штраф за ложное вмешательство"
+    )
 
     # A/B and org metrics (Task 4)
-    escalation_max_dwell: float = Field(default=180.0, description="Порог dwell для объективной эскалации (сек)")
-    mentor_handling_seconds: float = Field(default=900.0, description="t_наставника для контрфактуала часов")
-    l2_intervention_cap: int = Field(default=0, description="Макс. воздействий для зачёта автономии на L2")
+    escalation_max_dwell: float = Field(
+        default=180.0, description="Порог dwell для объективной эскалации (сек)"
+    )
+    mentor_handling_seconds: float = Field(
+        default=900.0, description="t_наставника для контрфактуала часов"
+    )
+    l2_intervention_cap: int = Field(
+        default=0, description="Макс. воздействий для зачёта автономии на L2"
+    )
 
     # Task 3: cohort org metrics
-    cohort_horizon_days: float = Field(default=30.0, description="Горизонт T наблюдения для reach-rate@T и RMST (дни)")
-    autonomy_intervention_threshold: int = Field(default=0, description="Порог воздействий, ниже которого L2 считается автономным")
+    cohort_horizon_days: float = Field(
+        default=30.0, description="Горизонт T наблюдения для reach-rate@T и RMST (дни)"
+    )
+    autonomy_intervention_threshold: int = Field(
+        default=0, description="Порог воздействий, ниже которого L2 считается автономным"
+    )
 
     # Task 5: identifier P1 evaluation
-    eval_t_k_grid: list[float] = Field(default=[0.0, 15.0, 30.0, 60.0, 120.0, 180.0], description="Сетка порогов dwell T_k для рабочей кривой")
-    eval_onset_window_seconds: float = Field(default=30.0, description="Окно допуска ±Δ вокруг онсета струггла")
+    eval_t_k_grid: list[float] = Field(
+        default=[0.0, 15.0, 30.0, 60.0, 120.0, 180.0],
+        description="Сетка порогов dwell T_k для рабочей кривой",
+    )
+    eval_onset_window_seconds: float = Field(
+        default=30.0, description="Окно допуска ±Δ вокруг онсета струггла"
+    )
 
 
 class OpenClawConfig(BaseModel):
@@ -294,7 +305,7 @@ class OpenClawConfig(BaseModel):
 
     @model_validator(mode="after")
     def validate_enabled(self) -> "OpenClawConfig":
-        """If OpenClaw is enabled — base_url is required."""
+        """If OpenClaw is enabled, base_url is required."""
         if self.enabled and not self.base_url:
             raise ValueError("OPENCLAW_BASE_URL required when OpenClaw enabled")
         return self
@@ -306,7 +317,10 @@ class GNS3Config(BaseModel):
     service_url: str = Field(description="Внутренний URL gns3-service")
     public_url: str = Field(description="Browser-reachable URL GNS3 Web UI для студента")
     internal_url: str = Field(description="Внутренний URL GNS3-сервера для MCP SessionContext")
-    node_host: str = Field(default="", description="Host для прямых TCP-подключений к console-портам узлов (telnet VPCS). Если пусто — derive из internal_url/public_url.")
+    node_host: str = Field(
+        default="",
+        description="Host для прямых TCP-подключений к console-портам узлов (telnet VPCS). Если пусто — derive из internal_url/public_url.",
+    )
 
 
 class MCPConfig(BaseModel):
@@ -339,9 +353,7 @@ class ConfigModel(BaseModel):
     api: ApiConfig
     log: LogConfig
     agents: AgentsConfig
-    learning_analytics: LearningAnalyticsConfig = Field(
-        default_factory=LearningAnalyticsConfig
-    )
+    learning_analytics: LearningAnalyticsConfig = Field(default_factory=LearningAnalyticsConfig)
     openclaw: OpenClawConfig = Field(default_factory=OpenClawConfig)
     gns3: GNS3Config
     mcp: MCPConfig

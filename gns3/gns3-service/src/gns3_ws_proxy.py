@@ -39,7 +39,7 @@ HISTORY_ACTIONS = (
 
 
 class Gns3WsProxy:
-    # 1h lock TTL — renewed every 30 min by heartbeat.
+    # 1h lock TTL, renewed every 30 min by heartbeat.
     _LOCK_TTL_SECONDS = 3600
     _HEARTBEAT_INTERVAL_SECONDS = 1800
 
@@ -157,7 +157,7 @@ class Gns3WsProxy:
                         {"reason": f"reconnect attempt {attempt}"},
                     )
                 await self._forward_loop(project_id, session_id)
-                # Normal exit from forward_loop — upstream closed gracefully
+                # Normal exit from forward_loop, upstream closed gracefully
                 attempt = 0
             except asyncio.CancelledError:
                 return

@@ -1,7 +1,7 @@
 """end_lab: a student finishing a lab must capture experiment measurements.
 
 Regression: `POST /sessions/{id}/end` → `end_lab` tore down GNS3 and stopped the
-monitor, but did NOT finalize ExperimentMetrics or censor MRT points — the A/B
+monitor, but did NOT finalize ExperimentMetrics or censor MRT points, so the A/B
 and cohort layer never got populated for a single real student. Plus the monitor
 was stopped after teardown, so late interventions never made it into the metrics snapshot.
 """

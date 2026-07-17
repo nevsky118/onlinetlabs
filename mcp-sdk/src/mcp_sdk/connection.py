@@ -41,7 +41,7 @@ class ConnectionPool:
     served users: connections idle longer than `idle_ttl` are closed, and when
     space is short the least-recently-used one is evicted (LRU). Without this the
     pool would permanently stop handing out connections after `max_size` unique
-    users — connections were never released until the process stopped.
+    users, since connections were never released until the process stopped.
 
     A cached connection is checked via `health_check` no more often than
     `health_check_interval`; a dead one is reopened. Only a connection unused
@@ -109,7 +109,7 @@ class ConnectionPool:
                 await self._close(key)  # dead → reopen below
 
             await self._make_room(now)
-            conn = await self._manager.connect(ctx)  # network call — outside the global lock
+            conn = await self._manager.connect(ctx)  # network call, kept outside the global lock
             async with self._lock:
                 self._entries[key] = _Entry(conn=conn, last_used=now, last_checked=now)
                 self._entries.move_to_end(key)
@@ -131,7 +131,7 @@ class ConnectionPool:
             self._key_locks.clear()
 
     async def _is_alive(self, entry: _Entry, now: float) -> bool:
-        """Health-check no more often than health_check_interval — otherwise trust the connection."""
+        """Health-check no more often than health_check_interval; otherwise trust the connection."""
         if now - entry.last_checked < self._health_check_interval:
             return True
         try:
@@ -143,7 +143,7 @@ class ConnectionPool:
         return alive
 
     async def _drop_idle(self, now: float) -> None:
-        """Close connections idle longer than idle_ttl — this is what fixes the slot leak."""
+        """Close connections idle longer than idle_ttl. This is what fixes the slot leak."""
         async with self._lock:
             stale = [key for key, e in self._entries.items() if now - e.last_used > self._idle_ttl]
         for key in stale:
@@ -156,7 +156,9 @@ class ConnectionPool:
             async with self._lock:
                 if len(self._entries) < self._max_size:
                     return
-                key, entry = next(iter(self._entries.items()))  # LRU — head of the OrderedDict
+                key, entry = next(
+                    iter(self._entries.items())
+                )  # LRU sits at the head of the OrderedDict
                 hot = now - entry.last_used < self._min_evict_idle
                 size = len(self._entries)
             if hot:

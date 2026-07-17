@@ -13,7 +13,7 @@ from models.user import User
 async def _make_engine_and_tables():
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
     async with engine.begin() as conn:
-        # SQLite doesn't enforce FKs — create the needed tables
+        # SQLite doesn't enforce FKs, create the needed tables anyway
         await conn.run_sync(User.__table__.create)
         await conn.run_sync(Lab.__table__.create)
         await conn.run_sync(LabProgress.__table__.create)

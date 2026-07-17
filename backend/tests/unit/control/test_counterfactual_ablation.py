@@ -39,7 +39,7 @@ class TestCounterfactualAblation:
             )
 
         with autotest.step(
-            "Assert: без эффекта вмешательства оптимум = max T_k; со стипуляцией — раньше"
+            "Assert: без эффекта вмешательства оптимум = max T_k, со стипуляцией раньше"
         ):
             assert_equal(
                 tk_no_effect["stuck_on_step"],

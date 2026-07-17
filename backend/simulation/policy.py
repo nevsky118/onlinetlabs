@@ -2,10 +2,11 @@
 
 Anti-tautology key: the student has a LATENT mode (true regime) that evolves
 stochastically based on traits (skill/persistence/strategy). Actions are emitted
-CONDITIONAL on mode — mode is the CAUSE, actions are the effect. The detector
+CONDITIONAL on mode: mode is the CAUSE, actions are the effect. The detector
 observes actions and tries to infer mode; since mode is generated independently
 (not from the detector's feature thresholds), comparing detector(actions) vs mode is honest.
 """
+
 import random
 from dataclasses import dataclass
 from enum import Enum
@@ -34,7 +35,7 @@ class TrueRegime(str, Enum):
 class StudentState:
     total_steps: int = 5
     step: int = 0
-    progress: float = 0.0          # progress on the current step [0,1]
+    progress: float = 0.0  # progress on the current step [0,1]
     mode: TrueRegime = TrueRegime.PRODUCTIVE
     frustration: float = 0.0
     just_helped: bool = False
@@ -85,7 +86,7 @@ def next_step(
                 state.done = True
                 return Action.SUBMIT, mode, state
     else:
-        # while struggling — chance to ask for help (propensity + frustration)
+        # while struggling, chance to ask for help (propensity + frustration)
         if rng.random() < profile.help_propensity * 0.4 + state.frustration * 0.2:
             action = Action.ASK_HELP
             state.just_helped = True

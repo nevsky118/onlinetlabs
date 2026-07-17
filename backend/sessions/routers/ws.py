@@ -1,4 +1,4 @@
-"""Session WebSocket endpoints: interventions and the gns3-service event stream."""
+"""Session WebSocket endpoints for interventions and the gns3-service event stream."""
 
 import asyncio
 import contextlib
@@ -58,10 +58,10 @@ async def session_events_ws(
     """Event stream from gns3-service for the client.
 
     Authorization via ?token=<jwt>. Close codes:
-    4401 — token missing or invalid,
-    4404 — session doesn't belong to the user,
-    1011 — internal forwarding error,
-    1012 — server shutdown (via close_all_connections).
+    4401: token missing or invalid,
+    4404: session doesn't belong to the user,
+    1011: internal forwarding error,
+    1012: server shutdown (via close_all_connections).
     """
     user = await verify_jwt_for_ws(token)
     if user is None:
@@ -131,7 +131,7 @@ async def session_activity_observe_ws(
 
         async def _watch_disconnect() -> None:
             # receive() raises WebSocketDisconnect when the client disconnects,
-            # even while _pump is blocked on an empty queue — otherwise the
+            # even while _pump is blocked on an empty queue. Otherwise the
             # handler would hang forever, leaking a task and a subscription.
             while True:
                 await websocket.receive()

@@ -1,4 +1,4 @@
-"""Cisco IOS check-handlers — `cisco.ospf_neighbor`, `cisco.route_in_table`,
+"""Cisco IOS check handlers: `cisco.ospf_neighbor`, `cisco.route_in_table`,
 `cisco.interface_brief`.
 
 Handlers connect via telnet to the node's dynamips console and run
@@ -60,7 +60,7 @@ def _parse_cisco_route(stdout: str, prefix: str) -> tuple[str, str] | None:
             continue
         stripped = line.lstrip()
         # A `Codes: ...` header and similar text can match the first group,
-        # but they have no second group (prefix) — re.match gives None or a
+        # but they have no second group (prefix), so re.match gives None or a
         # prefix mismatch. Explicitly skip obvious header lines too.
         if stripped.startswith(("Codes:", "Gateway of last resort")):
             continue
@@ -89,7 +89,7 @@ def _parse_cisco_interface(stdout: str, interface: str) -> dict | None:
         if parts[0] != interface:
             continue
         # parts: [name, ip, ok, method, status, protocol]
-        # Status can be `administratively down` (2 words) — handle that.
+        # Status can be `administratively down` (2 words), so handle that.
         # Try the 6-field format if status is a single word.
         if len(parts) == 6:
             return {
@@ -99,14 +99,14 @@ def _parse_cisco_interface(stdout: str, interface: str) -> dict | None:
                 "protocol": parts[5],
             }
         if len(parts) == 7:
-            # `administratively down` — a two-word status.
+            # `administratively down` is a two-word status.
             return {
                 "interface": parts[0],
                 "ip": parts[1],
                 "status": f"{parts[4]} {parts[5]}",
                 "protocol": parts[6],
             }
-        # fallback — return whatever we found.
+        # Fallback: return whatever we found.
         return {
             "interface": parts[0],
             "ip": parts[1],
@@ -285,7 +285,7 @@ async def cisco_interface_brief(ctx: CheckContext, params: dict, expect: dict) -
     """`show ip interface brief` -> check the IP/status of a specific interface.
 
     params: `{node: "R1", interface: "FastEthernet0/0.10"}`
-    expect: `{status: "up", ip: "192.168.10.1"}` — `ip` is optional.
+    expect: `{status: "up", ip: "192.168.10.1"}` (`ip` is optional).
     """
     node_name = params.get("node")
     interface = params.get("interface")

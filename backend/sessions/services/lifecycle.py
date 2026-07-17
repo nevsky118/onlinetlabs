@@ -40,23 +40,25 @@ async def _finalize_experiment_metrics(db: AsyncSession, session: LearningSessio
     experiment_group = (user.experiment_group or "unknown") if user else "unknown"
 
     # steps from LabProgress
-    lp = (await db.execute(
-        select(LabProgress).where(
-            LabProgress.user_id == user_id,
-            LabProgress.lab_slug == lab_slug,
+    lp = (
+        await db.execute(
+            select(LabProgress).where(
+                LabProgress.user_id == user_id,
+                LabProgress.lab_slug == lab_slug,
+            )
         )
-    )).scalar_one_or_none()
+    ).scalar_one_or_none()
     steps_completed = (lp.current_step or 0) if lp else 0
 
     # total_steps from the YAML spec (authoritative source); fallback → LabStep count or 1
     from validation.runner import load_lab_spec
+
     spec = load_lab_spec(lab_slug)
     total_steps = len(spec.get("steps", [])) if spec else 0
     if total_steps == 0:
         from models.lab import LabStep
-        total_steps_result = await db.execute(
-            select(LabStep).where(LabStep.lab_slug == lab_slug)
-        )
+
+        total_steps_result = await db.execute(select(LabStep).where(LabStep.lab_slug == lab_slug))
         total_steps = len(total_steps_result.scalars().all()) or 1
 
     la_cfg = settings.learning_analytics
@@ -74,22 +76,24 @@ async def _finalize_experiment_metrics(db: AsyncSession, session: LearningSessio
         is_l2=l2,
     )
 
-    db.add(ExperimentMetrics(
-        id=str(uuid4()),
-        session_id=session_id,
-        user_id=user_id,
-        lab_slug=lab_slug,
-        **metrics_dict,
-    ))
+    db.add(
+        ExperimentMetrics(
+            id=str(uuid4()),
+            session_id=session_id,
+            user_id=user_id,
+            lab_slug=lab_slug,
+            **metrics_dict,
+        )
+    )
     await db.commit()
 
 
 async def _mark_ended_and_finalize(
     db: AsyncSession, session: LearningSession, status: str
 ) -> LearningSession:
-    """Marks the session ended and captures measurements: ExperimentMetrics + MRT censoring.
+    """Marks the session ended and captures measurements (ExperimentMetrics and MRT censoring).
 
-    The single finalization point for ALL termination paths (`end_session`, `end_lab`) —
+    The single finalization point for ALL termination paths (`end_session`, `end_lab`);
     otherwise the experiment measurement layer (A/B, cohort) stays empty.
     Must be called AFTER stopping the monitor: otherwise late events/interventions
     won't make it into the ExperimentMetrics snapshot.
@@ -99,15 +103,16 @@ async def _mark_ended_and_finalize(
     await db.commit()
     await db.refresh(session)
 
-    # best-effort: finalization error doesn't break session termination
+    # best-effort, a finalization error doesn't break session termination
     try:
         await _finalize_experiment_metrics(db, session)
     except Exception:
         logger.exception("Финализация метрик эксперимента упала для сессии %s", session.id)
 
-    # best-effort: MRT points with an unclosed spell are right-censored by session end
+    # best-effort, MRT points with an unclosed spell are right-censored by session end
     try:
         from learning_analytics.mrt import censor_open_decisions
+
         await censor_open_decisions(db, session.id)
     except Exception:
         logger.exception("Censoring MRT-точек упал для сессии %s", session.id)
@@ -171,14 +176,14 @@ async def reset_lab(db, session_id: str, user_id: str, gns3_client) -> bool:
 
 
 async def end_lab(db, session_id: str, user_id: str, gns3_client, monitor_registry) -> bool:
-    """Ends the lab — the path by which the student themself closes the session.
+    """Ends the lab. This is the path by which the student themself closes the session.
 
     Step order matters:
-    1. Stop the monitor — after this, the stream of behavioral events and
+    1. Stop the monitor. After this, the stream of behavioral events and
        interventions is closed, so the metrics snapshot will be complete
        (otherwise late interventions are lost).
     2. Finalize measurements (ExperimentMetrics + censoring of open MRT
-       points) — BEFORE GNS3 teardown, so an external system failure
+       points), BEFORE GNS3 teardown, so an external system failure
        doesn't lose experiment data.
     3. Tear down the gns3-service session (best-effort), release the queue
        and counter.
@@ -198,10 +203,12 @@ async def end_lab(db, session_id: str, user_id: str, gns3_client, monitor_regist
         except Exception:
             logger.exception("Teardown gns3-service упал для %s", session_id)
     from sessions.queue import _get_or_create_singleton
+
     queue = _get_or_create_singleton()
     await queue.release(lab_slug)
     try:
         from observability.metrics import active_sessions_gauge
+
         active_sessions_gauge.labels(lab_slug=lab_slug).dec()
     except Exception:
         pass  # metrics optional

@@ -208,7 +208,7 @@ class TestBuildClient:
 
         with autotest.step("Создаём клиент для yandex"):
             client = build_client("yandex-gpt-5.1")
-            assert_true(isinstance(client, AsyncOpenAI), "результат — AsyncOpenAI")
+            assert_true(isinstance(client, AsyncOpenAI), "результат это AsyncOpenAI")
 
     @autotest.num("207")
     @autotest.external_id("f7aa1cb2-46b9-4142-83b7-db0607f79104")

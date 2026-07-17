@@ -55,7 +55,7 @@ class TestFormatFailingCheck:
 
     @autotest.num("422")
     @autotest.external_id("6a8096ca-382e-4e19-8736-1f504e578501")
-    @autotest.name("format_failing_check: params не dict — узел не подставляется")
+    @autotest.name("format_failing_check: params не dict, узел не подставляется")
     def test_6a8096ca_params_not_dict(self):
         with autotest.step("params строкой, а не dict"):
             fc = {"kind": "generic.check", "params": "n/a", "expected": 1, "actual": 2}

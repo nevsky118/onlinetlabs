@@ -51,7 +51,7 @@ async def cohort_db():
         db.add(Lab(slug="lan-static-ip", title="L1 Static IP", meta={"skill": _SKILL}))
         db.add(Lab(slug="lan-static-ip-b", title="L2 Static IP", meta={"skill": _SKILL}))
 
-        # LabProgress: L1 completed 10 days ago, L2 — 2 days ago
+        # LabProgress: L1 completed 10 days ago, L2 completed 2 days ago
         db.add(
             LabProgress(
                 id="lp-l1",
@@ -230,7 +230,7 @@ async def censored_db():
 class TestComputeCohortMetrics:
     @autotest.num("942")
     @autotest.external_id("59097021-e803-4fa6-b200-28abd59f0517")
-    @autotest.name("compute_cohort_metrics: цензурированный учащийся — reach_rate=0, медиана=None")
+    @autotest.name("compute_cohort_metrics: цензурированный учащийся, reach_rate=0, медиана=None")
     async def test_59097021_censored_learner(self, censored_db):
         from cohort.service import compute_cohort_metrics
 
@@ -260,7 +260,7 @@ class TestComputeCohortMetrics:
     @autotest.num("943")
     @autotest.external_id("9b201865-1bce-43b4-8b3b-2f5509941ded")
     @autotest.name(
-        "compute_cohort_metrics: один учащийся достиг L2 — reach_rate=1, by_arm содержит closed"
+        "compute_cohort_metrics: один учащийся достиг L2, reach_rate=1, by_arm содержит closed"
     )
     async def test_9b201865_one_learner(self, cohort_db):
         from cohort.service import compute_cohort_metrics

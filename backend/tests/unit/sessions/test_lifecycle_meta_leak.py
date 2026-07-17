@@ -40,7 +40,7 @@ class TestLifecycleMetaLeak:
         self.engine = create_async_engine("sqlite+aiosqlite:///:memory:")
         self.session_factory = async_sessionmaker(self.engine, expire_on_commit=False)
         async with self.engine.begin() as conn:
-            # disable FK in SQLite — tables are created independently
+            # disable FK in SQLite, tables are created independently
             await conn.execute(text("PRAGMA foreign_keys = OFF"))
             await conn.run_sync(User.__table__.create)
             await conn.run_sync(Lab.__table__.create)

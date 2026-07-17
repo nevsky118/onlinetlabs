@@ -1,4 +1,4 @@
-"""POST /chat/stream — SSE tutor streaming (Vercel AI SDK v1)."""
+"""SSE tutor streaming for POST /chat/stream (Vercel AI SDK v1)."""
 
 import asyncio
 import json
@@ -61,8 +61,8 @@ def _activity_emit(app_state, event) -> None:
 MAX_TOOL_ROUNDS = 5
 
 # How many recent dialogue messages to send to the model. [Задание] and
-# [Текущее состояние лаб-среды] are rebuilt fresh on every request —
-# a long history isn't needed and only amplifies a "snowball" of repeated
+# [Текущее состояние лаб-среды] are rebuilt fresh on every request, so a
+# long history isn't needed and only amplifies a "snowball" of repeated
 # (possibly wrong) model claims about the environment state.
 MAX_HISTORY_MESSAGES = 6
 
@@ -71,7 +71,7 @@ _THINKING_RE = re.compile(r"\[START_THINKING\].*?\[END_THINKING\]", re.DOTALL)
 
 
 def build_models_response(can_select: bool) -> dict:
-    """Catalog for the UI: tools-capable only; empty list if selection is disallowed."""
+    """Model catalog for the UI, filtered to tools-capable entries only; empty if selection is disallowed."""
     cfg = settings.agents
     models = (
         [] if not can_select else [{"id": m.id, "label": m.label} for m in cfg.catalog if m.tools]
@@ -88,7 +88,7 @@ async def chat_models(current_user: dict = Depends(get_current_user)):
 def resolve_chat_model(
     requested: str | None, session_model_id: str | None, can_select: bool
 ) -> str:
-    """Effective model: request (if entitled and in the catalog) → session → config default."""
+    """Resolves which model to use, preferring the request (if entitled and in the catalog), then the session's model, then the config default."""
     cfg = settings.agents
     if can_select and requested and cfg.get_entry(requested) is not None:
         return requested
@@ -108,8 +108,8 @@ async def _fetch_mcp_context(mcp_client, ctx, expected_vpcs: dict | None = None)
     Called before the first LLM round so the model gets real context even
     if it doesn't support native tool-calling (e.g. YandexGPT).
 
-    expected_vpcs: node_name -> {"ip": ..., "gateway": ...} from [Задание] —
-    used to immediately attach a "correct/incorrect" verdict next to the
+    expected_vpcs: node_name -> {"ip": ..., "gateway": ...} from [Задание], used
+    to immediately attach a "correct/incorrect" verdict next to the
     actual IP, instead of relying on the model to compare values itself
     (YandexGPT often ignores this and just restates the expected values).
     """
@@ -130,7 +130,7 @@ async def _fetch_mcp_context(mcp_client, ctx, expected_vpcs: dict | None = None)
             else:
                 parts.append("Компоненты среды: список пуст.")
 
-            # Real show ip for started VPCS nodes — don't rely on the model
+            # Real show ip for started VPCS nodes, don't rely on the model
             # calling get_vpcs_ip itself (it often doesn't, and instead makes
             # up values from [Задание]).
             vpcs_nodes = [c for c in components if c.type == "vpcs" and c.status == "started"]
@@ -234,12 +234,12 @@ async def _stream_one_round(
     session_id: str = "",
     user_id: str = "",
 ) -> AsyncIterator[str]:
-    """One LLM round: text + tool_calls accumulation. Updates state in-place.
+    """Runs one LLM round, accumulating text and tool_calls; updates state in-place.
 
     state keys:
-      - assistant_parts: list[dict] — collected text parts
-      - usage_info: dict | None
-      - has_tool_calls: bool — whether this round has tool_calls
+      - assistant_parts (list[dict]): collected text parts
+      - usage_info (dict | None)
+      - has_tool_calls (bool): whether this round has tool_calls
     """
     create_kwargs: dict = {"model": model, "messages": messages, "stream": True}
     if _supports_tool_calling(model_id):
@@ -318,7 +318,6 @@ async def _stream_one_round(
         except json.JSONDecodeError:
             parsed = {}
         yield tool_input_available(tc_id, tc_name, parsed)
-        # Emit: tool is being called.
         _activity_emit(
             app_state,
             event_tool_call(
@@ -329,7 +328,6 @@ async def _stream_one_round(
             ),
         )
         result = await execute_tool(tc_name, parsed, ctx, mcp_client)
-        # Emit: tool result.
         _activity_emit(
             app_state,
             event_tool_result(
@@ -386,7 +384,6 @@ async def chat_stream(
             logger.warning(
                 "chat: model_id '%s' отклонён, фолбэк на '%s'", body.model_id, effective_model_id
             )
-            # Emit: fallback to another model.
             _activity_emit(
                 request.app.state,
                 event_fallback(
@@ -403,7 +400,6 @@ async def chat_stream(
             await db.commit()
         client = build_client(effective_model_id)
         model = model_uri(effective_model_id)
-        # Emit: model selected.
         entry = settings.agents.get_entry(effective_model_id)
         _activity_emit(
             request.app.state,
@@ -415,14 +411,13 @@ async def chat_stream(
             ),
         )
 
-        # Load in parallel: lab description + environment state from MCP.
+        # Loads lab description and environment state from MCP in parallel.
         spec = load_lab_spec(session.lab_slug)
         expected_vpcs = expected_vpcs_config(spec)
         lab_ctx_text, mcp_ctx_text = await asyncio.gather(
             _fetch_lab_context(db, session.lab_slug, spec),
             _fetch_mcp_context(mcp_client, ctx, expected_vpcs),
         )
-        # Emit: MCP context fetched.
         _activity_emit(
             request.app.state,
             event_mcp_context_fetched(
@@ -474,7 +469,6 @@ async def chat_stream(
                     break
                 tool_round += 1
 
-            # Emit: response finished.
             usage = state.get("usage_info") or {}
             _activity_emit(
                 request.app.state,

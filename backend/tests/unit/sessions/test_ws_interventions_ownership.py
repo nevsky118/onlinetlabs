@@ -41,7 +41,7 @@ class TestSessionInterventionsWsOwnership:
     @autotest.num("2410")
     @autotest.external_id("c205bb8c-ae3f-43d3-9d4b-b277f1d154ea")
     @autotest.name(
-        "session_interventions_ws: чужая сессия — close(4404), gateway.connect не вызывается"
+        "session_interventions_ws: чужая сессия, close(4404), gateway.connect не вызывается"
     )
     async def test_c205bb8c_rejects_session_not_owned_by_user(self):
         with autotest.step(
@@ -64,7 +64,7 @@ class TestSessionInterventionsWsOwnership:
     @autotest.num("2411")
     @autotest.external_id("9a0f526e-eedd-4701-9d72-0e996f5c8c95")
     @autotest.name(
-        "session_interventions_ws: владелец сессии — gateway.connect вызывается, disconnect по обрыву"
+        "session_interventions_ws: владелец сессии, gateway.connect вызывается, disconnect по обрыву"
     )
     async def test_9a0f526e_connects_owner_to_gateway(self):
         with autotest.step("Arrange: валидный токен, get_session возвращает сессию user-1"):
@@ -80,7 +80,7 @@ class TestSessionInterventionsWsOwnership:
                 await session_interventions_ws(fake_ws, "session-1", token="t")
 
         with autotest.step(
-            "Assert: gateway.connect вызван с (session_id, websocket), disconnect — при обрыве связи"
+            "Assert: gateway.connect вызван с (session_id, websocket), disconnect при обрыве связи"
         ):
             gateway.connect.assert_awaited_once_with("session-1", fake_ws)
             gateway.disconnect.assert_called_once_with("session-1", fake_ws)

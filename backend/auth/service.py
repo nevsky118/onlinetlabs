@@ -49,9 +49,9 @@ async def create_user(
     role: UserRole = UserRole.STUDENT,
 ) -> User:
     """Creates a user in the DB. Raises UserAlreadyExistsError on duplicate email."""
-    # Credential registration (tests/internal path) — active immediately. Real
+    # Credential registration (tests/internal path), active immediately. Real
     # users sign in via GitHub OAuth (upsert_github_user) and are created
-    # INACTIVE: an admin activates them in the admin panel.
+    # inactive; an admin activates them in the admin panel.
     user = User(
         email=email, password_hash=password_hash, name=name, role=role.value, is_active=True
     )

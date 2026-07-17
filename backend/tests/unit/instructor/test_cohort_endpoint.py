@@ -10,7 +10,7 @@ pytestmark = [pytest.mark.unit]
 class TestCohortEndpoint:
     @autotest.num("1002")
     @autotest.external_id("af57dc57-575a-40e2-8b81-b0b82b2efaa4")
-    @autotest.name("cohort_response_from_result: пустая когорта — headline=closed, pooled.n==0")
+    @autotest.name("cohort_response_from_result: пустая когорта, headline=closed, pooled.n==0")
     def test_af57dc57_cohort_response_from_result(self):
         from instructor.schemas import cohort_response_from_result
 
@@ -25,7 +25,7 @@ class TestCohortEndpoint:
     @autotest.num("1003")
     @autotest.external_id("c32c4035-172e-4ec2-a2b0-eb75dc3a0a0c")
     @autotest.name(
-        "cohort_response_from_result: один достигший L2 — by_skill, reach_rate, note сохраняются"
+        "cohort_response_from_result: один достигший L2, by_skill, reach_rate, note сохраняются"
     )
     def test_c32c4035_cohort_response_non_empty(self):
         from instructor.schemas import cohort_response_from_result

@@ -12,7 +12,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.auth]
         ("student", None, True),  # permissive default: role is in selectable_roles
         ("student", False, False),  # targeted disable overrides role
         ("instructor", None, True),
-        ("student", True, True),  # explicit toggle enabled — grants access
+        ("student", True, True),  # explicit toggle enabled grants access
     ],
 )
 @autotest.name("may_select_model: матрица роль/тоггл/selectable_roles")

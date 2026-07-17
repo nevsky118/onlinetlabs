@@ -23,7 +23,7 @@ _PROD_DIRS = [
     "control_interface",
 ]
 # The seeded A/B lives only in .e2e/ab_run.py (l2_pass). No analysis/production
-# path should pull it in — otherwise seeded data leaks into submission artifacts.
+# path should pull it in, otherwise seeded data leaks into submission artifacts.
 _BANNED = re.compile(r"(\.e2e\b|\bab_run\b|\bl2_pass\b)")
 
 

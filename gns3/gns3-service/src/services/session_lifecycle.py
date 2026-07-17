@@ -107,7 +107,7 @@ class SessionService:
                     f"/projects/{created_project_id}", user_role["role_id"], created_user_id,
                 )
                 # Access to the global project list: Project.Audit only (Auditor).
-                # GET /v3/projects returns projects only with an ACL on "/projects" —
+                # GET /v3/projects returns projects only with an ACL on "/projects";
                 # a per-project ACL ("/projects/{id}") doesn't count toward the list (GNS3 3.x RBAC).
                 await self._admin.create_acl(
                     "/projects", auditor_role["role_id"], created_user_id,

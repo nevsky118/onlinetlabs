@@ -1,4 +1,4 @@
-"""TutorAgent — mentor agent for answering questions."""
+"""Mentor agent that answers student questions."""
 
 import logging
 

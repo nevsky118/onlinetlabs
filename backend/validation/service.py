@@ -1,4 +1,4 @@
-"""Validation service layer — owner-guard, running the runner, recording the result."""
+"""Validation service layer. Owner-guards the session, runs the runner, records the result."""
 
 from collections.abc import AsyncIterator
 from urllib.parse import urlparse

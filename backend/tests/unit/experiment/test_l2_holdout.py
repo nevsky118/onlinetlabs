@@ -28,9 +28,9 @@ async def db_setup():
     async with session_factory() as db:
         # user in the CLOSED arm
         db.add(User(id="u1", email="u1@test.local", control_arm="closed"))
-        # L1: another lab of the same skill — already completed
+        # L1: another lab of the same skill, already completed
         db.add(Lab(slug="l1", title="L1", meta={"skill": _SKILL}))
-        # L2: current lab of the same skill — not completed
+        # L2: current lab of the same skill, not completed
         db.add(Lab(slug="l2", title="L2", meta={"skill": _SKILL}))
         # lab without a skill tag
         db.add(Lab(slug="no-skill", title="No skill", meta={}))
@@ -69,33 +69,33 @@ class TestL2Holdout:
             async with session_factory() as db:
                 arm = await effective_arm(db, "u2", "l2")
         with autotest.step("Assert: базовое плечо CLOSED"):
-            assert_equal(arm, ControlArm.CLOSED, "без L1 — базовое плечо")
+            assert_equal(arm, ControlArm.CLOSED, "без L1, базовое плечо")
 
     @autotest.num("1154")
     @autotest.external_id("9b8c58b0-ea92-4a87-8b0d-ff74718b1515")
-    @autotest.name("effective_arm: другой навык — не L2-холдаут, базовое плечо")
+    @autotest.name("effective_arm: другой навык, не L2-холдаут, базовое плечо")
     async def test_9b8c58b0_different_skill_returns_base_arm(self, db_setup):
         with autotest.step("Act: effective_arm для u1 на лабе other-skill"):
             session_factory = db_setup
             async with session_factory() as db:
                 arm = await effective_arm(db, "u1", "other-skill")
         with autotest.step("Assert: базовое плечо CLOSED"):
-            assert_equal(arm, ControlArm.CLOSED, "другой навык — не холдаут")
+            assert_equal(arm, ControlArm.CLOSED, "другой навык, не холдаут")
 
     @autotest.num("1155")
     @autotest.external_id("02afa4d2-f000-4d8d-bd4e-6b438700d95e")
-    @autotest.name("effective_arm: лаба без skill-тега — не холдаут")
+    @autotest.name("effective_arm: лаба без skill-тега, не холдаут")
     async def test_02afa4d2_lab_without_skill_returns_base_arm(self, db_setup):
         with autotest.step("Act: effective_arm для u1 на лабе no-skill"):
             session_factory = db_setup
             async with session_factory() as db:
                 arm = await effective_arm(db, "u1", "no-skill")
         with autotest.step("Assert: базовое плечо CLOSED"):
-            assert_equal(arm, ControlArm.CLOSED, "лаба без навыка — не холдаут")
+            assert_equal(arm, ControlArm.CLOSED, "лаба без навыка, не холдаут")
 
     @autotest.num("1156")
     @autotest.external_id("0f1a83a1-d1dc-491b-9007-4efb4687927f")
-    @autotest.name("effective_arm: несуществующая лаба — не падаем, базовое плечо")
+    @autotest.name("effective_arm: несуществующая лаба, не падаем, базовое плечо")
     async def test_0f1a83a1_unknown_lab_returns_base_arm(self, db_setup):
         with autotest.step("Act: effective_arm для u1 на несуществующей лабе"):
             session_factory = db_setup

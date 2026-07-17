@@ -189,7 +189,7 @@ class SessionMetrics(BaseModel):
 
 
 class SessionStateResponse(BaseModel):
-    """Full session state — nodes, links, metrics."""
+    """Full session state: nodes, links, metrics."""
 
     session_id: str = Field(description="UUID сессии")
     project_id: str = Field(description="UUID GNS3-проекта сессии")

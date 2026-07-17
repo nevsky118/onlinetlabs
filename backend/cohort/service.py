@@ -56,7 +56,6 @@ async def compute_cohort_metrics(db, horizon_seconds: float, by_arm: bool = Fals
 
     records: list[LearnerOutcome] = []
     for (user_id, skill), labs in grouped.items():
-        # sort by start time
         labs_sorted = sorted(labs, key=lambda x: (x.started_at or x.updated_at))
         l1 = labs_sorted[0]
         l1_start = l1.started_at
@@ -72,7 +71,6 @@ async def compute_cohort_metrics(db, horizon_seconds: float, by_arm: bool = Fals
                 break
         reached = l2_lp is not None
 
-        # user's sessions for the skill
         user_skill_sessions = await _sessions_for_skill(sessions, user_id, skill, skill_cache, db)
 
         # sessions up to (and including) the L2-pass moment

@@ -73,7 +73,7 @@ class TestBuildNodeTasks:
         with autotest.step("Act: строим задачи узлов"):
             tasks = build_node_tasks(spec)
 
-        with autotest.step("Assert: ошибка правдоподобна — тот же адрес, другая подсеть"):
+        with autotest.step("Assert: ошибка правдоподобна, тот же адрес, другая подсеть"):
             assert_equal(tasks[0].wrong_cmd, "ip 192.168.2.11/24", "ошибочная команда")
             assert_true(tasks[0].wrong_cmd != tasks[0].correct_cmd, "ошибка отличается от верной")
 
@@ -87,7 +87,7 @@ class TestBuildNodeTasks:
         with autotest.step("Act: строим задачи узлов"):
             tasks = build_node_tasks(spec)
 
-        with autotest.step("Assert: только адресация — связность её следствие"):
+        with autotest.step("Assert: только адресация, связность её следствие"):
             assert_equal(len(tasks), 2, "число задач")
 
     @autotest.num("2020")
@@ -105,7 +105,7 @@ class TestBuildNodeTasks:
 
     @autotest.num("2021")
     @autotest.external_id("972745d4-e903-40df-8c8c-e9d0ae822c91")
-    @autotest.name("lab_config: DHCP-лаба — верное действие `ip dhcp`, а не статика")
+    @autotest.name("lab_config: DHCP-лаба, верное действие `ip dhcp`, а не статика")
     async def test_972745d4_dhcp_lab_uses_dhcp_client(self):
         with autotest.step("Arrange: спека с vpcs.ip_in_subnet (адрес выдаёт DHCP)"):
             spec = _DHCP_SPEC
@@ -113,13 +113,13 @@ class TestBuildNodeTasks:
         with autotest.step("Act: строим задачи узлов"):
             tasks = build_node_tasks(spec)
 
-        with autotest.step("Assert: верная команда — DHCP-клиент"):
+        with autotest.step("Assert: верная команда это DHCP-клиент"):
             assert_equal(len(tasks), 1, "число задач")
             assert_equal(tasks[0].correct_cmd, "ip dhcp", "верная команда")
 
     @autotest.num("2022")
     @autotest.external_id("22331f3f-a139-489b-8db4-4fa62098c338")
-    @autotest.name("lab_config: DHCP-лаба — ошибка это статика в чужой подсети")
+    @autotest.name("lab_config: DHCP-лаба, ошибка это статика в чужой подсети")
     async def test_22331f3f_dhcp_wrong_command_is_static_in_other_subnet(self):
         with autotest.step("Arrange: спека с vpcs.ip_in_subnet"):
             spec = _DHCP_SPEC
@@ -127,6 +127,6 @@ class TestBuildNodeTasks:
         with autotest.step("Act: строим задачи узлов"):
             tasks = build_node_tasks(spec)
 
-        with autotest.step("Assert: ошибочная команда — статика вне ожидаемой подсети"):
+        with autotest.step("Assert: ошибочная команда это статика вне ожидаемой подсети"):
             assert_true(tasks[0].wrong_cmd.startswith("ip 192.168.11."), "чужая подсеть")
             assert_true(tasks[0].wrong_cmd != tasks[0].correct_cmd, "ошибка отличается от верной")

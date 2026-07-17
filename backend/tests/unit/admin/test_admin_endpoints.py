@@ -42,8 +42,8 @@ class TestAdminEndpoints:
             for field in ("t_k", "latency_median", "false_per_hour", "recall", "j"):
                 assert_in(field, out["curve"][0], field)
 
-        with autotest.step("Assert: confusion — словарь со строковыми ключами"):
-            assert_true(isinstance(out["confusion"], dict), "confusion — dict")
+        with autotest.step("Assert: confusion это словарь со строковыми ключами"):
+            assert_true(isinstance(out["confusion"], dict), "confusion is dict")
 
         with autotest.step("Assert: first_match содержит multi_match_rate"):
             assert_in("multi_match_rate", out["first_match"], "first_match.multi_match_rate")
@@ -61,7 +61,7 @@ class TestAdminEndpoints:
             assert_in("points", out, "points")
             assert_in("costs", out, "costs")
 
-        with autotest.step("Assert: points непуст, каждая точка — ratio/t_k/J"):
+        with autotest.step("Assert: points непуст, каждая точка это ratio/t_k/J"):
             assert_true(len(out["points"]) > 0, "хотя бы одна точка")
             for pt in out["points"]:
                 for field in ("ratio", "t_k", "J"):
@@ -74,7 +74,7 @@ class TestAdminEndpoints:
     @autotest.num("1812")
     @autotest.external_id("29876633-d902-47ca-9f2a-54b43167b0df")
     @autotest.name(
-        "admin: build_overview пустая БД — возвращает dict с ключами ab/cohort/identifier/ops"
+        "admin: build_overview пустая БД, возвращает dict с ключами ab/cohort/identifier/ops"
     )
     async def test_29876633_overview_empty_db(self, empty_admin_db):
         from admin.router import build_overview
@@ -95,7 +95,7 @@ class TestAdminEndpoints:
 
     @autotest.num("1813")
     @autotest.external_id("68b00e53-5e40-4fe2-9a62-0a64855fff33")
-    @autotest.name("admin: build_overview с одной метрикой — не падает, возвращает числа")
+    @autotest.name("admin: build_overview с одной метрикой не падает, возвращает числа")
     async def test_68b00e53_overview_with_seed(self, seeded_admin_db):
         from admin.router import build_overview
 
@@ -262,7 +262,7 @@ class TestAdminUsersEndpoints:
 
     @autotest.num("1820")
     @autotest.external_id("bb8ea7eb-a00a-42b4-9e39-c2b8747c4a92")
-    @autotest.name("PATCH /admin/users/{id}: смена роли — успех")
+    @autotest.name("PATCH /admin/users/{id}: смена роли, успех")
     async def test_bb8ea7eb_patch_role_success(self):
         with autotest.step("Act: сменить роль u1 на instructor"):
             async with self._client() as client:
@@ -276,7 +276,7 @@ class TestAdminUsersEndpoints:
 
     @autotest.num("1821")
     @autotest.external_id("7cdfa3fa-21e3-4c79-a6ba-710cef3113c4")
-    @autotest.name("PATCH /admin/users/{id}: смена собственной роли — 400")
+    @autotest.name("PATCH /admin/users/{id}: смена собственной роли, 400")
     async def test_7cdfa3fa_patch_own_role_rejected(self):
         with autotest.step("Act: admin-001 пытается сменить свою роль"):
             async with self._client() as client:
@@ -288,7 +288,7 @@ class TestAdminUsersEndpoints:
 
     @autotest.num("1822")
     @autotest.external_id("e3556b2c-9572-4579-8104-59a7b7645966")
-    @autotest.name("PATCH /admin/users/{id}: смена флагов на себе — разрешено")
+    @autotest.name("PATCH /admin/users/{id}: смена флагов на себе разрешена")
     async def test_e3556b2c_patch_flags_on_self_allowed(self):
         with autotest.step("Act: admin-001 ставит can_select_model=true себе"):
             async with self._client() as client:

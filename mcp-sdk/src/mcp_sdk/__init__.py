@@ -1,4 +1,4 @@
-"""mcp-sdk — SDK for building MCP servers for complex systems."""
+"""mcp-sdk is an SDK for building MCP servers for complex systems."""
 
 from mcp_sdk.connection import BaseConnectionManager, ConnectionPool
 from mcp_sdk.context import ServerCapabilities, SessionContext

@@ -1,4 +1,4 @@
-"""Characterization: /progress endpoints — exact JSON response."""
+"""Characterization: /progress endpoints, exact JSON response."""
 
 from datetime import UTC, datetime
 

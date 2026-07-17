@@ -58,7 +58,7 @@ def decrypt_file(filepath: str, password: str) -> str:
 
 
 def main() -> None:
-    """CLI entry point: parse arguments and encrypt or decrypt the file."""
+    """Parse arguments and encrypt or decrypt the file."""
     parser = argparse.ArgumentParser(description="Encrypt/decrypt .env files")
     parser.add_argument("action", choices=["encrypt", "decrypt"])
     parser.add_argument("file", help="Path to .env (encrypt) or .env.aes (decrypt)")

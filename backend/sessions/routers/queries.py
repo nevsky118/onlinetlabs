@@ -1,12 +1,12 @@
-"""Session read endpoints: list, details, state, chat, credentials, activity, queue.
+"""Session read endpoints for listing, details, state, chat, credentials, activity, and queue status.
 
 `/queue-status` is registered BEFORE the catch-all `/{session_id}` in this
-same file — otherwise the `{session_id}` route would swallow the literal
+same file. Otherwise the `{session_id}` route would swallow the literal
 path (Starlette matches routes in registration order).
 
 `agent_activity_router` is a separate APIRouter, NOT included in `router`
 below. In main.py it's mounted with a separate include_router under the
-`/sessions` prefix (not `/users/me/sessions` like everything else here) —
+`/sessions` prefix (not `/users/me/sessions` like everything else here);
 that was the case even before the router consolidation. Folding it into
 the shared `router` would change the resulting path to
 `/users/me/sessions/{session_id}/agent-activity` and break the real
@@ -180,7 +180,7 @@ async def get_activity_endpoint(
     return result
 
 
-# ── agent_activity: a separate router, mounted separately (see docstring above) ──
+# agent_activity_router is mounted separately; see the module docstring above.
 
 agent_activity_router = APIRouter()
 

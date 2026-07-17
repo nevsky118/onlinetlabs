@@ -34,7 +34,7 @@ class DifficultyLevel(str, Enum):
 
 
 class StruggleType(str, Enum):
-    """Student struggle types: stuck on step, repeating errors, idle, trial and error."""
+    """Types of student struggle (stuck on step, repeating errors, idle, trial and error)."""
 
     STUCK_ON_STEP = "stuck_on_step"
     REPEATING_ERRORS = "repeating_errors"
@@ -43,7 +43,7 @@ class StruggleType(str, Enum):
 
 
 class SuggestedIntervention(str, Enum):
-    """Suggested interventions: hint, tutor, simplify, or none."""
+    """Suggested intervention (hint, tutor, simplify, or none)."""
 
     HINT = "hint"
     TUTOR = "tutor"

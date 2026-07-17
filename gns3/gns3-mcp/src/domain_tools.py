@@ -225,7 +225,7 @@ def register_domain_tools(
 
     get_client(ctx) -> GNS3ApiClient
     get_project_id(ctx) -> str
-    service_url — base URL of gns3-service for exec/console-read (None → tool returns an error).
+    service_url is the base URL of gns3-service for exec/console-read (None means the tool returns an error).
     """
 
     for spec in _SIMPLE_TOOLS:

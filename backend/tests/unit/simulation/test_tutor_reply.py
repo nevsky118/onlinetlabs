@@ -43,7 +43,7 @@ class TestTutorReplyFallback:
                     for attempt in range(4)
                 ]
 
-        with autotest.step("Assert: каждая реплика тьютора своя, все — про узел"):
+        with autotest.step("Assert: каждая реплика тьютора своя, все про узел"):
             assert_equal(len(set(answers)), 4, "уникальных ответов тьютора")
             for answer in answers:
                 assert_true("PC1" in answer, f"ответ без контекста узла: {answer}")

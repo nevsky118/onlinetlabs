@@ -1,4 +1,4 @@
-"""D4: raw evidence capture — helper + hook into the collector's poll cycle."""
+"""D4: raw evidence capture, helper plus hook into the collector's poll cycle."""
 
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch

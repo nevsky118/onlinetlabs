@@ -81,7 +81,7 @@ class TestCollectorSeam:
             ci.observe = AsyncMock(side_effect=InterfaceDenied("consent"))
             col = _make_collector(ci)
 
-        with autotest.step("Act: _fetch_actions — не должно упасть"):
+        with autotest.step("Act: _fetch_actions не должно упасть"):
             result = await col._fetch_actions()
 
         with autotest.step("Assert: пустой список, mcp не трогался"):
@@ -116,7 +116,7 @@ class TestCollectorSeam:
             ci.observe = AsyncMock(side_effect=InterfaceDenied("isolation"))
             col = _make_collector(ci)
 
-        with autotest.step("Act: _fetch_logs — не должно упасть"):
+        with autotest.step("Act: _fetch_logs не должно упасть"):
             result = await col._fetch_logs()
 
         with autotest.step("Assert: пустой список"):

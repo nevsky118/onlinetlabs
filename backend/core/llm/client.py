@@ -31,7 +31,7 @@ def build_client(model_id: str) -> AsyncOpenAI:
 
 
 def model_uri(model_id: str) -> str:
-    """Model string for the API: yandex → gpt://folder/model, otherwise the slug."""
+    """Model string for the API. Yandex needs gpt://folder/model, everyone else just the slug."""
     creds, entry = resolve_model(model_id)
     if creds.provider == LlmProvider.YANDEX and creds.yandex_folder:
         return f"gpt://{creds.yandex_folder}/{entry.model}"
