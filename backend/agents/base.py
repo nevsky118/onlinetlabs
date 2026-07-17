@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel
 from pydantic_ai import Agent
-from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 from config.config_model import ConfigModel, LlmProvider
@@ -26,7 +26,7 @@ class BaseAgent:
             )
         return self._agents_by_model[model_id]
 
-    def _build_model(self, model_id: str) -> OpenAIModel:
+    def _build_model(self, model_id: str) -> OpenAIChatModel:
         """OpenAI-совместимая модель (yandex/openrouter) по кредам провайдера."""
         creds, entry = resolve_model(model_id)
         headers = dict(creds.extra_headers or {})
@@ -44,12 +44,12 @@ class BaseAgent:
                 default_headers={"x-folder-id": creds.yandex_folder, **headers},
             )
             model_name = f"gpt://{creds.yandex_folder}/{entry.model}"
-            return OpenAIModel(model_name, provider=OpenAIProvider(openai_client=client))
+            return OpenAIChatModel(model_name, provider=OpenAIProvider(openai_client=client))
         # openrouter / openai-compatible
         from openai import AsyncOpenAI
 
         client = AsyncOpenAI(api_key=api_key, base_url=base_url, default_headers=headers or None)
-        return OpenAIModel(model_name, provider=OpenAIProvider(openai_client=client))
+        return OpenAIChatModel(model_name, provider=OpenAIProvider(openai_client=client))
 
     def system_prompt(self) -> str:
         """System prompt. Переопределяется в каждом агенте."""

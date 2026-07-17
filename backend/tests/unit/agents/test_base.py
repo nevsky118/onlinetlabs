@@ -41,9 +41,9 @@ class TestBaseAgent:
 
     @autotest.num("402")
     @autotest.external_id("06f105f1-959d-4ec3-a324-14e25f802ba3")
-    @autotest.name("BaseAgent: _build_model возвращает OpenAIModel для yandex")
+    @autotest.name("BaseAgent: _build_model возвращает OpenAIChatModel для yandex")
     def test_06f105f1_build_model_yandex(self, config_model):
-        from pydantic_ai.models.openai import OpenAIModel
+        from pydantic_ai.models.openai import OpenAIChatModel
 
         with autotest.step("Создаём _Dummy агент"):
             agent = _Dummy(config_model)
@@ -53,7 +53,8 @@ class TestBaseAgent:
 
         with autotest.step("Проверяем тип"):
             assert_true(
-                isinstance(model, OpenAIModel), f"ожидался OpenAIModel, получен {type(model)}"
+                isinstance(model, OpenAIChatModel),
+                f"ожидался OpenAIChatModel, получен {type(model)}",
             )
 
         with autotest.step("Проверяем model_name — gpt://<folder>/<model>"):
