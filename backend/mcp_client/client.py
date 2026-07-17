@@ -159,14 +159,6 @@ class MCPClient:
 
     # Domain-тулзы (прямой проброс)
 
-    async def call_domain_tool(
-        self, tool_name: str, ctx: SessionContext, **kwargs: Any
-    ) -> Any:
-        """Вызвать произвольный domain tool (start_node, stop_node, etc.)."""
-        args: dict[str, Any] = {"ctx": self._ctx_dict(ctx), **kwargs}
-        return await self._call_tool(tool_name, args)
-
-
 class MCPToolError(Exception):
     """Ошибка при вызове MCP tool."""
 
