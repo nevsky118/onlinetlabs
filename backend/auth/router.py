@@ -26,7 +26,7 @@ from auth.service import (
     get_user_by_email,
     hash_password_async,
     upsert_github_user,
-    verify_password,
+    verify_password_async,
 )
 from db.session import get_db
 
@@ -75,7 +75,7 @@ async def login(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
         )
 
-    if not verify_password(req.password, user.password_hash):
+    if not await verify_password_async(req.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
         )

@@ -13,11 +13,6 @@ from models.user import Account, User, UserRole
 _bcrypt_executor = ThreadPoolExecutor(max_workers=4)
 
 
-def hash_password(password: str) -> str:
-    """Хеширует пароль алгоритмом bcrypt."""
-    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-
-
 async def hash_password_async(password: str) -> str:
     """Хеширует пароль bcrypt в отдельном потоке, не блокируя event loop."""
     loop = asyncio.get_running_loop()
@@ -27,11 +22,15 @@ async def hash_password_async(password: str) -> str:
     )
 
 
-def verify_password(password: str, hashed: str | None) -> bool:
-    """Проверяет пароль против хеша. Возвращает False, если хеша нет."""
+async def verify_password_async(password: str, hashed: str | None) -> bool:
+    """Проверяет пароль bcrypt в отдельном потоке, не блокируя event loop."""
     if hashed is None:
         return False
-    return bcrypt.checkpw(password.encode(), hashed.encode())
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(
+        _bcrypt_executor,
+        lambda: bcrypt.checkpw(password.encode(), hashed.encode()),
+    )
 
 
 async def get_user_by_email(db: AsyncSession, email: str) -> User | None:

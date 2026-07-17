@@ -1,4 +1,5 @@
 import logging
+import secrets
 from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, HTTPException, status
@@ -133,7 +134,7 @@ def require_internal_caller(
     выдать backend JWT. Тот же токен используется на канале backend gns3-service.
     """
     expected = settings.security.internal_api_token
-    if not expected or credentials.credentials != expected:
+    if not expected or not secrets.compare_digest(credentials.credentials, expected):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid internal token",
