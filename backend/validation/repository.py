@@ -1,6 +1,6 @@
 """CRUD для validation_runs."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from sqlalchemy import select
@@ -49,5 +49,5 @@ async def finish_run(db: AsyncSession, run_id: str, status: str, steps: list) ->
         return
     row.status = status
     row.steps = steps
-    row.finished_at = datetime.now(timezone.utc)
+    row.finished_at = datetime.now(UTC)
     await db.commit()

@@ -47,8 +47,8 @@ class SessionMonitorRegistry:
         if self._gns3_client is not None:
             try:
                 from db.session import async_session
-                from models.session import LearningSession
                 from learning_analytics.progress_observer import LabProgressObserver
+                from models.session import LearningSession
 
                 async with async_session() as db:
                     ls = await db.get(LearningSession, session_id)

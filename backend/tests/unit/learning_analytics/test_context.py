@@ -1,10 +1,11 @@
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from learning_analytics.context import AgentContext, MCPContextBuilder
-from mcp_sdk.models import Component, UserAction, ErrorEntry, LogLevel
+import pytest
+from mcp_sdk.models import Component, ErrorEntry, LogLevel, UserAction
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
+
+from learning_analytics.context import AgentContext, MCPContextBuilder
 
 pytestmark = [pytest.mark.unit]
 
@@ -72,7 +73,7 @@ class TestMCPContextBuilder:
     @autotest.external_id("c3d4e5f6-a7b8-4901-cdef-552000000003")
     @autotest.name("MCPContextBuilder.build: собирает контекст из MCP")
     async def test_c3d4e5f6_build(self):
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
         with autotest.step("Создаём фейк MCP с данными"):
             mcp = FakeContextMCPClient(
                 components=[

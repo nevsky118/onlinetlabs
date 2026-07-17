@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import Response
@@ -24,7 +24,7 @@ async def ingest_events(
     """Принимает пачку событий телеметрии платформы и сохраняет их в БД."""
     user_id = current_user["id"] if current_user else None
     request.state.user = current_user  # чтобы рейт-лимитер мог ключевать по user_id
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     for evt in body.events:
         db.add(

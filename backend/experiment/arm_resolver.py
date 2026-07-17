@@ -19,9 +19,9 @@ async def resolve_control_arm(db, user_id) -> ControlArm:
 
 async def is_l2_session(db, user_id: str, lab_slug: str) -> bool:
     """True если пользователь уже завершил другую лабу того же навыка (L2-холдаут)."""
+    from experiment.transfer import skill_tag
     from models.lab import Lab
     from models.progress import LabProgress
-    from experiment.transfer import skill_tag
 
     current = (await db.execute(select(Lab).where(Lab.slug == lab_slug))).scalar_one_or_none()
     skill = skill_tag(current) if current else None

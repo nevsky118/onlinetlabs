@@ -1,10 +1,10 @@
-import pytest
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
+import pytest
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
+from mcp_sdk.testing.custom_assertions import assert_equal
 
 from agents.analytics.models import StruggleType
 from config.config_model import LearningAnalyticsConfig
@@ -46,7 +46,7 @@ class TestMonitorStateLog:
             )
             monitor._session_id, monitor._user_id, monitor._lab_slug = "s1", "u1", "lab-1"
             a = SimpleNamespace(struggle_detected=True, struggle_type=StruggleType.IDLE)
-            t = datetime(2026, 6, 21, 12, 0, tzinfo=timezone.utc)
+            t = datetime(2026, 6, 21, 12, 0, tzinfo=UTC)
 
         with autotest.step("Act: два вызова _log_process_state с разрывом 15 сек"):
             r1, d1 = await monitor._log_process_state(a, t)

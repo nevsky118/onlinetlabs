@@ -1,8 +1,8 @@
 import pytest
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true, assert_is_none
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_is_none, assert_true
 
-from cohort.metrics import retention_metric, RETENTION_NOTE
+from cohort.metrics import RETENTION_NOTE, retention_metric
 
 pytestmark = [pytest.mark.unit]
 

@@ -1,8 +1,9 @@
-import pytest
-from mcp_sdk.testing import autotest
 from types import SimpleNamespace
 
-from auth.dependencies import may_view_agent_logs, can_view_session_activity
+import pytest
+from mcp_sdk.testing import autotest
+
+from auth.dependencies import can_view_session_activity, may_view_agent_logs
 
 pytestmark = [pytest.mark.unit, pytest.mark.auth]
 

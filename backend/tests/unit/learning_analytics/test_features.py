@@ -1,17 +1,18 @@
-import pytest
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
-from learning_analytics.features import FeatureExtractor
-from agents.analytics.models import SessionFeatures
-from tests.settings.data.analytics_data import EventData, EventSequenceData
+import pytest
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import (
     assert_equal,
-    assert_true,
     assert_greater,
     assert_greater_equal,
     assert_less_equal,
+    assert_true,
 )
+
+from agents.analytics.models import SessionFeatures
+from learning_analytics.features import FeatureExtractor
+from tests.settings.data.analytics_data import EventData, EventSequenceData
 
 pytestmark = [pytest.mark.unit]
 
@@ -50,7 +51,7 @@ class TestFeatureExtractor:
     @autotest.external_id("12b3c4d5-e6f7-4a8b-9c0d-1e2f3a4b5c6d")
     @autotest.name("FeatureExtractor: обнаружение idle периодов")
     def test_12b3c4d5_idle_periods_detected(self):
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
         with autotest.step("Создаём события с gap > 60с"):
             events = [
                 EventData(id="e1", timestamp=now - timedelta(seconds=200)),
@@ -69,7 +70,7 @@ class TestFeatureExtractor:
     @autotest.external_id("23c4d5e6-f7a8-4b9c-8d0e-2f3a4b5c6d7e")
     @autotest.name("FeatureExtractor: подсчёт повторяющихся ошибок")
     def test_23c4d5e6_error_repeat_count(self):
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
         with autotest.step("Создаём 3 одинаковые ошибки подряд"):
             events = [
                 EventData(
@@ -124,7 +125,7 @@ class TestFeatureExtractor:
     @autotest.name("FeatureExtractor: высокая энтропия при разнообразных действиях")
     def test_45e6f7a8_action_sequence_entropy_diverse(self):
         actions = ["start_node", "stop_node", "create_link", "delete_link", "reload_node"]
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
         with autotest.step("Создаём 10 событий с 5 разными action"):
             events = [
                 EventData(
@@ -146,7 +147,7 @@ class TestFeatureExtractor:
     @autotest.external_id("56f7a8b9-c0d1-4e2f-8a3b-5c6d7e8f9a0b")
     @autotest.name("FeatureExtractor: подсчёт уникальных компонентов")
     def test_56f7a8b9_components_touched(self):
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
         with autotest.step("Создаём события на 2 компонентах"):
             events = [
                 EventData(id="e1", component_id="n1", timestamp=now - timedelta(seconds=20)),
@@ -165,7 +166,7 @@ class TestFeatureExtractor:
     @autotest.external_id("67a8b9c0-d1e2-4f3a-9b4c-6d7e8f9a0b1c")
     @autotest.name("FeatureExtractor: частота ошибок в минуту")
     def test_67a8b9c0_error_frequency(self):
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
         with autotest.step("Создаём 5 ошибок за 5 минут"):
             events = [
                 EventData(

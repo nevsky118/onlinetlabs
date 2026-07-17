@@ -1,15 +1,16 @@
 """Тест: SessionMonitor эмитит события активности при обнаружении затруднения."""
 
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+from mcp_sdk.testing import autotest
 
 from agents.analytics.agent import AnalyticsAgent
 from agents.analytics.models import SessionFeatures
 from config.config_model import LearningAnalyticsConfig
 from learning_analytics.context import AgentContext
 from learning_analytics.monitor import SessionMonitor
-from mcp_sdk.testing import autotest
 from observability.models import ActivityKind
 
 pytestmark = [pytest.mark.unit]
@@ -19,7 +20,7 @@ def _make_struggle_features(session_id: str = "s1") -> SessionFeatures:
     """Фичи с error_repeat_count=4 → срабатывает REPEATING_ERRORS."""
     return SessionFeatures(
         session_id=session_id,
-        computed_at=datetime.now(tz=timezone.utc),
+        computed_at=datetime.now(tz=UTC),
         avg_inter_action_latency=10.0,
         action_rate_slope=0.0,
         idle_periods=0,
@@ -101,7 +102,7 @@ class TestMonitorEmits:
         with autotest.step("Создаём монитор с недавней интервенцией"):
             activity = MagicMock()
             monitor = _make_monitor(activity, config_model)
-            monitor._last_intervention_at = datetime.now(tz=timezone.utc)
+            monitor._last_intervention_at = datetime.now(tz=UTC)
             features = _make_struggle_features()
 
         # Act

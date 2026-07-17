@@ -1,10 +1,9 @@
 """LabAgent — агент взаимодействия с лаб-средой."""
 
-from config.config_model import ConfigModel
 from agents.base import BaseAgent
 from agents.lab.models import LabQueryInput, LabQueryResult
 from agents.lab.tools import LabTools
-
+from config.config_model import ConfigModel
 
 LAB_SYSTEM_PROMPT = (
     "Ты — LabAgent, агент для взаимодействия с лабораторной средой. "

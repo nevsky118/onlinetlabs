@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
@@ -36,16 +36,16 @@ class Lab(Base):
     )
     meta: Mapped[dict | None] = mapped_column(JSON, default=None)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
-    course: Mapped["Course | None"] = relationship(back_populates="labs")
-    steps: Mapped[list["LabStep"]] = relationship(
+    course: Mapped[Course | None] = relationship(back_populates="labs")
+    steps: Mapped[list[LabStep]] = relationship(
         back_populates="lab",
         cascade="all, delete-orphan",
         order_by="LabStep.step_order",
@@ -64,4 +64,4 @@ class LabStep(Base):
     title: Mapped[str] = mapped_column(String(500))
     validation_type: Mapped[str | None] = mapped_column(String(100))
 
-    lab: Mapped["Lab"] = relationship(back_populates="steps")
+    lab: Mapped[Lab] = relationship(back_populates="steps")

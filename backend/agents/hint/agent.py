@@ -2,10 +2,10 @@
 
 import logging
 
-from config.config_model import ConfigModel
 from agents.base import BaseAgent
 from agents.hint.models import HintInput, HintResponse
 from agents.hint.tools import HintTools
+from config.config_model import ConfigModel
 
 logger = logging.getLogger(__name__)
 

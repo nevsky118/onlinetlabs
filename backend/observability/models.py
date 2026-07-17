@@ -1,6 +1,6 @@
 """Модель события активности ИИ-агентов для observability."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from uuid import uuid4
 
@@ -30,7 +30,7 @@ class ActivityKind(str, Enum):
 
 
 def _now() -> datetime:
-    return datetime.now(tz=timezone.utc)
+    return datetime.now(tz=UTC)
 
 
 class AgentActivityEvent(BaseModel):

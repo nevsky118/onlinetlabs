@@ -21,17 +21,16 @@ class TestOpenClawClient:
             server = OpenClawGatewayServer([completion_response("Проверь trunk порт")])
 
         # Act
-        with server:
-            with autotest.step("Отправляем chat completions запрос"):
-                async with OpenClawClient(
-                    base_url=server.base_url,
-                    token="secret-token",
-                    model="openclaw",
-                    timeout_seconds=3.0,
-                ) as client:
-                    result = await client.complete(
-                        messages=[{"role": "user", "content": "Нужна подсказка"}]
-                    )
+        with server, autotest.step("Отправляем chat completions запрос"):
+            async with OpenClawClient(
+                base_url=server.base_url,
+                token="secret-token",
+                model="openclaw",
+                timeout_seconds=3.0,
+            ) as client:
+                result = await client.complete(
+                    messages=[{"role": "user", "content": "Нужна подсказка"}]
+                )
 
         # Assert
         with autotest.step("Проверяем успешный результат"):
@@ -61,16 +60,15 @@ class TestOpenClawClient:
             server = OpenClawGatewayServer([{"choices": []}])
 
         # Act
-        with server:
-            with autotest.step("Отправляем запрос"):
-                async with OpenClawClient(
-                    base_url=server.base_url,
-                    model="openclaw",
-                    timeout_seconds=3.0,
-                ) as client:
-                    result = await client.complete(
-                        messages=[{"role": "user", "content": "Нужна подсказка"}]
-                    )
+        with server, autotest.step("Отправляем запрос"):
+            async with OpenClawClient(
+                base_url=server.base_url,
+                model="openclaw",
+                timeout_seconds=3.0,
+            ) as client:
+                result = await client.complete(
+                    messages=[{"role": "user", "content": "Нужна подсказка"}]
+                )
 
         # Assert
         with autotest.step("Проверяем ошибку"):
@@ -88,19 +86,18 @@ class TestOpenClawClient:
             )
 
         # Act
-        with server:
-            with autotest.step("Отправляем два запроса одним клиентом"):
-                async with OpenClawClient(
-                    base_url=server.base_url,
-                    model="openclaw",
-                    timeout_seconds=3.0,
-                ) as client:
-                    first = await client.complete(
-                        messages=[{"role": "user", "content": "Первый запрос"}]
-                    )
-                    second = await client.complete(
-                        messages=[{"role": "user", "content": "Второй запрос"}]
-                    )
+        with server, autotest.step("Отправляем два запроса одним клиентом"):
+            async with OpenClawClient(
+                base_url=server.base_url,
+                model="openclaw",
+                timeout_seconds=3.0,
+            ) as client:
+                first = await client.complete(
+                    messages=[{"role": "user", "content": "Первый запрос"}]
+                )
+                second = await client.complete(
+                    messages=[{"role": "user", "content": "Второй запрос"}]
+                )
 
         # Assert
         with autotest.step("Проверяем переиспользование keep-alive соединения"):

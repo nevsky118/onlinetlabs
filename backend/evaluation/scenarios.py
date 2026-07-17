@@ -1,13 +1,13 @@
 """Размеченные сценарии для оценки идентификатора П1 (синтетика + загруженные реальные)."""
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from agents.analytics.models import SessionFeatures
 from learning_analytics.process_state import ProcessRegime
 
 # Фиксированный момент времени для синтетических снапшотов (computed_at — обязательное поле)
-_EPOCH = datetime(2026, 1, 1, tzinfo=timezone.utc)
+_EPOCH = datetime(2026, 1, 1, tzinfo=UTC)
 
 
 @dataclass

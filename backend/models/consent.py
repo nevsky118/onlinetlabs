@@ -1,6 +1,6 @@
 """Согласие обучаемого: study (эксперимент) и product (гранулярно observe/act)."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import Boolean, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
@@ -17,7 +17,7 @@ class Consent(Base):
     observe: Mapped[bool] = mapped_column(Boolean, default=False)
     act: Mapped[bool] = mapped_column(Boolean, default=False)
     granted_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
     data_policy: Mapped[str | None] = mapped_column(String(255), default=None)

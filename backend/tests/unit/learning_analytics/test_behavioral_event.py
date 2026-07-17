@@ -1,9 +1,10 @@
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, timezone
+from mcp_sdk.testing import autotest
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_is_none
 
 from models.behavioral_event import BehavioralEvent
-from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true, assert_is_none
 
 pytestmark = [pytest.mark.unit]
 
@@ -14,7 +15,7 @@ class TestBehavioralEvent:
     @autotest.name("BehavioralEvent: создание события действия")
     def test_e2f3a4b5_create_action_event(self):
         with autotest.step("Создаём событие типа action"):
-            now = datetime.now(tz=timezone.utc)
+            now = datetime.now(tz=UTC)
             event = BehavioralEvent(
                 session_id="sess-1",
                 user_id="user-1",
@@ -36,7 +37,7 @@ class TestBehavioralEvent:
     @autotest.name("BehavioralEvent: создание события ошибки")
     def test_f3a4b5c6_create_error_event(self):
         with autotest.step("Создаём событие типа error"):
-            now = datetime.now(tz=timezone.utc)
+            now = datetime.now(tz=UTC)
             event = BehavioralEvent(
                 session_id="sess-1",
                 user_id="user-1",
@@ -58,7 +59,7 @@ class TestBehavioralEvent:
     @autotest.name("BehavioralEvent: nullable поля по умолчанию None")
     def test_a4b5c6d7_nullable_fields(self):
         with autotest.step("Создаём событие с минимальными полями"):
-            now = datetime.now(tz=timezone.utc)
+            now = datetime.now(tz=UTC)
             event = BehavioralEvent(
                 session_id="sess-1",
                 user_id="user-1",

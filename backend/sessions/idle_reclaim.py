@@ -5,7 +5,7 @@
 
 import asyncio
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 
@@ -34,7 +34,7 @@ async def idle_reclaim_loop(gns3_client) -> None:
 
 async def _reclaim_idle_sessions(gns3_client) -> None:
     """Останавливает узлы активных сессий без активности дольше порога простоя."""
-    cutoff = datetime.now(timezone.utc) - timedelta(minutes=IDLE_THRESHOLD_MIN)
+    cutoff = datetime.now(UTC) - timedelta(minutes=IDLE_THRESHOLD_MIN)
     async with async_session() as db:
         result = await db.execute(select(LearningSession).where(LearningSession.status == "active"))
         sessions = result.scalars().all()

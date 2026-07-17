@@ -1,7 +1,7 @@
 import pytest
+from mcp_sdk.testing import autotest
 
 from observability.redact import redact
-from mcp_sdk.testing import autotest
 
 pytestmark = [pytest.mark.unit]
 

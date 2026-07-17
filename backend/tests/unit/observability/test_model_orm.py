@@ -1,4 +1,5 @@
 import pytest
+
 from models.agent_activity_event import AgentActivityEventRow
 
 pytestmark = [pytest.mark.unit]

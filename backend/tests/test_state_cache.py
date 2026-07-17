@@ -1,6 +1,8 @@
 import json
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
+
 from sessions.state_cache import StateCache
 
 

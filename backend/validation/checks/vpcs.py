@@ -6,7 +6,6 @@ import re
 
 from validation.checks.registry import CheckContext, CheckResult
 
-
 _IP_RE = re.compile(r"IP/MASK\s*:\s*(\S+)", re.IGNORECASE)
 _GW_RE = re.compile(r"GATEWAY\s*:\s*(\S+)", re.IGNORECASE)
 
@@ -35,7 +34,7 @@ async def _drain_until_prompt(reader: asyncio.StreamReader, timeout: float) -> b
                 buf.extend(chunk)
                 if _PROMPT in buf:
                     break
-    except (asyncio.TimeoutError, TimeoutError):
+    except TimeoutError:
         pass
     return bytes(buf)
 
@@ -64,7 +63,7 @@ async def vpcs_show_ip(ctx: CheckContext, params: dict, expect: dict) -> CheckRe
     try:
         async with asyncio.timeout(_CONNECT_TIMEOUT):
             reader, writer = await asyncio.open_connection(host, port)
-    except (asyncio.TimeoutError, TimeoutError, OSError) as exc:
+    except (TimeoutError, OSError) as exc:
         return CheckResult(
             ok=False,
             expected=expect,
@@ -192,7 +191,7 @@ async def vpcs_ping(ctx: CheckContext, params: dict, expect: dict) -> CheckResul
     try:
         async with asyncio.timeout(_CONNECT_TIMEOUT):
             reader, writer = await asyncio.open_connection(host, port)
-    except (asyncio.TimeoutError, TimeoutError, OSError) as exc:
+    except (TimeoutError, OSError) as exc:
         return CheckResult(
             ok=False,
             expected=expect,
@@ -261,7 +260,7 @@ async def vpcs_ip_in_subnet(ctx: CheckContext, params: dict, expect: dict) -> Ch
     try:
         async with asyncio.timeout(_CONNECT_TIMEOUT):
             reader, writer = await asyncio.open_connection(host, port)
-    except (asyncio.TimeoutError, TimeoutError, OSError) as exc:
+    except (TimeoutError, OSError) as exc:
         return CheckResult(
             ok=False,
             expected=expect,

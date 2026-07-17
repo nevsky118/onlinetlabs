@@ -1,8 +1,8 @@
 """Критерий управления J: стоимость политики на исторических логах состояния."""
 
+import statistics
 from dataclasses import dataclass
 from datetime import datetime
-import statistics
 
 
 @dataclass

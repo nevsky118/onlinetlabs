@@ -1,12 +1,13 @@
 """Тесты правил детекции по прямым сигналам прогресса (Task 5)."""
 
 import pytest
+from mcp_sdk.testing import autotest
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
+
 from agents.analytics.agent import AnalyticsAgent
 from agents.analytics.models import SessionFeatures, StruggleType, SuggestedIntervention
 from config.config_model import LearningAnalyticsConfig
 from tests.settings.data.analytics_data import SessionFeaturesData
-from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 
 pytestmark = [pytest.mark.unit, pytest.mark.agents]
 

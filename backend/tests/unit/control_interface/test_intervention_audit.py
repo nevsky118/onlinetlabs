@@ -1,14 +1,13 @@
 """Тест: closed-arm интервенция пишет act-аудит в mcp_audit."""
 
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-from sqlalchemy import select
-
+import pytest
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from agents.analytics.models import StruggleType
 from agents.orchestrator.models import OrchestratorResponse
@@ -33,15 +32,15 @@ async def audit_engine():
 def _make_analysis():
     from agents.analytics.models import (
         AnalyticsResult,
-        SuggestedIntervention,
         DifficultyRecommendation,
-        StudentMetrics,
         SessionFeatures,
+        StudentMetrics,
+        SuggestedIntervention,
     )
 
     features = SessionFeatures(
         session_id="s1",
-        computed_at=datetime(2026, 6, 21, 12, 0, tzinfo=timezone.utc),
+        computed_at=datetime(2026, 6, 21, 12, 0, tzinfo=UTC),
         avg_inter_action_latency=10.0,
         action_rate_slope=0.0,
         idle_periods=1,
@@ -285,7 +284,7 @@ class TestInterventionAudit:
             m._lab_slug = "lan-static-ip"
             analysis = _make_analysis()
             fake_event = MagicMock()
-            fake_event.timestamp = datetime(2026, 6, 21, 12, 0, tzinfo=timezone.utc)
+            fake_event.timestamp = datetime(2026, 6, 21, 12, 0, tzinfo=UTC)
             m._analytics_agent = MagicMock()
             m._analytics_agent.analyze_session = MagicMock(return_value=analysis)
             m._feature_extractor = MagicMock()

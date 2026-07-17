@@ -3,7 +3,7 @@
 import json
 import math
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from agents.analytics.models import SessionFeatures
 from config.config_model import LearningAnalyticsConfig
@@ -18,7 +18,7 @@ class FeatureExtractor:
 
     def compute(self, session_id: str, events: list) -> SessionFeatures:
         """Основной метод: события → вектор фич."""
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
         if not events:
             return self._empty_features(session_id, now)
 

@@ -12,7 +12,6 @@ import re
 
 from validation.checks.registry import CheckContext, CheckResult
 
-
 # `Neighbor ID   Pri  State                       Up Time      ...`
 # реальная строка: `2.2.2.2  1 Full/DR             00:01:23     ...`
 _NEIGHBOR_LINE_RE = re.compile(r"^\s*(\S+)\s+\d+\s+(\S+)")
@@ -94,7 +93,7 @@ async def _exec_or_error(
         )
     try:
         result = await ctx.frr_client.exec_vtysh(ctx.gns3_project_id, node_id, command)
-    except Exception as exc:  # noqa: BLE001 — стрим должен переживать сетевые сбои
+    except Exception as exc:
         return None, CheckResult(
             ok=False,
             expected=expect,

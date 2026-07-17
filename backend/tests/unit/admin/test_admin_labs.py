@@ -10,7 +10,8 @@ from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from admin.router import _rebuild_worker, router as admin_router
+from admin.router import _rebuild_worker
+from admin.router import router as admin_router
 from auth.dependencies import get_current_user
 from db.session import get_db
 from deps import get_gns3_client, get_session_factory

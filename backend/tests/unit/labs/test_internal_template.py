@@ -2,7 +2,6 @@
 
 import pytest
 from fastapi import FastAPI
-from fastapi.security import HTTPAuthorizationCredentials
 from httpx import ASGITransport, AsyncClient
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import WebSocket
 
@@ -71,7 +71,7 @@ class WebSocketGateway:
 
         payload = {
             "type": "intervention",
-            "timestamp": datetime.now(tz=timezone.utc).isoformat(),
+            "timestamp": datetime.now(tz=UTC).isoformat(),
             **intervention_data,
         }
         try:

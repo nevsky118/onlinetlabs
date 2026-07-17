@@ -1,14 +1,15 @@
 """Проверяет: при сбое LLM агенты re-raise, шаблон не возвращается."""
 
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from agents.hint.agent import HintAgent
 from agents.hint.models import HintInput
-from agents.tutor.agent import TutorAgent
-from agents.tutor.models import TutorInput
 from agents.orchestrator.agent import Orchestrator
 from agents.orchestrator.models import InterventionInput
+from agents.tutor.agent import TutorAgent
+from agents.tutor.models import TutorInput
 from learning_analytics.context import AgentContext
 
 pytestmark = [pytest.mark.unit, pytest.mark.agents]

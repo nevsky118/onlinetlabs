@@ -4,20 +4,19 @@ from collections.abc import Callable
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.config_model import ConfigModel, LearningAnalyticsConfig
-from agents.base import BaseAgent
 from agents.analytics.models import (
     AnalyticsInput,
     AnalyticsResult,
     DifficultyLevel,
     DifficultyRecommendation,
     SessionFeatures,
-    StudentMetrics,
     StruggleType,
+    StudentMetrics,
     SuggestedIntervention,
 )
 from agents.analytics.tools import AnalyticsTools
-
+from agents.base import BaseAgent
+from config.config_model import ConfigModel, LearningAnalyticsConfig
 
 ANALYTICS_SYSTEM_PROMPT = (
     "Ты — AnalyticsAgent, агент для анализа поведения студента. "

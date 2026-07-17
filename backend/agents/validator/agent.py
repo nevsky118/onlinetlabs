@@ -1,10 +1,9 @@
 """ValidatorAgent — проверка выполнения задач лабы."""
 
-from config.config_model import ConfigModel
 from agents.base import BaseAgent
 from agents.validator.models import CheckResult, ValidationInput, ValidationResult
 from agents.validator.tools import ValidatorTools
-
+from config.config_model import ConfigModel
 
 VALIDATOR_SYSTEM_PROMPT = (
     "Ты — ValidatorAgent, агент для проверки выполнения лабораторных задач. "

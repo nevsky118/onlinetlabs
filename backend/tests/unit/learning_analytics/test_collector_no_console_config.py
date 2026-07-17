@@ -1,4 +1,5 @@
 import pytest
+
 from learning_analytics.collector import BehavioralCollector
 
 pytestmark = [pytest.mark.unit]

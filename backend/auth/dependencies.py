@@ -1,6 +1,6 @@
 import logging
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -47,7 +47,7 @@ def create_backend_token(
     is_active: bool = False,
 ) -> str:
     """Выдать HS256 JWT с claims sub, role, can_select, can_view_logs, is_active, время жизни 5 минут."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload = {
         "sub": user_id,
         "role": role,

@@ -1,6 +1,6 @@
 """Unit-тесты для build_session_timeline и эндпоинта /timeline."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi import HTTPException
@@ -21,7 +21,7 @@ pytestmark = [pytest.mark.unit]
 
 def _ts(offset_seconds: int = 0) -> datetime:
     """Опорное время с заданным смещением в секундах."""
-    return datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc) + timedelta(seconds=offset_seconds)
+    return datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC) + timedelta(seconds=offset_seconds)
 
 
 class TestBuildSessionTimeline:

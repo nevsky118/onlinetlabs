@@ -1,14 +1,14 @@
 import logging
-from typing import Callable
+from collections.abc import Callable
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from security.secrets import decrypt_secret, encrypt_secret
 from experiment.group_assigner import ExperimentGroup, assign_group
 from models.lab import Lab
 from models.session import LearningSession
 from models.user import User
+from security.secrets import decrypt_secret, encrypt_secret
 from sessions.services.proxy import existing_gns3_deep_url, existing_gns3_url
 from sessions.services.query import get_active_session
 

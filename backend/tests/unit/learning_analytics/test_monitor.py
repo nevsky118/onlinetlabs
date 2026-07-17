@@ -1,13 +1,14 @@
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import MagicMock
+
+import pytest
+from mcp_sdk.testing import autotest
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 
 from agents.orchestrator.models import OrchestratorResponse
 from config.config_model import LearningAnalyticsConfig
 from learning_analytics.monitor import SessionMonitor
-from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 
 pytestmark = [pytest.mark.unit]
 
@@ -81,7 +82,7 @@ class TestSessionMonitor:
                 orchestrator=MagicMock(),
                 learning_analytics_config=LearningAnalyticsConfig(cooldown_period=60.0),
             )
-            monitor._last_intervention_at = datetime.now(tz=timezone.utc)
+            monitor._last_intervention_at = datetime.now(tz=UTC)
 
         # Act
         # Assert

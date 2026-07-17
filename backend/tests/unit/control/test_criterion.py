@@ -1,9 +1,8 @@
 import pytest
-
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 
-from control.criterion import compute_J, Costs
+from control.criterion import Costs, compute_J
 
 pytestmark = [pytest.mark.unit]
 
@@ -78,6 +77,6 @@ class TestCriterion:
         with autotest.step("Assert: n_false==1, J > bad_duration + n_interventions*c_int"):
             assert_equal(res.n_false, 1, f"ожидалось 1 ложное, получено {res.n_false}")
             assert_true(
-                res.J > res.bad_duration + res.n_interventions * costs.c_intervention,
+                res.bad_duration + res.n_interventions * costs.c_intervention < res.J,
                 "штраф за ложную интервенцию вошёл в J",
             )

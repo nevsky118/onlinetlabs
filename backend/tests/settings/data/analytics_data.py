@@ -1,6 +1,6 @@
 # Генераторы тестовых данных для analytics и learning_analytics.
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from learning_analytics.context import AgentContext
 
@@ -9,7 +9,7 @@ class AttemptData:
     """Генерирует duck-typed StepAttempt."""
 
     def __init__(self, **overrides):
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
         defaults = {
             "id": "attempt-1",
             "step_slug": "step-1",
@@ -28,7 +28,7 @@ class EventData:
     """Генерирует duck-typed BehavioralEvent."""
 
     def __init__(self, **overrides):
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
         defaults = {
             "id": "evt-1",
             "session_id": "sess-1",
@@ -53,7 +53,7 @@ class EventSequenceData:
     """Генерирует последовательность событий с заданным интервалом."""
 
     def __init__(self, count: int, interval_seconds: float = 10.0, **overrides):
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
         self.events = [
             EventData(
                 id=f"evt-{i}",
@@ -103,6 +103,6 @@ class SessionFeaturesData:
             distinct_failing_actuals=0,
             cycles_failing_unchanged=0,
             session_id="s1",
-            computed_at=datetime.now(tz=timezone.utc),
+            computed_at=datetime.now(tz=UTC),
         )
         self.data = defaults | overrides

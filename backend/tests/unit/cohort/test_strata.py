@@ -1,6 +1,6 @@
 import pytest
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true, assert_is_none
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_is_none
 
 from cohort.metrics import LearnerOutcome, aggregate_cohort
 

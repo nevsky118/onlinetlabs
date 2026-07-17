@@ -1,6 +1,6 @@
 """Сервисный слой валидации — owner-guard, прогон runner'а, запись результата."""
 
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 from urllib.parse import urlparse
 
 from sqlalchemy.ext.asyncio import AsyncSession

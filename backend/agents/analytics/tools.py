@@ -17,6 +17,7 @@ class AnalyticsTools:
     async def get_attempts(self, user_id: str, lab_slug: str) -> list:
         """Получить все StepAttempt для студента по лабе."""
         from sqlalchemy import select
+
         from models.progress import StepAttempt
 
         stmt = (

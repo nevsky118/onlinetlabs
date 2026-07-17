@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,7 +35,7 @@ async def record_lab_validation(
     переводится в completed (необратимо в рамках последующих прогонов).
     """
     score, all_passed = score_from_steps(steps)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     result = await db.execute(
         select(LabProgress).where(LabProgress.user_id == user_id, LabProgress.lab_slug == lab_slug)
@@ -73,7 +73,7 @@ async def start_lab(db: AsyncSession, user_id: str, lab_slug: str) -> LabProgres
         user_id=user_id,
         lab_slug=lab_slug,
         status="in_progress",
-        started_at=datetime.now(timezone.utc),
+        started_at=datetime.now(UTC),
     )
     db.add(lp)
     await db.commit()

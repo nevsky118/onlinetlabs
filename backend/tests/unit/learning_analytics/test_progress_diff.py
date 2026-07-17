@@ -1,6 +1,7 @@
 """Тесты diff_snapshots."""
 
 import pytest
+
 from learning_analytics.progress_observer import diff_snapshots
 
 pytestmark = [pytest.mark.unit]

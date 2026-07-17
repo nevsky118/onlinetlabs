@@ -1,6 +1,6 @@
 """ORM-строка события активности агентов."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from sqlalchemy import DateTime, Index, String, Text
@@ -19,9 +19,7 @@ class AgentActivityEventRow(Base):
     id: Mapped[str] = mapped_column(String(255), primary_key=True, default=lambda: str(uuid4()))
     session_id: Mapped[str] = mapped_column(String(255))
     user_id: Mapped[str] = mapped_column(String(255))
-    ts: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
-    )
+    ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     source: Mapped[str] = mapped_column(String(20))
     kind: Mapped[str] = mapped_column(String(40))
     agent: Mapped[str | None] = mapped_column(String(40), default=None)

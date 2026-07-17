@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 from dataclasses import dataclass, field
+from datetime import UTC
 
 from config.config_model import LearningAnalyticsConfig
 
@@ -175,10 +176,10 @@ class LabProgressObserver:
         # дельты → поведенческие события
         events = diff_snapshots(self._prev_snapshot, snapshot)
         if events:
-            from datetime import datetime, timezone
+            from datetime import datetime
             from uuid import uuid4
 
-            now = datetime.now(tz=timezone.utc)
+            now = datetime.now(tz=UTC)
             for evt in events:
                 evt.update(
                     {

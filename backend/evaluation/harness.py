@@ -1,7 +1,7 @@
 """Прогон идентификатора П1 (полный конвейер feature→rule→dwell) по сценарию при пороге T_k."""
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from agents.analytics.agent import AnalyticsAgent
 from agents.analytics.models import (
@@ -11,11 +11,11 @@ from agents.analytics.models import (
     StudentMetrics,
 )
 from config.config_model import LearningAnalyticsConfig
-from learning_analytics.process_state import DwellTracker, ProcessRegime, analysis_to_regime, is_bad
 from evaluation.scenarios import LabeledScenario
+from learning_analytics.process_state import DwellTracker, ProcessRegime, analysis_to_regime, is_bad
 
 # Фикс. база для перевода snap.ts (float, сек) → datetime
-_BASE = datetime(2026, 1, 1, tzinfo=timezone.utc)
+_BASE = datetime(2026, 1, 1, tzinfo=UTC)
 
 
 @dataclass

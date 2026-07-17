@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.dependencies import get_current_user
-from control_interface.consent import grant, revoke, list_active
+from control_interface.consent import grant, list_active, revoke
 from control_interface.schemas import (
     ConsentGrantRequest,
     ConsentItem,

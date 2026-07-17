@@ -1,12 +1,13 @@
-import pytest
 from collections import OrderedDict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
+import pytest
+from mcp_sdk.models import ErrorEntry, LogEntry, LogLevel, UserAction
+from mcp_sdk.testing import autotest
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 
 from config.config_model import LearningAnalyticsConfig
 from learning_analytics.collector import BehavioralCollector
-from mcp_sdk.models import UserAction, LogEntry, ErrorEntry, LogLevel
-from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 
 pytestmark = [pytest.mark.unit]
 
@@ -18,7 +19,7 @@ class TestBehavioralCollectorNormalization:
     def test_b5c6d7e8_normalize_user_action(self):
         with autotest.step("Создаём UserAction"):
             action = UserAction(
-                timestamp=datetime.now(tz=timezone.utc),
+                timestamp=datetime.now(tz=UTC),
                 component_id="node-1",
                 action="start_node",
                 raw_command=None,
@@ -46,7 +47,7 @@ class TestBehavioralCollectorNormalization:
     def test_c6d7e8f9_normalize_log_entry(self):
         with autotest.step("Создаём LogEntry"):
             log = LogEntry(
-                timestamp=datetime.now(tz=timezone.utc),
+                timestamp=datetime.now(tz=UTC),
                 level=LogLevel.WARNING,
                 message="Link flapping",
                 source="node-1",
@@ -71,7 +72,7 @@ class TestBehavioralCollectorNormalization:
     def test_d7e8f9a0_normalize_error_entry(self):
         with autotest.step("Создаём ErrorEntry"):
             error = ErrorEntry(
-                timestamp=datetime.now(tz=timezone.utc),
+                timestamp=datetime.now(tz=UTC),
                 level=LogLevel.ERROR,
                 message="Interface Gi0/0 down",
                 component_id="node-1",
@@ -95,7 +96,7 @@ class TestBehavioralCollectorNormalization:
     @autotest.name("BehavioralCollector: дедупликация пропускает повторные события")
     def test_e8f9a0b1_dedup_skips_seen_events(self):
         with autotest.step("Создаём collector и генерируем ключ"):
-            ts = datetime.now(tz=timezone.utc)
+            ts = datetime.now(tz=UTC)
             collector = BehavioralCollector.__new__(BehavioralCollector)
             collector._seen = OrderedDict()
             collector._cfg = LearningAnalyticsConfig()

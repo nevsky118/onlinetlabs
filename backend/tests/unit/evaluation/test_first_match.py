@@ -1,10 +1,11 @@
 import pytest
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_true, assert_greater_equal, assert_equal
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_greater_equal, assert_true
+
 from config.config_model import LearningAnalyticsConfig
-from learning_analytics.process_state import ProcessRegime
-from evaluation.scenarios import make_struggle_scenario, make_normal_scenario
 from evaluation.metrics import first_match_diagnostics
+from evaluation.scenarios import make_normal_scenario, make_struggle_scenario
+from learning_analytics.process_state import ProcessRegime
 
 pytestmark = [pytest.mark.unit]
 

@@ -1,6 +1,6 @@
 """Проверка/выдача/отзыв согласия. study покрывает всё; product гранулярно."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from sqlalchemy import select
@@ -58,7 +58,7 @@ async def revoke(db, user_id: str, scope: str) -> int:
         .scalars()
         .all()
     )
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     for c in rows:
         c.revoked_at = now
     await db.commit()

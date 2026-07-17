@@ -1,4 +1,10 @@
 import pytest
+from mcp_sdk.testing import autotest
+from mcp_sdk.testing.custom_assertions import (
+    assert_equal,
+    assert_is_none,
+    assert_true,
+)
 
 from config.config_model import (
     AgentsConfig,
@@ -16,13 +22,6 @@ from config.config_model import (
     RedisConfig,
     SecurityConfig,
 )
-from mcp_sdk.testing.custom_assertions import (
-    assert_equal,
-    assert_true,
-    assert_in,
-    assert_is_none,
-)
-from mcp_sdk.testing import autotest
 
 
 def _agents(**overrides):
@@ -97,9 +96,8 @@ class TestAgentsConfig:
     @autotest.external_id("b45d78d1-981d-4953-9498-2b0b78b4aebc")
     @autotest.name("AgentsConfig: неизвестная chat_model отклоняется")
     def test_b2c3d4e5_rejects_unknown_chat_model(self):
-        with autotest.step("Передаём несуществующий chat_model"):
-            with pytest.raises(ValueError):
-                _agents(chat_model="does-not-exist")
+        with autotest.step("Передаём несуществующий chat_model"), pytest.raises(ValueError):
+            _agents(chat_model="does-not-exist")
 
     @autotest.num("102")
     @autotest.external_id("c3d4e5f6-b7c8-4d9e-0f1a-2b3c4d5e6f7a")

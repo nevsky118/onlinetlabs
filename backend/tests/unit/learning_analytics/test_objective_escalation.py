@@ -1,8 +1,8 @@
-import pytest
 from unittest.mock import MagicMock
 
+import pytest
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_false, assert_true
+from mcp_sdk.testing.custom_assertions import assert_false, assert_true
 
 from config.config_model import LearningAnalyticsConfig
 from learning_analytics.monitor import SessionMonitor

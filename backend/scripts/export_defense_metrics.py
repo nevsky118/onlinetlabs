@@ -274,8 +274,9 @@ async def main():
 
     # Порядок секций 1→2→3→4 (логичный для защиты). Секции 1+2 требуют БД.
     try:
-        from db.session import async_session
         from sqlalchemy import select
+
+        from db.session import async_session
         from models.experiment import ExperimentMetrics
 
         async with async_session() as db:

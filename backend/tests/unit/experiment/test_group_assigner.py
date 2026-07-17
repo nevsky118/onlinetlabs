@@ -1,6 +1,6 @@
 import pytest
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
+from mcp_sdk.testing.custom_assertions import assert_equal
 
 from experiment.group_assigner import ExperimentGroup, assign_group
 

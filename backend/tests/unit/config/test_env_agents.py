@@ -1,8 +1,8 @@
 import pytest
-
-from config.env_config_loader import build_agents_config
-from config.config_model import LlmProvider
 from mcp_sdk.testing import autotest
+
+from config.config_model import LlmProvider
+from config.env_config_loader import build_agents_config
 
 pytestmark = [pytest.mark.unit]
 

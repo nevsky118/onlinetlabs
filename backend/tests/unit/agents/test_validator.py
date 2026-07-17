@@ -1,11 +1,11 @@
 import pytest
-
-from agents.validator.models import CheckResult, ValidationInput, ValidationResult
-from agents.validator.tools import ValidatorTools
-from agents.validator.agent import ValidatorAgent
 from mcp_sdk.models import Component
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true, assert_less
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_less, assert_true
+
+from agents.validator.agent import ValidatorAgent
+from agents.validator.models import CheckResult, ValidationInput, ValidationResult
+from agents.validator.tools import ValidatorTools
 
 pytestmark = [pytest.mark.unit, pytest.mark.agents]
 
@@ -141,8 +141,9 @@ class TestValidatorAgent:
     @autotest.external_id("b9cadbfc-fdde-4bfc-8d9e-abc012340009")
     @autotest.name("ValidatorAgent: run с частичным прохождением")
     async def test_b9cadbfc_run_mixed(self, config_model):
-        from tests.unit.conftest import FakeMCPClient
         from mcp_sdk.models import Component
+
+        from tests.unit.conftest import FakeMCPClient
 
         with autotest.step("Создаём среду с двумя компонентами"):
             mcp = FakeMCPClient(

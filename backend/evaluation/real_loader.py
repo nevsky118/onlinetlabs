@@ -1,7 +1,5 @@
 """Загрузка реальных сценариев из open-плеча + согласие разметчиков (Cohen's κ)."""
 
-from datetime import datetime, timezone
-
 from sqlalchemy import select
 
 from models.experiment import ExperimentMetrics

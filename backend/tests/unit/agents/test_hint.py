@@ -1,15 +1,13 @@
 import pytest
-
-from agents.hint.models import HintInput, HintResponse
-from agents.hint.tools import HintTools, MAX_HINTS
-from agents.hint.agent import HintAgent
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import (
     assert_equal,
     assert_true,
-    assert_greater,
-    assert_greater_equal,
 )
+
+from agents.hint.agent import HintAgent
+from agents.hint.models import HintInput
+from agents.hint.tools import MAX_HINTS, HintTools
 
 pytestmark = [pytest.mark.unit, pytest.mark.agents]
 

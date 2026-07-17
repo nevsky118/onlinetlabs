@@ -41,15 +41,14 @@ class TestOpenClawInterventionAdapter:
             )
 
         # Act
-        with server:
-            with autotest.step("Генерируем интервенцию через OpenClaw"):
-                async with OpenClawClient(
-                    base_url=server.base_url,
-                    model="openclaw",
-                    timeout_seconds=3.0,
-                ) as client:
-                    adapter = OpenClawInterventionAdapter(client)
-                    result = await adapter.generate(intervention)
+        with server, autotest.step("Генерируем интервенцию через OpenClaw"):
+            async with OpenClawClient(
+                base_url=server.base_url,
+                model="openclaw",
+                timeout_seconds=3.0,
+            ) as client:
+                adapter = OpenClawInterventionAdapter(client)
+                result = await adapter.generate(intervention)
 
         # Assert
         with autotest.step("Проверяем нормализованный ответ"):
@@ -84,15 +83,14 @@ class TestOpenClawInterventionAdapter:
             )
 
         # Act
-        with server:
-            with autotest.step("Генерируем интервенцию через OpenClaw"):
-                async with OpenClawClient(
-                    base_url=server.base_url,
-                    model="openclaw",
-                    timeout_seconds=3.0,
-                ) as client:
-                    adapter = OpenClawInterventionAdapter(client)
-                    result = await adapter.generate(intervention)
+        with server, autotest.step("Генерируем интервенцию через OpenClaw"):
+            async with OpenClawClient(
+                base_url=server.base_url,
+                model="openclaw",
+                timeout_seconds=3.0,
+            ) as client:
+                adapter = OpenClawInterventionAdapter(client)
+                result = await adapter.generate(intervention)
 
         # Assert
         with autotest.step("Проверяем ошибку без fallback"):

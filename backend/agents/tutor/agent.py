@@ -2,10 +2,10 @@
 
 import logging
 
-from config.config_model import ConfigModel
 from agents.base import BaseAgent
 from agents.tutor.models import TutorInput, TutorResponse
 from agents.tutor.tools import TutorTools
+from config.config_model import ConfigModel
 
 logger = logging.getLogger(__name__)
 

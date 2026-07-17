@@ -1,10 +1,10 @@
 import pytest
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_true, assert_false, assert_equal
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_false, assert_true
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from control_interface.consent import grant, has_consent, revoke
 from control_interface.registry import ToolKind
-from control_interface.consent import has_consent, grant, revoke
 from models.consent import Consent
 
 pytestmark = [pytest.mark.unit]

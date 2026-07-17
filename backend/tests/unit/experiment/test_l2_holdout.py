@@ -1,9 +1,9 @@
 """L2-холдаут: effective_arm форсирует OPEN при near-transfer переносе."""
 
 import pytest
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from experiment.arm_resolver import effective_arm
 from experiment.control_arm import ControlArm

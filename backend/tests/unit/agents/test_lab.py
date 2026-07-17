@@ -1,11 +1,11 @@
 import pytest
-
-from agents.lab.models import LabQueryInput, LabActionInput, LabQueryResult
-from agents.lab.tools import LabTools
-from agents.lab.agent import LabAgent
 from mcp_sdk.models import ActionResult, ComponentDetail
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true, assert_greater
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_greater, assert_true
+
+from agents.lab.agent import LabAgent
+from agents.lab.models import LabActionInput, LabQueryInput, LabQueryResult
+from agents.lab.tools import LabTools
 
 pytestmark = [pytest.mark.unit, pytest.mark.agents]
 

@@ -19,13 +19,12 @@ from observability.sentry import configure_sentry
 configure_logging("backend", level=getattr(getattr(settings, "log", None), "log_level", "INFO"))
 configure_sentry("backend", environment=os.getenv("ENVIRONMENT", "dev"))
 
-from agents.orchestrator.agent import Orchestrator
 from admin.router import router as admin_router
+from agents.orchestrator.agent import Orchestrator
 from analytics.router import router as analytics_router
 from auth.router import router as auth_router
-from control_interface.router import router as consent_router
-from users.router import router as users_router
 from chat.router import router as chat_router
+from control_interface.router import router as consent_router
 from courses.router import router as courses_router
 from db.session import async_session
 from escalation.router import router as escalation_router
@@ -47,6 +46,7 @@ from sessions.routers.agent_activity import router as agent_activity_router
 from sessions.services.proxy import _BULK_GNS3_SEMAPHORE
 from sessions.state_cache import StateCache
 from sessions.ws import WebSocketGateway, close_all_connections
+from users.router import router as users_router
 from validation.router import router as validation_router
 from validation.runs_router import router as validation_runs_router
 

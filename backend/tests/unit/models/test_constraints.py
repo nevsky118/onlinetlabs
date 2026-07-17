@@ -1,16 +1,15 @@
 """Проверка SQLAlchemy constraints и значений по умолчанию на ключевых таблицах."""
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 import pytest
 import pytest_asyncio
+from mcp_sdk.testing import autotest
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_is_none, assert_true
 from sqlalchemy import event, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-
-from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_is_none, assert_true
 
 from models.course import Course
 from models.lab import Lab

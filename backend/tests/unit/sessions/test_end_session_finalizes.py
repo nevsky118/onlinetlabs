@@ -1,17 +1,17 @@
 """end_session: финализация ExperimentMetrics при завершении сессии."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
-from sqlalchemy import select, text
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import (
-    assert_true,
     assert_equal,
-    assert_is_not_none,
     assert_false,
+    assert_is_not_none,
+    assert_true,
 )
+from sqlalchemy import select, text
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from models.behavioral_event import BehavioralEvent
 from models.experiment import ExperimentMetrics
@@ -54,7 +54,7 @@ async def db_factory():
                 user_id="u1",
                 lab_slug="lab-a",
                 status="active",
-                started_at=datetime.now(timezone.utc) - timedelta(minutes=30),
+                started_at=datetime.now(UTC) - timedelta(minutes=30),
             )
         )
         db.add(
@@ -69,7 +69,7 @@ async def db_factory():
                 session_id="sess-1",
                 user_id="u1",
                 lab_slug="lab-a",
-                timestamp=datetime.now(timezone.utc) - timedelta(minutes=20),
+                timestamp=datetime.now(UTC) - timedelta(minutes=20),
                 event_type="intervention",
                 action="hint",
                 success=True,
@@ -81,7 +81,7 @@ async def db_factory():
                 session_id="sess-1",
                 user_id="u1",
                 lab_slug="lab-a",
-                timestamp=datetime.now(timezone.utc) - timedelta(minutes=10),
+                timestamp=datetime.now(UTC) - timedelta(minutes=10),
                 event_type="error",
                 action="err",
                 success=False,

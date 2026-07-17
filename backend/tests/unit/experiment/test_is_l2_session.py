@@ -1,9 +1,9 @@
 """is_l2_session: True при предшествующей завершённой лабе того же навыка."""
 
 import pytest
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_true, assert_false
+from mcp_sdk.testing.custom_assertions import assert_false, assert_true
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from experiment.arm_resolver import is_l2_session
 from models.lab import Lab

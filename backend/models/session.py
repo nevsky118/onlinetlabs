@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from sqlalchemy import DateTime, ForeignKey, Index, String
@@ -22,7 +22,7 @@ class LearningSession(Base):
     lab_slug: Mapped[str] = mapped_column(String(255), ForeignKey("labs.slug", ondelete="CASCADE"))
     status: Mapped[str] = mapped_column(String(50), default="active")
     started_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     meta: Mapped[dict | None] = mapped_column(JSON, default=None)

@@ -12,7 +12,6 @@ from validation.checks.cisco import (
 from validation.checks.frr import _parse_neighbor_state, _parse_route
 from validation.checks.vpcs import _matches, _parse_ping
 
-
 _FIXTURES = Path(__file__).parent / "fixtures"
 
 

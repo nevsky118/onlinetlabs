@@ -4,8 +4,6 @@ import pytest
 from mcp_sdk.testing import autotest
 
 from learning_analytics.progress_observer import (
-    LabProgressObserver,
-    ProgressState,
     derive_current_step,
 )
 

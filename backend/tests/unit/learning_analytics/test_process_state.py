@@ -1,8 +1,8 @@
-import pytest
 from types import SimpleNamespace
 
+import pytest
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true, assert_false
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_false, assert_true
 
 from agents.analytics.models import StruggleType
 from learning_analytics.process_state import ProcessRegime, analysis_to_regime, is_bad

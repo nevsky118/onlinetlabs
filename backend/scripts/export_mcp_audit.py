@@ -2,13 +2,14 @@
 
 import asyncio
 
-from models.mcp_audit import MCPAudit  # проверяем зависимость без env
 from sqlalchemy import func, select
+
+from models.mcp_audit import MCPAudit  # проверяем зависимость без env
 
 
 async def main():
     # Ленивый импорт: db.session тянет config, который требует env-файл
-    from db.session import async_session  # noqa: PLC0415
+    from db.session import async_session
 
     async with async_session() as db:
         rows = (

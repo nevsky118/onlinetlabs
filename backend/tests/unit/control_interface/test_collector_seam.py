@@ -1,16 +1,16 @@
 """Тесты проводки observe-наблюдений П1 через ControlInterface-шов (Task 7)."""
 
-import pytest
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
-from datetime import datetime, timezone
 
+import pytest
+from mcp_sdk.models import UserAction
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
+from mcp_sdk.testing.custom_assertions import assert_equal
 
 from config.config_model import LearningAnalyticsConfig
 from control_interface.interface import InterfaceDenied
 from learning_analytics.collector import BehavioralCollector
-from mcp_sdk.models import UserAction, LogLevel
 
 pytestmark = [pytest.mark.unit]
 
@@ -19,7 +19,7 @@ _USER_ID = "user-t7-001"
 _LAB_SLUG = "lan-static-ip"
 
 _ACTION = UserAction(
-    timestamp=datetime(2024, 1, 1, tzinfo=timezone.utc),
+    timestamp=datetime(2024, 1, 1, tzinfo=UTC),
     component_id="node-1",
     action="start_node",
     raw_command=None,

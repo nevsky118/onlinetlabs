@@ -7,7 +7,7 @@ import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_in, assert_true, assert_equal
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_in, assert_true
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from admin.data_registry import ADMIN_TABLES
@@ -127,6 +127,7 @@ class TestAdminEndpoints:
     @autotest.name("admin: require_admin отклоняет не-admin (403)")
     def test_f9h2i7j6_require_admin_rejects(self):
         from fastapi import HTTPException
+
         from admin.router import require_admin
 
         with autotest.step("Вызвать require_admin с ролью student"):
@@ -387,7 +388,7 @@ class TestAdminDataEndpoints:
     @autotest.external_id("d797ce5c-1aca-41f5-9862-d693b3d0bd05")
     @autotest.name("GET /admin/data/mcp_audit: пагинация и total")
     async def test_d797ce5c_pagination_and_total(self):
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         rows = [
             MCPAudit(
                 id=str(uuid.uuid4()),
@@ -428,7 +429,7 @@ class TestAdminDataEndpoints:
     @autotest.external_id("103b8e07-0ab4-467c-b6e7-f0f8c1b8869f")
     @autotest.name("GET /admin/data/mcp_audit: search сужает результаты")
     async def test_103b8e07_search_narrows(self):
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         rows = [
             MCPAudit(
                 id=str(uuid.uuid4()),
@@ -465,8 +466,8 @@ class TestAdminDataEndpoints:
     @autotest.external_id("d998c922-fc26-4596-b3a3-627797bd7ff7")
     @autotest.name("GET /admin/data/mcp_audit: сортировка asc vs desc по ts")
     async def test_d998c922_sort_asc_vs_desc(self):
-        t1 = datetime.datetime(2025, 1, 1, tzinfo=datetime.timezone.utc)
-        t2 = datetime.datetime(2025, 6, 1, tzinfo=datetime.timezone.utc)
+        t1 = datetime.datetime(2025, 1, 1, tzinfo=datetime.UTC)
+        t2 = datetime.datetime(2025, 6, 1, tzinfo=datetime.UTC)
         rows = [
             MCPAudit(
                 id=str(uuid.uuid4()),

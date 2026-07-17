@@ -1,8 +1,8 @@
 import pytest
 from cryptography.fernet import Fernet, InvalidToken
-
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal
+
 from security.secrets import _cipher, decrypt_secret, encrypt_secret
 
 pytestmark = [pytest.mark.unit]

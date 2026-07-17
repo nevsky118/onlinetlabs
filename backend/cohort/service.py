@@ -4,10 +4,10 @@ from sqlalchemy import select
 
 from cohort.metrics import LearnerOutcome, aggregate_cohort
 from experiment.transfer import skill_tag
+from models.experiment import ExperimentMetrics
 from models.lab import Lab
 from models.progress import LabProgress
 from models.session import LearningSession
-from models.experiment import ExperimentMetrics
 
 
 async def _skill_of(db, lab_slug: str, cache: dict) -> str | None:

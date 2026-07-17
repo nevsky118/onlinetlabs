@@ -1,6 +1,6 @@
 """PATCH /sessions/{id}: зашифрованные креды (session.meta) не должны утекать в ответ."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi import FastAPI
@@ -66,7 +66,7 @@ class TestLifecycleMetaLeak:
                     user_id=_USER_ID,
                     lab_slug="lab-meta",
                     status="active",
-                    started_at=datetime.now(timezone.utc) - timedelta(minutes=5),
+                    started_at=datetime.now(UTC) - timedelta(minutes=5),
                     meta=dict(_SECRET_META),
                 )
             )

@@ -1,6 +1,6 @@
 """Эскалация = спрос на наставника. Arm-нейтрально: кнопка или объективно."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from models.behavioral_event import BehavioralEvent
@@ -8,7 +8,7 @@ from models.behavioral_event import BehavioralEvent
 
 async def record_escalation(db, session_id, user_id, lab_slug, source: str) -> None:
     """Записать событие эскалации (source: 'manual' | 'objective')."""
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     db.add(
         BehavioralEvent(
             id=str(uuid4()),

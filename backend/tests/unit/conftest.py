@@ -30,22 +30,6 @@ for _key, _value in _TEST_ENV_DEFAULTS.items():
     os.environ.setdefault(_key, _value)
 
 import pytest
-
-from config.config_model import (
-    AgentsConfig,
-    ApiConfig,
-    ConfigModel,
-    DatabaseConfig,
-    GNS3Config,
-    LearningAnalyticsConfig,
-    LlmProvider,
-    LogConfig,
-    MCPConfig,
-    ModelEntry,
-    ProviderCreds,
-    RedisConfig,
-    SecurityConfig,
-)
 from mcp_sdk.context import SessionContext
 from mcp_sdk.errors import ComponentNotFoundError
 from mcp_sdk.models import (
@@ -55,6 +39,20 @@ from mcp_sdk.models import (
     SystemOverview,
 )
 
+from config.config_model import (
+    AgentsConfig,
+    ApiConfig,
+    ConfigModel,
+    DatabaseConfig,
+    GNS3Config,
+    LlmProvider,
+    LogConfig,
+    MCPConfig,
+    ModelEntry,
+    ProviderCreds,
+    RedisConfig,
+    SecurityConfig,
+)
 
 # Fake MCP клиенты
 

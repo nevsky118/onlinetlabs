@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from sqlalchemy import DateTime, Float, ForeignKey, Index, String
@@ -23,5 +23,5 @@ class ProcessStateSample(Base):
     regime: Mapped[str] = mapped_column(String(50))
     dwell_seconds: Mapped[float] = mapped_column(Float)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )

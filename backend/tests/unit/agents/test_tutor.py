@@ -1,11 +1,12 @@
-import pytest
 from unittest.mock import AsyncMock
 
+import pytest
+from mcp_sdk.testing import autotest
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_greater, assert_true
+
+from agents.tutor.agent import TutorAgent
 from agents.tutor.models import TutorInput, TutorResponse
 from agents.tutor.tools import TutorTools
-from agents.tutor.agent import TutorAgent
-from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true, assert_greater
 
 pytestmark = [pytest.mark.unit, pytest.mark.agents]
 
@@ -110,6 +111,5 @@ class TestTutorAgent:
                 lambda mid: AsyncMock(run=AsyncMock(side_effect=RuntimeError("llm down"))),
             )
 
-        with autotest.step("Ожидаем re-raise"):
-            with pytest.raises(Exception):
-                await agent.run(_make_tutor_input())
+        with autotest.step("Ожидаем re-raise"), pytest.raises(Exception):
+            await agent.run(_make_tutor_input())

@@ -14,7 +14,6 @@ import re
 
 from validation.checks.registry import CheckContext, CheckResult
 
-
 # `2.2.2.2           1   FULL/BDR        00:00:32    10.0.0.2  FastEthernet0/1`
 _CISCO_NEIGHBOR_LINE_RE = re.compile(r"^\s*(\S+)\s+\d+\s+(\S+)")
 
@@ -140,20 +139,20 @@ async def _drain_until_prompt(reader: asyncio.StreamReader, timeout: float) -> b
                 # Cisco prompt оканчивается на `#` (privileged) или `>` (user).
                 # Достаточно проверить хвост последней строки.
                 tail = buf[-3:]
-                if _PROMPT_TAIL in tail or b"> " in tail or b">" == tail[-1:]:
+                if _PROMPT_TAIL in tail or b"> " in tail or tail[-1:] == b">":
                     # Дать ещё чуть-чуть подтянуть остаток.
                     await asyncio.sleep(0.1)
                     while True:
                         try:
                             async with asyncio.timeout(0.2):
                                 more = await reader.read(1024)
-                        except (asyncio.TimeoutError, TimeoutError):
+                        except TimeoutError:
                             break
                         if not more:
                             break
                         buf.extend(more)
                     break
-    except (asyncio.TimeoutError, TimeoutError):
+    except TimeoutError:
         pass
     return bytes(buf)
 
@@ -178,7 +177,7 @@ async def _exec_cisco(
     try:
         async with asyncio.timeout(_CONNECT_TIMEOUT):
             reader, writer = await asyncio.open_connection(host, port)
-    except (asyncio.TimeoutError, TimeoutError, OSError) as exc:
+    except (TimeoutError, OSError) as exc:
         return None, CheckResult(
             ok=False,
             expected=expect,

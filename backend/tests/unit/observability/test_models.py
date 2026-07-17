@@ -1,14 +1,13 @@
 import pytest
+from mcp_sdk.testing import autotest
 
 from observability.models import (
-    AgentActivityEvent,
-    ActivitySource,
     ActivityKind,
-    event_struggle_detected,
+    ActivitySource,
     event_model_selected,
+    event_struggle_detected,
     event_tool_call,
 )
-from mcp_sdk.testing import autotest
 
 pytestmark = [pytest.mark.unit]
 

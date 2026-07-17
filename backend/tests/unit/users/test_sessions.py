@@ -1,7 +1,7 @@
 """Тесты GET/DELETE /users/me/sessions."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from fastapi import FastAPI
@@ -28,7 +28,7 @@ def _make_session(session_id: str, user_id: str, offset_days: int = 0) -> Sessio
         id=session_id,
         session_token=str(uuid.uuid4()),
         user_id=user_id,
-        expires=datetime(2030, 1, 1, tzinfo=timezone.utc) + timedelta(days=offset_days),
+        expires=datetime(2030, 1, 1, tzinfo=UTC) + timedelta(days=offset_days),
     )
 
 

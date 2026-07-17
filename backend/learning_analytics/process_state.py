@@ -3,8 +3,6 @@
 from datetime import datetime
 from enum import Enum
 
-from agents.analytics.models import StruggleType
-
 
 class ProcessRegime(str, Enum):
     """Режим процесса: продуктивный либо затруднение типа k (зеркалит StruggleType)."""

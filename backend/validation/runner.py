@@ -1,7 +1,7 @@
 """YAML-driven validation runner. Emits Event-stream через asyncio."""
 
+from collections.abc import AsyncIterator
 from pathlib import Path
-from typing import AsyncIterator
 
 import yaml
 
@@ -22,7 +22,7 @@ async def _eval_check(ctx: CheckContext, check: dict) -> CheckResult:
         )
     try:
         return await handler(ctx, params, expect)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return CheckResult(ok=False, expected=expect, actual={"error": str(exc)})
 
 

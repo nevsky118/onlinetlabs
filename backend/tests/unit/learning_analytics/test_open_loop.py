@@ -1,12 +1,12 @@
 """Тест: open-loop arm A подавляет проактив, arm B отправляет интервенцию."""
 
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true, assert_is_not_none
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_is_not_none, assert_true
 
 from agents.analytics.models import StruggleType
 from agents.orchestrator.models import OrchestratorResponse
@@ -61,7 +61,7 @@ def _make_features():
 
     return SessionFeatures(
         session_id="s1",
-        computed_at=datetime(2026, 6, 21, 12, 0, tzinfo=timezone.utc),
+        computed_at=datetime(2026, 6, 21, 12, 0, tzinfo=UTC),
         avg_inter_action_latency=10.0,
         action_rate_slope=0.0,
         idle_periods=1,
@@ -181,7 +181,7 @@ class TestOpenLoop:
             m = _make_monitor(ControlArm.OPEN, cap)
             analysis = _make_analysis()
             fake_event = SimpleNamespace(
-                timestamp=datetime(2026, 6, 21, 12, 0, tzinfo=timezone.utc),
+                timestamp=datetime(2026, 6, 21, 12, 0, tzinfo=UTC),
             )
             m._analytics_agent = MagicMock()
             m._analytics_agent.analyze_session = MagicMock(return_value=analysis)
@@ -243,7 +243,7 @@ class TestOpenLoop:
             m._learning_analytics_config.cooldown_period = 60
             analysis = _make_analysis()
             fake_event = SimpleNamespace(
-                timestamp=datetime(2026, 6, 21, 12, 0, tzinfo=timezone.utc),
+                timestamp=datetime(2026, 6, 21, 12, 0, tzinfo=UTC),
             )
             m._analytics_agent = MagicMock()
             m._analytics_agent.analyze_session = MagicMock(return_value=analysis)

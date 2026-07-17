@@ -1,4 +1,5 @@
 import pytest
+
 from config.env_config_loader import _build
 
 pytestmark = [pytest.mark.unit]

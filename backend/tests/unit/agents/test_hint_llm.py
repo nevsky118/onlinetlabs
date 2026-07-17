@@ -1,10 +1,10 @@
 import pytest
-
-from agents.hint.agent import HintAgent, HINT_SYSTEM_PROMPT
-from agents.hint.models import HintInput, HintResponse
-from tests.settings.data.analytics_data import AgentContextData
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_true, assert_equal
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
+
+from agents.hint.agent import HINT_SYSTEM_PROMPT, HintAgent
+from agents.hint.models import HintInput
+from tests.settings.data.analytics_data import AgentContextData
 
 pytestmark = [pytest.mark.unit, pytest.mark.agents]
 

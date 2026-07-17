@@ -1,16 +1,16 @@
 """Task 7: тест compute_cohort_metrics через in-memory SQLite."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import (
     assert_equal,
-    assert_true,
     assert_is_none,
     assert_is_not_none,
+    assert_true,
 )
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from models.experiment import ExperimentMetrics
 from models.lab import Lab
@@ -20,7 +20,7 @@ from models.user import User
 
 pytestmark = [pytest.mark.unit]
 
-_NOW = datetime(2026, 1, 20, 12, 0, 0, tzinfo=timezone.utc)
+_NOW = datetime(2026, 1, 20, 12, 0, 0, tzinfo=UTC)
 _SKILL = "static-ip-addressing"
 
 

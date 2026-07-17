@@ -9,8 +9,6 @@ from auth.dependencies import (
     require_admin,
     require_internal_caller,
 )
-from config import settings
-from rate_limit import exchange_rate_limit_key, limiter
 from auth.schemas import (
     ActivateRequest,
     ExchangeRequest,
@@ -28,7 +26,9 @@ from auth.service import (
     upsert_github_user,
     verify_password_async,
 )
+from config import settings
 from db.session import get_db
+from rate_limit import exchange_rate_limit_key, limiter
 
 router = APIRouter()
 

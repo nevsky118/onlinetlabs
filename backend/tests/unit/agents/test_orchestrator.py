@@ -1,13 +1,14 @@
-import pytest
 from unittest.mock import AsyncMock
 
-from agents.hint.models import HintResponse
-from agents.tutor.models import TutorResponse
-from agents.orchestrator.models import OrchestratorInput, OrchestratorResponse
-from agents.orchestrator.router import resolve_agent, INTENT_TO_AGENT
-from agents.orchestrator.agent import Orchestrator
+import pytest
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true, assert_is_none
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_is_none, assert_true
+
+from agents.hint.models import HintResponse
+from agents.orchestrator.agent import Orchestrator
+from agents.orchestrator.models import OrchestratorInput, OrchestratorResponse
+from agents.orchestrator.router import INTENT_TO_AGENT, resolve_agent
+from agents.tutor.models import TutorResponse
 
 
 def _mock_hint_agent(orch):

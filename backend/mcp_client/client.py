@@ -9,13 +9,6 @@ from typing import Any
 import httpx
 from mcp.client.session import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
-from tenacity import (
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_exponential,
-)
-
 from mcp_sdk.context import SessionContext
 from mcp_sdk.models import (
     ActionResult,
@@ -25,6 +18,12 @@ from mcp_sdk.models import (
     LogEntry,
     LogLevel,
     UserAction,
+)
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
 )
 
 logger = logging.getLogger(__name__)
@@ -62,14 +61,16 @@ class MCPClient:
         MCPToolError (логические ошибки tool) не ретраим, чтобы не маскировать баг.
         """
         result = None
-        async with streamablehttp_client(self._mcp_url, timeout=self._timeout) as (
-            read,
-            write,
-            _,
+        async with (
+            streamablehttp_client(self._mcp_url, timeout=self._timeout) as (
+                read,
+                write,
+                _,
+            ),
+            ClientSession(read, write) as session,
         ):
-            async with ClientSession(read, write) as session:
-                await session.initialize()
-                result = await session.call_tool(name, arguments)
+            await session.initialize()
+            result = await session.call_tool(name, arguments)
 
         # Парсим результат вне async with, иначе MCP оборачивает исключения в
         # ExceptionGroup и теряем оригинальный traceback.

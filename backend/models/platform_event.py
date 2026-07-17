@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from sqlalchemy import DateTime, ForeignKey, Index, String
@@ -31,5 +31,5 @@ class PlatformEvent(Base):
     properties: Mapped[dict] = mapped_column(JSONB, nullable=False, default=lambda: {})
     client_ts: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     server_ts: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )

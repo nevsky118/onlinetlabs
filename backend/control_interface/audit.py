@@ -1,6 +1,6 @@
 """Append-only журнал вызовов контура (observe/act). Двойного назначения: act = источник воздействий."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from models.mcp_audit import MCPAudit
@@ -16,7 +16,7 @@ async def record(
             session_id=session_id,
             tool=tool,
             kind=kind,
-            ts=datetime.now(timezone.utc),
+            ts=datetime.now(UTC),
             success=success,
             error=error,
             consent_ref=consent_ref,

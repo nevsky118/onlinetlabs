@@ -1,8 +1,8 @@
 import pytest
-
-from config.config_model import AgentsConfig, ModelEntry, ProviderCreds, LlmProvider
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
+
+from config.config_model import AgentsConfig, LlmProvider, ModelEntry, ProviderCreds
 
 pytestmark = [pytest.mark.unit]
 
@@ -203,6 +203,7 @@ class TestBuildClient:
         monkeypatch.setattr(client_mod, "settings", _FakeSettings(_yandex_agents()))
 
         from openai import AsyncOpenAI
+
         from llm.client import build_client
 
         with autotest.step("Создаём клиент для yandex"):

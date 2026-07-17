@@ -1,8 +1,9 @@
 """Тесты новых признаков FeatureExtractor: distinct_failing_actuals, cycles_failing_unchanged."""
 
-import pytest
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
+
+import pytest
 
 from learning_analytics.features import FeatureExtractor
 
@@ -23,7 +24,7 @@ def _e(action, cid, actual, t):
 
 
 def test_distinct_actuals_and_unchanged_run():
-    base = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2026, 1, 1, tzinfo=UTC)
     evs = [
         _e("check_retry", "PC1", {"ip": "a"}, base),
         _e("check_retry", "PC1", {"ip": "b"}, base + timedelta(seconds=25)),
@@ -42,7 +43,7 @@ def test_empty_events_returns_zero():
 
 
 def test_no_check_actions_returns_zero():
-    base = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2026, 1, 1, tzinfo=UTC)
     evs = [
         SimpleNamespace(
             timestamp=base + timedelta(seconds=i * 10),
@@ -62,7 +63,7 @@ def test_no_check_actions_returns_zero():
 
 def test_cycles_broken_by_different_component():
     """Хвост обрывается при смене component_id."""
-    base = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2026, 1, 1, tzinfo=UTC)
     evs = [
         _e("check_failing", "R1", {"ip": "x"}, base),
         _e("check_failing", "PC1", {"ip": "y"}, base + timedelta(seconds=25)),
@@ -75,7 +76,7 @@ def test_cycles_broken_by_different_component():
 
 def test_cycles_broken_by_check_passed():
     """check_passed прерывает хвост."""
-    base = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2026, 1, 1, tzinfo=UTC)
     evs = [
         _e("check_failing", "PC1", {"ip": "y"}, base),
         _e("check_failing", "PC1", {"ip": "y"}, base + timedelta(seconds=25)),
@@ -90,7 +91,7 @@ def test_cycles_broken_by_check_passed():
 
 def test_error_run_reset_by_check_passed():
     """check_passed обрывает серию → error_repeat_count == 0."""
-    base = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2026, 1, 1, tzinfo=UTC)
     evs = [
         _e("check_failing", "PC1", {"ip": "x"}, base),
         _e("check_failing", "PC1", {"ip": "x"}, base + timedelta(seconds=25)),
@@ -102,7 +103,7 @@ def test_error_run_reset_by_check_passed():
 
 def test_error_run_accumulates_without_check_passed():
     """Без check_passed серия не обрывается → error_repeat_count >= 2."""
-    base = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2026, 1, 1, tzinfo=UTC)
     evs = [
         _e("check_failing", "PC1", {"ip": "x"}, base),
         _e("check_failing", "PC1", {"ip": "x"}, base + timedelta(seconds=25)),

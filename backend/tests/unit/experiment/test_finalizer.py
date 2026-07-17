@@ -1,10 +1,11 @@
+from datetime import UTC, datetime, timedelta
+
 import pytest
-from datetime import datetime, timedelta, timezone
+from mcp_sdk.testing import autotest
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_greater
 
 from experiment.finalizer import compute_session_metrics
 from tests.settings.data.analytics_data import EventData
-from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_greater
 
 pytestmark = [pytest.mark.unit]
 
@@ -16,7 +17,7 @@ class TestFinalizer:
     def test_c3d4e5f6_compute_metrics(self):
         # Arrange
         with autotest.step("Создаём события сессии"):
-            now = datetime.now(tz=timezone.utc)
+            now = datetime.now(tz=UTC)
             events = [
                 EventData(
                     id="e1",
@@ -101,7 +102,7 @@ class TestFinalizer:
     def test_d4e5f6a7_empty_session(self):
         # Arrange
         with autotest.step("Готовим границы пустой сессии"):
-            now = datetime.now(tz=timezone.utc)
+            now = datetime.now(tz=UTC)
 
         # Act
         with autotest.step("Вычисляем метрики пустой сессии"):

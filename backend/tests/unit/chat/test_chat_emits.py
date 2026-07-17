@@ -1,8 +1,9 @@
 """Unit-тесты точек emit активности в chat/router.py."""
 
+from types import SimpleNamespace
+
 import pytest
 from mcp_sdk.testing import autotest
-from types import SimpleNamespace
 
 from chat.router import _activity_emit
 from observability.models import event_model_selected

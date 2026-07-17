@@ -1,6 +1,7 @@
 import pytest
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_true, assert_greater
+from mcp_sdk.testing.custom_assertions import assert_greater, assert_true
+
 from config.config_model import LearningAnalyticsConfig
 
 pytestmark = [pytest.mark.unit]

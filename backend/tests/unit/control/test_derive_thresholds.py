@@ -1,10 +1,9 @@
 import pytest
-
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true, assert_less_equal
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_less_equal, assert_true
 
-from control.derive_thresholds import derive_T_k, sensitivity_curve, simulate_interventions
 from control.criterion import Costs
+from control.derive_thresholds import derive_T_k, sensitivity_curve, simulate_interventions
 
 pytestmark = [pytest.mark.unit]
 

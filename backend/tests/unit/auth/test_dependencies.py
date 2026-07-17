@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi import HTTPException
@@ -56,7 +56,7 @@ class TestBackendTokenRoundTrip:
     @autotest.name("decode_backend_token: истёкший токен → JWTError")
     def test_c3d4e5f6_expired_token_raises_jwterror(self):
         with autotest.step("Arrange: вручную выпускаем токен с exp в прошлом"):
-            past = datetime.now(timezone.utc) - timedelta(minutes=10)
+            past = datetime.now(UTC) - timedelta(minutes=10)
             payload = {"sub": "user-702", "role": "student", "exp": past}
             expired_token = jwt.encode(payload, settings.api.jwt_secret, algorithm="HS256")
 

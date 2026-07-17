@@ -2,9 +2,9 @@
 
 import asyncio
 
-from db.session import async_session
-from config.env_config_loader import load_settings
 from cohort.service import compute_cohort_metrics
+from config.env_config_loader import load_settings
+from db.session import async_session
 
 
 def _fmt_days(seconds):
@@ -29,7 +29,7 @@ async def main():
             f"{_fmt_days(t.median_calendar_seconds)} | {_fmt_days(t.median_active_seconds)} | "
             f"{a.mean_l1_interventions:.1f}→{l2i} |"
         )
-    print(f"\n_D4-тренд — описательный (survivorship). Дельта open↔closed = Задача 4._")
+    print("\n_D4-тренд — описательный (survivorship). Дельта open↔closed = Задача 4._")
 
 
 if __name__ == "__main__":

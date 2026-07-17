@@ -4,8 +4,8 @@ import random
 import statistics
 from dataclasses import dataclass
 
-from evaluation.scenarios import LabeledScenario, is_normal
 from evaluation.harness import Detection
+from evaluation.scenarios import LabeledScenario, is_normal
 from learning_analytics.process_state import ProcessRegime
 
 
@@ -89,7 +89,7 @@ def confusion_matrix(
     """Матрица ошибок 5×5 (строки=truth, столбцы=detected; None-детект→PRODUCTIVE)."""
     regimes = list(ProcessRegime)
     cm: dict[ProcessRegime, dict[ProcessRegime, int]] = {
-        r: {c: 0 for c in regimes} for r in regimes
+        r: dict.fromkeys(regimes, 0) for r in regimes
     }
     for scn, d in pairs:
         truth = scn.truth_regime
@@ -116,8 +116,8 @@ class OperatingPoint:
 
 def operating_curve(scenarios, t_k_grid, config, costs) -> list[OperatingPoint]:
     """Рабочая кривая: метрики + J как функция порога dwell T_k."""
+    from control.derive_thresholds import _BAD_REGIMES, total_J
     from evaluation.harness import run_identifier
-    from control.derive_thresholds import total_J, _BAD_REGIMES
 
     # строим сессии однократно (структура не зависит от t_k)
     sessions: list[dict] = []
@@ -139,7 +139,7 @@ def operating_curve(scenarios, t_k_grid, config, costs) -> list[OperatingPoint]:
     for t_k in t_k_grid:
         pairs = [(scn, run_identifier(scn, t_k, config)) for scn in scenarios]
         m = evaluate(pairs)
-        thresholds = {r: t_k for r in _BAD_REGIMES}
+        thresholds = dict.fromkeys(_BAD_REGIMES, t_k)
         j = total_J(sessions, costs, thresholds, cooldown_seconds=cooldown)
         points.append(OperatingPoint(t_k, m.latency_median, m.false_per_hour, m.recall, j))
     return points

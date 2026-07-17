@@ -1,7 +1,7 @@
 import pytest
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_in, assert_true
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_in
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from experiment.arm_resolver import resolve_control_arm
 from experiment.control_arm import ControlArm

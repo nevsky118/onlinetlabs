@@ -1,8 +1,8 @@
 import pytest
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true, assert_is_none
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_is_none, assert_true
 
-from cohort.metrics import LearnerOutcome, time_to_competence, autonomy_metrics
+from cohort.metrics import LearnerOutcome, autonomy_metrics, time_to_competence
 
 pytestmark = [pytest.mark.unit]
 

@@ -6,7 +6,6 @@ import pytest
 
 from validation.checks.vpcs import _ip_in_subnet, _parse_show_ip
 
-
 _FIXTURES = Path(__file__).parent / "fixtures"
 
 

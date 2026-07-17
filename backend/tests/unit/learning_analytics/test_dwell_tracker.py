@@ -1,10 +1,10 @@
+from datetime import UTC, datetime, timedelta
+
 import pytest
-from datetime import datetime, timedelta, timezone
-
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
+from mcp_sdk.testing.custom_assertions import assert_equal
 
-from learning_analytics.process_state import ProcessRegime, DwellTracker
+from learning_analytics.process_state import DwellTracker, ProcessRegime
 
 pytestmark = [pytest.mark.unit]
 
@@ -15,7 +15,7 @@ class TestDwellTracker:
     @autotest.name("DwellTracker: накапливает время и сбрасывается при смене режима")
     def test_42f1732e_accumulates_then_resets(self):
         with autotest.step("Arrange: трекер и опорная точка времени"):
-            t = datetime(2026, 6, 21, 12, 0, tzinfo=timezone.utc)
+            t = datetime(2026, 6, 21, 12, 0, tzinfo=UTC)
             dt = DwellTracker()
 
         with autotest.step("Act: серия наблюдений в режиме STUCK_ON_STEP"):

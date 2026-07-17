@@ -6,7 +6,6 @@ from fastapi import Request
 from security.secrets import decrypt_secret
 from sessions.services.query import get_owned_session
 
-
 # Throttle для bulk-node-start. gns3-server одно-процессный async, насыщает
 # docker.sock при >12 параллельных. На MSK-8 даёт пик CPU около 70 процентов.
 _BULK_GNS3_SEMAPHORE = asyncio.Semaphore(12)

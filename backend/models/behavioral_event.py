@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text
@@ -35,5 +35,5 @@ class BehavioralEvent(Base):
     message: Mapped[str | None] = mapped_column(Text)
     extra_data: Mapped[dict | None] = mapped_column("metadata", JSON, default=None)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )

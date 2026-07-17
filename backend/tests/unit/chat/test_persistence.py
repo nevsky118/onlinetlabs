@@ -1,6 +1,6 @@
 """Unit-тесты для chat/persistence.py."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from mcp_sdk.testing import autotest
@@ -213,7 +213,7 @@ class TestGetChatHistory(_DBTestBase):
     @autotest.name("get_chat_history: порядок по created_at ASC")
     async def test_b4e7c8a2_orders_by_created_at_asc(self):
         with autotest.step("Кладём 3 сообщения с явным created_at в перемешанном порядке"):
-            base = datetime(2026, 6, 1, 12, 0, 0, tzinfo=timezone.utc)
+            base = datetime(2026, 6, 1, 12, 0, 0, tzinfo=UTC)
             async with self.session_factory() as db:
                 db.add(
                     ChatMessage(

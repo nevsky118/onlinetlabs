@@ -1,8 +1,8 @@
 import pytest
-
-from config.llm_catalog import default_catalog
-from config.config_model import ModelEntry
 from mcp_sdk.testing import autotest
+
+from config.config_model import ModelEntry
+from config.llm_catalog import default_catalog
 
 pytestmark = [pytest.mark.unit]
 

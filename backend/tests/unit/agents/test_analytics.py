@@ -1,18 +1,19 @@
-import pytest
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
-from agents.analytics.models import DifficultyRecommendation, StudentMetrics
-from agents.analytics.tools import AnalyticsTools
-from agents.analytics.agent import AnalyticsAgent
-from tests.settings.data.analytics_data import AttemptData
+import pytest
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import (
     assert_equal,
-    assert_true,
     assert_greater,
     assert_greater_equal,
     assert_less_equal,
+    assert_true,
 )
+
+from agents.analytics.agent import AnalyticsAgent
+from agents.analytics.models import DifficultyRecommendation, StudentMetrics
+from agents.analytics.tools import AnalyticsTools
+from tests.settings.data.analytics_data import AttemptData
 
 pytestmark = [pytest.mark.unit, pytest.mark.agents]
 
@@ -22,7 +23,7 @@ class TestAnalyticsTools:
     @autotest.external_id("f1a2b3c4-d5e6-4f78-9abc-def012340001")
     @autotest.name("AnalyticsTools.compute_metrics: вычисляет метрики")
     def test_f1a2b3c4_compute_metrics(self):
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
         with autotest.step("Создаём 3 попытки: 2 pass, 1 fail"):
             attempts = [
                 AttemptData(
@@ -79,7 +80,7 @@ class TestAnalyticsTools:
     @autotest.external_id("f3a4b5c6-d7e8-4f90-9abc-def012340003")
     @autotest.name("AnalyticsTools.compute_metrics: определяет struggling шаги")
     def test_f3a4b5c6_compute_metrics_struggling(self):
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
         with autotest.step("Создаём 3 неудачи подряд на step-1"):
             attempts = [
                 AttemptData(
@@ -179,7 +180,7 @@ class TestAnalyticsAgent:
     @autotest.external_id("f9aabbcc-ddee-4ff6-9abc-def012340009")
     @autotest.name("AnalyticsAgent: analyze рекомендует advanced при высоком success_rate")
     def test_f9aabbcc_analyze_high_success(self, config_model):
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
         with autotest.step("Создаём 10 успешных попыток"):
             attempts = [
                 AttemptData(
@@ -204,7 +205,7 @@ class TestAnalyticsAgent:
     @autotest.external_id("faaabbcd-deef-4f07-9abc-def012340010")
     @autotest.name("AnalyticsAgent: analyze рекомендует beginner при низком success_rate")
     def test_faaabbcd_analyze_low_success(self, config_model):
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
         with autotest.step("Создаём 10 неудачных попыток"):
             attempts = [
                 AttemptData(

@@ -1,16 +1,18 @@
 """Тесты handler-логики эндпоинтов согласия и audit-запроса — без подъёма FastAPI."""
 
+from datetime import UTC
+
 import pytest
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_is_none
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from control_interface.consent import grant, revoke
 from control_interface.schemas import ConsentGrantRequest, ConsentResponse, ConsentRevokeResponse
+from instructor.schemas import MCPAuditRow
 from models.consent import Consent
 from models.mcp_audit import MCPAudit
-from instructor.schemas import MCPAuditRow
 
 pytestmark = [pytest.mark.unit]
 
@@ -90,7 +92,7 @@ class TestConsentEndpointLogic:
     @autotest.name("audit GET: MCPAuditRow schema строится из MCPAudit-записи")
     async def test_c4d5e6f7_audit_row_schema(self, endpoint_db):
         with autotest.step("Arrange: вставить audit-запись вручную"):
-            from datetime import datetime, timezone
+            from datetime import datetime
             from uuid import uuid4
 
             row = MCPAudit(
@@ -99,7 +101,7 @@ class TestConsentEndpointLogic:
                 session_id="sess-55555555-0000-0000-0000-000000000005",
                 tool="list_user_actions",
                 kind="observe",
-                ts=datetime.now(timezone.utc),
+                ts=datetime.now(UTC),
                 success=True,
             )
             endpoint_db.add(row)
@@ -115,7 +117,7 @@ class TestConsentEndpointLogic:
     @autotest.name("audit GET: фильтр по kind=act возвращает только act-строки")
     async def test_d5e6f7a8_audit_filter_kind(self, endpoint_db):
         with autotest.step("Arrange: два audit-вызова — observe и act"):
-            from datetime import datetime, timezone
+            from datetime import datetime
             from uuid import uuid4
 
             for kind in ("observe", "act"):
@@ -126,7 +128,7 @@ class TestConsentEndpointLogic:
                         session_id="sess-77777777-0000-0000-0000-000000000007",
                         tool="execute_action" if kind == "act" else "get_logs",
                         kind=kind,
-                        ts=datetime.now(timezone.utc),
+                        ts=datetime.now(UTC),
                         success=True,
                     )
                 )

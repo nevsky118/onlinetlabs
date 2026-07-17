@@ -1,11 +1,12 @@
 """Тесты резолва модели интервенций в оркестраторе."""
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+from mcp_sdk.testing import autotest
 
 from agents.orchestrator.agent import Orchestrator
-from config.config_model import LlmProvider, ProviderCreds, ModelEntry
-from mcp_sdk.testing import autotest
+from config.config_model import LlmProvider, ModelEntry, ProviderCreds
 
 pytestmark = [pytest.mark.unit, pytest.mark.agents]
 

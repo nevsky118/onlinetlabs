@@ -1,11 +1,12 @@
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
+from mcp_sdk.testing import autotest
+from mcp_sdk.testing.custom_assertions import assert_true
 
 from agents.tutor.agent import TutorAgent
 from agents.tutor.models import TutorInput, TutorResponse
 from tests.settings.data.analytics_data import AgentContextData
-from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_true
 
 pytestmark = [pytest.mark.unit, pytest.mark.agents]
 
@@ -28,9 +29,8 @@ class TestTutorAgentLLM:
                 question="Что такое OSPF?",
             )
 
-        with autotest.step("Ожидаем re-raise"):
-            with pytest.raises(Exception):
-                await agent.run(inp)
+        with autotest.step("Ожидаем re-raise"), pytest.raises(Exception):
+            await agent.run(inp)
 
     @autotest.num("561")
     @autotest.external_id("b2c3d4e5-f6a7-4890-bcde-561000000002")

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from mcp_sdk.testing import autotest
@@ -17,7 +17,7 @@ pytestmark = [pytest.mark.unit]
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class TestInstructorService:

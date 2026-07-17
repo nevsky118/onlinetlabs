@@ -9,11 +9,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
+from mcp_sdk.testing import autotest
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 from tenacity import wait_exponential
 
 from mcp_client.client import MCPClient
-from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 
 pytestmark = [pytest.mark.unit, pytest.mark.mcp]
 
@@ -90,16 +90,18 @@ class TestMCPClientRetry:
             raise httpx.RequestError("persistent failure")
             yield  # pragma: no cover  # делает функцию async-генератором для CM
 
-        with autotest.step("Патчим streamablehttp_client на постоянное падение"):
-            with patch(
+        with (
+            autotest.step("Патчим streamablehttp_client на постоянное падение"),
+            patch(
                 "mcp_client.client.streamablehttp_client",
                 fake_streamable_always_fails,
-            ):
-                client = MCPClient("http://localhost:9999", timeout=1.0)
+            ),
+        ):
+            client = MCPClient("http://localhost:9999", timeout=1.0)
 
-                with autotest.step("Ожидаем reraise RequestError после исчерпания"):
-                    with pytest.raises(httpx.RequestError):
-                        await client._call_tool("ping", {})
+            with autotest.step("Ожидаем reraise RequestError после исчерпания"):
+                with pytest.raises(httpx.RequestError):
+                    await client._call_tool("ping", {})
 
         with autotest.step("Проверяем число попыток"):
             assert_equal(call_count, 3, "должно быть ровно 3 попытки")

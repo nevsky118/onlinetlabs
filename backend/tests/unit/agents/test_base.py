@@ -1,8 +1,8 @@
 import pytest
+from mcp_sdk.testing import autotest
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 
 from agents.base import BaseAgent
-from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true, assert_false
 
 pytestmark = [pytest.mark.unit, pytest.mark.agents]
 
@@ -99,9 +99,8 @@ class TestBaseAgent:
         with autotest.step("Создаём BaseAgent"):
             agent = BaseAgent(config_model)
 
-        with autotest.step("Вызываем system_prompt"):
-            with pytest.raises(NotImplementedError):
-                agent.system_prompt()
+        with autotest.step("Вызываем system_prompt"), pytest.raises(NotImplementedError):
+            agent.system_prompt()
 
     @autotest.num("404")
     @autotest.external_id("2aaa5fea-ec64-41a1-b524-e5abb2cc168f")
@@ -110,6 +109,5 @@ class TestBaseAgent:
         with autotest.step("Создаём BaseAgent"):
             agent = BaseAgent(config_model)
 
-        with autotest.step("Вызываем run"):
-            with pytest.raises(NotImplementedError):
-                await agent.run(None)
+        with autotest.step("Вызываем run"), pytest.raises(NotImplementedError):
+            await agent.run(None)

@@ -1,6 +1,6 @@
 import pytest
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true, assert_greater
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_greater, assert_true
 
 from experiment.analysis import compute_experiment_analysis
 from tests.settings.data.experiment_data import ExperimentMetricsData

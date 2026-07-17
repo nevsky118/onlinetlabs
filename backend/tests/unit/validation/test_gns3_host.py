@@ -1,5 +1,7 @@
-import pytest
 from types import SimpleNamespace
+
+import pytest
+
 from validation.service import _gns3_host_from_settings
 
 pytestmark = [pytest.mark.unit]
