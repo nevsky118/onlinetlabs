@@ -1,4 +1,4 @@
-# Операции над узлами проекта сессии: одиночные и bulk.
+# Operations on nodes of a session's project: single and bulk.
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ async def run_node_action(
     node_id: str,
     action: str,
 ) -> None:
-    """Запустить действие над одним узлом сессии."""
+    """Run an action on a single session node."""
     session = await _load_active_session(db, session_id)
     await admin.node_action(session.gns3_project_id, node_id, action)
 
@@ -41,6 +41,6 @@ async def run_bulk_node_action(
     session_id: str,
     action: str,
 ) -> None:
-    """Применить действие сразу ко всем узлам проекта сессии."""
+    """Apply an action to all nodes of the session's project at once."""
     session = await _load_active_session(db, session_id)
     await admin.bulk_node_action(session.gns3_project_id, action)

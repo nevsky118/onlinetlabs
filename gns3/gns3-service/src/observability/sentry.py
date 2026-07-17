@@ -1,4 +1,4 @@
-"""Инициализация Sentry для FastAPI. Sample rate 10 процентов в prod, 100 в dev."""
+"""Sentry initialization for FastAPI. Sample rate 10 percent in prod, 100 in dev."""
 
 import os
 

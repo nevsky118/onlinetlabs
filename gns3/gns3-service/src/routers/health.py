@@ -1,4 +1,4 @@
-# Health endpoint: проверка БД и доступности admin GNS3.
+# Health endpoint: checks the DB and GNS3 admin availability.
 
 from fastapi import APIRouter, Request
 

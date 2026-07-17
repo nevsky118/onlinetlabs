@@ -1,4 +1,4 @@
-# Сериализация записей в RBAC GNS3 (пользователи и ACL).
+# Serializes writes to GNS3 RBAC (users and ACLs).
 
 import asyncio
 import logging
@@ -13,16 +13,16 @@ _LOCK_KEY = "lock:gns3_rbac_write"
 
 
 class RbacGate:
-    """Пропускает записи в RBAC GNS3 строго по одной.
+    """Lets writes into GNS3 RBAC through strictly one at a time.
 
-    GNS3-сервер отдаёт 500 на параллельных `POST /v3/access/acl` — его RBAC-хранилище
-    не выдерживает конкурентных записей. Ретраи не помогают: конкурирующие провижны
-    сталкиваются снова (на 5 одновременных студентах ~60% сессий не создавалось).
-    Поэтому создание пользователя и ACL прогоняются через гейт.
+    The GNS3 server returns 500 on concurrent `POST /v3/access/acl` — its RBAC storage
+    can't handle concurrent writes. Retries don't help: competing provisions
+    collide again (with 5 simultaneous students, ~60% of sessions failed to be created).
+    So user creation and ACL creation are run through the gate.
 
-    Локальный `asyncio.Lock` сериализует внутри процесса; Redis-лок (если задан URL)
-    добавляет сериализацию между репликами gns3-service. Тяжёлое `duplicate_project`
-    через гейт НЕ идёт — оно не трогает RBAC и должно оставаться параллельным.
+    A local `asyncio.Lock` serializes within the process; a Redis lock (if a URL is given)
+    adds serialization across gns3-service replicas. The heavy `duplicate_project`
+    does NOT go through the gate — it doesn't touch RBAC and should stay parallel.
     """
 
     def __init__(
@@ -48,7 +48,7 @@ class RbacGate:
                 await self._release_distributed(token)
 
     async def _acquire_distributed(self) -> str | None:
-        """Redis-лок с TTL (переживает падение реплики). None, если Redis не настроен."""
+        """Redis lock with TTL (survives a replica crash). None if Redis isn't configured."""
         if self._redis is None:
             return None
         token = uuid.uuid4().hex
@@ -60,8 +60,8 @@ class RbacGate:
                     _LOCK_KEY, token, nx=True, ex=self._lock_ttl
                 )
             except Exception:
-                # Redis недоступен → не блокируем провижн: локального лока достаточно
-                # для одиночной реплики (текущий деплой).
+                # Redis unavailable → don't block provisioning: the local lock is enough
+                # for a single replica (current deployment).
                 logger.warning("RBAC-гейт: Redis недоступен, работаем на локальном локе",
                                exc_info=True)
                 return None
@@ -74,7 +74,7 @@ class RbacGate:
             await asyncio.sleep(self._poll_interval)
 
     async def _release_distributed(self, token: str | None) -> None:
-        """Снимаем лок только если он всё ещё наш (TTL мог истечь и его перехватили)."""
+        """Release the lock only if it's still ours (TTL may have expired and been taken over)."""
         if self._redis is None or token is None:
             return
         try:

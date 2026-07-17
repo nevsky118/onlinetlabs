@@ -1,4 +1,4 @@
-# Сбор актуального состояния сессии: список узлов, линков, агрегированные метрики.
+# Collects the current session state: list of nodes, links, aggregated metrics.
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ async def fetch_state(
     db: AsyncSession,
     session_id: str,
 ) -> SessionStateResponse:
-    """Получить state-снапшот сессии с учётом TTL-кеша."""
+    """Get a session state snapshot, honoring the TTL cache."""
     cached = cache.get(session_id)
     if cached is not None:
         return cached
@@ -51,7 +51,7 @@ async def fetch_state(
             id=n["node_id"],
             name=n["name"],
             node_type=n["node_type"],
-            # Закрытый проект отдаёт узлы без runtime-status → считаем stopped.
+            # A closed project returns nodes without runtime status → treat as stopped.
             status=n.get("status", "stopped"),
             console=n.get("console"),
             console_type=n.get("console_type"),

@@ -1,4 +1,4 @@
-"""Prometheus-метрики gns3-service. Набор легче, чем у backend."""
+"""Prometheus metrics for gns3-service. A lighter set than the backend's."""
 
 from prometheus_fastapi_instrumentator import Instrumentator
 

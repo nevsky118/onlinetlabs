@@ -1,12 +1,12 @@
-"""Exec endpoint: запуск команд внутри docker-узлов GNS3 (vtysh, ping и т.д.).
+"""Exec endpoint: run commands inside GNS3 docker nodes (vtysh, ping, etc.).
 
-Backend онлайн-валидации обращается к этому endpoint для опроса FRR-узлов:
-- POST /v1/exec/vtysh — выполняет `vtysh -c "<command>"` в контейнере узла.
+The online validation backend calls this endpoint to poll FRR nodes:
+- POST /v1/exec/vtysh — runs `vtysh -c "<command>"` inside the node's container.
 
-Поток:
-1. GET /v3/projects/{pid}/nodes/{nid} (через admin-клиент) → properties.container_id.
-2. `docker exec <container_id> vtysh -c "<command>"` через локальный docker.sock.
-3. Возвращает stdout/stderr/exit_code.
+Flow:
+1. GET /v3/projects/{pid}/nodes/{nid} (via the admin client) → properties.container_id.
+2. `docker exec <container_id> vtysh -c "<command>"` via the local docker.sock.
+3. Returns stdout/stderr/exit_code.
 """
 
 import asyncio
@@ -23,10 +23,10 @@ router = APIRouter(prefix="/v1/exec", tags=["exec"])
 
 
 def verify_internal_token(authorization: str | None = Header(default=None)) -> None:
-    """Отвергает запросы без Authorization Bearer INTERNAL_API_TOKEN.
+    """Rejects requests without an Authorization Bearer INTERNAL_API_TOKEN.
 
-    Единственный легитимный вызыватель — backend. Без проверки любой контейнер
-    в docker-сети мог бы запускать vtysh внутри FRR.
+    The only legitimate caller is the backend. Without this check any container
+    on the docker network could run vtysh inside FRR.
     """
     expected = settings.security.internal_api_token
     if not authorization or not authorization.startswith("Bearer "):
@@ -52,7 +52,7 @@ _EXEC_TIMEOUT = 10.0
 
 
 async def _fetch_container_id(admin_client, project_id: str, node_id: str) -> str:
-    """Узнать docker container_id узла через GNS3 admin API."""
+    """Look up a node's docker container_id via the GNS3 admin API."""
     response = await admin_client.request(
         "GET",
         f"/v3/projects/{project_id}/nodes/{node_id}",

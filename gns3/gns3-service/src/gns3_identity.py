@@ -1,23 +1,23 @@
-# Имя GNS3-пользователя, однозначно соответствующее студенту платформы.
+# GNS3 username that maps unambiguously to a platform student.
 
 import hashlib
 
 _PREFIX = "student-"
-_DIGEST_LEN = 16  # 64 бита — коллизии практически исключены
+_DIGEST_LEN = 16  # 64 bits — collisions are practically excluded
 
 
 def gns3_username_for(user_id: str) -> str:
-    """Уникальное имя GNS3-пользователя из ПОЛНОГО user_id студента.
+    """Unique GNS3 username derived from the student's FULL user_id.
 
-    Раньше бралось `f"student-{user_id[:8]}"` — 8-символьный префикс НЕ уникален.
-    Двое студентов с общим префиксом получали одно имя, и «orphan cleanup» при
-    провижне второго УДАЛЯЛ GNS3-пользователя первого прямо посреди его сессии;
-    следом его ACL падал с `FOREIGN KEY constraint failed`, а сессия — с 500.
-    То есть студенты рушили лабы друг другу.
+    It used to be `f"student-{user_id[:8]}"` — an 8-character prefix is NOT unique.
+    Two students with a shared prefix got the same name, and "orphan cleanup" during
+    the second one's provisioning DELETED the first one's GNS3 user right in the
+    middle of their session; their ACL then failed with `FOREIGN KEY constraint failed`,
+    and the session with 500. In other words, students broke each other's labs.
 
-    Хеш от полного id: имя детерминированное (тот же студент → то же имя, поэтому
-    уборка его собственных залётных аккаунтов продолжает работать), но столкнуться
-    двум разным студентам практически невозможно.
+    Hash of the full id: the name is deterministic (same student → same name, so
+    cleanup of a student's own stray accounts keeps working), but collisions
+    between two different students are practically impossible.
     """
     digest = hashlib.sha256(user_id.encode("utf-8")).hexdigest()[:_DIGEST_LEN]
     return f"{_PREFIX}{digest}"

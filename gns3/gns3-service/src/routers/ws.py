@@ -1,9 +1,10 @@
-# WebSocket-эндпоинт стрима событий сессии.
+# WebSocket endpoint for the session event stream.
 #
-# Эндпоинт публикуется только в docker-network gns3-service и потребляется
-# backend-прокси. Дополнительная проверка shared secret через query-param
-# `?token=...` защищает от случайного проброса порта наружу: если в конфиге
-# задан INTERNAL_API_TOKEN, без валидного токена соединение закрывается.
+# The endpoint is only exposed on the gns3-service docker network and is
+# consumed by the backend proxy. An extra shared-secret check via the
+# `?token=...` query param guards against accidentally exposing the port
+# externally: if INTERNAL_API_TOKEN is set in config, the connection is
+# closed without a valid token.
 
 import asyncio
 import logging
@@ -25,14 +26,14 @@ async def ws_session_events(
     session_id: str,
     token: str | None = Query(default=None),
 ):
-    """Стрим событий сессии: snapshot на коннект, потом события из брокера.
+    """Session event stream: a snapshot on connect, then events from the broker.
 
-    Heartbeat ping раз в 20 секунд для обхода idle-таймаутов прокси.
+    Heartbeat ping every 20 seconds to work around proxy idle timeouts.
     """
     expected_token = getattr(settings.security, "internal_api_token", None)
     if expected_token:
         if not token or token != expected_token:
-            # 1008 = Policy Violation по RFC 6455.
+            # 1008 = Policy Violation per RFC 6455.
             await websocket.close(code=1008, reason="invalid token")
             return
 
@@ -111,7 +112,7 @@ async def ws_session_events(
 
 
 async def _recv_loop(websocket: WebSocket) -> None:
-    """Дренировать входящие сообщения клиента до дисконнекта."""
+    """Drain incoming client messages until disconnect."""
     try:
         while True:
             await websocket.receive_text()

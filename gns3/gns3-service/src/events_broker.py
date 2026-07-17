@@ -43,7 +43,7 @@ class EventBroker:
             logger.exception("XADD failed for session=%s", session_id)
 
     async def subscribe(self, session_id: str) -> AsyncIterator[dict]:
-        """Async-итератор. Стартует с $, только tail-following без replay."""
+        """Async iterator. Starts at $, tail-following only, no replay."""
         last_id = "$"
         stream_key = self._stream_key(session_id)
         while True:

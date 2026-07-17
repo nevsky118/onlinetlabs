@@ -1,4 +1,4 @@
-# Транспортный миксин admin-клиента: аутентификация, refresh, retry.
+# Transport mixin for the admin client: authentication, refresh, retry.
 
 import asyncio
 import base64
@@ -32,7 +32,7 @@ transient_retry = retry(
 
 
 def retry_on_401(method):
-    """Декоратор: при 401 повторно аутентифицируемся и однократно ретраим."""
+    """Decorator: on 401, re-authenticate and retry once."""
 
     @functools.wraps(method)
     async def wrapper(self, *args, **kwargs):
@@ -50,7 +50,7 @@ def retry_on_401(method):
 
 
 class HttpMixin:
-    """Транспортный миксин: httpx-клиент, JWT, refresh."""
+    """Transport mixin: httpx client, JWT, refresh."""
 
     def _init_http(self, base_url: str, admin_user: str, admin_password: str) -> None:
         self._base_url = base_url
@@ -71,13 +71,13 @@ class HttpMixin:
         return {"Authorization": f"Bearer {self.token}"}
 
     def set_admin_token(self, token: str) -> None:
-        """Установить admin JWT вручную. Используется тестами для подмены
-        authenticate() реальным или фейковым токеном без HTTP-вызова.
+        """Set the admin JWT manually. Used by tests to substitute
+        authenticate() with a real or fake token without an HTTP call.
         """
         self.token = token
 
     async def authenticate(self) -> None:
-        """Получить admin JWT."""
+        """Obtain the admin JWT."""
         response = await self._client.post(
             "/v3/access/users/authenticate",
             json={"username": self._admin_user, "password": self._admin_password},
@@ -117,11 +117,11 @@ class HttpMixin:
             logger.exception("Proactive JWT refresh failed; will fall back to reactive 401 retry")
 
     async def request(self, method: str, path: str, **kwargs) -> httpx.Response:
-        """Универсальный авторизованный запрос к GNS3 admin API.
+        """Generic authorized request to the GNS3 admin API.
 
-        Прозрачно подмешивает Authorization, прокидывает остальные kwargs
-        в httpx.AsyncClient.request. Не делает raise_for_status — это
-        ответственность вызывающего, чтобы тот сам решил, что считать ошибкой.
+        Transparently mixes in Authorization, forwards the rest of the kwargs
+        to httpx.AsyncClient.request. Doesn't call raise_for_status — that's
+        the caller's responsibility, so it can decide what counts as an error.
         """
         headers = kwargs.pop("headers", None) or {}
         merged_headers = {**self._auth_headers(), **headers}
@@ -133,6 +133,6 @@ class HttpMixin:
         await self._client.aclose()
 
 
-# Алиасы для удобства импорта из миксинов-наследников.
+# Aliases for convenient import from descendant mixins.
 _transient_retry = transient_retry
 _retry_on_401 = retry_on_401

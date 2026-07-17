@@ -1,1 +1,1 @@
-"""HTTP-клиенты внешних сервисов gns3-service."""
+"""HTTP clients for external services used by gns3-service."""

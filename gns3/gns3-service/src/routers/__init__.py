@@ -1,4 +1,4 @@
-"""REST- и WebSocket-роутеры gns3-service."""
+"""REST and WebSocket routers for gns3-service."""
 
 from .exec import router as exec_router
 from .health import router as health_router

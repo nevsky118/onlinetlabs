@@ -57,8 +57,8 @@ class HistoryPgListener:
             try:
                 self._conn = await asyncpg.connect(self._dsn)
                 await self._conn.add_listener("history_events", self._on_notify)
-                # Явно вызываем LISTEN, чтобы подписка пережила расхождение
-                # внутреннего состояния asyncpg и сервера после реконнектов.
+                # Explicitly call LISTEN so the subscription survives a mismatch
+                # between asyncpg's internal state and the server after reconnects.
                 await self._conn.execute("LISTEN history_events")
                 logger.warning(
                     "PG listener subscribed to history_events channel (pid=%s)",
@@ -66,7 +66,7 @@ class HistoryPgListener:
                     and getattr(self._conn._protocol, "backend_pid", None),
                 )
                 backoff = 1
-                # Висим до stop или обрыва соединения
+                # Hang here until stop or the connection drops
                 while not self._stop_event.is_set():
                     await asyncio.sleep(60)
                     try:

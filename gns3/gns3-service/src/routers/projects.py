@@ -1,4 +1,4 @@
-# REST-эндпоинты для CRUD GNS3-проектов (прокси к admin-клиенту).
+# REST endpoints for GNS3 project CRUD (proxies to the admin client).
 
 from fastapi import APIRouter, Depends
 

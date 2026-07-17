@@ -1,4 +1,4 @@
-"""Структурное логирование через structlog с JSON-форматтером."""
+"""Structured logging via structlog with a JSON formatter."""
 
 import logging
 import sys
@@ -43,7 +43,7 @@ def configure_logging(service_name: str, level: str = "INFO") -> None:
     root = logging.getLogger()
     root.handlers = [handler]
     root.setLevel(getattr(logging, level.upper()))
-    # Заставляем uvicorn-логгеры пробрасывать в root, иначе JSON-форматтер не применится.
+    # Force uvicorn loggers to propagate to root, otherwise the JSON formatter won't apply.
     for name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
         lg = logging.getLogger(name)
         lg.handlers = []

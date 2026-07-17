@@ -1,6 +1,6 @@
-# In-memory кеш state-снапшотов сессий с TTL.
+# In-memory cache of session state snapshots with TTL.
 #
-# Назначение: схлопнуть burst-запросы от UI/WS, не дёргая GNS3 на каждый рендер.
+# Purpose: collapse burst requests from UI/WS without hitting GNS3 on every render.
 
 from __future__ import annotations
 
@@ -11,9 +11,9 @@ T = TypeVar("T")
 
 
 class StateCache(Generic[T]):
-    """Простой TTL-кеш по ключу сессии.
+    """Simple TTL cache keyed by session.
 
-    Не потокобезопасен в строгом смысле, но в одном event loop этого достаточно.
+    Not thread-safe in the strict sense, but that's enough within a single event loop.
     """
 
     def __init__(self, ttl_seconds: float = 5.0) -> None:
@@ -40,7 +40,7 @@ class StateCache(Generic[T]):
         self._data.pop(key, None)
 
     def sweep_stale(self, factor: float = 10.0) -> int:
-        """Удалить записи, которые протухли более чем в factor раз TTL."""
+        """Remove entries that are stale by more than factor times the TTL."""
         now = time.monotonic()
         threshold = self._ttl * factor
         stale = [k for k, (ts, _) in list(self._data.items()) if now - ts > threshold]
@@ -55,7 +55,7 @@ class StateCache(Generic[T]):
         return key in self._data
 
     def __setitem__(self, key: str, value: tuple[float, T]) -> None:
-        # Совместимость с прежним dict-интерфейсом: значение приходит как (ts, payload).
+        # Compatibility with the old dict interface: value arrives as (ts, payload).
         self._data[key] = value
 
     def __getitem__(self, key: str) -> tuple[float, T]:

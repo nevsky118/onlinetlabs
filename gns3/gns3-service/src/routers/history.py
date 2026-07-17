@@ -1,4 +1,4 @@
-# REST-эндпоинты истории действий и activity feed сессии.
+# REST endpoints for action history and the session activity feed.
 
 import uuid
 from datetime import datetime

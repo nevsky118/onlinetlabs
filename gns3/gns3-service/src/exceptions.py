@@ -1,12 +1,12 @@
-# Доменные исключения gns3-service.
+# Domain exceptions for gns3-service.
 #
-# Наследуются от ValueError ради обратной совместимости тестов и старых
-# роутерных проверок. Обработчики в main.py переводят их в HTTP 404 и 409.
+# Inherit from ValueError for backward compatibility with tests and old
+# router checks. Handlers in main.py translate them into HTTP 404 and 409.
 
 
 class SessionNotFound(ValueError):
-    """Сессия не найдена в БД."""
+    """Session not found in the DB."""
 
 
 class SessionClosed(ValueError):
-    """Сессия уже закрыта, операция невозможна."""
+    """Session is already closed, operation not possible."""

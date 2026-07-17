@@ -1,4 +1,4 @@
-# Pydantic-модели конфигурации gns3-service.
+# Pydantic configuration models for gns3-service.
 
 from urllib.parse import quote_plus
 

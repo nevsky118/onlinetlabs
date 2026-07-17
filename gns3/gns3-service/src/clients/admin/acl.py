@@ -1,4 +1,4 @@
-# Управление ACL GNS3.
+# GNS3 ACL management.
 
 from ._http import _retry_on_401, _transient_retry
 

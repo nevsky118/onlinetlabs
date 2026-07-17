@@ -22,8 +22,8 @@ class Session(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     gns3_user_id: Mapped[str] = mapped_column(String(64))
     gns3_username: Mapped[str] = mapped_column(String(128))
-    # Пароль GNS3-учётки не хранится в БД: им владеет GNS3-сервер и для
-    # внутренних нужд достаточно JWT, выпущенного админ-клиентом.
+    # The GNS3 account password is not stored in the DB: it's owned by the GNS3
+    # server, and for internal needs a JWT issued by the admin client is enough.
     gns3_project_id: Mapped[str] = mapped_column(String(64))
     student_user_id: Mapped[str] = mapped_column(String(128), index=True)
     status: Mapped[SessionStatus] = mapped_column(

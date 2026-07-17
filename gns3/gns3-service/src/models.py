@@ -1,4 +1,4 @@
-# Pydantic schemas для gns3-service API.
+# Pydantic schemas for the gns3-service API.
 
 from datetime import datetime
 from typing import Literal
@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 
 class SessionCreate(BaseModel):
-    """Запрос на создание лабораторной сессии."""
+    """Request to create a lab session."""
 
     user_id: str = Field(
         description="ID пользователя платформы",
@@ -20,7 +20,7 @@ class SessionCreate(BaseModel):
 
 
 class SessionResponse(BaseModel):
-    """Данные созданной сессии. Пароль возвращается только один раз."""
+    """Data of the created session. The password is returned only once."""
 
     session_id: str = Field(
         description="UUID сессии",
@@ -54,7 +54,7 @@ class SessionResponse(BaseModel):
 
 
 class SessionStatus(BaseModel):
-    """Текущее состояние сессии."""
+    """Current state of the session."""
 
     session_id: str = Field(
         description="UUID сессии",
@@ -76,7 +76,7 @@ class SessionStatus(BaseModel):
 
 
 class HistoryEvent(BaseModel):
-    """Событие из истории действий в лабораторной сессии."""
+    """Event from the action history of a lab session."""
 
     timestamp: datetime = Field(
         description="Время события (UTC)",
@@ -96,7 +96,7 @@ class HistoryEvent(BaseModel):
 
 
 class PasswordResetResponse(BaseModel):
-    """Новые учётные данные после сброса пароля."""
+    """New credentials after password reset."""
 
     session_id: str = Field(
         description="UUID сессии",
@@ -115,20 +115,20 @@ class PasswordResetResponse(BaseModel):
 
 
 class ProjectCreate(BaseModel):
-    """Запрос на создание проекта в GNS3."""
+    """Request to create a project in GNS3."""
 
     name: str = Field(description="Имя проекта", examples=["my-lab-template"])
 
 
 class ProjectResponse(BaseModel):
-    """Данные проекта GNS3."""
+    """Data of a GNS3 project."""
 
     project_id: str = Field(description="UUID проекта")
     name: str = Field(description="Имя проекта")
 
 
 class ProjectResetResponse(BaseModel):
-    """Данные после сброса проекта сессии."""
+    """Data after resetting the session's project."""
 
     session_id: str = Field(
         description="UUID сессии",
@@ -141,7 +141,7 @@ class ProjectResetResponse(BaseModel):
 
 
 class ErrorResponse(BaseModel):
-    """Стандартный ответ об ошибке."""
+    """Standard error response."""
 
     detail: str = Field(
         description="Описание ошибки",
@@ -150,7 +150,7 @@ class ErrorResponse(BaseModel):
 
 
 class NodeState(BaseModel):
-    """Состояние узла GNS3 в сессии."""
+    """State of a GNS3 node in the session."""
 
     id: str = Field(description="UUID узла GNS3")
     name: str = Field(description="Имя узла, видимое студенту")
@@ -165,7 +165,7 @@ class NodeState(BaseModel):
 
 
 class LinkEndpoint(BaseModel):
-    """Один конец link'а между узлами."""
+    """One end of a link between nodes."""
 
     node_id: str = Field(description="UUID узла на этом конце link'а")
     adapter_number: int = Field(description="Номер сетевого адаптера узла")
@@ -173,14 +173,14 @@ class LinkEndpoint(BaseModel):
 
 
 class LinkState(BaseModel):
-    """Link между узлами в топологии GNS3."""
+    """Link between nodes in the GNS3 topology."""
 
     id: str = Field(description="UUID линка GNS3")
     nodes: list[LinkEndpoint] = Field(description="Концы link'а (обычно два узла)")
 
 
 class SessionMetrics(BaseModel):
-    """Агрегированные метрики сессии для UI."""
+    """Aggregated session metrics for the UI."""
 
     nodes_total: int = Field(description="Всего узлов в проекте")
     nodes_started: int = Field(description="Узлов в статусе started")
@@ -189,7 +189,7 @@ class SessionMetrics(BaseModel):
 
 
 class SessionStateResponse(BaseModel):
-    """Полное состояние сессии — узлы, links, метрики."""
+    """Full session state — nodes, links, metrics."""
 
     session_id: str = Field(description="UUID сессии")
     project_id: str = Field(description="UUID GNS3-проекта сессии")

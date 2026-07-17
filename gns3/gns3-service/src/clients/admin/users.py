@@ -1,4 +1,4 @@
-# Управление пользователями GNS3: создание, обновление пароля, удаление, поиск.
+# GNS3 user management: create, update password, delete, search.
 
 from ._http import _retry_on_401, _transient_retry
 
@@ -34,11 +34,11 @@ class UsersMixin:
 
     @_retry_on_401
     async def find_user_by_name(self, username: str) -> dict | None:
-        """Найти пользователя по username, иначе None.
+        """Find a user by username, otherwise None.
 
-        Используется для уборки залётных student-<uid> аккаунтов после рестарта
-        gns3-service (in-memory teardown теряется, и следующий launch иначе
-        упадёт с 400 'already registered').
+        Used to clean up stray student-<uid> accounts after a gns3-service
+        restart (the in-memory teardown is lost, and the next launch would
+        otherwise fail with 400 'already registered').
         """
         response = await self._client.get("/v3/access/users", headers=self._auth_headers())
         response.raise_for_status()

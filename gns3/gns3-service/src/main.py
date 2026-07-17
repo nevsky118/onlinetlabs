@@ -1,4 +1,4 @@
-# FastAPI приложение gns3-service.
+# FastAPI application for gns3-service.
 
 import asyncio
 import logging
@@ -71,12 +71,12 @@ async def lifespan(app: FastAPI):
         gns3_url=settings.gns3.url,
         gns3_public_url=settings.gns3.public_url,
         ws_proxy=ws_proxy,
-        # Redis-лок сериализует RBAC-записи и между репликами gns3-service.
+        # The Redis lock serializes RBAC writes across gns3-service replicas too.
         rbac_gate=RbacGate(redis_url=settings.redis.url),
     )
 
-    # Перепривязать ws_proxy-форвардер ко всем активным сессиям после рестарта:
-    # proxy state живёт в памяти, иначе события перестанут литься.
+    # Re-attach the ws_proxy forwarder to all active sessions after a restart:
+    # proxy state lives in memory, otherwise events would stop flowing.
     from sqlalchemy import select
 
     from src.db.models import Session as SessionModel

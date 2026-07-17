@@ -1,7 +1,7 @@
-# Жизненный цикл лабораторной сессии: create, reset_password, reset_project, delete.
+# Lab session lifecycle: create, reset_password, reset_project, delete.
 #
-# SessionService остаётся публичным фасадом для роутеров и тестов. Тяжёлые
-# части (state-снапшот, действия над узлами) делегируются в соседние модули.
+# SessionService remains the public facade for routers and tests. Heavy
+# parts (state snapshot, node actions) are delegated to sibling modules.
 
 from __future__ import annotations
 
@@ -47,8 +47,8 @@ class SessionService:
         self._gns3_url = gns3_url
         self._gns3_public_url = gns3_public_url or gns3_url
         self._ws_proxy = ws_proxy
-        # RBAC GNS3 не выдерживает параллельных записей (500 на POST /v3/access/acl),
-        # поэтому создание пользователя и ACL идут через сериализующий гейт.
+        # GNS3 RBAC can't handle concurrent writes (500 on POST /v3/access/acl),
+        # so user creation and ACL go through a serializing gate.
         from src.rbac_gate import RbacGate
         self._rbac_gate = rbac_gate or RbacGate()
         self._state_cache: StateCache[SessionStateResponse] = StateCache(ttl_seconds=5.0)
@@ -69,15 +69,15 @@ class SessionService:
         created_project_id: str | None = None
 
         try:
-            # duplicate_project — тяжёлое, но RBAC не трогает → крутим параллельно гейту.
+            # duplicate_project is heavy but doesn't touch RBAC → run it in parallel with the gate.
             project_task = asyncio.create_task(
                 self._admin.duplicate_project(template_project_id, name=f"session-{username}")
             )
 
-            # RBAC-записи строго по одной: GNS3 500-тит на параллельных.
+            # RBAC writes strictly one at a time: GNS3 500s on concurrent ones.
             async with self._rbac_gate():
-                # Удаляем висячего пользователя student-<uid> от прошлой пересборки.
-                # Иначе GNS3 вернёт 400 already registered.
+                # Remove a dangling student-<uid> user left over from a previous rebuild.
+                # Otherwise GNS3 returns 400 already registered.
                 orphan = await self._admin.find_user_by_name(username)
                 if orphan is not None:
                     logger.warning(
@@ -99,16 +99,16 @@ class SessionService:
 
             user_role = await self._admin.get_builtin_role("User")
             auditor_role = await self._admin.get_builtin_role("Auditor")
-            # ACL — тоже RBAC-записи: через гейт и ПОСЛЕДОВАТЕЛЬНО (не gather), иначе
-            # даже две ACL одной сессии конкурируют за RBAC-хранилище GNS3.
+            # ACLs are also RBAC writes: through the gate and SEQUENTIALLY (not gather), otherwise
+            # even two ACLs of the same session compete for GNS3's RBAC storage.
             async with self._rbac_gate():
-                # Доступ к конкретному проекту: полный User-набор (Node.Console и т.д.)
+                # Access to the specific project: full User set (Node.Console etc.)
                 await self._admin.create_acl(
                     f"/projects/{created_project_id}", user_role["role_id"], created_user_id,
                 )
-                # Доступ к глобальному списку проектов: только Project.Audit (Auditor).
-                # GET /v3/projects возвращает проекты только при ACL на "/projects" —
-                # per-project ACL ("/projects/{id}") в список не попадает (GNS3 3.x RBAC).
+                # Access to the global project list: Project.Audit only (Auditor).
+                # GET /v3/projects returns projects only with an ACL on "/projects" —
+                # a per-project ACL ("/projects/{id}") doesn't count toward the list (GNS3 3.x RBAC).
                 await self._admin.create_acl(
                     "/projects", auditor_role["role_id"], created_user_id,
                 )
@@ -174,7 +174,7 @@ class SessionService:
         await self._admin.update_user_password(session.gns3_user_id, new_password)
         jwt = await self._admin.get_user_token(session.gns3_username, new_password)
 
-        # Пароль не сохраняем: студенту он отдан выше через jwt и new_password.
+        # We don't store the password: it's already given to the student above via jwt and new_password.
 
         return PasswordResetResponse(
             session_id=str(session.id),
@@ -253,8 +253,8 @@ class SessionService:
                     "Failed to delete GNS3 project %s", session.gns3_project_id
                 )
         finally:
-            # Статус выставляем при любом исходе cleanup: при retry не пытаемся
-            # дважды зачистить GNS3-ресурсы, а сама запись помечена закрытой.
+            # We set the status regardless of cleanup outcome: on retry we don't try
+            # to clean up GNS3 resources twice, and the record itself is marked closed.
             session.status = SessionStatus.CLOSED
             session.closed_at = datetime.now(UTC)
             await db.commit()

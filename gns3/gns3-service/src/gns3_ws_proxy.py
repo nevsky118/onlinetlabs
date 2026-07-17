@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Действия, которые сохраняются в history_events для activity feed.
+# Actions that get persisted to history_events for the activity feed.
 HISTORY_ACTIONS = (
     "node.created",
     "node.updated",
@@ -57,7 +57,7 @@ class Gns3WsProxy:
         self._db_factory = db_factory
         self._tasks: dict[str, asyncio.Task] = {}
         self._heartbeat_tasks: dict[str, asyncio.Task] = {}
-        # redis_url можно опустить только в unit-тестах. В проде main.py передаёт его.
+        # redis_url can be omitted only in unit tests. In prod main.py passes it in.
         self._redis = aioredis.from_url(redis_url, decode_responses=True) if redis_url else None
 
     def _lock_key(self, project_id: str) -> str:
@@ -70,11 +70,11 @@ class Gns3WsProxy:
         return min(30, 2**attempt)
 
     async def start_project(self, project_id: str, session_id: str) -> None:
-        """Запускает форвардер для project_id, публикуя в канал session_id.
+        """Starts a forwarder for project_id, publishing to the session_id channel.
 
-        Берёт распределённый Redis-лок, чтобы upstream WS каждого проекта держал
-        только один инстанс gns3-service. Иначе на нескольких репликах broker.publish
-        задвоится.
+        Takes a distributed Redis lock so that each project's upstream WS is held
+        by only one gns3-service instance. Otherwise broker.publish would be
+        duplicated across multiple replicas.
         """
         if project_id in self._tasks:
             return
@@ -117,10 +117,10 @@ class Gns3WsProxy:
                 logger.exception("ws_proxy heartbeat failed for %s", project_id)
 
     async def stop_all(self) -> None:
-        """Корректно остановить все WS-форвардеры на shutdown сервиса.
+        """Cleanly stop all WS forwarders on service shutdown.
 
-        Перебирает копию ключей через публичный snapshot, чтобы main.py
-        не лез в приватные `_tasks`.
+        Iterates over a copy of the keys via a public snapshot so that main.py
+        doesn't reach into the private `_tasks`.
         """
         for project_id in list(self._tasks.keys()):
             await self.stop_project(project_id)
@@ -157,7 +157,7 @@ class Gns3WsProxy:
                         {"reason": f"reconnect attempt {attempt}"},
                     )
                 await self._forward_loop(project_id, session_id)
-                # Нормальный выход из forward_loop — upstream закрылся штатно
+                # Normal exit from forward_loop — upstream closed gracefully
                 attempt = 0
             except asyncio.CancelledError:
                 return
@@ -167,10 +167,10 @@ class Gns3WsProxy:
             await asyncio.sleep(self._backoff_delay(attempt))
 
     async def _iter_messages(self, project_id: str) -> AsyncIterator[str]:
-        """Подключается к GNS3 WS и выдаёт сырые JSON-сообщения.
+        """Connects to the GNS3 WS and yields raw JSON messages.
 
-        GNS3 v3 требует admin JWT в query-параметре ?token=. Стандартный заголовок
-        Authorization он отвергает с 403.
+        GNS3 v3 requires an admin JWT in the ?token= query parameter. It rejects
+        a standard Authorization header with 403.
         """
         token = self._admin_client.token
         ws_url = (

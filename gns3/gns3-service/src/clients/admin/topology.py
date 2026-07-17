@@ -1,4 +1,4 @@
-# Работа с топологией проекта GNS3: узлы, линки, действия над узлами.
+# Working with a GNS3 project's topology: nodes, links, node actions.
 
 from ._http import _retry_on_401
 
@@ -31,7 +31,7 @@ class TopologyMixin:
         response = await self._client.post(
             f"/v3/projects/{project_id}/nodes/{node_id}/{action}",
             headers=self._auth_headers(),
-            # GNS3 v3 требует JSON-тело у node-action POST'ов, иначе 422.
+            # GNS3 v3 requires a JSON body for node-action POSTs, otherwise 422.
             json={},
         )
         response.raise_for_status()

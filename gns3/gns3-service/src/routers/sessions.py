@@ -1,4 +1,4 @@
-# REST-эндпоинты лабораторных сессий: CRUD и операции над узлами.
+# REST endpoints for lab sessions: CRUD and node operations.
 
 import uuid
 from typing import Literal
@@ -92,8 +92,8 @@ async def get_session_state(
     service=Depends(get_service),
     db=Depends(get_db),
 ):
-    # SessionNotFound пробрасывается и ловится глобальным handler'ом → 404.
-    # Любая иная ошибка означает недоступность GNS3 → 502.
+    # SessionNotFound propagates and is caught by the global handler → 404.
+    # Any other error means GNS3 is unreachable → 502.
     try:
         return await service.get_state(db=db, session_id=session_id)
     except ValueError:

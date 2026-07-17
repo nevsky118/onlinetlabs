@@ -1,7 +1,7 @@
-# Доменные сервисы gns3-service.
+# Domain services for gns3-service.
 #
-# Разбиение монолитного SessionService на узкоспециализированные модули
-# по жизненному циклу сессии и операциям над её состоянием.
+# Splits the monolithic SessionService into narrowly-focused modules
+# for session lifecycle and operations on its state.
 
 from .session_lifecycle import SessionService
 

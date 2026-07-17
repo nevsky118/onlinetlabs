@@ -1,4 +1,4 @@
-# Конфигурация gns3-service: lazy settings loader.
+# Configuration for gns3-service: lazy settings loader.
 
 import os
 from functools import lru_cache

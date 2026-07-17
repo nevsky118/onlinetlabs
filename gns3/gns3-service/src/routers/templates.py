@@ -1,7 +1,7 @@
-"""Templates endpoint: сборка GNS3-шаблонов для лаб.
+"""Templates endpoint: building GNS3 templates for labs.
 
-Backend вызывает POST /v1/templates/{lab}/build в фоне перед созданием сессии.
-Запускает build-скрипт, парсит UUID шаблонного проекта из stdout и возвращает его.
+The backend calls POST /v1/templates/{lab}/build in the background before creating a session.
+Runs the build script, parses the template project's UUID from stdout, and returns it.
 """
 
 import asyncio
@@ -22,7 +22,7 @@ router = APIRouter(prefix="/v1/templates", tags=["templates"])
 
 SCRIPTS_DIR = Path(__file__).resolve().parents[2] / "scripts"
 
-# slug → build-скрипт в SCRIPTS_DIR
+# slug → build script in SCRIPTS_DIR
 _BUILD_SCRIPTS: dict[str, str] = {
     "lan-static-ip": "build_lan_static_ip_template.py",
     "lan-static-ip-b": "build_lan_static_ip_template.py",
@@ -39,9 +39,9 @@ class BuildTemplateResponse(BaseModel):
 
 
 async def _run_build(script_path: Path) -> str:
-    """Запускает build-скрипт, возвращает последний UUID из stdout.
+    """Runs the build script, returns the last UUID from stdout.
 
-    Raises HTTPException 502/504 при ошибках.
+    Raises HTTPException 502/504 on errors.
     """
     try:
         proc = await asyncio.create_subprocess_exec(

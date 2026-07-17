@@ -1,4 +1,4 @@
-# Управление проектами GNS3: создание, дублирование, открытие, удаление, список.
+# GNS3 project management: create, duplicate, open, delete, list.
 
 import asyncio
 
@@ -29,8 +29,8 @@ class ProjectsMixin:
     @_retry_on_401
     async def duplicate_project(self, project_id: str, name: str | None = None) -> dict:
         body = {"name": name} if name else {}
-        # GNS3 отвечает 409, пока исходный проект ещё открывается/локнут.
-        # Бэкоффим, чтобы launch и reset не были racy.
+        # GNS3 responds 409 while the source project is still opening/locked.
+        # We back off so launch and reset aren't racy.
         last_response: httpx.Response | None = None
         for attempt in range(5):
             last_response = await self._client.post(

@@ -1,5 +1,5 @@
-# Декларативная идемпотентная регистрация GNS3-шаблонов при старте gns3-service.
-# Список — это данные; падение одного шаблона не блокирует старт (degraded mode).
+# Declarative idempotent registration of GNS3 templates on gns3-service startup.
+# The list is data; failure of one template doesn't block startup (degraded mode).
 
 import logging
 from typing import Any
@@ -24,7 +24,7 @@ FRR_ROUTER_TEMPLATE = {
     "category": "router",
     "symbol": ":/symbols/affinity/square/blue/router.svg",
     "default_name_format": "R{0}",
-    # Демоны задаёт configs/daemons в образе; этот env — документация намерения, поведения не меняет.
+    # Daemons are set by configs/daemons in the image; this env just documents intent, doesn't change behavior.
     "environment": "FRR_ZEBRA=yes\nFRR_OSPFD=no",
     "usage": "Console: telnet to console port, then run `vtysh` for FRR CLI",
 }
@@ -40,7 +40,7 @@ DHCP_SERVER_TEMPLATE = {
     "category": "guest",
     "symbol": ":/symbols/affinity/square/blue/server.svg",
     "default_name_format": "DHCP{0}",
-    # dnsmasq читает эти env при старте; build-скрипт переопределяет под подсеть.
+    # dnsmasq reads these env vars at startup; the build script overrides them per subnet.
     "environment": (
         "DHCP_SUBNET=192.168.10.0/24\n"
         "DHCP_RANGE=192.168.10.100,192.168.10.200\n"
@@ -50,8 +50,8 @@ DHCP_SERVER_TEMPLATE = {
 }
 
 
-# Только узлы активных лаб: FRR (inter-subnet-routing) и DHCP (dhcp-basics).
-# VPCS и ethernet_switch — встроенные узлы GNS3, отдельный шаблон не нужен.
+# Only nodes for active labs: FRR (inter-subnet-routing) and DHCP (dhcp-basics).
+# VPCS and ethernet_switch are built-in GNS3 nodes, no separate template needed.
 LAB_TEMPLATES: list[dict[str, Any]] = [
     FRR_ROUTER_TEMPLATE,
     DHCP_SERVER_TEMPLATE,
@@ -59,10 +59,10 @@ LAB_TEMPLATES: list[dict[str, Any]] = [
 
 
 async def ensure_lab_templates(admin: GNS3AdminClient) -> None:
-    """Гарантировать наличие шаблонов из LAB_TEMPLATES в GNS3.
+    """Ensure the templates from LAB_TEMPLATES exist in GNS3.
 
-    Идемпотентно: для существующих по имени — пропуск. Ошибка одного
-    шаблона логируется и не прерывает обработку остальных.
+    Idempotent: existing ones (by name) are skipped. An error for one
+    template is logged and doesn't interrupt processing of the rest.
     """
     try:
         response = await admin.request("GET", "/v3/templates")
