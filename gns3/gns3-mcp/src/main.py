@@ -1,4 +1,4 @@
-# Entry point для GNS3 MCP Server.
+# Entry point for GNS3 MCP Server.
 
 import logging
 

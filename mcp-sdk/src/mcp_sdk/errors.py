@@ -1,16 +1,16 @@
-"""Иерархия исключений MCP-сервера."""
+"""MCP server exception hierarchy."""
 
 
 class MCPServerError(Exception):
-    """Базовая ошибка MCP-сервера."""
+    """Base MCP server error."""
 
 
 class TargetSystemConnectionError(MCPServerError):
-    """Не удалось подключиться к целевой системе."""
+    """Failed to connect to the target system."""
 
 
 class TargetSystemAPIError(MCPServerError):
-    """Целевая система вернула ошибку."""
+    """The target system returned an error."""
 
     def __init__(
         self,
@@ -24,7 +24,7 @@ class TargetSystemAPIError(MCPServerError):
 
 
 class ComponentNotFoundError(MCPServerError):
-    """Компонент не найден в целевой системе."""
+    """Component not found in the target system."""
 
     def __init__(self, component_id: str, message: str | None = None):
         self.component_id = component_id
@@ -32,7 +32,7 @@ class ComponentNotFoundError(MCPServerError):
 
 
 class ActionExecutionError(MCPServerError):
-    """Ошибка выполнения действия в целевой системе."""
+    """Error executing an action in the target system."""
 
     def __init__(self, action_name: str, reason: str):
         self.action_name = action_name
@@ -41,4 +41,4 @@ class ActionExecutionError(MCPServerError):
 
 
 class SessionContextError(MCPServerError):
-    """Невалидный или отсутствующий контекст сессии."""
+    """Invalid or missing session context."""

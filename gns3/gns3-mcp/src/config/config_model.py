@@ -1,4 +1,4 @@
-# Модели конфигурации GNS3 MCP Server.
+# GNS3 MCP Server configuration models.
 
 from typing import Literal
 
@@ -13,10 +13,10 @@ class MCPConfig(BaseModel):
 
 
 class PoolConfig(BaseModel):
-    """Пул per-(environment_url, user_id) соединений к GNS3.
+    """Pool of per-(environment_url, user_id) connections to GNS3.
 
-    max_size — потолок ОДНОВРЕМЕННО живых соединений (не всех обслуженных юзеров):
-    простаивающие закрываются по idle_ttl, при нехватке места вытесняется LRU.
+    max_size — ceiling on SIMULTANEOUSLY alive connections (not all served users):
+    idle ones close via idle_ttl, LRU is evicted when space runs out.
     """
 
     max_size: int = Field(default=200, description="Потолок одновременных соединений")

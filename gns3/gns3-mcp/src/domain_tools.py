@@ -1,4 +1,4 @@
-# Регистрация GNS3-специфичных domain tools.
+# Registration of GNS3-specific domain tools.
 
 from __future__ import annotations
 
@@ -16,14 +16,14 @@ _NO_DEFAULT = inspect.Parameter.empty
 
 
 class _SimpleTool(NamedTuple):
-    """Табличное описание однотипного tool: session → api-метод → {success,message[,data]}."""
+    """Table-driven description of a uniform tool: session → api method → {success,message[,data]}."""
 
     name: str
     description: str
     api_method: str
-    message: str  # .format(**kwargs), kwargs = именованные параметры tool
+    message: str  # .format(**kwargs), kwargs = named tool parameters
     has_data: bool
-    params: tuple[tuple[str, type, Any], ...] = ()  # (имя, тип, default | _NO_DEFAULT)
+    params: tuple[tuple[str, type, Any], ...] = ()  # (name, type, default | _NO_DEFAULT)
 
 
 _SIMPLE_TOOLS: tuple[_SimpleTool, ...] = (
@@ -180,7 +180,7 @@ def _build_simple_tool(
     get_client: Callable[[SessionContext], Awaitable[GNS3ApiClient]],
     get_project_id: Callable[[SessionContext], str],
 ) -> Callable:
-    """Строит closure по табличному описанию + выставляет реальную сигнатуру для MCP-схемы."""
+    """Builds a closure from the table-driven spec + sets a real signature for the MCP schema."""
 
     async def tool(ctx: dict[str, Any], **kwargs: Any) -> dict:
         session = SessionContext(**ctx)
@@ -221,11 +221,11 @@ def register_domain_tools(
     get_project_id: Callable[[SessionContext], str],
     service_url: str | None = None,
 ) -> None:
-    """Регистрирует все GNS3 domain tools.
+    """Registers all GNS3 domain tools.
 
     get_client(ctx) -> GNS3ApiClient
     get_project_id(ctx) -> str
-    service_url — базовый URL gns3-service для exec/console-read (None → tool отдаёт ошибку).
+    service_url — base URL of gns3-service for exec/console-read (None → tool returns an error).
     """
 
     for spec in _SIMPLE_TOOLS:
@@ -233,7 +233,7 @@ def register_domain_tools(
             _build_simple_tool(spec, get_client, get_project_id)
         )
 
-    # -- Outliers: не укладываются в единую форму, оставлены явно --
+    # -- Outliers: don't fit the uniform shape, left explicit --
 
     @server.domain_tool(
         description="Execute a vtysh command on a node console via gns3-service "

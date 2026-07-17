@@ -1,4 +1,4 @@
-# Загрузчик конфигурации из переменных окружения.
+# Configuration loader from environment variables.
 
 import os
 

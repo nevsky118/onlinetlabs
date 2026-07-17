@@ -1,4 +1,4 @@
-"""Протоколы возможностей MCP-сервера."""
+"""MCP server capability protocols."""
 
 from datetime import datetime
 from typing import Any, Protocol, runtime_checkable
@@ -19,7 +19,7 @@ from mcp_sdk.models import (
 
 @runtime_checkable
 class StateProvider(Protocol):
-    """Чтение состояния целевой системы. Обязательный протокол."""
+    """Read the target system's state. Mandatory protocol."""
 
     async def list_components(self, ctx: SessionContext) -> list[Component]: ...
     async def get_component(self, ctx: SessionContext, component_id: str) -> ComponentDetail: ...
@@ -28,7 +28,7 @@ class StateProvider(Protocol):
 
 @runtime_checkable
 class LogProvider(Protocol):
-    """Логи ошибок и предупреждений целевой системы."""
+    """Error and warning logs of the target system."""
 
     async def list_errors(
         self, ctx: SessionContext, since: datetime | None = None
@@ -40,14 +40,14 @@ class LogProvider(Protocol):
 
 @runtime_checkable
 class HistoryProvider(Protocol):
-    """История действий пользователя в целевой системе."""
+    """History of user actions in the target system."""
 
     async def list_user_actions(self, ctx: SessionContext, limit: int = 50) -> list[UserAction]: ...
 
 
 @runtime_checkable
 class ActionProvider(Protocol):
-    """Выполнение действий в целевой системе."""
+    """Executing actions in the target system."""
 
     async def list_available_actions(
         self, ctx: SessionContext, component_id: str | None = None

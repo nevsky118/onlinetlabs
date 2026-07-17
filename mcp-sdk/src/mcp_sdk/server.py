@@ -1,4 +1,4 @@
-"""Конструктор MCP-сервера с автоматическим обнаружением протоколов."""
+"""MCP server builder with automatic protocol discovery."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 def _tool_errors(name: str) -> Callable:
-    """Единая карта исключений для tool-функций: SessionContext/domain/unexpected."""
+    """Unified exception mapping for tool functions: SessionContext/domain/unexpected."""
 
     def deco(fn: Callable) -> Callable:
         @wraps(fn)
@@ -46,7 +46,7 @@ def _tool_errors(name: str) -> Callable:
 
 
 class OnlinetlabsMCPServer:
-    """Обёртка над FastMCP с автообнаружением протоколов и регистрацией инструментов."""
+    """Wrapper over FastMCP with protocol auto-discovery and tool registration."""
 
     def __init__(self, name: str, implementation: Any, **fastmcp_kwargs: Any) -> None:
         self._name = name
@@ -62,7 +62,7 @@ class OnlinetlabsMCPServer:
     # Validation
 
     def _validate_minimum(self) -> None:
-        """Реализация должна удовлетворять минимум StateProvider."""
+        """The implementation must at minimum satisfy StateProvider."""
         if not isinstance(self._impl, StateProvider):
             raise ValueError(
                 f"Implementation must satisfy StateProvider protocol. "
@@ -72,8 +72,8 @@ class OnlinetlabsMCPServer:
     # Discovery & registration
 
     def _discover_and_register(self) -> None:
-        """Интроспекция протоколов и регистрация соответствующих MCP-инструментов."""
-        # StateProvider — всегда (проверен в _validate_minimum)
+        """Introspect protocols and register the corresponding MCP tools."""
+        # StateProvider — always (checked in _validate_minimum)
         self._capabilities.add("state")
         self._register_state_tools()
 
@@ -89,7 +89,7 @@ class OnlinetlabsMCPServer:
             self._capabilities.add("actions")
             self._register_action_tools()
 
-        # Мета-инструмент — всегда
+        # Meta tool — always
         self._register_capabilities_tool()
 
     # State tools
@@ -229,7 +229,7 @@ class OnlinetlabsMCPServer:
     # Domain tool decorator
 
     def domain_tool(self, **kwargs: Any) -> Callable:
-        """Декоратор для регистрации доменно-специфичных инструментов."""
+        """Decorator for registering domain-specific tools."""
         inner = self._mcp.tool(**kwargs)
 
         def wrapper(fn: Callable) -> Callable:
@@ -257,5 +257,5 @@ class OnlinetlabsMCPServer:
     # Run
 
     def run(self, transport: str = "streamable-http", **kwargs: Any) -> None:
-        """Запуск MCP-сервера."""
+        """Run the MCP server."""
         self._mcp.run(transport=transport, **kwargs)

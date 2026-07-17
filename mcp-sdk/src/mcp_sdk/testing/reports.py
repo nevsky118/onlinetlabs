@@ -1,4 +1,4 @@
-"""Декораторы и шаги для отчётности тестов."""
+"""Decorators and steps for test reporting."""
 
 from __future__ import annotations
 
@@ -8,10 +8,10 @@ from contextlib import contextmanager
 
 def name(display_name: str) -> Callable:
     """
-    Устанавливает отображаемое наименование теста.
+    Sets the display name of the test.
 
-    :param display_name: Наименование теста.
-    :return: Декоратор, навешивающий на тестовую функцию атрибут `display_name`.
+    :param display_name: Test name.
+    :return: Decorator that attaches the `display_name` attribute to the test function.
     """
 
     def decorator(func: Callable) -> Callable:
@@ -24,10 +24,10 @@ def name(display_name: str) -> Callable:
 @contextmanager
 def step(step_name: str) -> Generator[None, None, None]:
     """
-    Контекстный менеджер логического шага теста.
+    Context manager for a logical test step.
 
-    :param step_name: Название шага.
-    :return: Контекстный менеджер для группировки шагов теста.
+    :param step_name: Step name.
+    :return: Context manager for grouping test steps.
     """
     print(f"[STEP] {step_name}")
     yield
@@ -35,10 +35,10 @@ def step(step_name: str) -> Generator[None, None, None]:
 
 def num(*nums: int | str) -> Callable:
     """
-    Связывает тест с его номером или ID.
+    Links the test to its number or ID.
 
-    :param nums: Номер или идентификатор теста.
-    :return: Декоратор, навешивающий на тестовую функцию атрибут `test_nums`.
+    :param nums: Test number or identifier.
+    :return: Decorator that attaches the `test_nums` attribute to the test function.
     """
 
     def decorator(func: Callable) -> Callable:
@@ -50,10 +50,10 @@ def num(*nums: int | str) -> Callable:
 
 def external_id(id_: str) -> Callable:
     """
-    Устанавливает внешний идентификатор теста.
+    Sets the external identifier of the test.
 
-    :param id_: Внешний идентификатор теста (например, UUID или ключ из TMS).
-    :return: Декоратор, навешивающий на тестовую функцию атрибут `external_id`.
+    :param id_: External test identifier (e.g. UUID or a TMS key).
+    :return: Decorator that attaches the `external_id` attribute to the test function.
     """
 
     def decorator(func: Callable) -> Callable:

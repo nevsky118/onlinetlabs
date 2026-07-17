@@ -1,4 +1,4 @@
-"""Стандартные модели данных для MCP-серверов."""
+"""Standard data models for MCP servers."""
 
 from datetime import datetime
 from enum import Enum
@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 
 class LogLevel(str, Enum):
-    """Уровень логирования."""
+    """Log level."""
 
     DEBUG = "debug"
     INFO = "info"
@@ -18,7 +18,7 @@ class LogLevel(str, Enum):
 
 
 class Component(BaseModel):
-    """Универсальное представление элемента системы."""
+    """Generic representation of a system element."""
 
     id: str
     name: str
@@ -28,7 +28,7 @@ class Component(BaseModel):
 
 
 class ComponentDetail(Component):
-    """Расширенная информация о компоненте."""
+    """Extended component information."""
 
     properties: dict[str, Any]
     configuration: str | None = None
@@ -36,7 +36,7 @@ class ComponentDetail(Component):
 
 
 class SystemOverview(BaseModel):
-    """Снимок состояния системы верхнего уровня."""
+    """Top-level system state snapshot."""
 
     system_name: str
     system_version: str | None = None
@@ -47,7 +47,7 @@ class SystemOverview(BaseModel):
 
 
 class ErrorEntry(BaseModel):
-    """Запись об ошибке."""
+    """Error record."""
 
     timestamp: datetime
     level: LogLevel
@@ -57,7 +57,7 @@ class ErrorEntry(BaseModel):
 
 
 class LogEntry(BaseModel):
-    """Запись лога."""
+    """Log record."""
 
     timestamp: datetime
     level: LogLevel
@@ -66,7 +66,7 @@ class LogEntry(BaseModel):
 
 
 class UserAction(BaseModel):
-    """Действие пользователя в целевой системе."""
+    """User action in the target system."""
 
     timestamp: datetime
     component_id: str | None = None
@@ -76,7 +76,7 @@ class UserAction(BaseModel):
 
 
 class ActionSpec(BaseModel):
-    """Спецификация доступного действия."""
+    """Specification of an available action."""
 
     name: str
     description: str
@@ -85,7 +85,7 @@ class ActionSpec(BaseModel):
 
 
 class ActionResult(BaseModel):
-    """Результат выполнения действия."""
+    """Result of executing an action."""
 
     success: bool
     message: str

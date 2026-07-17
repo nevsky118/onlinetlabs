@@ -1,4 +1,4 @@
-# GNS3 connection manager для SDK ConnectionPool.
+# GNS3 connection manager for SDK ConnectionPool.
 
 import httpx
 from mcp_sdk.connection import BaseConnectionManager
@@ -8,7 +8,7 @@ from src.api_client import GNS3ApiClient
 
 
 class GNS3ConnectionManager(BaseConnectionManager):
-    """Создаёт per-student httpx.AsyncClient с JWT."""
+    """Creates a per-student httpx.AsyncClient with JWT."""
 
     async def connect(self, ctx: SessionContext) -> GNS3ApiClient:
         jwt = ctx.metadata.get("gns3_jwt")
@@ -22,7 +22,7 @@ class GNS3ConnectionManager(BaseConnectionManager):
         return GNS3ApiClient(client)
 
     async def health_check(self, connection: GNS3ApiClient) -> bool:
-        """GET /v3/version — если отвечает, соединение живо."""
+        """GET /v3/version — if it responds, the connection is alive."""
         try:
             version = await connection.get_version()
             return "version" in version

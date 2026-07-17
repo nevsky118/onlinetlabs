@@ -1,4 +1,4 @@
-# Ленивый WS-слушатель + кольцевой буфер логов GNS3.
+# Lazy WS listener + ring buffer of GNS3 logs.
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class LogBuffer:
-    """Кольцевой буфер логов из GNS3 WS notifications."""
+    """Ring buffer of logs from GNS3 WS notifications."""
 
     def __init__(self, max_entries: int = 500, inactivity_timeout: float = 300.0) -> None:
         self._max_entries = max_entries
@@ -28,7 +28,7 @@ class LogBuffer:
         return self._connected
 
     def _add_entry(self, level: LogLevel, message: str, source: str = "gns3") -> None:
-        """Добавить запись в буфер. Вызывается из WS listener."""
+        """Add an entry to the buffer. Called from the WS listener."""
         entry = LogEntry(
             timestamp=datetime.now(tz=UTC),
             level=level,
@@ -38,22 +38,22 @@ class LogBuffer:
         self._entries.append(entry)
 
     async def ensure_connected(self, ws_url: str, jwt: str | None = None) -> None:
-        """Подключиться к WS если ещё не подключены."""
+        """Connect to WS if not already connected."""
         if self._connected and self._ws_task and not self._ws_task.done():
             return
         self._connected = True
         self._ws_task = asyncio.create_task(self._listen(ws_url, jwt))
 
     async def _listen(self, ws_url: str, jwt: str | None = None) -> None:
-        """Фоновый WS listener. Фильтрует log.* события."""
+        """Background WS listener. Filters log.* events."""
         import json
         from urllib.parse import urlparse, urlunparse
 
         try:
             import websockets
 
-            # GNS3 WebSocket auth требует токен как query-параметр ?token=...
-            # (не заголовок Authorization: Bearer), см. get_current_active_user_from_websocket.
+            # GNS3 WebSocket auth requires the token as a query parameter ?token=...
+            # (not an Authorization: Bearer header), see get_current_active_user_from_websocket.
             if jwt:
                 parsed = urlparse(ws_url)
                 qs = f"token={jwt}"
@@ -77,7 +77,7 @@ class LogBuffer:
             self._connected = False
 
     def get_errors(self, since: datetime | None = None) -> list[ErrorEntry]:
-        """Ошибки и предупреждения из буфера."""
+        """Errors and warnings from the buffer."""
         result = []
         for entry in self._entries:
             if entry.level not in (LogLevel.ERROR, LogLevel.WARNING):
@@ -94,7 +94,7 @@ class LogBuffer:
         return result
 
     def get_logs(self, level: LogLevel = LogLevel.ALL, limit: int = 100) -> list[LogEntry]:
-        """Логи из буфера с фильтрацией по уровню."""
+        """Logs from the buffer filtered by level."""
         if level == LogLevel.ALL:
             entries = list(self._entries)
         else:
@@ -102,7 +102,7 @@ class LogBuffer:
         return entries[-limit:]
 
     async def close(self) -> None:
-        """Остановить WS listener, очистить буфер."""
+        """Stop the WS listener, clear the buffer."""
         if self._ws_task and not self._ws_task.done():
             self._ws_task.cancel()
             try:

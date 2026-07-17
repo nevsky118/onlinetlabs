@@ -1,4 +1,4 @@
-# Конфигурация GNS3 MCP Server: lazy settings loader.
+# GNS3 MCP Server configuration: lazy settings loader.
 
 import os
 from functools import lru_cache

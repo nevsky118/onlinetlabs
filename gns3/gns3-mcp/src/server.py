@@ -1,4 +1,4 @@
-# GNS3Server — реализация SDK протоколов.
+# GNS3Server — implementation of SDK protocols.
 
 from __future__ import annotations
 
@@ -138,10 +138,10 @@ ACTIONS: list[dict] = [
 
 
 class GNS3Server:
-    """Реализация SDK протоколов для GNS3.
+    """Implementation of SDK protocols for GNS3.
 
-    Получает api_client извне (из ConnectionPool или напрямую).
-    При наличии pool — резолвит клиент per-session через pool.
+    Receives api_client from outside (from ConnectionPool or directly).
+    When pool is present — resolves the client per-session through the pool.
     """
 
     def __init__(
@@ -157,7 +157,7 @@ class GNS3Server:
         self._history_url = history_url  # gns3-service base URL
 
     async def _resolve_api(self, ctx: SessionContext) -> GNS3ApiClient:
-        """Возвращает api_client: прямой или из пула."""
+        """Returns api_client: direct or from the pool."""
         if self._api is not None:
             return self._api
         if self._pool is not None:
@@ -167,7 +167,7 @@ class GNS3Server:
         raise SessionContextError("No api_client or pool configured")
 
     def _project_id(self, ctx: SessionContext) -> str:
-        """Извлекает project_id из контекста."""
+        """Extracts project_id from the context."""
         if not ctx.project_id:
             from mcp_sdk.errors import SessionContextError
 
@@ -196,7 +196,7 @@ class GNS3Server:
 
         api = await self._resolve_api(ctx)
 
-        # Пробуем как ноду
+        # Try as a node
         try:
             node = await api.get_node(pid, component_id)
             links = await api.list_links(pid)
@@ -209,7 +209,7 @@ class GNS3Server:
         except TargetSystemAPIError:
             pass
 
-        # Пробуем как линк
+        # Try as a link
         links = await api.list_links(pid)
         nodes = await api.list_nodes(pid)
         node_names = {node["node_id"]: node["name"] for node in nodes}
@@ -233,19 +233,19 @@ class GNS3Server:
     async def list_errors(
         self, ctx: SessionContext, since: datetime | None = None
     ) -> list[ErrorEntry]:
-        """Ошибки из ring buffer."""
+        """Errors from the ring buffer."""
         await self._ensure_log_buffer(ctx)
         return self._log_buffer.get_errors(since=since)
 
     async def get_logs(
         self, ctx: SessionContext, level: LogLevel = LogLevel.ALL, limit: int = 100
     ) -> list[LogEntry]:
-        """Логи из ring buffer с фильтрацией."""
+        """Logs from the ring buffer, filtered."""
         await self._ensure_log_buffer(ctx)
         return self._log_buffer.get_logs(level=level, limit=limit)
 
     async def _ensure_log_buffer(self, ctx: SessionContext) -> None:
-        """Ленивая инициализация LogBuffer + WS подключение."""
+        """Lazy initialization of LogBuffer + WS connection."""
         if self._log_buffer is None:
             from src.log_buffer import LogBuffer
 
@@ -268,7 +268,7 @@ class GNS3Server:
         self, ctx: SessionContext, component_id: str | None = None
     ) -> list[ActionSpec]:
         if component_id:
-            # Определяем тип компонента
+            # Determine the component type
             try:
                 detail = await self.get_component(ctx, component_id)
                 comp_type = detail.type
@@ -350,12 +350,12 @@ class GNS3Server:
     # -- HistoryProvider --
 
     async def list_user_actions(self, ctx: SessionContext, limit: int = 50) -> list[UserAction]:
-        """Запрашивает историю из gns3-service."""
+        """Requests history from gns3-service."""
         if not self._history_url:
             return []
-        # История в gns3-service ключуется gns3-service session id, а ctx.session_id —
-        # backend LearningSession id. Реальный ключ приходит в metadata; fallback для
-        # обратной совместимости (напр. тесты без metadata).
+        # History in gns3-service is keyed by gns3-service session id, while ctx.session_id
+        # is the backend LearningSession id. The real key comes in metadata; fallback for
+        # backward compatibility (e.g. tests without metadata).
         history_session_id = (ctx.metadata or {}).get("gns3_session_id") or ctx.session_id
         client = _get_history_client(self._history_url)
         response = await client.get(

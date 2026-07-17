@@ -1,4 +1,4 @@
-# Управление подключениями к целевой системе.
+# Manage connections to the target system.
 
 import asyncio
 import logging
@@ -17,7 +17,7 @@ Key = tuple[str, str]
 
 
 class BaseConnectionManager(ABC):
-    """Менеджер подключений к целевой системе."""
+    """Connection manager for the target system."""
 
     @abstractmethod
     async def connect(self, ctx: SessionContext) -> Any: ...
@@ -35,21 +35,22 @@ class _Entry:
 
 
 class ConnectionPool:
-    """LRU-пул подключений per-(environment_url, user_id).
+    """LRU pool of connections per-(environment_url, user_id).
 
-    `max_size` ограничивает ОДНОВРЕМЕННО живые соединения, а не общее число
-    обслуженных пользователей: простаивающие дольше `idle_ttl` закрываются, а при
-    нехватке места вытесняется давно не используемое (LRU). Без этого пул после
-    `max_size` уникальных пользователей навсегда переставал выдавать соединения —
-    соединения не освобождались до остановки процесса.
+    `max_size` limits SIMULTANEOUSLY alive connections, not the total number of
+    served users: connections idle longer than `idle_ttl` are closed, and when
+    space is short the least-recently-used one is evicted (LRU). Without this the
+    pool would permanently stop handing out connections after `max_size` unique
+    users — connections were never released until the process stopped.
 
-    Соединение из кеша проверяется `health_check` не чаще `health_check_interval`;
-    мёртвое — переоткрывается. Вытесняется только соединение, не использовавшееся
-    дольше `min_evict_idle`: рвать живое нельзя, поэтому если ВСЕ соединения
-    «горячие» — это настоящий backpressure, и вызов падает (вызывающий повторит).
+    A cached connection is checked via `health_check` no more often than
+    `health_check_interval`; a dead one is reopened. Only a connection unused
+    longer than `min_evict_idle` gets evicted: a live one must not be torn down,
+    so if ALL connections are "hot" that's genuine backpressure, and the call
+    fails (the caller retries).
 
-    Параллельные запросы одного пользователя сериализуются per-key локом, поэтому
-    дублирующих подключений не возникает.
+    Concurrent requests from the same user are serialized by a per-key lock, so
+    no duplicate connections occur.
     """
 
     def __init__(
@@ -75,11 +76,11 @@ class ConnectionPool:
 
     @property
     def size(self) -> int:
-        """Число живых соединений в пуле (метрики/тесты)."""
+        """Number of live connections in the pool (metrics/tests)."""
         return len(self._entries)
 
     def _key(self, ctx: SessionContext) -> Key:
-        """Ключ пула: (environment_url, user_id)."""
+        """Pool key: (environment_url, user_id)."""
         return (ctx.environment_url, ctx.user_id)
 
     def _key_lock(self, key: Key) -> asyncio.Lock:
@@ -91,7 +92,7 @@ class ConnectionPool:
 
     async def get_connection(self, ctx: SessionContext) -> Any:
         key = self._key(ctx)
-        # Порядок локов всегда key → global, иначе возможен дедлок.
+        # Lock order is always key → global, otherwise a deadlock is possible.
         async with self._key_lock(key):
             now = time.monotonic()
             await self._drop_idle(now)
@@ -105,17 +106,17 @@ class ConnectionPool:
                         if key in self._entries:
                             self._entries.move_to_end(key)
                     return entry.conn
-                await self._close(key)  # мёртвое → переоткрываем ниже
+                await self._close(key)  # dead → reopen below
 
             await self._make_room(now)
-            conn = await self._manager.connect(ctx)  # сеть — вне глобального лока
+            conn = await self._manager.connect(ctx)  # network call — outside the global lock
             async with self._lock:
                 self._entries[key] = _Entry(conn=conn, last_used=now, last_checked=now)
                 self._entries.move_to_end(key)
             return conn
 
     async def release(self, ctx: SessionContext) -> None:
-        """Явно освободить соединение пользователя (например, при завершении сессии)."""
+        """Explicitly release a user's connection (e.g. on session end)."""
         key = self._key(ctx)
         async with self._key_lock(key):
             await self._close(key)
@@ -130,7 +131,7 @@ class ConnectionPool:
             self._key_locks.clear()
 
     async def _is_alive(self, entry: _Entry, now: float) -> bool:
-        """Health-check не чаще health_check_interval — иначе доверяем соединению."""
+        """Health-check no more often than health_check_interval — otherwise trust the connection."""
         if now - entry.last_checked < self._health_check_interval:
             return True
         try:
@@ -142,7 +143,7 @@ class ConnectionPool:
         return alive
 
     async def _drop_idle(self, now: float) -> None:
-        """Закрыть простаивающие дольше idle_ttl — это и лечит утечку слотов."""
+        """Close connections idle longer than idle_ttl — this is what fixes the slot leak."""
         async with self._lock:
             stale = [key for key, e in self._entries.items() if now - e.last_used > self._idle_ttl]
         for key in stale:
@@ -150,12 +151,12 @@ class ConnectionPool:
         self._prune_locks()
 
     async def _make_room(self, now: float) -> None:
-        """Освободить слот под новое: вытеснить LRU, если оно не «горячее»."""
+        """Free a slot for a new connection: evict LRU if it isn't "hot"."""
         while True:
             async with self._lock:
                 if len(self._entries) < self._max_size:
                     return
-                key, entry = next(iter(self._entries.items()))  # LRU — голова OrderedDict
+                key, entry = next(iter(self._entries.items()))  # LRU — head of the OrderedDict
                 hot = now - entry.last_used < self._min_evict_idle
                 size = len(self._entries)
             if hot:
@@ -177,7 +178,7 @@ class ConnectionPool:
             logger.warning("disconnect упал для %s", key, exc_info=True)
 
     def _prune_locks(self) -> None:
-        """Не копить локи пользователей, чьих соединений уже нет."""
+        """Don't accumulate locks for users whose connections no longer exist."""
         for key, lock in list(self._key_locks.items()):
             if key not in self._entries and not lock.locked():
                 del self._key_locks[key]

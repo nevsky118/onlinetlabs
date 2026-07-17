@@ -1,13 +1,13 @@
 def assert_equal(actual, expected, message=None):
     """
-    Проверяет, что фактическое значение равно ожидаемому
+    Checks that the actual value equals the expected value
 
     Args:
-        actual: Фактическое значение
-        expected: Ожидаемое значение
-        message: Необязательное пользовательское сообщение об ошибке
+        actual: Actual value
+        expected: Expected value
+        message: Optional custom error message
     Raises:
-        AssertionError: Если значения не равны
+        AssertionError: If the values are not equal
     """
     if actual != expected:
         raise AssertionError(message or f"{actual} != {expected}")
@@ -15,14 +15,14 @@ def assert_equal(actual, expected, message=None):
 
 def assert_not_equal(actual, expected, message=None):
     """
-    Проверяет, что фактическое значение не равно ожидаемому
+    Checks that the actual value does not equal the expected value
 
     Args:
-        actual: Фактическое значение
-        expected: Значение, которое не должно совпадать
-        message: Необязательное пользовательское сообщение об ошибке
+        actual: Actual value
+        expected: Value that must not match
+        message: Optional custom error message
     Raises:
-        AssertionError: Если значения совпадают
+        AssertionError: If the values match
     """
     if actual == expected:
         raise AssertionError(message or f"{actual} == {expected}")
@@ -30,13 +30,13 @@ def assert_not_equal(actual, expected, message=None):
 
 def assert_true(value, message=None):
     """
-    Проверяет, что значение является True
+    Checks that the value is True
 
     Args:
-        value: Проверяемое значение
-        message: Необязательное пользовательское сообщение об ошибке
+        value: Value being checked
+        message: Optional custom error message
     Raises:
-        AssertionError: Если значение не True
+        AssertionError: If the value is not True
     """
     if not value:
         raise AssertionError(message or f"Expected True, but got {value}")
@@ -44,13 +44,13 @@ def assert_true(value, message=None):
 
 def assert_false(value, message=None):
     """
-    Проверяет, что значение является False.
+    Checks that the value is False.
 
     Args:
-        value: Проверяемое значение
-        message: Необязательное пользовательское сообщение об ошибке
+        value: Value being checked
+        message: Optional custom error message
     Raises:
-        AssertionError: Если значение не False
+        AssertionError: If the value is not False
     """
     if value:
         raise AssertionError(message or f"Expected False, but got {value}")
@@ -58,13 +58,13 @@ def assert_false(value, message=None):
 
 def assert_is_none(value, message=None):
     """
-    Проверяет, что значение является None
+    Checks that the value is None
 
     Args:
-        value: Проверяемое значение
-        message: Необязательное пользовательское сообщение об ошибке
+        value: Value being checked
+        message: Optional custom error message
     Raises:
-        AssertionError: Если значение не None
+        AssertionError: If the value is not None
     """
     if value is not None:
         raise AssertionError(message or f"Expected None, but got {value}")
@@ -72,13 +72,13 @@ def assert_is_none(value, message=None):
 
 def assert_is_not_none(value, message=None):
     """
-    Проверяет, что значение не является None
+    Checks that the value is not None
 
     Args:
-        value: Проверяемое значение
-        message: Необязательное пользовательское сообщение об ошибке
+        value: Value being checked
+        message: Optional custom error message
     Raises:
-        AssertionError: Если значение является None
+        AssertionError: If the value is None
     """
     if value is None:
         raise AssertionError(message or "Expected value to be not None")
@@ -86,14 +86,14 @@ def assert_is_not_none(value, message=None):
 
 def assert_is_instance(obj, cls, message=None):
     """
-    Проверяет, что объект является экземпляром класса.
+    Checks that the object is an instance of the class.
 
     Args:
-        obj: Проверяемый объект
-        cls: Ожидаемый класс
-        message: Необязательное пользовательское сообщение об ошибке
+        obj: Object being checked
+        cls: Expected class
+        message: Optional custom error message
     Raises:
-        AssertionError: Если объект не является экземпляром класса
+        AssertionError: If the object is not an instance of the class
     """
     if not isinstance(obj, cls):
         raise AssertionError(message or f"Expected {cls.__name__}, got {type(obj).__name__}")
@@ -101,14 +101,14 @@ def assert_is_instance(obj, cls, message=None):
 
 def assert_greater(actual, expected, message=None):
     """
-    Проверяет, что фактическое значение больше ожидаемого
+    Checks that the actual value is greater than the expected value
 
     Args:
-        actual: Фактическое значение
-        expected: Ожидаемое значение для сравнения
-        message: Необязательное пользовательское сообщение об ошибке
+        actual: Actual value
+        expected: Expected value to compare against
+        message: Optional custom error message
     Raises:
-        AssertionError: Если фактическое значение не больше ожидаемого
+        AssertionError: If the actual value is not greater than the expected value
     """
     if not actual > expected:
         raise AssertionError(message or f"{actual} > {expected} is not True")
@@ -116,14 +116,14 @@ def assert_greater(actual, expected, message=None):
 
 def assert_greater_equal(actual, expected, message=None):
     """
-    Проверяет, что фактическое значение больше или равно ожидаемому
+    Checks that the actual value is greater than or equal to the expected value
 
     Args:
-        actual: Фактическое значение
-        expected: Ожидаемое значение для сравнения
-        message: Необязательное пользовательское сообщение об ошибке
+        actual: Actual value
+        expected: Expected value to compare against
+        message: Optional custom error message
     Raises:
-        AssertionError: Если фактическое значение меньше ожидаемого
+        AssertionError: If the actual value is less than the expected value
     """
     if not actual >= expected:
         raise AssertionError(message or f"{actual} >= {expected} is not True")
@@ -131,14 +131,14 @@ def assert_greater_equal(actual, expected, message=None):
 
 def assert_less(actual, expected, message=None):
     """
-    Проверяет, что фактическое значение меньше ожидаемого
+    Checks that the actual value is less than the expected value
 
     Args:
-        actual: Фактическое значение
-        expected: Ожидаемое значение для сравнения
-        message: Необязательное пользовательское сообщение об ошибке
+        actual: Actual value
+        expected: Expected value to compare against
+        message: Optional custom error message
     Raises:
-        AssertionError: Если фактическое значение не меньше ожидаемого
+        AssertionError: If the actual value is not less than the expected value
     """
     if not actual < expected:
         raise AssertionError(message or f"{actual} < {expected} is not True")
@@ -146,14 +146,14 @@ def assert_less(actual, expected, message=None):
 
 def assert_less_equal(actual, expected, message=None):
     """
-    Проверяет, что фактическое значение меньше или равно ожидаемому
+    Checks that the actual value is less than or equal to the expected value
 
     Args:
-        actual: Фактическое значение
-        expected: Ожидаемое значение для сравнения
-        message: Необязательное пользовательское сообщение об ошибке
+        actual: Actual value
+        expected: Expected value to compare against
+        message: Optional custom error message
     Raises:
-        AssertionError: Если фактическое значение больше ожидаемого
+        AssertionError: If the actual value is greater than the expected value
     """
     if not actual <= expected:
         raise AssertionError(message or f"{actual} <= {expected} is not True")
@@ -161,14 +161,14 @@ def assert_less_equal(actual, expected, message=None):
 
 def assert_in(item, container, message=None):
     """
-    Проверяет, что элемент содержится в коллекции.
+    Checks that the item is contained in the collection.
 
     Args:
-        item: Проверяемый элемент
-        container: Коллекция для поиска
-        message: Необязательное пользовательское сообщение об ошибке
+        item: Item being checked
+        container: Collection to search
+        message: Optional custom error message
     Raises:
-        AssertionError: Если элемент не найден в коллекции.
+        AssertionError: If the item is not found in the collection.
     """
     if item not in container:
         raise AssertionError(message or f"{item} not found in {container}")

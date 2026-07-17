@@ -1,4 +1,4 @@
-# Маппинг GNS3 JSON → SDK models.
+# Mapping GNS3 JSON → SDK models.
 
 from collections import Counter
 
@@ -35,7 +35,7 @@ def node_to_component_detail(node: dict, peer_node_ids: list[str] | None = None)
 
 
 def link_to_component(link: dict, node_names: dict[str, str]) -> Component:
-    """node_names: {node_id: name} для человекочитаемого имени."""
+    """node_names: {node_id: name} for a human-readable name."""
     nodes = link["nodes"]
     if len(nodes) >= 2:
         a_name = node_names.get(nodes[0]["node_id"], nodes[0]["node_id"])

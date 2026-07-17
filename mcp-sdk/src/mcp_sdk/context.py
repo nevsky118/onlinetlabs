@@ -1,4 +1,4 @@
-"""Контекст сессии и описание возможностей сервера."""
+"""Session context and server capability description."""
 
 from typing import Any
 
@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 
 class SessionContext(BaseModel):
-    """Контекст сессии обучения для маршрутизации к среде студента."""
+    """Learning session context for routing to the student's environment."""
 
     user_id: str
     session_id: str
@@ -16,7 +16,7 @@ class SessionContext(BaseModel):
 
 
 class ServerCapabilities(BaseModel):
-    """Декларация возможностей MCP-сервера."""
+    """Declaration of MCP server capabilities."""
 
     system_name: str
     capabilities: list[str]

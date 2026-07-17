@@ -1,4 +1,4 @@
-"""Утилиты тестирования для MCP-серверов."""
+"""Testing utilities for MCP servers."""
 
 from mcp_sdk.testing import reports as autotest
 from mcp_sdk.testing.custom_assertions import (
