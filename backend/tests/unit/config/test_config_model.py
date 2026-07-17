@@ -27,9 +27,17 @@ from mcp_sdk.testing import autotest
 
 def _agents(**overrides):
     base = dict(
-        providers={"yandex": ProviderCreds(provider=LlmProvider.YANDEX, api_key="k", yandex_folder="f")},
-        catalog=[ModelEntry(id="yandex-gpt-5.1", label="YandexGPT 5.1 Pro",
-                            provider_ref="yandex", model="yandexgpt/latest")],
+        providers={
+            "yandex": ProviderCreds(provider=LlmProvider.YANDEX, api_key="k", yandex_folder="f")
+        },
+        catalog=[
+            ModelEntry(
+                id="yandex-gpt-5.1",
+                label="YandexGPT 5.1 Pro",
+                provider_ref="yandex",
+                model="yandexgpt/latest",
+            )
+        ],
         chat_model="yandex-gpt-5.1",
         intervention_model="yandex-gpt-5.1",
     )
@@ -73,8 +81,14 @@ class TestAgentsConfig:
 
         with autotest.step("Проверяем дефолтные значения"):
             assert_equal(cfg.chat_model, "yandex-gpt-5.1", "chat_model")
-            assert_equal(cfg.interventions_follow_session, False, "interventions_follow_session по умолчанию False")
-            assert_equal(cfg.selectable_roles, {"student", "instructor", "admin"}, "selectable_roles")
+            assert_equal(
+                cfg.interventions_follow_session,
+                False,
+                "interventions_follow_session по умолчанию False",
+            )
+            assert_equal(
+                cfg.selectable_roles, {"student", "instructor", "admin"}, "selectable_roles"
+            )
             assert_equal(cfg.temperature, 0.3, "temperature по умолчанию 0.3")
             assert_equal(cfg.max_tokens, 4096, "max_tokens по умолчанию 4096")
             assert_equal(cfg.request_timeout, 30, "request_timeout по умолчанию 30")
@@ -95,7 +109,8 @@ class TestAgentsConfig:
             with pytest.raises(ValueError):
                 _agents(
                     catalog=[ModelEntry(id="x", label="X", provider_ref="ghost", model="m")],
-                    chat_model="x", intervention_model="x",
+                    chat_model="x",
+                    intervention_model="x",
                 )
 
     @autotest.num("103")
@@ -117,7 +132,9 @@ class TestAgentsConfig:
     def test_f6a7b8c9_ollama_base_url_default(self):
         with autotest.step("Создаём ProviderCreds для OLLAMA без base_url"):
             creds = ProviderCreds(provider=LlmProvider.OLLAMA)
-            catalog = [ModelEntry(id="llama3", label="Llama3", provider_ref="ollama", model="llama3")]
+            catalog = [
+                ModelEntry(id="llama3", label="Llama3", provider_ref="ollama", model="llama3")
+            ]
             cfg = AgentsConfig(
                 providers={"ollama": creds},
                 catalog=catalog,
@@ -209,9 +226,7 @@ class TestLearningAnalyticsConfig:
             config = _make_full_config()
 
         with autotest.step("Проверяем learning_analytics"):
-            assert_true(
-                config.learning_analytics is not None, "learning_analytics не None"
-            )
+            assert_true(config.learning_analytics is not None, "learning_analytics не None")
             assert_equal(
                 config.learning_analytics.poll_interval,
                 5.0,

@@ -1,11 +1,17 @@
 """end_session: финализация ExperimentMetrics при завершении сессии."""
+
 from datetime import datetime, timedelta, timezone
 
 import pytest
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_true, assert_equal, assert_is_not_none, assert_false
+from mcp_sdk.testing.custom_assertions import (
+    assert_true,
+    assert_equal,
+    assert_is_not_none,
+    assert_false,
+)
 
 from models.behavioral_event import BehavioralEvent
 from models.experiment import ExperimentMetrics
@@ -36,29 +42,52 @@ async def db_factory():
 
     # фикстурные данные
     async with session_factory() as db:
-        db.add(User(id="u1", email="u1@test.local", control_arm="closed", experiment_group="group_b"))
+        db.add(
+            User(id="u1", email="u1@test.local", control_arm="closed", experiment_group="group_b")
+        )
         db.add(Lab(slug="lab-a", title="Lab A", meta={"skill": "routing"}))
         db.add(LabStep(lab_slug="lab-a", step_order=1, slug="step-1", title="Step 1"))
         db.add(LabStep(lab_slug="lab-a", step_order=2, slug="step-2", title="Step 2"))
-        db.add(LearningSession(
-            id="sess-1",
-            user_id="u1",
-            lab_slug="lab-a",
-            status="active",
-            started_at=datetime.now(timezone.utc) - timedelta(minutes=30),
-        ))
-        db.add(LabProgress(id="lp1", user_id="u1", lab_slug="lab-a", status="in_progress", current_step=1))
+        db.add(
+            LearningSession(
+                id="sess-1",
+                user_id="u1",
+                lab_slug="lab-a",
+                status="active",
+                started_at=datetime.now(timezone.utc) - timedelta(minutes=30),
+            )
+        )
+        db.add(
+            LabProgress(
+                id="lp1", user_id="u1", lab_slug="lab-a", status="in_progress", current_step=1
+            )
+        )
         # 1 интервенция, 1 ошибка
-        db.add(BehavioralEvent(
-            id="ev1", session_id="sess-1", user_id="u1", lab_slug="lab-a",
-            timestamp=datetime.now(timezone.utc) - timedelta(minutes=20),
-            event_type="intervention", action="hint", success=True,
-        ))
-        db.add(BehavioralEvent(
-            id="ev2", session_id="sess-1", user_id="u1", lab_slug="lab-a",
-            timestamp=datetime.now(timezone.utc) - timedelta(minutes=10),
-            event_type="error", action="err", success=False, message="timeout",
-        ))
+        db.add(
+            BehavioralEvent(
+                id="ev1",
+                session_id="sess-1",
+                user_id="u1",
+                lab_slug="lab-a",
+                timestamp=datetime.now(timezone.utc) - timedelta(minutes=20),
+                event_type="intervention",
+                action="hint",
+                success=True,
+            )
+        )
+        db.add(
+            BehavioralEvent(
+                id="ev2",
+                session_id="sess-1",
+                user_id="u1",
+                lab_slug="lab-a",
+                timestamp=datetime.now(timezone.utc) - timedelta(minutes=10),
+                event_type="error",
+                action="err",
+                success=False,
+                message="timeout",
+            )
+        )
         await db.commit()
 
     yield engine, session_factory
@@ -79,9 +108,17 @@ class TestEndSessionFinalizes:
             assert_equal(result.status, "ended", "статус = ended")
         with autotest.step("Assert: строка ExperimentMetrics создана с правильными полями"):
             async with session_factory() as db:
-                rows = (await db.execute(
-                    select(ExperimentMetrics).where(ExperimentMetrics.session_id == "sess-1")
-                )).scalars().all()
+                rows = (
+                    (
+                        await db.execute(
+                            select(ExperimentMetrics).where(
+                                ExperimentMetrics.session_id == "sess-1"
+                            )
+                        )
+                    )
+                    .scalars()
+                    .all()
+                )
             assert_equal(len(rows), 1, "ровно одна строка метрик")
             m = rows[0]
             assert_equal(m.session_id, "sess-1", "session_id")
@@ -101,7 +138,9 @@ class TestEndSessionFinalizes:
     @autotest.num("1303")
     @autotest.external_id("4750257f-ef70-4e5b-8b1d-e6c106b90512")
     @autotest.name("end_session: ошибка финализации не ломает завершение сессии")
-    async def test_4750257f_finalization_failure_does_not_break_end_session(self, db_factory, monkeypatch):
+    async def test_4750257f_finalization_failure_does_not_break_end_session(
+        self, db_factory, monkeypatch
+    ):
         engine, session_factory = db_factory
         with autotest.step("Arrange: патчим _finalize_experiment_metrics на исключение"):
             import sessions.services.lifecycle as lc

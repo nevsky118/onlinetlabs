@@ -43,9 +43,7 @@ async def test_node_action_204_returns_none():
 @respx.mock
 async def test_bulk_node_action_204():
     sid = "11111111-1111-1111-1111-111111111111"
-    respx.post(f"http://gns3-svc:8101/sessions/{sid}/nodes/stop").mock(
-        return_value=Response(204)
-    )
+    respx.post(f"http://gns3-svc:8101/sessions/{sid}/nodes/stop").mock(return_value=Response(204))
     c = Gns3ServiceClient("http://gns3-svc:8101")
     assert (await c.bulk_node_action(sid, "stop")) is None
     await c.close()

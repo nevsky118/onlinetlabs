@@ -31,7 +31,6 @@ def _fake(chat_default: str, ids: set[str]) -> _FakeSettings:
 
 
 class TestResolveChatModel:
-
     @autotest.num("780")
     @autotest.external_id("64d6a80d-2756-463d-a0b0-ab55ac873e44")
     @autotest.name("resolve_chat_model: entitled + valid id → берёт запрошенную модель")

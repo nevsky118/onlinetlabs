@@ -24,6 +24,7 @@ def get_bulk_semaphore(request: Request) -> asyncio.Semaphore:
 def existing_gns3_url(session) -> str:
     """Возвращает публичный URL GNS3."""
     from config import settings
+
     return settings.gns3.public_url
 
 
@@ -36,6 +37,7 @@ def existing_gns3_deep_url(session) -> str:
     до returnUrl проекта за один клик «Войти».
     """
     from config import settings
+
     meta = session.meta or {}
     project_id = meta.get("gns3_project_id")
     base = settings.gns3.public_url.rstrip("/")
@@ -44,11 +46,13 @@ def existing_gns3_deep_url(session) -> str:
     username = meta.get("gns3_username")
     enc_password = meta.get("enc_password")
     if username and enc_password:
-        query = urlencode({
-            "username": username,
-            "password": decrypt_secret(enc_password),
-            "project": project_id,
-        })
+        query = urlencode(
+            {
+                "username": username,
+                "password": decrypt_secret(enc_password),
+                "project": project_id,
+            }
+        )
         return f"{base}/static/web-ui/auth-relay.html?{query}"
     return f"{base}/static/web-ui/controller/1/project/{project_id}"
 
@@ -68,8 +72,13 @@ async def get_credentials(db, session_id: str, user_id: str) -> dict | None:
 
 
 async def proxy_node_action(
-    db, session_id: str, user_id: str, node_id: str, action: str,
-    gns3_client, state_cache,
+    db,
+    session_id: str,
+    user_id: str,
+    node_id: str,
+    action: str,
+    gns3_client,
+    state_cache,
 ) -> bool:
     """Выполняет действие над узлом в GNS3 и сбрасывает кэш состояния. False если сессия чужая."""
     session = await get_owned_session(db, session_id, user_id)
@@ -84,8 +93,12 @@ async def proxy_node_action(
 
 
 async def proxy_bulk_node_action(
-    db, session_id: str, user_id: str, action: str,
-    gns3_client, state_cache,
+    db,
+    session_id: str,
+    user_id: str,
+    action: str,
+    gns3_client,
+    state_cache,
     semaphore: asyncio.Semaphore | None = None,
 ) -> bool:
     """Выполняет массовое действие над узлами в GNS3 под семафором. False если сессия чужая."""
@@ -103,7 +116,11 @@ async def proxy_bulk_node_action(
 
 
 async def proxy_activity(
-    db, session_id: str, user_id: str, limit: int, cursor: str | None,
+    db,
+    session_id: str,
+    user_id: str,
+    limit: int,
+    cursor: str | None,
     gns3_client,
 ) -> dict | None:
     """Возвращает ленту активности сессии из GNS3. None если сессия чужая."""

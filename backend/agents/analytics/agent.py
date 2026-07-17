@@ -68,8 +68,7 @@ STRUGGLE_RULES: list[StruggleRule] = [
     ),
     (
         lambda f, c: (
-            f.idle_periods > c.idle_threshold
-            and f.action_rate_slope < c.rate_slope_threshold
+            f.idle_periods > c.idle_threshold and f.action_rate_slope < c.rate_slope_threshold
         ),
         StruggleType.IDLE,
         SuggestedIntervention.TUTOR,
@@ -102,19 +101,23 @@ class AnalyticsAgent(BaseAgent):
 
     async def run(self, input_data: AnalyticsInput) -> DifficultyRecommendation:
         """Получить попытки из DB, вычислить метрики, рекомендовать сложность."""
-        attempts = await self.tools.get_attempts(
-            input_data.user_id, input_data.lab_slug
-        )
+        attempts = await self.tools.get_attempts(input_data.user_id, input_data.lab_slug)
         return self.analyze(attempts, current_difficulty=DifficultyLevel.INTERMEDIATE)
 
     def analyze(
-        self, attempts: list, current_difficulty: str | DifficultyLevel = DifficultyLevel.INTERMEDIATE
+        self,
+        attempts: list,
+        current_difficulty: str | DifficultyLevel = DifficultyLevel.INTERMEDIATE,
     ) -> DifficultyRecommendation:
         """Пакетный анализ по StepAttempt. Рекомендация сложности."""
         metrics = self.tools.compute_metrics(attempts)
         error_patterns = self.tools.detect_error_patterns(attempts)
 
-        current = DifficultyLevel(current_difficulty) if isinstance(current_difficulty, str) else current_difficulty
+        current = (
+            DifficultyLevel(current_difficulty)
+            if isinstance(current_difficulty, str)
+            else current_difficulty
+        )
 
         if metrics.success_rate >= 0.9:
             recommended = DifficultyLevel.ADVANCED

@@ -41,13 +41,16 @@ class TestAnalyticsModels:
         with autotest.step("Создаём SessionFeatures и DifficultyRecommendation"):
             features = SessionFeatures(**SessionFeaturesData().data)
             metrics = StudentMetrics(
-                total_attempts=5, success_rate=0.8,
-                avg_time_per_step=60.0, struggling_steps=[],
+                total_attempts=5,
+                success_rate=0.8,
+                avg_time_per_step=60.0,
+                struggling_steps=[],
             )
             diff = DifficultyRecommendation(
                 current_difficulty="intermediate",
                 recommended_difficulty="advanced",
-                reasoning="test", metrics=metrics,
+                reasoning="test",
+                metrics=metrics,
             )
 
         with autotest.step("Создаём AnalyticsResult"):
@@ -60,4 +63,6 @@ class TestAnalyticsModels:
 
         with autotest.step("Проверяем значения"):
             assert_true(result.struggle_detected is False, "struggle не обнаружен")
-            assert_equal(result.suggested_intervention, SuggestedIntervention.NONE, "intervention = none")
+            assert_equal(
+                result.suggested_intervention, SuggestedIntervention.NONE, "intervention = none"
+            )

@@ -1,4 +1,5 @@
 """Тесты handler-логики эндпоинтов согласия и audit-запроса — без подъёма FastAPI."""
+
 import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
@@ -34,7 +35,14 @@ class TestConsentEndpointLogic:
         with autotest.step("Arrange: запрос study-согласия"):
             req = ConsentGrantRequest(scope="study", observe=True, act=True)
         with autotest.step("Act: вызвать handler-логику grant"):
-            c = await grant(endpoint_db, "user-11111111-0000-0000-0000-000000000001", req.scope, req.observe, req.act, req.data_policy)
+            c = await grant(
+                endpoint_db,
+                "user-11111111-0000-0000-0000-000000000001",
+                req.scope,
+                req.observe,
+                req.act,
+                req.data_policy,
+            )
         with autotest.step("Assert: scope, observe, act заданы; revoked_at None"):
             resp = ConsentResponse.model_validate(c)
             assert_equal(resp.scope, "study", "scope")
@@ -47,7 +55,13 @@ class TestConsentEndpointLogic:
     @autotest.name("consent POST: product observe=True act=False, schema корректна")
     async def test_a2b3c4d5_grant_product_granular(self, endpoint_db):
         with autotest.step("Act: product с ограниченным act"):
-            c = await grant(endpoint_db, "user-22222222-0000-0000-0000-000000000002", "product", observe=True, act=False)
+            c = await grant(
+                endpoint_db,
+                "user-22222222-0000-0000-0000-000000000002",
+                "product",
+                observe=True,
+                act=False,
+            )
         with autotest.step("Assert: act=False в схеме"):
             resp = ConsentResponse.model_validate(c)
             assert_equal(resp.scope, "product", "scope")
@@ -58,7 +72,13 @@ class TestConsentEndpointLogic:
     @autotest.name("consent DELETE: revoke возвращает count, schema ConsentRevokeResponse")
     async def test_b3c4d5e6_revoke_count(self, endpoint_db):
         with autotest.step("Arrange: дать study-согласие"):
-            await grant(endpoint_db, "user-33333333-0000-0000-0000-000000000003", "study", observe=True, act=True)
+            await grant(
+                endpoint_db,
+                "user-33333333-0000-0000-0000-000000000003",
+                "study",
+                observe=True,
+                act=True,
+            )
         with autotest.step("Act: отозвать"):
             n = await revoke(endpoint_db, "user-33333333-0000-0000-0000-000000000003", "study")
         with autotest.step("Assert: отозвано 1, schema валидна"):
@@ -72,6 +92,7 @@ class TestConsentEndpointLogic:
         with autotest.step("Arrange: вставить audit-запись вручную"):
             from datetime import datetime, timezone
             from uuid import uuid4
+
             row = MCPAudit(
                 id=str(uuid4()),
                 user_id="user-44444444-0000-0000-0000-000000000004",
@@ -96,21 +117,26 @@ class TestConsentEndpointLogic:
         with autotest.step("Arrange: два audit-вызова — observe и act"):
             from datetime import datetime, timezone
             from uuid import uuid4
+
             for kind in ("observe", "act"):
-                endpoint_db.add(MCPAudit(
-                    id=str(uuid4()),
-                    user_id="user-66666666-0000-0000-0000-000000000006",
-                    session_id="sess-77777777-0000-0000-0000-000000000007",
-                    tool="execute_action" if kind == "act" else "get_logs",
-                    kind=kind,
-                    ts=datetime.now(timezone.utc),
-                    success=True,
-                ))
+                endpoint_db.add(
+                    MCPAudit(
+                        id=str(uuid4()),
+                        user_id="user-66666666-0000-0000-0000-000000000006",
+                        session_id="sess-77777777-0000-0000-0000-000000000007",
+                        tool="execute_action" if kind == "act" else "get_logs",
+                        kind=kind,
+                        ts=datetime.now(timezone.utc),
+                        success=True,
+                    )
+                )
             await endpoint_db.commit()
         with autotest.step("Act: запрос с фильтром kind=act"):
-            rows = (await endpoint_db.execute(
-                select(MCPAudit).where(MCPAudit.kind == "act")
-            )).scalars().all()
+            rows = (
+                (await endpoint_db.execute(select(MCPAudit).where(MCPAudit.kind == "act")))
+                .scalars()
+                .all()
+            )
         with autotest.step("Assert: только act-строки"):
             schemas = [MCPAuditRow.model_validate(r) for r in rows]
             assert_equal(len(schemas), 1, "одна строка")

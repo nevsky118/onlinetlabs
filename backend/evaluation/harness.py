@@ -1,4 +1,5 @@
 """Прогон идентификатора П1 (полный конвейер feature→rule→dwell) по сценарию при пороге T_k."""
+
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
@@ -49,7 +50,9 @@ def _analyze(features, config: LearningAnalyticsConfig) -> AnalyticsResult:
     )
 
 
-def run_identifier(scenario: LabeledScenario, t_k: float, config: LearningAnalyticsConfig) -> Detection:
+def run_identifier(
+    scenario: LabeledScenario, t_k: float, config: LearningAnalyticsConfig
+) -> Detection:
     """Прогоняет полный конвейер по снапшотам сценария при пороге dwell T_k."""
     tracker = DwellTracker()
     for snap in scenario.snapshots:

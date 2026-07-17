@@ -1,6 +1,11 @@
 import pytest
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_true, assert_false, assert_equal, assert_greater_equal
+from mcp_sdk.testing.custom_assertions import (
+    assert_true,
+    assert_false,
+    assert_equal,
+    assert_greater_equal,
+)
 from config.config_model import LearningAnalyticsConfig
 from learning_analytics.process_state import ProcessRegime
 from evaluation.scenarios import make_normal_scenario, make_struggle_scenario
@@ -15,7 +20,9 @@ class TestHarness:
     @autotest.name("harness: струггл детектится после онсета при T_k=0")
     def test_a3f7c21e_detects_struggle(self):
         with autotest.step("Arrange: repeating_errors онсет на 90с"):
-            s = make_struggle_scenario(ProcessRegime.REPEATING_ERRORS, onset_index=6, n=12, step=15.0)
+            s = make_struggle_scenario(
+                ProcessRegime.REPEATING_ERRORS, onset_index=6, n=12, step=15.0
+            )
             cfg = LearningAnalyticsConfig()
         with autotest.step("Act: T_k=0 (мгновенно)"):
             d = run_identifier(s, t_k=0.0, config=cfg)
@@ -29,7 +36,9 @@ class TestHarness:
     @autotest.name("harness: нормальная сессия не даёт детекта")
     def test_b4e8d32f_normal_no_detect(self):
         with autotest.step("Act"):
-            d = run_identifier(make_normal_scenario(n=12), t_k=0.0, config=LearningAnalyticsConfig())
+            d = run_identifier(
+                make_normal_scenario(n=12), t_k=0.0, config=LearningAnalyticsConfig()
+            )
         with autotest.step("Assert: нет детекта"):
             assert_false(d.detected, "нет ложного")
 

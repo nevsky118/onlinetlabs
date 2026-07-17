@@ -33,6 +33,7 @@ async def forward_session_events(
     )
 
     async with websockets.connect(upstream_url) as upstream:
+
         async def upstream_to_client() -> None:
             """Пересылает сообщения от gns3-service клиентскому сокету."""
             try:
@@ -56,7 +57,8 @@ async def forward_session_events(
         u2c = asyncio.create_task(upstream_to_client())
         c2u = asyncio.create_task(client_to_upstream())
         done, pending = await asyncio.wait(
-            [u2c, c2u], return_when=asyncio.FIRST_COMPLETED,
+            [u2c, c2u],
+            return_when=asyncio.FIRST_COMPLETED,
         )
         for task in pending:
             task.cancel()

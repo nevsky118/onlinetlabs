@@ -1,4 +1,5 @@
 """Тесты проводки observe-наблюдений П1 через ControlInterface-шов (Task 7)."""
+
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from datetime import datetime, timezone
@@ -92,7 +93,9 @@ class TestCollectorSeam:
     @autotest.name("collector: без шва (None) → fallback на mcp_client напрямую")
     @pytest.mark.asyncio
     async def test_3621d315_no_seam_fallback_to_mcp(self):
-        with autotest.step("Arrange: control_interface=None, mcp.list_user_actions возвращает список"):
+        with autotest.step(
+            "Arrange: control_interface=None, mcp.list_user_actions возвращает список"
+        ):
             col = _make_collector(None)
             col._mcp.list_user_actions = AsyncMock(return_value=[_ACTION])
 

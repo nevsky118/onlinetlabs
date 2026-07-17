@@ -1,4 +1,5 @@
 """Тесты gate активации аккаунта: require_active_user, JWT round-trip, admin PATCH, /auth/activate."""
+
 import uuid
 
 import pytest
@@ -156,10 +157,24 @@ class TestAdminPatchIsActive:
         self.app = app
 
         async with self.session_factory() as db:
-            db.add_all([
-                User(id="u1", name="Alice", email="alice@test.local", role="student", is_active=False),
-                User(id="admin-001", name="Admin", email="admin@test.local", role="admin", is_active=True),
-            ])
+            db.add_all(
+                [
+                    User(
+                        id="u1",
+                        name="Alice",
+                        email="alice@test.local",
+                        role="student",
+                        is_active=False,
+                    ),
+                    User(
+                        id="admin-001",
+                        name="Admin",
+                        email="admin@test.local",
+                        role="admin",
+                        is_active=True,
+                    ),
+                ]
+            )
             await db.commit()
 
         yield
@@ -213,12 +228,14 @@ class TestActivateEndpoint:
 
         # Сеять неактивного пользователя.
         async with self.session_factory() as db:
-            db.add(User(
-                id="inactive-001",
-                email="inactive@test.local",
-                role="student",
-                is_active=False,
-            ))
+            db.add(
+                User(
+                    id="inactive-001",
+                    email="inactive@test.local",
+                    role="student",
+                    is_active=False,
+                )
+            )
             await db.commit()
 
         yield

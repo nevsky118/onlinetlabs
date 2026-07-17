@@ -43,7 +43,11 @@ class MCPContextBuilder:
         self._mcp = mcp_client
 
     async def build(
-        self, mcp_ctx, features, struggle_type: str | None, dominant_error: str | None,
+        self,
+        mcp_ctx,
+        features,
+        struggle_type: str | None,
+        dominant_error: str | None,
     ) -> AgentContext:
         """Топология + действия + ошибки параллельно → AgentContext."""
         components, actions, errors = await asyncio.gather(

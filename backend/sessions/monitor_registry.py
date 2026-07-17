@@ -14,7 +14,16 @@ logger = logging.getLogger(__name__)
 class SessionMonitorRegistry:
     """Реестр активных SessionMonitor по идентификатору сессии."""
 
-    def __init__(self, config: ConfigModel, mcp_client, db_factory, orchestrator, gateway, activity_log=None, gns3_client=None):
+    def __init__(
+        self,
+        config: ConfigModel,
+        mcp_client,
+        db_factory,
+        orchestrator,
+        gateway,
+        activity_log=None,
+        gns3_client=None,
+    ):
         """Хранит зависимости для создания мониторов и словарь запущенных мониторов."""
         self._config = config
         self._mcp_client = mcp_client
@@ -46,20 +55,29 @@ class SessionMonitorRegistry:
                 gns3_sid = (ls.meta or {}).get("gns3_service_session_id") if ls else None
                 if gns3_sid:
                     observer = LabProgressObserver(
-                        self._gns3_client, self._db_factory, self._config, self._config.learning_analytics
+                        self._gns3_client,
+                        self._db_factory,
+                        self._config,
+                        self._config.learning_analytics,
                     )
                     await observer.start(session_id, user_id, lab_slug, gns3_sid)
                     self._observers[session_id] = observer
-                    logger.info("LabProgressObserver запущен для %s (gns3_sid=%s)", session_id, gns3_sid)
+                    logger.info(
+                        "LabProgressObserver запущен для %s (gns3_sid=%s)", session_id, gns3_sid
+                    )
             except Exception:
-                logger.warning("Не удалось запустить LabProgressObserver для %s", session_id, exc_info=True)
+                logger.warning(
+                    "Не удалось запустить LabProgressObserver для %s", session_id, exc_info=True
+                )
                 observer = None
 
         async with self._db_factory() as db:
             arm = await effective_arm(db, user_id, lab_slug)
 
         # Шов контура: один экземпляр на сессию, переиспользует те же зависимости
-        control_interface = ControlInterface(self._mcp_client, self._db_factory, self._config.learning_analytics)
+        control_interface = ControlInterface(
+            self._mcp_client, self._db_factory, self._config.learning_analytics
+        )
         monitor = SessionMonitor(
             mcp_client=self._mcp_client,
             db_factory=self._db_factory,
@@ -87,7 +105,9 @@ class SessionMonitorRegistry:
             try:
                 await observer.stop()
             except Exception:
-                logger.warning("Ошибка при остановке LabProgressObserver для %s", session_id, exc_info=True)
+                logger.warning(
+                    "Ошибка при остановке LabProgressObserver для %s", session_id, exc_info=True
+                )
 
     async def stop_all(self) -> None:
         """Останавливает все запущенные мониторы сессий."""

@@ -27,9 +27,7 @@ def _count_checks(steps: list) -> tuple[int, int]:
     return passed, total
 
 
-@router.get(
-    "/{sid}/validation-runs", response_model=list[ValidationRunListItem]
-)
+@router.get("/{sid}/validation-runs", response_model=list[ValidationRunListItem])
 async def list_runs(
     sid: str,
     current_user: dict = Depends(get_current_user),
@@ -43,9 +41,7 @@ async def list_runs(
     items: list[ValidationRunListItem] = []
     for run in runs:
         if run.finished_at is not None and run.started_at is not None:
-            duration_ms = int(
-                (run.finished_at - run.started_at).total_seconds() * 1000
-            )
+            duration_ms = int((run.finished_at - run.started_at).total_seconds() * 1000)
             passed, total = _count_checks(run.steps or [])
         else:
             duration_ms = None
@@ -66,9 +62,7 @@ async def list_runs(
     return items
 
 
-@router.get(
-    "/{sid}/validation-runs/{run_id}", response_model=ValidationRunDetail
-)
+@router.get("/{sid}/validation-runs/{run_id}", response_model=ValidationRunDetail)
 async def get_run(
     sid: str,
     run_id: str,

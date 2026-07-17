@@ -62,9 +62,7 @@ class TestMCPClientRetry:
 
         with autotest.step("Патчим streamablehttp_client и ClientSession"):
             with (
-                patch(
-                    "mcp_client.client.streamablehttp_client", fake_streamable
-                ),
+                patch("mcp_client.client.streamablehttp_client", fake_streamable),
                 patch(
                     "mcp_client.client.ClientSession",
                     _fake_client_session_factory(fake_session),
@@ -81,9 +79,7 @@ class TestMCPClientRetry:
 
     @autotest.num("1831")
     @autotest.external_id("b1c2d3e4-f5a6-4b7c-9d8e-720000000002")
-    @autotest.name(
-        "MCPClient._call_tool: три падения RequestError → reraise после 3 попыток"
-    )
+    @autotest.name("MCPClient._call_tool: три падения RequestError → reraise после 3 попыток")
     async def test_b1c2d3e4_all_attempts_fail_reraises(self):
         call_count = 0
 
@@ -124,9 +120,7 @@ class TestMCPClientRetry:
 
     @autotest.num("1833")
     @autotest.external_id("d3e4f5a6-b7c8-4d9e-8a0f-720000000004")
-    @autotest.name(
-        "MCPClient._call_tool: wait_exponential(multiplier=0.3, max=2.0)"
-    )
+    @autotest.name("MCPClient._call_tool: wait_exponential(multiplier=0.3, max=2.0)")
     def test_d3e4f5a6_retry_config_wait_exponential(self):
         with autotest.step("Достаём tenacity-обёртку"):
             wait = MCPClient._call_tool.retry.wait

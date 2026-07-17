@@ -72,12 +72,30 @@ class TestFeatureExtractor:
         now = datetime.now(tz=timezone.utc)
         with autotest.step("Создаём 3 одинаковые ошибки подряд"):
             events = [
-                EventData(id="e1", event_type="error", action="cfg_err", message="bad ip",
-                         success=False, timestamp=now - timedelta(seconds=30)),
-                EventData(id="e2", event_type="error", action="cfg_err", message="bad ip",
-                         success=False, timestamp=now - timedelta(seconds=20)),
-                EventData(id="e3", event_type="error", action="cfg_err", message="bad ip",
-                         success=False, timestamp=now - timedelta(seconds=10)),
+                EventData(
+                    id="e1",
+                    event_type="error",
+                    action="cfg_err",
+                    message="bad ip",
+                    success=False,
+                    timestamp=now - timedelta(seconds=30),
+                ),
+                EventData(
+                    id="e2",
+                    event_type="error",
+                    action="cfg_err",
+                    message="bad ip",
+                    success=False,
+                    timestamp=now - timedelta(seconds=20),
+                ),
+                EventData(
+                    id="e3",
+                    event_type="error",
+                    action="cfg_err",
+                    message="bad ip",
+                    success=False,
+                    timestamp=now - timedelta(seconds=10),
+                ),
             ]
 
         with autotest.step("Вычисляем фичи"):
@@ -109,8 +127,11 @@ class TestFeatureExtractor:
         now = datetime.now(tz=timezone.utc)
         with autotest.step("Создаём 10 событий с 5 разными action"):
             events = [
-                EventData(id=f"e{i}", action=actions[i % len(actions)],
-                         timestamp=now - timedelta(seconds=(10 - i) * 5))
+                EventData(
+                    id=f"e{i}",
+                    action=actions[i % len(actions)],
+                    timestamp=now - timedelta(seconds=(10 - i) * 5),
+                )
                 for i in range(10)
             ]
 
@@ -147,8 +168,14 @@ class TestFeatureExtractor:
         now = datetime.now(tz=timezone.utc)
         with autotest.step("Создаём 5 ошибок за 5 минут"):
             events = [
-                EventData(id=f"e{i}", event_type="error", action="err", success=False,
-                         message=f"err-{i}", timestamp=now - timedelta(minutes=5 - i))
+                EventData(
+                    id=f"e{i}",
+                    event_type="error",
+                    action="err",
+                    success=False,
+                    message=f"err-{i}",
+                    timestamp=now - timedelta(minutes=5 - i),
+                )
                 for i in range(5)
             ]
 

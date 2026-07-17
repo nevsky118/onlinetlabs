@@ -42,9 +42,10 @@ class TutorAgent(BaseAgent):
             fc = input_data.failing_check
             node = fc.get("params", {}).get("node") if isinstance(fc.get("params"), dict) else None
             node_str = f" на {node}" if node else ""
-            prompt_parts.insert(0,
+            prompt_parts.insert(
+                0,
                 f"Провалившаяся проверка {fc.get('kind')}{node_str}: "
-                f"ожидалось {fc.get('expected')}, получено {fc.get('actual')}."
+                f"ожидалось {fc.get('expected')}, получено {fc.get('actual')}.",
             )
 
         if input_data.agent_context:

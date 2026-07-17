@@ -14,18 +14,21 @@ pytestmark = [pytest.mark.unit]
 
 
 @autotest.name("can_view_session_activity: матрица прав на просмотр активности сессии")
-@pytest.mark.parametrize("user,expected", [
-    # владелец со флагом → True
-    ({"id": "owner", "role": "student", "can_view_logs": True}, True),
-    # препод со флагом → True (не владелец)
-    ({"id": "x", "role": "instructor", "can_view_logs": True}, True),
-    # студент-не-владелец со флагом → False
-    ({"id": "x", "role": "student", "can_view_logs": True}, False),
-    # владелец без флага → False
-    ({"id": "owner", "role": "student", "can_view_logs": False}, False),
-    # флаг отсутствует вовсе → False
-    ({"id": "owner", "role": "instructor"}, False),
-])
+@pytest.mark.parametrize(
+    "user,expected",
+    [
+        # владелец со флагом → True
+        ({"id": "owner", "role": "student", "can_view_logs": True}, True),
+        # препод со флагом → True (не владелец)
+        ({"id": "x", "role": "instructor", "can_view_logs": True}, True),
+        # студент-не-владелец со флагом → False
+        ({"id": "x", "role": "student", "can_view_logs": True}, False),
+        # владелец без флага → False
+        ({"id": "owner", "role": "student", "can_view_logs": False}, False),
+        # флаг отсутствует вовсе → False
+        ({"id": "owner", "role": "instructor"}, False),
+    ],
+)
 def test_can_view_session_activity_matrix(user, expected):
     sess = SimpleNamespace(user_id="owner")
     assert can_view_session_activity(user, sess) is expected

@@ -47,12 +47,20 @@ class AgentActivityLog:
     async def _persist(self, event: AgentActivityEvent) -> None:
         try:
             async with self._db_factory() as db:
-                db.add(AgentActivityEventRow(
-                    id=event.id, session_id=event.session_id, user_id=event.user_id,
-                    ts=event.ts, source=event.source.value, kind=event.kind.value,
-                    agent=event.agent, severity=event.severity, summary=event.summary,
-                    detail=event.detail,
-                ))
+                db.add(
+                    AgentActivityEventRow(
+                        id=event.id,
+                        session_id=event.session_id,
+                        user_id=event.user_id,
+                        ts=event.ts,
+                        source=event.source.value,
+                        kind=event.kind.value,
+                        agent=event.agent,
+                        severity=event.severity,
+                        summary=event.summary,
+                        detail=event.detail,
+                    )
+                )
                 await db.commit()
                 await self._prune(db, event.session_id)
         except Exception:
@@ -61,26 +69,44 @@ class AgentActivityLog:
     async def _prune(self, db, session_id: str) -> None:
         """Best-effort обрезка до retention последних событий сессии."""
         try:
-            stmt = (select(AgentActivityEventRow.id)
-                    .where(AgentActivityEventRow.session_id == session_id)
-                    .order_by(AgentActivityEventRow.ts.desc())
-                    .offset(self._retention))
+            stmt = (
+                select(AgentActivityEventRow.id)
+                .where(AgentActivityEventRow.session_id == session_id)
+                .order_by(AgentActivityEventRow.ts.desc())
+                .offset(self._retention)
+            )
             stale = [r for r in (await db.execute(stmt)).scalars().all()]
             if stale:
-                await db.execute(delete(AgentActivityEventRow).where(AgentActivityEventRow.id.in_(stale)))
+                await db.execute(
+                    delete(AgentActivityEventRow).where(AgentActivityEventRow.id.in_(stale))
+                )
                 await db.commit()
         except Exception:
             logger.warning("activity prune failed", exc_info=True)
 
-    async def history(self, session_id: str, since: datetime | None, limit: int) -> list[AgentActivityEvent]:
+    async def history(
+        self, session_id: str, since: datetime | None, limit: int
+    ) -> list[AgentActivityEvent]:
         async with self._db_factory() as db:
-            stmt = select(AgentActivityEventRow).where(AgentActivityEventRow.session_id == session_id)
+            stmt = select(AgentActivityEventRow).where(
+                AgentActivityEventRow.session_id == session_id
+            )
             if since is not None:
                 stmt = stmt.where(AgentActivityEventRow.ts > since)
             stmt = stmt.order_by(AgentActivityEventRow.ts.asc()).limit(limit)
             rows = (await db.execute(stmt)).scalars().all()
-            return [AgentActivityEvent(
-                id=r.id, session_id=r.session_id, user_id=r.user_id, ts=r.ts,
-                source=r.source, kind=r.kind, agent=r.agent, severity=r.severity,
-                summary=r.summary, detail=r.detail,
-            ) for r in rows]
+            return [
+                AgentActivityEvent(
+                    id=r.id,
+                    session_id=r.session_id,
+                    user_id=r.user_id,
+                    ts=r.ts,
+                    source=r.source,
+                    kind=r.kind,
+                    agent=r.agent,
+                    severity=r.severity,
+                    summary=r.summary,
+                    detail=r.detail,
+                )
+                for r in rows
+            ]

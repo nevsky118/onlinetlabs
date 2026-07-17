@@ -30,7 +30,9 @@ class TestDeriveThresholds:
             s = _session(60)
 
         with autotest.step("Act: simulate_interventions с порогом 30, cooldown=9999"):
-            ivs = simulate_interventions(s["samples"], {"stuck_on_step": 30.0}, cooldown_seconds=9999)
+            ivs = simulate_interventions(
+                s["samples"], {"stuck_on_step": 30.0}, cooldown_seconds=9999
+            )
 
         with autotest.step("Assert: ровно одна интервенция"):
             assert_equal(len(ivs), 1, "cooldown=9999 → один выстрел на спелл")
@@ -43,7 +45,9 @@ class TestDeriveThresholds:
             s = _session(60)
 
         with autotest.step("Act: simulate_interventions с порогом 30, cooldown=0"):
-            ivs = simulate_interventions(s["samples"], {"stuck_on_step": 30.0}, cooldown_seconds=0.0)
+            ivs = simulate_interventions(
+                s["samples"], {"stuck_on_step": 30.0}, cooldown_seconds=0.0
+            )
 
         with autotest.step("Assert: три интервенции (dwell=30,45,60)"):
             assert_equal(len(ivs), 3, "cooldown=0 → 3 выстрела (dwell 30,45,60)")
@@ -56,7 +60,9 @@ class TestDeriveThresholds:
             s = _session(60)
 
         with autotest.step("Act: explicit cooldown=0 и дефолт"):
-            ivs_explicit = simulate_interventions(s["samples"], {"stuck_on_step": 30.0}, cooldown_seconds=0.0)
+            ivs_explicit = simulate_interventions(
+                s["samples"], {"stuck_on_step": 30.0}, cooldown_seconds=0.0
+            )
             ivs_default = simulate_interventions(s["samples"], {"stuck_on_step": 30.0})
 
         with autotest.step("Assert: количество интервенций совпадает"):

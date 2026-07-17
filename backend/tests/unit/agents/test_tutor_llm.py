@@ -17,9 +17,14 @@ class TestTutorAgentLLM:
     async def test_a1b2c3d4_run_llm_failure_raises(self, config_model, monkeypatch):
         with autotest.step("Мок LLM выбрасывает"):
             agent = TutorAgent(config_model, mcp_client=None)
-            monkeypatch.setattr(agent, "_agent_for", lambda mid: AsyncMock(run=AsyncMock(side_effect=RuntimeError("llm down"))))
+            monkeypatch.setattr(
+                agent,
+                "_agent_for",
+                lambda mid: AsyncMock(run=AsyncMock(side_effect=RuntimeError("llm down"))),
+            )
             inp = TutorInput(
-                session_id="s1", user_id="u1",
+                session_id="s1",
+                user_id="u1",
                 question="Что такое OSPF?",
             )
 
@@ -36,9 +41,12 @@ class TestTutorAgentLLM:
             context = AgentContextData().context
             fake_result = AsyncMock()
             fake_result.output = "OSPF сессия не поднимается из-за неверной маски"
-            monkeypatch.setattr(agent, "_agent_for", lambda mid: AsyncMock(run=AsyncMock(return_value=fake_result)))
+            monkeypatch.setattr(
+                agent, "_agent_for", lambda mid: AsyncMock(run=AsyncMock(return_value=fake_result))
+            )
             inp = TutorInput(
-                session_id="s1", user_id="u1",
+                session_id="s1",
+                user_id="u1",
                 question="Почему OSPF не работает?",
                 agent_context=context,
             )

@@ -34,7 +34,6 @@ _CATALOG = [
 
 
 class TestBuildModelsResponse:
-
     @autotest.num("790")
     @autotest.external_id("a88e6991-1166-4f5f-a99e-9e399f0fd9b6")
     @autotest.name("build_models_response: can_select=True → только tools-capable модели")

@@ -24,9 +24,13 @@ class TestScenarios:
     @autotest.name("scenarios: струггл-сценарий с онсетом и типом")
     def test_81bd2b96_struggle(self):
         with autotest.step("Act: repeating_errors на индексе 6"):
-            s = make_struggle_scenario(ProcessRegime.REPEATING_ERRORS, onset_index=6, n=12, step=15.0)
+            s = make_struggle_scenario(
+                ProcessRegime.REPEATING_ERRORS, onset_index=6, n=12, step=15.0
+            )
         with autotest.step("Assert: тип, онсет=6*15, фичи пробивают после онсета"):
             assert_equal(s.truth_regime, ProcessRegime.REPEATING_ERRORS, "тип")
             assert_equal(s.onset_ts, 90.0, "онсет ts")
-            assert_true(s.snapshots[7].features.error_repeat_count >= 5, "фича пробита после онсета")
+            assert_true(
+                s.snapshots[7].features.error_repeat_count >= 5, "фича пробита после онсета"
+            )
             assert_equal(s.snapshots[0].features.error_repeat_count, 0, "до онсета benign")

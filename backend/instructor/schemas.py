@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 class MCPAuditRow(BaseModel):
     """Одна запись аудита MCP-вызовов через контур."""
+
     id: str
     user_id: str
     session_id: str

@@ -1,4 +1,5 @@
 """Проверка/выдача/отзыв согласия. study покрывает всё; product гранулярно."""
+
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -9,9 +10,15 @@ from models.consent import Consent
 
 
 async def has_consent(db, user_id: str, kind: ToolKind) -> bool:
-    rows = (await db.execute(
-        select(Consent).where(Consent.user_id == user_id, Consent.revoked_at.is_(None))
-    )).scalars().all()
+    rows = (
+        (
+            await db.execute(
+                select(Consent).where(Consent.user_id == user_id, Consent.revoked_at.is_(None))
+            )
+        )
+        .scalars()
+        .all()
+    )
     for c in rows:
         if c.scope == "study":
             return True  # участие в эксперименте покрывает observe+act
@@ -23,17 +30,34 @@ async def has_consent(db, user_id: str, kind: ToolKind) -> bool:
     return False
 
 
-async def grant(db, user_id: str, scope: str, observe: bool, act: bool, data_policy=None) -> Consent:
-    c = Consent(id=str(uuid4()), user_id=user_id, scope=scope, observe=observe, act=act, data_policy=data_policy)
+async def grant(
+    db, user_id: str, scope: str, observe: bool, act: bool, data_policy=None
+) -> Consent:
+    c = Consent(
+        id=str(uuid4()),
+        user_id=user_id,
+        scope=scope,
+        observe=observe,
+        act=act,
+        data_policy=data_policy,
+    )
     db.add(c)
     await db.commit()
     return c
 
 
 async def revoke(db, user_id: str, scope: str) -> int:
-    rows = (await db.execute(
-        select(Consent).where(Consent.user_id == user_id, Consent.scope == scope, Consent.revoked_at.is_(None))
-    )).scalars().all()
+    rows = (
+        (
+            await db.execute(
+                select(Consent).where(
+                    Consent.user_id == user_id, Consent.scope == scope, Consent.revoked_at.is_(None)
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
     now = datetime.now(timezone.utc)
     for c in rows:
         c.revoked_at = now
@@ -44,9 +68,8 @@ async def revoke(db, user_id: str, scope: str) -> int:
 async def list_active(db, user_id: str) -> list[Consent]:
     """Активные (не отозванные) согласия пользователя."""
     result = await db.execute(
-        select(Consent).where(
-            Consent.user_id == user_id,
-            Consent.revoked_at.is_(None)
-        ).order_by(Consent.granted_at.desc())
+        select(Consent)
+        .where(Consent.user_id == user_id, Consent.revoked_at.is_(None))
+        .order_by(Consent.granted_at.desc())
     )
     return result.scalars().all()

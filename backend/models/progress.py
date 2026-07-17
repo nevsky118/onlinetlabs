@@ -13,17 +13,11 @@ class CourseProgress(Base):
 
     __tablename__ = "course_progress"
     __table_args__ = (
-        UniqueConstraint(
-            "user_id", "course_slug", name="uq_course_progress_user_course"
-        ),
+        UniqueConstraint("user_id", "course_slug", name="uq_course_progress_user_course"),
     )
 
-    id: Mapped[str] = mapped_column(
-        String(255), primary_key=True, default=lambda: str(uuid4())
-    )
-    user_id: Mapped[str] = mapped_column(
-        String(255), ForeignKey("users.id", ondelete="CASCADE")
-    )
+    id: Mapped[str] = mapped_column(String(255), primary_key=True, default=lambda: str(uuid4()))
+    user_id: Mapped[str] = mapped_column(String(255), ForeignKey("users.id", ondelete="CASCADE"))
     course_slug: Mapped[str] = mapped_column(
         String(255), ForeignKey("courses.slug", ondelete="CASCADE")
     )
@@ -42,19 +36,11 @@ class LabProgress(Base):
     """Прогресс пользователя по лабе. Статус, оценка и текущий шаг."""
 
     __tablename__ = "lab_progress"
-    __table_args__ = (
-        UniqueConstraint("user_id", "lab_slug", name="uq_lab_progress_user_lab"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "lab_slug", name="uq_lab_progress_user_lab"),)
 
-    id: Mapped[str] = mapped_column(
-        String(255), primary_key=True, default=lambda: str(uuid4())
-    )
-    user_id: Mapped[str] = mapped_column(
-        String(255), ForeignKey("users.id", ondelete="CASCADE")
-    )
-    lab_slug: Mapped[str] = mapped_column(
-        String(255), ForeignKey("labs.slug", ondelete="CASCADE")
-    )
+    id: Mapped[str] = mapped_column(String(255), primary_key=True, default=lambda: str(uuid4()))
+    user_id: Mapped[str] = mapped_column(String(255), ForeignKey("users.id", ondelete="CASCADE"))
+    lab_slug: Mapped[str] = mapped_column(String(255), ForeignKey("labs.slug", ondelete="CASCADE"))
     status: Mapped[str] = mapped_column(String(50), default="not_started")
     score: Mapped[float | None] = mapped_column(Float)
     current_step: Mapped[int | None] = mapped_column(Integer)
@@ -72,15 +58,9 @@ class StepAttempt(Base):
 
     __tablename__ = "step_attempts"
 
-    id: Mapped[str] = mapped_column(
-        String(255), primary_key=True, default=lambda: str(uuid4())
-    )
-    user_id: Mapped[str] = mapped_column(
-        String(255), ForeignKey("users.id", ondelete="CASCADE")
-    )
-    lab_slug: Mapped[str] = mapped_column(
-        String(255), ForeignKey("labs.slug", ondelete="CASCADE")
-    )
+    id: Mapped[str] = mapped_column(String(255), primary_key=True, default=lambda: str(uuid4()))
+    user_id: Mapped[str] = mapped_column(String(255), ForeignKey("users.id", ondelete="CASCADE"))
+    lab_slug: Mapped[str] = mapped_column(String(255), ForeignKey("labs.slug", ondelete="CASCADE"))
     step_slug: Mapped[str] = mapped_column(String(255))
     attempt_number: Mapped[int] = mapped_column(Integer)
     result: Mapped[str] = mapped_column(String(50))

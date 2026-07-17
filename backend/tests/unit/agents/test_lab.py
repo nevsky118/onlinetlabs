@@ -12,24 +12,29 @@ pytestmark = [pytest.mark.unit, pytest.mark.agents]
 
 def _make_query_input(**overrides):
     defaults = dict(
-        session_id="s1", user_id="u1",
+        session_id="s1",
+        user_id="u1",
         environment_url="http://localhost:3080",
-        project_id="p1", query="show topology",
+        project_id="p1",
+        query="show topology",
     )
     return LabQueryInput(**(defaults | overrides))
 
 
 def _make_action_input(**overrides):
     defaults = dict(
-        session_id="s1", user_id="u1",
+        session_id="s1",
+        user_id="u1",
         environment_url="http://localhost:3080",
-        project_id="p1", action_name="restart_node",
+        project_id="p1",
+        action_name="restart_node",
         params={"node_id": "n1"},
     )
     return LabActionInput(**(defaults | overrides))
 
 
 # LabTools
+
 
 class TestLabTools:
     @autotest.num("410")
@@ -76,7 +81,9 @@ class TestLabTools:
     async def test_c4d5e6f7_execute_action_failure(self, fake_failing_mcp):
         with autotest.step("Выполняем действие с failing client"):
             tools = LabTools(fake_failing_mcp)
-            result = await tools.execute_action(_make_query_input(), "restart_node", {"node_id": "n1"})
+            result = await tools.execute_action(
+                _make_query_input(), "restart_node", {"node_id": "n1"}
+            )
 
         with autotest.step("Проверяем что success=False"):
             assert_true(not result.success, "action должен быть неуспешным")
@@ -111,6 +118,7 @@ class TestLabTools:
 
 
 # LabAgent
+
 
 class TestLabAgent:
     @autotest.num("416")

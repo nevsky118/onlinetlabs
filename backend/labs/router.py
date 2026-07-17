@@ -3,7 +3,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.dependencies import require_admin, require_internal_caller
 from db.session import get_db
-from labs.schemas import LabCreate, LabDetailResponse, LabResponse, LabStepResponse, LabTemplateResponse, SetLabTemplateRequest
+from labs.schemas import (
+    LabCreate,
+    LabDetailResponse,
+    LabResponse,
+    LabStepResponse,
+    LabTemplateResponse,
+    SetLabTemplateRequest,
+)
 from labs.service import create_lab, delete_lab, get_all_labs, get_lab_by_slug, set_lab_template
 
 router = APIRouter()
@@ -38,18 +45,24 @@ async def create_lab_endpoint(
     """Создаёт лабораторную работу. Возвращает 409, если slug уже занят."""
     existing = await get_lab_by_slug(db, body.slug)
     if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Lab already exists"
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Lab already exists")
     lab = await create_lab(
-        db, slug=body.slug, title=body.title, description=body.description,
-        difficulty=body.difficulty, environment_type=body.environment_type,
+        db,
+        slug=body.slug,
+        title=body.title,
+        description=body.description,
+        difficulty=body.difficulty,
+        environment_type=body.environment_type,
         gns3_template_project_id=body.gns3_template_project_id,
     )
     return LabResponse(
-        slug=lab.slug, title=lab.title, description=lab.description,
-        difficulty=lab.difficulty, course_slug=lab.course_slug,
-        environment_type=lab.environment_type, order_in_course=lab.order_in_course,
+        slug=lab.slug,
+        title=lab.title,
+        description=lab.description,
+        difficulty=lab.difficulty,
+        course_slug=lab.course_slug,
+        environment_type=lab.environment_type,
+        order_in_course=lab.order_in_course,
         meta=lab.meta,
     )
 
@@ -63,9 +76,7 @@ async def delete_lab_endpoint(
     """Удаляет лабораторную работу по slug. Возвращает 404, если не найдена."""
     deleted = await delete_lab(db, slug)
     if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Lab not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lab not found")
 
 
 @router.get("/{slug}", response_model=LabDetailResponse)
@@ -73,9 +84,7 @@ async def get_lab(slug: str, db: AsyncSession = Depends(get_db)):
     """Возвращает лабораторную работу с её шагами. Возвращает 404, если не найдена."""
     lab = await get_lab_by_slug(db, slug)
     if lab is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Lab not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lab not found")
     return LabDetailResponse(
         slug=lab.slug,
         title=lab.title,

@@ -59,9 +59,7 @@ async def student_detail(
     """Детальный прогресс одного ученика с разбивкой по лабам и подсказкам."""
     detail = await get_student_detail(db, user_id)
     if detail is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Student not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
     return StudentDetailResponse(
         **{k: v for k, v in detail.items() if k not in ("labs", "sessions")},
         labs=[LabProgressRow(**lab) for lab in detail["labs"]],
@@ -97,9 +95,9 @@ async def student_session_timeline(
     db: AsyncSession = Depends(get_db),
 ):
     """Таймлайн диалога студента по сессии (чат + интервенции)."""
-    session = (await db.execute(
-        select(LearningSession).where(LearningSession.id == session_id)
-    )).scalar_one_or_none()
+    session = (
+        await db.execute(select(LearningSession).where(LearningSession.id == session_id))
+    ).scalar_one_or_none()
     if session is None or session.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
     items = await build_session_timeline(db, session_id)

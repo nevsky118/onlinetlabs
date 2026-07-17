@@ -104,9 +104,7 @@ async def get_status(
     counts = {row[0]: row[1] for row in result.all()}
 
     completed_result = await db.execute(
-        select(func.count(ExperimentMetrics.id)).where(
-            ExperimentMetrics.completed.is_(True)
-        )
+        select(func.count(ExperimentMetrics.id)).where(ExperimentMetrics.completed.is_(True))
     )
     completed = completed_result.scalar() or 0
 
@@ -138,9 +136,7 @@ async def list_participants(
         latest = metrics_result.scalar_one_or_none()
 
         sessions_result = await db.execute(
-            select(func.count(LearningSession.id)).where(
-                LearningSession.user_id == user.id
-            )
+            select(func.count(LearningSession.id)).where(LearningSession.user_id == user.id)
         )
         sessions_count = sessions_result.scalar() or 0
 
@@ -167,20 +163,14 @@ async def update_group(
 ):
     """Переназначить группу участника."""
     if body.group not in (ExperimentGroup.GROUP_A.value, ExperimentGroup.GROUP_B.value):
-        raise HTTPException(
-            status_code=400, detail="group must be 'group_a' or 'group_b'"
-        )
+        raise HTTPException(status_code=400, detail="group must be 'group_a' or 'group_b'")
 
-    await db.execute(
-        update(User).where(User.id == user_id).values(experiment_group=body.group)
-    )
+    await db.execute(update(User).where(User.id == user_id).values(experiment_group=body.group))
     await db.commit()
     return {"ok": True}
 
 
-@router.get(
-    "/session/{session_id}/timeline", response_model=list[TimelineEventResponse]
-)
+@router.get("/session/{session_id}/timeline", response_model=list[TimelineEventResponse])
 async def get_session_timeline(
     session_id: str,
     db: AsyncSession = Depends(get_db),
@@ -213,9 +203,7 @@ async def export_metrics(
     _: dict = Depends(_require_admin),
 ):
     """Выгрузка метрик (json или csv)."""
-    result = await db.execute(
-        select(ExperimentMetrics).order_by(ExperimentMetrics.created_at)
-    )
+    result = await db.execute(select(ExperimentMetrics).order_by(ExperimentMetrics.created_at))
     metrics = result.scalars().all()
 
     if format == "csv":
@@ -229,9 +217,7 @@ async def export_metrics(
         return StreamingResponse(
             output,
             media_type="text/csv",
-            headers={
-                "Content-Disposition": "attachment; filename=experiment_metrics.csv"
-            },
+            headers={"Content-Disposition": "attachment; filename=experiment_metrics.csv"},
         )
 
     return [_metric_to_export_row(m) for m in metrics]

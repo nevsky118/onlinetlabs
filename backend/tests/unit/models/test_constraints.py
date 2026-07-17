@@ -69,14 +69,24 @@ class TestModelConstraints:
         with autotest.step("Создаём User + два Account"):
             user = User(id="u-cascade", email="cascade@example.com")
             session.add(user)
-            session.add(Account(
-                id="a1", user_id="u-cascade", type="oauth",
-                provider="github", provider_account_id="gh-1",
-            ))
-            session.add(Account(
-                id="a2", user_id="u-cascade", type="oauth",
-                provider="google", provider_account_id="g-1",
-            ))
+            session.add(
+                Account(
+                    id="a1",
+                    user_id="u-cascade",
+                    type="oauth",
+                    provider="github",
+                    provider_account_id="gh-1",
+                )
+            )
+            session.add(
+                Account(
+                    id="a2",
+                    user_id="u-cascade",
+                    type="oauth",
+                    provider="google",
+                    provider_account_id="g-1",
+                )
+            )
             await session.commit()
 
         with autotest.step("Удаляем User"):
@@ -157,8 +167,10 @@ class TestModelConstraints:
             await session.commit()
 
             acc = Account(
-                user_id="u-acc-uuid", type="oauth",
-                provider="github", provider_account_id="gh-x",
+                user_id="u-acc-uuid",
+                type="oauth",
+                provider="github",
+                provider_account_id="gh-x",
             )
             session.add(acc)
             await session.commit()
@@ -175,10 +187,15 @@ class TestModelConstraints:
     @pytest.mark.asyncio
     async def test_c7d8e9f0_account_fk_enforced(self, session: AsyncSession):
         with autotest.step("Account, ссылающийся на несуществующего user"):
-            session.add(Account(
-                id="orphan", user_id="missing", type="oauth",
-                provider="github", provider_account_id="gh-missing",
-            ))
+            session.add(
+                Account(
+                    id="orphan",
+                    user_id="missing",
+                    type="oauth",
+                    provider="github",
+                    provider_account_id="gh-missing",
+                )
+            )
             with pytest.raises(IntegrityError):
                 await session.commit()
             await session.rollback()

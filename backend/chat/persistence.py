@@ -31,7 +31,9 @@ async def save_user_message(db, session_id: str, sdk_messages: list[dict]) -> No
     await db.commit()
 
 
-async def save_assistant_message(db, session_id: str, parts: list[dict], usage: dict | None) -> None:
+async def save_assistant_message(
+    db, session_id: str, parts: list[dict], usage: dict | None
+) -> None:
     """Сохраняет сообщение ассистента с его частями и расходом токенов."""
     if not parts:
         return

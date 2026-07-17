@@ -42,9 +42,7 @@ async def create_run(db: AsyncSession, session_id: str, lab_slug: str) -> str:
     return run_id
 
 
-async def finish_run(
-    db: AsyncSession, run_id: str, status: str, steps: list
-) -> None:
+async def finish_run(db: AsyncSession, run_id: str, status: str, steps: list) -> None:
     """Завершить прогон: записать статус, шаги и время окончания."""
     row = await db.get(ValidationRun, run_id)
     if row is None:

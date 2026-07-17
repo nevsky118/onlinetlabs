@@ -16,6 +16,7 @@ def get_gns3_client(request: Request):
 def get_session_factory():
     """Отдаёт фабрику сессий БД (переопределяется в тестах)."""
     from db.session import async_session
+
     return async_session
 
 

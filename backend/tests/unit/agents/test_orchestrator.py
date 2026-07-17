@@ -13,15 +13,20 @@ from mcp_sdk.testing.custom_assertions import assert_equal, assert_true, assert_
 def _mock_hint_agent(orch):
     """Возвращает HintResponse без LLM-вызова."""
     fake = AsyncMock()
-    fake.run = AsyncMock(return_value=HintResponse(hint="подсказка", hint_level=2, remaining_hints=1))
+    fake.run = AsyncMock(
+        return_value=HintResponse(hint="подсказка", hint_level=2, remaining_hints=1)
+    )
     orch._agents["hint"] = fake
 
 
 def _mock_tutor_agent(orch):
     """Возвращает TutorResponse без LLM-вызова."""
     fake = AsyncMock()
-    fake.run = AsyncMock(return_value=TutorResponse(answer="ответ", follow_up_questions=[], references=[]))
+    fake.run = AsyncMock(
+        return_value=TutorResponse(answer="ответ", follow_up_questions=[], references=[])
+    )
     orch._agents["tutor"] = fake
+
 
 pytestmark = [pytest.mark.unit, pytest.mark.agents]
 
@@ -32,6 +37,7 @@ def _make_orchestrator_input(**overrides):
 
 
 # Router
+
 
 class TestRouter:
     @autotest.num("460")
@@ -53,6 +59,7 @@ class TestRouter:
 
 
 # Orchestrator
+
 
 class TestOrchestrator:
     @autotest.num("462")
@@ -207,7 +214,8 @@ class TestOrchestratorIntervene:
     def test_c0d1e2f3_intervention_input_model(self):
         with autotest.step("Создаём InterventionInput"):
             inp = InterventionInput(
-                session_id="s1", user_id="u1",
+                session_id="s1",
+                user_id="u1",
                 intervention_type="hint",
                 context={"struggle_type": "repeating_errors", "dominant_error": "bad ip"},
             )
@@ -224,7 +232,8 @@ class TestOrchestratorIntervene:
             orch = Orchestrator(config_model, mcp_client=fake_mcp, db=None)
             _mock_hint_agent(orch)
             inp = InterventionInput(
-                session_id="s1", user_id="u1",
+                session_id="s1",
+                user_id="u1",
                 intervention_type="hint",
                 context={"step_slug": "step-1", "attempts_count": 3, "lab_slug": "lab-1"},
             )

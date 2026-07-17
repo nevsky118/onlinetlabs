@@ -1,7 +1,13 @@
 import pytest
 from datetime import datetime, timedelta, timezone
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true, assert_false, assert_is_none, assert_in
+from mcp_sdk.testing.custom_assertions import (
+    assert_equal,
+    assert_true,
+    assert_false,
+    assert_is_none,
+    assert_in,
+)
 
 from experiment.finalizer import compute_session_metrics
 from tests.settings.data.analytics_data import EventData
@@ -12,12 +18,42 @@ pytestmark = [pytest.mark.unit]
 def _base_events(now: datetime) -> list:
     """2 эскалации, 1 would_intervene, 3 intervention."""
     return [
-        EventData(id="e1", event_type="escalation", action="manual", timestamp=now - timedelta(minutes=20)),
-        EventData(id="e2", event_type="escalation", action="objective", timestamp=now - timedelta(minutes=18)),
-        EventData(id="e3", event_type="would_intervene", action="open", timestamp=now - timedelta(minutes=15)),
-        EventData(id="e4", event_type="intervention", action="hint", success=True, timestamp=now - timedelta(minutes=10)),
-        EventData(id="e5", event_type="intervention", action="hint", success=True, timestamp=now - timedelta(minutes=8)),
-        EventData(id="e6", event_type="intervention", action="hint", success=False, timestamp=now - timedelta(minutes=5)),
+        EventData(
+            id="e1", event_type="escalation", action="manual", timestamp=now - timedelta(minutes=20)
+        ),
+        EventData(
+            id="e2",
+            event_type="escalation",
+            action="objective",
+            timestamp=now - timedelta(minutes=18),
+        ),
+        EventData(
+            id="e3",
+            event_type="would_intervene",
+            action="open",
+            timestamp=now - timedelta(minutes=15),
+        ),
+        EventData(
+            id="e4",
+            event_type="intervention",
+            action="hint",
+            success=True,
+            timestamp=now - timedelta(minutes=10),
+        ),
+        EventData(
+            id="e5",
+            event_type="intervention",
+            action="hint",
+            success=True,
+            timestamp=now - timedelta(minutes=8),
+        ),
+        EventData(
+            id="e6",
+            event_type="intervention",
+            action="hint",
+            success=False,
+            timestamp=now - timedelta(minutes=5),
+        ),
     ]
 
 
@@ -82,7 +118,9 @@ class TestFinalizerMetrics:
 
     @autotest.num("1215")
     @autotest.external_id("0d357f7e-d514-4c4c-a4a6-1e1f7304e464")
-    @autotest.name("compute_session_metrics: l2_unassisted_pass=True когда завершено и интервенции <= cap")
+    @autotest.name(
+        "compute_session_metrics: l2_unassisted_pass=True когда завершено и интервенции <= cap"
+    )
     def test_0d357f7e_l2_pass_within_cap(self):
         now = datetime.now(tz=timezone.utc)
         with autotest.step("Act: is_l2=True, completed, interventions=3, cap=3"):
@@ -165,7 +203,9 @@ class TestFinalizerMetrics:
 
     @autotest.num("1219")
     @autotest.external_id("6df0c600-b76b-4b28-ae1a-967bde85fdc9")
-    @autotest.name("compute_session_metrics: base_arm=None по умолчанию; completed=False если steps_completed < total_steps")
+    @autotest.name(
+        "compute_session_metrics: base_arm=None по умолчанию; completed=False если steps_completed < total_steps"
+    )
     def test_6df0c600_base_arm_default_and_incomplete(self):
         now = datetime.now(tz=timezone.utc)
         with autotest.step("Act: не передаём base_arm; шагов 1 из 2 → не завершено"):

@@ -1,4 +1,5 @@
 """is_l2_session: True при предшествующей завершённой лабе того же навыка."""
+
 import pytest
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from mcp_sdk.testing import autotest

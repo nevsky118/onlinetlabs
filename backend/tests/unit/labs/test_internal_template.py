@@ -1,4 +1,5 @@
 """Tests for POST /internal/labs/{slug}/gns3-template."""
+
 import pytest
 from fastapi import FastAPI
 from fastapi.security import HTTPAuthorizationCredentials
@@ -67,8 +68,14 @@ class TestInternalLabTemplate:
         self.raw_app.dependency_overrides[get_db] = _override_db
 
         async with self.session_factory() as db:
-            db.add(Lab(slug="ospf-lab", title="OSPF Lab", difficulty="beginner",
-                       environment_type="gns3"))
+            db.add(
+                Lab(
+                    slug="ospf-lab",
+                    title="OSPF Lab",
+                    difficulty="beginner",
+                    environment_type="gns3",
+                )
+            )
             await db.commit()
 
         yield

@@ -40,9 +40,9 @@ async def get_students_overview(db: AsyncSession) -> dict:
 
     # Прогресс по лабам: статусы и оценки на ученика
     progress_result = await db.execute(
-        select(
-            LabProgress.user_id, LabProgress.status, LabProgress.score
-        ).where(LabProgress.user_id.in_(user_ids))
+        select(LabProgress.user_id, LabProgress.status, LabProgress.score).where(
+            LabProgress.user_id.in_(user_ids)
+        )
     )
     completed: dict[str, int] = {}
     in_progress: dict[str, int] = {}
@@ -184,9 +184,7 @@ async def get_student_detail(db: AsyncSession, user_id: str) -> dict | None:
     lab_slugs = {p.lab_slug for p in progress_rows} | {s.lab_slug for s in session_rows}
     titles: dict[str, str] = {}
     if lab_slugs:
-        titles_result = await db.execute(
-            select(Lab.slug, Lab.title).where(Lab.slug.in_(lab_slugs))
-        )
+        titles_result = await db.execute(select(Lab.slug, Lab.title).where(Lab.slug.in_(lab_slugs)))
         titles = {slug: title for slug, title in titles_result.all()}
 
     labs = [
@@ -243,15 +241,15 @@ async def build_session_timeline(db: AsyncSession, session_id: str) -> list[dict
     """Слить реплики чата и интервенции сессии в один таймлайн по времени."""
     items: list[dict] = []
 
-    msgs = await db.execute(
-        select(ChatMessage).where(ChatMessage.session_id == session_id)
-    )
+    msgs = await db.execute(select(ChatMessage).where(ChatMessage.session_id == session_id))
     for m in msgs.scalars().all():
-        items.append({
-            "kind": "student" if m.role == "user" else "tutor",
-            "ts": m.created_at,
-            "parts": m.parts,
-        })
+        items.append(
+            {
+                "kind": "student" if m.role == "user" else "tutor",
+                "ts": m.created_at,
+                "parts": m.parts,
+            }
+        )
 
     evs = await db.execute(
         select(BehavioralEvent).where(
@@ -261,15 +259,17 @@ async def build_session_timeline(db: AsyncSession, session_id: str) -> list[dict
     )
     for e in evs.scalars().all():
         ed = e.extra_data or {}
-        items.append({
-            "kind": "intervention",
-            "ts": e.timestamp,
-            "text": e.message,
-            "action": e.action,
-            "severity": e.severity,
-            "hint_level": ed.get("hint_level"),
-            "struggle_type": ed.get("struggle_type"),
-        })
+        items.append(
+            {
+                "kind": "intervention",
+                "ts": e.timestamp,
+                "text": e.message,
+                "action": e.action,
+                "severity": e.severity,
+                "hint_level": ed.get("hint_level"),
+                "struggle_type": ed.get("struggle_type"),
+            }
+        )
 
     items.sort(key=lambda x: x["ts"])
     return items

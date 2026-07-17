@@ -23,9 +23,7 @@ class TestAuthRouter:
         # SQLite in-memory: создаём только таблицу users, без полной metadata
         # (другие модели содержат JSONB и расширения, которые SQLite не понимает).
         self.engine = create_async_engine("sqlite+aiosqlite:///:memory:")
-        self.session_factory = async_sessionmaker(
-            self.engine, expire_on_commit=False
-        )
+        self.session_factory = async_sessionmaker(self.engine, expire_on_commit=False)
         async with self.engine.begin() as conn:
             await conn.run_sync(User.__table__.create)
             await conn.run_sync(Account.__table__.create)
@@ -143,20 +141,14 @@ class TestAuthRouter:
                 response = await client.post(
                     "/auth/exchange",
                     json={"user_id": user_id, "email": "exch@example.com"},
-                    headers={
-                        "Authorization": (
-                            f"Bearer {settings.security.internal_api_token}"
-                        )
-                    },
+                    headers={"Authorization": (f"Bearer {settings.security.internal_api_token}")},
                 )
 
         with autotest.step("Assert: 200 + декодируемый JWT с sub = user_id"):
             assert_equal(response.status_code, 200, "status_code = 200")
             body = response.json()
             assert_equal(body["token_type"], "bearer", "token_type")
-            payload = decode_backend_token(
-                body["access_token"], settings.api.jwt_secret
-            )
+            payload = decode_backend_token(body["access_token"], settings.api.jwt_secret)
             assert_equal(payload["sub"], user_id, "sub claim = user_id")
             assert_equal(payload["role"], "student", "role claim")
 

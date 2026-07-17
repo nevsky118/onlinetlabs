@@ -1,4 +1,5 @@
 """Критерий управления J: стоимость политики на исторических логах состояния."""
+
 from dataclasses import dataclass
 from datetime import datetime
 import statistics
@@ -7,6 +8,7 @@ import statistics
 @dataclass
 class Costs:
     """Стоимости в единых единицах: застревание, воздействие, ложное воздействие."""
+
     c_stuck: float
     c_intervention: float
     c_false: float
@@ -15,6 +17,7 @@ class Costs:
 @dataclass
 class JResult:
     """Разложение критерия: J и его слагаемые."""
+
     J: float
     bad_duration: float
     n_interventions: int
@@ -64,22 +67,21 @@ def _count_false(samples, interventions) -> int:
             recovered = not _is_bad(samples[j]["regime"])
             # Есть ли интервенция внутри спелла [spell_start, spell_end)?
             had_iv = any(spell_start <= ivt < spell_end for ivt in intervention_ts)
-            spells.append({
-                "start": spell_start,
-                "end": spell_end,
-                "duration": spell_end - spell_start,
-                "recovered": recovered,  # завершился ли продуктивным переходом
-                "had_iv": had_iv,
-            })
+            spells.append(
+                {
+                    "start": spell_start,
+                    "end": spell_end,
+                    "duration": spell_end - spell_start,
+                    "recovered": recovered,  # завершился ли продуктивным переходом
+                    "had_iv": had_iv,
+                }
+            )
             i = j
         else:
             i += 1
 
     # Медиана длительности «чистых» выходов (без интервенции, закончились продуктивно)
-    clean_durations = [
-        sp["duration"] for sp in spells
-        if not sp["had_iv"] and sp["recovered"]
-    ]
+    clean_durations = [sp["duration"] for sp in spells if not sp["had_iv"] and sp["recovered"]]
     if not clean_durations:
         return 0  # нет базы для оценки — ложных не считаем
 
@@ -87,8 +89,7 @@ def _count_false(samples, interventions) -> int:
 
     # Ложное воздействие: спелл с интервенцией, который завершился быстрее медианы
     n_false = sum(
-        1 for sp in spells
-        if sp["had_iv"] and sp["recovered"] and sp["duration"] < median_clean
+        1 for sp in spells if sp["had_iv"] and sp["recovered"] and sp["duration"] < median_clean
     )
     return n_false
 
@@ -116,5 +117,9 @@ def compute_J(samples, interventions, costs, dwell_thresholds=None, *, bad_durat
             bad_duration += ts[i + 1] - ts[i]
     n_interventions = len(interventions)
     n_false = _count_false(samples, interventions)
-    J = costs.c_stuck * bad_duration + costs.c_intervention * n_interventions + costs.c_false * n_false
+    J = (
+        costs.c_stuck * bad_duration
+        + costs.c_intervention * n_interventions
+        + costs.c_false * n_false
+    )
     return JResult(J=J, bad_duration=bad_duration, n_interventions=n_interventions, n_false=n_false)

@@ -15,9 +15,17 @@ from auth.dependencies import get_current_user, require_active_user
 from chat.persistence import save_assistant_message, save_user_message, to_openai_messages
 from chat.schemas import ChatStreamRequest
 from chat.stream_protocol import (
-    done_event, error_event, finish_event, start_event,
-    text_delta, text_end, text_start,
-    tool_input_available, tool_input_delta, tool_input_start, tool_output_available,
+    done_event,
+    error_event,
+    finish_event,
+    start_event,
+    text_delta,
+    text_end,
+    text_start,
+    tool_input_available,
+    tool_input_delta,
+    tool_input_start,
+    tool_output_available,
 )
 from chat.tools import TOOL_DEFINITIONS, _run_vpcs_show_ip, execute_tool
 from config import settings
@@ -28,8 +36,12 @@ from llm.client import build_client, model_supports_tools, model_uri
 from llm.prompts import LANGUAGE_REMINDER, TUTOR_SYSTEM_PROMPT
 from models.lab import Lab
 from observability.models import (
-    event_fallback, event_mcp_context_fetched, event_model_selected,
-    event_response_finished, event_tool_call, event_tool_result,
+    event_fallback,
+    event_mcp_context_fetched,
+    event_model_selected,
+    event_response_finished,
+    event_tool_call,
+    event_tool_result,
 )
 from sessions.context import build_session_context
 from sessions.service import get_owned_session
@@ -43,6 +55,8 @@ def _activity_emit(app_state, event) -> None:
     log = getattr(app_state, "activity_log", None)
     if log is not None:
         log.emit(event)
+
+
 # Максимум раундов tool-вызовов в одном /chat ответе, защита от бесконечной рекурсии.
 MAX_TOOL_ROUNDS = 5
 
@@ -59,9 +73,9 @@ _THINKING_RE = re.compile(r"\[START_THINKING\].*?\[END_THINKING\]", re.DOTALL)
 def build_models_response(can_select: bool) -> dict:
     """Каталог для UI: только tools-capable; список пуст если выбор запрещён."""
     cfg = settings.agents
-    models = [] if not can_select else [
-        {"id": m.id, "label": m.label} for m in cfg.catalog if m.tools
-    ]
+    models = (
+        [] if not can_select else [{"id": m.id, "label": m.label} for m in cfg.catalog if m.tools]
+    )
     return {"can_select": can_select, "default_model_id": cfg.chat_model, "models": models}
 
 
@@ -71,7 +85,9 @@ async def chat_models(current_user: dict = Depends(get_current_user)):
     return build_models_response(current_user.get("can_select", False))
 
 
-def resolve_chat_model(requested: str | None, session_model_id: str | None, can_select: bool) -> str:
+def resolve_chat_model(
+    requested: str | None, session_model_id: str | None, can_select: bool
+) -> str:
     """Эффективная модель: запрос(если entitled и в каталоге) → session → config-дефолт."""
     cfg = settings.agents
     if can_select and requested and cfg.get_entry(requested) is not None:
@@ -140,14 +156,19 @@ async def _fetch_mcp_context(mcp_client, ctx, expected_vpcs: dict | None = None)
                             line += f" — ОШИБКА (в задании требуется {expected['ip']})"
                     lines.append(line)
                 if lines:
-                    parts.append("Текущая конфигурация VPCS (show ip) — снято прямо сейчас:\n" + "\n".join(lines))
+                    parts.append(
+                        "Текущая конфигурация VPCS (show ip) — снято прямо сейчас:\n"
+                        + "\n".join(lines)
+                    )
         else:
             parts.append("Компоненты среды: список пуст.")
 
         if isinstance(errors, list):
             recent = [e for e in errors if not isinstance(e, Exception)][:5]
             if recent:
-                lines = [f"  - [{e.level.value}] {e.component_id or '?'}: {e.message}" for e in recent]
+                lines = [
+                    f"  - [{e.level.value}] {e.component_id or '?'}: {e.message}" for e in recent
+                ]
                 parts.append("Последние ошибки:\n" + "\n".join(lines))
             else:
                 parts.append("Ошибок не обнаружено.")
@@ -238,7 +259,9 @@ async def _stream_one_round(
         delta = chunk.choices[0].delta if chunk.choices else None
         if getattr(chunk, "usage", None):
             state["usage_info"] = (
-                chunk.usage.model_dump() if hasattr(chunk.usage, "model_dump") else dict(chunk.usage)
+                chunk.usage.model_dump()
+                if hasattr(chunk.usage, "model_dump")
+                else dict(chunk.usage)
             )
         if delta is None:
             continue
@@ -276,7 +299,11 @@ async def _stream_one_round(
         return
 
     assistant_tool_calls = [
-        {"id": tc["id"], "type": "function", "function": {"name": tc["name"], "arguments": tc["arguments"]}}
+        {
+            "id": tc["id"],
+            "type": "function",
+            "function": {"name": tc["name"], "arguments": tc["arguments"]},
+        }
         for _, tc in sorted(tool_calls_buffer.items())
     ]
     messages.append({"role": "assistant", "content": None, "tool_calls": assistant_tool_calls})
@@ -292,21 +319,31 @@ async def _stream_one_round(
             parsed = {}
         yield tool_input_available(tc_id, tc_name, parsed)
         # Эмит: инструмент вызывается.
-        _activity_emit(app_state, event_tool_call(
-            session_id, user_id,
-            name=tc_name,
-            args_preview=str(parsed)[:200],
-        ))
+        _activity_emit(
+            app_state,
+            event_tool_call(
+                session_id,
+                user_id,
+                name=tc_name,
+                args_preview=str(parsed)[:200],
+            ),
+        )
         result = await execute_tool(tc_name, parsed, ctx, mcp_client)
         # Эмит: результат инструмента.
-        _activity_emit(app_state, event_tool_result(
-            session_id, user_id,
-            name=tc_name,
-            result_preview=str(result)[:200],
-            success="error" not in str(result).lower(),
-        ))
+        _activity_emit(
+            app_state,
+            event_tool_result(
+                session_id,
+                user_id,
+                name=tc_name,
+                result_preview=str(result)[:200],
+                success="error" not in str(result).lower(),
+            ),
+        )
         yield tool_output_available(tc_id, result)
-        messages.append({"role": "tool", "tool_call_id": tc_id, "content": f"{result}\n\n[{LANGUAGE_REMINDER}]"})
+        messages.append(
+            {"role": "tool", "tool_call_id": tc_id, "content": f"{result}\n\n[{LANGUAGE_REMINDER}]"}
+        )
 
 
 async def _finalize_assistant_message(
@@ -350,12 +387,16 @@ async def chat_stream(
                 "chat: model_id '%s' отклонён, фолбэк на '%s'", body.model_id, effective_model_id
             )
             # Эмит: фолбэк на другую модель.
-            _activity_emit(request.app.state, event_fallback(
-                session.id, current_user["id"],
-                original_model=body.model_id,
-                fallback_model=effective_model_id,
-                reason="не в каталоге или нет права выбора",
-            ))
+            _activity_emit(
+                request.app.state,
+                event_fallback(
+                    session.id,
+                    current_user["id"],
+                    original_model=body.model_id,
+                    fallback_model=effective_model_id,
+                    reason="не в каталоге или нет права выбора",
+                ),
+            )
         # Персист выбора модели на сессию.
         if effective_model_id != session.model_id:
             session.model_id = effective_model_id
@@ -364,11 +405,15 @@ async def chat_stream(
         model = model_uri(effective_model_id)
         # Эмит: модель выбрана.
         entry = settings.agents.get_entry(effective_model_id)
-        _activity_emit(request.app.state, event_model_selected(
-            session.id, current_user["id"],
-            model_id=effective_model_id,
-            provider=entry.provider_ref if entry else "unknown",
-        ))
+        _activity_emit(
+            request.app.state,
+            event_model_selected(
+                session.id,
+                current_user["id"],
+                model_id=effective_model_id,
+                provider=entry.provider_ref if entry else "unknown",
+            ),
+        )
 
         # Параллельно загружаем: описание лабы + состояние среды из MCP.
         spec = load_lab_spec(session.lab_slug)
@@ -378,19 +423,30 @@ async def chat_stream(
             _fetch_mcp_context(mcp_client, ctx, expected_vpcs),
         )
         # Эмит: контекст MCP получен.
-        _activity_emit(request.app.state, event_mcp_context_fetched(
-            session.id, current_user["id"],
-            component_count=mcp_ctx_text.count("\n  - ") if mcp_ctx_text else 0,
-            error_count=1 if mcp_ctx_text and "ошибок" in mcp_ctx_text.lower() and "не обнаружено" not in mcp_ctx_text.lower() else 0,
-            verdict_summary=("ok" if mcp_ctx_text else "no_context"),
-        ))
+        _activity_emit(
+            request.app.state,
+            event_mcp_context_fetched(
+                session.id,
+                current_user["id"],
+                component_count=mcp_ctx_text.count("\n  - ") if mcp_ctx_text else 0,
+                error_count=1
+                if mcp_ctx_text
+                and "ошибок" in mcp_ctx_text.lower()
+                and "не обнаружено" not in mcp_ctx_text.lower()
+                else 0,
+                verdict_summary=("ok" if mcp_ctx_text else "no_context"),
+            ),
+        )
         system_content = TUTOR_SYSTEM_PROMPT
         if lab_ctx_text:
             system_content += f"\n\n[Задание]\n{lab_ctx_text}"
         if mcp_ctx_text:
             system_content += f"\n\n[Текущее состояние лаб-среды]\n{mcp_ctx_text}"
 
-        messages = [{"role": "system", "content": system_content}, *openai_messages[-MAX_HISTORY_MESSAGES:]]
+        messages = [
+            {"role": "system", "content": system_content},
+            *openai_messages[-MAX_HISTORY_MESSAGES:],
+        ]
         message_id = str(uuid.uuid4())
         yield start_event(message_id)
 
@@ -401,7 +457,13 @@ async def chat_stream(
                 if await request.is_disconnected():
                     break
                 async for event in _stream_one_round(
-                    request, client, model, messages, ctx, mcp_client, state,
+                    request,
+                    client,
+                    model,
+                    messages,
+                    ctx,
+                    mcp_client,
+                    state,
                     model_id=effective_model_id,
                     app_state=request.app.state,
                     session_id=session.id,
@@ -414,12 +476,16 @@ async def chat_stream(
 
             # Эмит: ответ завершён.
             usage = state.get("usage_info") or {}
-            _activity_emit(request.app.state, event_response_finished(
-                session.id, current_user["id"],
-                model_id=effective_model_id,
-                total_tokens=usage.get("total_tokens", 0),
-                stop_reason="stop",
-            ))
+            _activity_emit(
+                request.app.state,
+                event_response_finished(
+                    session.id,
+                    current_user["id"],
+                    model_id=effective_model_id,
+                    total_tokens=usage.get("total_tokens", 0),
+                    stop_reason="stop",
+                ),
+            )
             yield finish_event()
             yield done_event()
         except (Exception, GeneratorExit) as exc:
@@ -434,5 +500,9 @@ async def chat_stream(
     return StreamingResponse(
         generate(),
         media_type="text/event-stream",
-        headers={"x-vercel-ai-ui-message-stream": "v1", "Cache-Control": "no-cache", "Connection": "keep-alive"},
+        headers={
+            "x-vercel-ai-ui-message-stream": "v1",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        },
     )

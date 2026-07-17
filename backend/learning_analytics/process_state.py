@@ -1,4 +1,5 @@
 """Переменная состояния управляемого процесса: дискретный режим + dwell-time."""
+
 from datetime import datetime
 from enum import Enum
 
@@ -7,6 +8,7 @@ from agents.analytics.models import StruggleType
 
 class ProcessRegime(str, Enum):
     """Режим процесса: продуктивный либо затруднение типа k (зеркалит StruggleType)."""
+
     PRODUCTIVE = "productive"
     STUCK_ON_STEP = "stuck_on_step"
     REPEATING_ERRORS = "repeating_errors"

@@ -27,8 +27,15 @@ class TestAudit:
     @autotest.name("audit: act-вызов записан (источник воздействий)")
     async def test_f7a3e2b1_record_act(self, audit_db):
         with autotest.step("Act: записать act"):
-            await record(audit_db, user_id="u1", session_id="s1", tool="execute_action",
-                         kind="act", success=True, lab_slug="lan-static-ip")
+            await record(
+                audit_db,
+                user_id="u1",
+                session_id="s1",
+                tool="execute_action",
+                kind="act",
+                success=True,
+                lab_slug="lan-static-ip",
+            )
         with autotest.step("Assert: строка есть, kind=act"):
             rows = (await audit_db.execute(select(MCPAudit))).scalars().all()
             assert_equal(len(rows), 1, "одна запись")

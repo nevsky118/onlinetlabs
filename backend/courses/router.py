@@ -30,9 +30,7 @@ async def get_course(slug: str, db: AsyncSession = Depends(get_db)):
     """Возвращает курс со списком его лабораторных работ. Возвращает 404, если не найден."""
     course = await get_course_by_slug(db, slug)
     if course is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Course not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
     return CourseDetailResponse(
         slug=course.slug,
         title=course.title,

@@ -73,10 +73,6 @@ class AnalyticsTools:
 
     def detect_error_patterns(self, attempts: list) -> list[str]:
         """Найти повторяющиеся паттерны ошибок (>= 2 повторений)."""
-        errors = [
-            a.error_details
-            for a in attempts
-            if a.error_details is not None
-        ]
+        errors = [a.error_details for a in attempts if a.error_details is not None]
         counts = Counter(errors)
         return [err for err, count in counts.items() if count >= 2]

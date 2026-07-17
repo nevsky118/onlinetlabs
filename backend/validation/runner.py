@@ -17,11 +17,14 @@ async def _eval_check(ctx: CheckContext, check: dict) -> CheckResult:
     expect = check.get("expect") or {}
     handler = _registry.get_handler(kind)
     if handler is None:
-        return CheckResult(ok=False, expected=expect, actual={"error": f"unknown check kind: {kind}"})
+        return CheckResult(
+            ok=False, expected=expect, actual={"error": f"unknown check kind: {kind}"}
+        )
     try:
         return await handler(ctx, params, expect)
     except Exception as exc:  # noqa: BLE001
         return CheckResult(ok=False, expected=expect, actual={"error": str(exc)})
+
 
 _LABS_DIR = Path(__file__).parent / "labs"
 
@@ -56,11 +59,20 @@ async def evaluate_spec(ctx: CheckContext, spec: dict) -> list[dict]:
             params = {k: v for k, v in check.items() if k not in {"kind", "expect"}}
             expect = check.get("expect") or {}
             result = await _eval_check(ctx, check)
-            check_results.append({"kind": kind, "params": params, "ok": result.ok,
-                                   "expected": result.expected, "actual": result.actual})
+            check_results.append(
+                {
+                    "kind": kind,
+                    "params": params,
+                    "ok": result.ok,
+                    "expected": result.expected,
+                    "actual": result.actual,
+                }
+            )
             if not result.ok:
                 step_ok = False
-        accumulated.append({"id": step_id, "title": step_title, "ok": step_ok, "checks": check_results})
+        accumulated.append(
+            {"id": step_id, "title": step_title, "ok": step_ok, "checks": check_results}
+        )
     return accumulated
 
 

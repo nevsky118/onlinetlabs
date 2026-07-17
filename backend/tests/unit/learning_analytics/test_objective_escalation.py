@@ -13,8 +13,10 @@ pytestmark = [pytest.mark.unit]
 def _make_monitor(escalation_max_dwell=180.0):
     cfg = LearningAnalyticsConfig(escalation_max_dwell=escalation_max_dwell)
     return SessionMonitor(
-        mcp_client=MagicMock(), db_factory=MagicMock(),
-        orchestrator=MagicMock(), learning_analytics_config=cfg,
+        mcp_client=MagicMock(),
+        db_factory=MagicMock(),
+        orchestrator=MagicMock(),
+        learning_analytics_config=cfg,
     )
 
 
@@ -59,4 +61,6 @@ class TestObjectiveEscalation:
         with autotest.step("Arrange: монитор по умолчанию"):
             m = _make_monitor()
         with autotest.step("Assert: _escalated_in_spell == False"):
-            assert_false(m._escalated_in_spell, "_escalated_in_spell должен быть False при инициализации")
+            assert_false(
+                m._escalated_in_spell, "_escalated_in_spell должен быть False при инициализации"
+            )

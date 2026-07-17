@@ -9,13 +9,16 @@ pytestmark = [pytest.mark.unit, pytest.mark.auth]
 _VIEWER_ROLES = {"instructor", "admin"}
 
 
-@pytest.mark.parametrize("role,flag,exp", [
-    ("student", None, False),
-    ("instructor", None, True),
-    ("admin", None, True),
-    ("student", True, True),
-    ("instructor", False, False),
-])
+@pytest.mark.parametrize(
+    "role,flag,exp",
+    [
+        ("student", None, False),
+        ("instructor", None, True),
+        ("admin", None, True),
+        ("student", True, True),
+        ("instructor", False, False),
+    ],
+)
 @autotest.name("may_view_agent_logs: матрица роль/тоггл/viewer_roles")
 def test_may_view_agent_logs(role, flag, exp):
     assert may_view_agent_logs(role, flag, _VIEWER_ROLES) is exp

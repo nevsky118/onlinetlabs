@@ -151,7 +151,9 @@ app.state.limiter = limiter
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
     """Возвращает 429 с понятным сообщением при превышении лимита запросов."""
-    return JSONResponse(status_code=429, content={"detail": "Слишком много запросов, попробуй чуть позже"})
+    return JSONResponse(
+        status_code=429, content={"detail": "Слишком много запросов, попробуй чуть позже"}
+    )
 
 
 app.add_middleware(RequestIDMiddleware)

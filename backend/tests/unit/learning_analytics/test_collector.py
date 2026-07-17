@@ -27,7 +27,10 @@ class TestBehavioralCollectorNormalization:
 
         with autotest.step("Нормализуем в event dict"):
             event = BehavioralCollector.normalize_user_action(
-                action, session_id="s1", user_id="u1", lab_slug="lab-1",
+                action,
+                session_id="s1",
+                user_id="u1",
+                lab_slug="lab-1",
                 component_types={"node-1": "qemu"},
             )
 
@@ -51,7 +54,10 @@ class TestBehavioralCollectorNormalization:
 
         with autotest.step("Нормализуем в event dict"):
             event = BehavioralCollector.normalize_log_entry(
-                log, session_id="s1", user_id="u1", lab_slug="lab-1",
+                log,
+                session_id="s1",
+                user_id="u1",
+                lab_slug="lab-1",
             )
 
         with autotest.step("Проверяем поля"):
@@ -73,7 +79,10 @@ class TestBehavioralCollectorNormalization:
 
         with autotest.step("Нормализуем в event dict"):
             event = BehavioralCollector.normalize_error_entry(
-                error, session_id="s1", user_id="u1", lab_slug="lab-1",
+                error,
+                session_id="s1",
+                user_id="u1",
+                lab_slug="lab-1",
             )
 
         with autotest.step("Проверяем поля"):

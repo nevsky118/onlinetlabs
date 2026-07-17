@@ -36,39 +36,21 @@ class FeatureExtractor:
             ),
             action_rate_slope=round(self._action_rate_slope(sorted_events), 4),
             idle_periods=sum(1 for delta in latencies if delta > idle_gap),
-            total_active_time=round(
-                sum(delta for delta in latencies if delta <= idle_gap), 2
-            ),
-            time_on_current_step=round(
-                self._time_on_current_step(sorted_events, now), 2
-            ),
+            total_active_time=round(sum(delta for delta in latencies if delta <= idle_gap), 2),
+            time_on_current_step=round(self._time_on_current_step(sorted_events, now), 2),
             error_repeat_count=max_consec_errors,
             error_repeat_rate=round(
-                max_consec_errors / len(error_events)
-                if error_events
-                else 0.0,
+                max_consec_errors / len(error_events) if error_events else 0.0,
                 4,
             ),
-            action_sequence_entropy=round(
-                self._action_entropy(sorted_events), 4
-            ),
+            action_sequence_entropy=round(self._action_entropy(sorted_events), 4),
             undo_redo_ratio=round(self._undo_redo_ratio(action_events), 4),
-            error_frequency=round(
-                self._error_frequency(error_events, sorted_events), 4
-            ),
-            error_frequency_slope=round(
-                self._error_frequency_slope(error_events), 4
-            ),
-            unique_error_types=len(
-                {e.message for e in error_events if e.message}
-            ),
+            error_frequency=round(self._error_frequency(error_events, sorted_events), 4),
+            error_frequency_slope=round(self._error_frequency_slope(error_events), 4),
+            unique_error_types=len({e.message for e in error_events if e.message}),
             dominant_error=self._dominant_error(error_events),
-            components_touched=len(
-                {e.component_id for e in sorted_events if e.component_id}
-            ),
-            action_diversity=round(
-                len({e.action for e in sorted_events}) / len(sorted_events), 4
-            ),
+            components_touched=len({e.component_id for e in sorted_events if e.component_id}),
+            action_diversity=round(len({e.action for e in sorted_events}) / len(sorted_events), 4),
             events_total=len(sorted_events),
             distinct_failing_actuals=self._distinct_failing_actuals(sorted_events),
             cycles_failing_unchanged=self._cycles_failing_unchanged(sorted_events),
@@ -81,15 +63,26 @@ class FeatureExtractor:
     def _empty_features(self, session_id: str, now: datetime) -> SessionFeatures:
         """Нулевой вектор фич для пустой сессии."""
         return SessionFeatures(
-            avg_inter_action_latency=0.0, action_rate_slope=0.0,
-            idle_periods=0, total_active_time=0.0, time_on_current_step=0.0,
-            error_repeat_count=0, error_repeat_rate=0.0,
-            action_sequence_entropy=0.0, undo_redo_ratio=0.0,
-            error_frequency=0.0, error_frequency_slope=0.0,
-            unique_error_types=0, dominant_error=None,
-            components_touched=0, action_diversity=0.0, events_total=0,
-            distinct_failing_actuals=0, cycles_failing_unchanged=0,
-            session_id=session_id, computed_at=now,
+            avg_inter_action_latency=0.0,
+            action_rate_slope=0.0,
+            idle_periods=0,
+            total_active_time=0.0,
+            time_on_current_step=0.0,
+            error_repeat_count=0,
+            error_repeat_rate=0.0,
+            action_sequence_entropy=0.0,
+            undo_redo_ratio=0.0,
+            error_frequency=0.0,
+            error_frequency_slope=0.0,
+            unique_error_types=0,
+            dominant_error=None,
+            components_touched=0,
+            action_diversity=0.0,
+            events_total=0,
+            distinct_failing_actuals=0,
+            cycles_failing_unchanged=0,
+            session_id=session_id,
+            computed_at=now,
         )
 
     @staticmethod
@@ -112,9 +105,7 @@ class FeatureExtractor:
         start_time = events[0].timestamp
         buckets: list[int] = []
         for event in events:
-            bucket_index = int(
-                (event.timestamp - start_time).total_seconds() / window_seconds
-            )
+            bucket_index = int((event.timestamp - start_time).total_seconds() / window_seconds)
             while len(buckets) <= bucket_index:
                 buckets.append(0)
             buckets[bucket_index] += 1
@@ -124,10 +115,7 @@ class FeatureExtractor:
         indices = list(range(bucket_count))
         index_mean = sum(indices) / bucket_count
         value_mean = sum(buckets) / bucket_count
-        numerator = sum(
-            (x - index_mean) * (y - value_mean)
-            for x, y in zip(indices, buckets)
-        )
+        numerator = sum((x - index_mean) * (y - value_mean) for x, y in zip(indices, buckets))
         denominator = sum((x - index_mean) ** 2 for x in indices)
         return numerator / denominator if denominator else 0.0
 
@@ -175,9 +163,7 @@ class FeatureExtractor:
         counts = Counter(action_names)
         total = len(action_names)
         entropy = -sum(
-            (count / total) * math.log2(count / total)
-            for count in counts.values()
-            if count > 0
+            (count / total) * math.log2(count / total) for count in counts.values() if count > 0
         )
         max_entropy = math.log2(len(counts)) if len(counts) > 1 else 1.0
         return entropy / max_entropy if max_entropy > 0 else 0.0
@@ -202,17 +188,11 @@ class FeatureExtractor:
             return 0.0
         session_end = all_events[-1].timestamp
         session_start = all_events[0].timestamp
-        duration_minutes = max(
-            (session_end - session_start).total_seconds() / 60.0, 0.1
-        )
-        window_minutes = min(
-            self._config.error_freq_window_minutes, duration_minutes
-        )
+        duration_minutes = max((session_end - session_start).total_seconds() / 60.0, 0.1)
+        window_minutes = min(self._config.error_freq_window_minutes, duration_minutes)
         window_cutoff = session_end.timestamp() - window_minutes * 60
         recent_error_count = sum(
-            1
-            for event in error_events
-            if event.timestamp.timestamp() >= window_cutoff
+            1 for event in error_events if event.timestamp.timestamp() >= window_cutoff
         )
         return recent_error_count / window_minutes
 
@@ -237,7 +217,9 @@ class FeatureExtractor:
     @staticmethod
     def _distinct_failing_actuals(events: list) -> int:
         """Кол-во уникальных actual у доминирующего failing-компонента."""
-        failing = [e for e in events if getattr(e, "action", None) in {"check_failing", "check_retry"}]
+        failing = [
+            e for e in events if getattr(e, "action", None) in {"check_failing", "check_retry"}
+        ]
         if not failing:
             return 0
         # доминирующий component_id среди failing-событий

@@ -67,9 +67,7 @@ async def get_lab_progress(
     """
     detail = await get_lab_progress_detail(db, current_user["id"], lab_slug)
     if detail is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="No progress found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No progress found")
     lp = detail["progress"]
     return LabProgressDetailResponse(
         id=lp.id,

@@ -27,7 +27,9 @@ class TestProgressRules:
         with autotest.step("Ожидаем TRIAL_AND_ERROR + TUTOR"):
             assert_true(result.struggle_detected, "struggle обнаружен")
             assert_equal(result.struggle_type, StruggleType.TRIAL_AND_ERROR, "тип: trial_and_error")
-            assert_equal(result.suggested_intervention, SuggestedIntervention.TUTOR, "интервенция: tutor")
+            assert_equal(
+                result.suggested_intervention, SuggestedIntervention.TUTOR, "интервенция: tutor"
+            )
 
     @autotest.num("1761")
     @autotest.external_id("d9e0f1a2-b3c4-4d5e-9f6a-8b9c0d1e2f3a")
@@ -44,7 +46,9 @@ class TestProgressRules:
         with autotest.step("Ожидаем STUCK_ON_STEP + HINT"):
             assert_true(result.struggle_detected, "struggle обнаружен")
             assert_equal(result.struggle_type, StruggleType.STUCK_ON_STEP, "тип: stuck_on_step")
-            assert_equal(result.suggested_intervention, SuggestedIntervention.HINT, "интервенция: hint")
+            assert_equal(
+                result.suggested_intervention, SuggestedIntervention.HINT, "интервенция: hint"
+            )
 
     @autotest.num("1762")
     @autotest.external_id("e0f1a2b3-c4d5-4e6f-af7b-9c0d1e2f3a4b")

@@ -43,35 +43,48 @@ class TestBuildSessionTimeline:
     async def _seed_timeline(self):
         """Сессия с user-msg (t0), intervention (t1), assistant-msg (t2)."""
         async with self.session_factory() as db:
-            db.add_all([
-                User(id="stud-t", name="Таймлайн", email="tl@test.local", role="student"),
-                Lab(slug="tl-lab", title="TL Lab"),
-                LearningSession(
-                    id="sess-tl", user_id="stud-t", lab_slug="tl-lab",
-                    status="in_progress", started_at=_ts(0),
-                ),
-                # t=0: вопрос студента
-                ChatMessage(
-                    id="msg-tl-1", session_id="sess-tl", role="user",
-                    parts=[{"type": "text", "text": "Вопрос"}],
-                    created_at=_ts(0),
-                ),
-                # t=2: ассистент отвечает
-                ChatMessage(
-                    id="msg-tl-2", session_id="sess-tl", role="assistant",
-                    parts=[{"type": "text", "text": "Ответ"}],
-                    created_at=_ts(2),
-                ),
-                # t=1: интервенция между ними
-                BehavioralEvent(
-                    id="evt-tl-1",
-                    session_id="sess-tl", user_id="stud-t", lab_slug="tl-lab",
-                    timestamp=_ts(1), event_type="intervention",
-                    action="intervene_hint", success=True,
-                    message="Подсказка",
-                    extra_data={"hint_level": 2, "struggle_type": "config_error"},
-                ),
-            ])
+            db.add_all(
+                [
+                    User(id="stud-t", name="Таймлайн", email="tl@test.local", role="student"),
+                    Lab(slug="tl-lab", title="TL Lab"),
+                    LearningSession(
+                        id="sess-tl",
+                        user_id="stud-t",
+                        lab_slug="tl-lab",
+                        status="in_progress",
+                        started_at=_ts(0),
+                    ),
+                    # t=0: вопрос студента
+                    ChatMessage(
+                        id="msg-tl-1",
+                        session_id="sess-tl",
+                        role="user",
+                        parts=[{"type": "text", "text": "Вопрос"}],
+                        created_at=_ts(0),
+                    ),
+                    # t=2: ассистент отвечает
+                    ChatMessage(
+                        id="msg-tl-2",
+                        session_id="sess-tl",
+                        role="assistant",
+                        parts=[{"type": "text", "text": "Ответ"}],
+                        created_at=_ts(2),
+                    ),
+                    # t=1: интервенция между ними
+                    BehavioralEvent(
+                        id="evt-tl-1",
+                        session_id="sess-tl",
+                        user_id="stud-t",
+                        lab_slug="tl-lab",
+                        timestamp=_ts(1),
+                        event_type="intervention",
+                        action="intervene_hint",
+                        success=True,
+                        message="Подсказка",
+                        extra_data={"hint_level": 2, "struggle_type": "config_error"},
+                    ),
+                ]
+            )
             await db.commit()
 
     @autotest.num("1880")
@@ -86,7 +99,9 @@ class TestBuildSessionTimeline:
                 items = await build_session_timeline(db, "sess-tl")
 
         with autotest.step("Assert: порядок kind и поля интервенции"):
-            assert_equal([i["kind"] for i in items], ["student", "intervention", "tutor"], "порядок")
+            assert_equal(
+                [i["kind"] for i in items], ["student", "intervention", "tutor"], "порядок"
+            )
             assert_equal(items[1]["hint_level"], 2, "hint_level из extra_data")
             assert_equal(items[1]["struggle_type"], "config_error", "struggle_type")
             assert_equal(items[1]["text"], "Подсказка", "text интервенции")
@@ -109,20 +124,29 @@ class TestBuildSessionTimeline:
     async def test_timeline_ignores_non_intervention_events(self):
         with autotest.step("Arrange: сессия с command-событием"):
             async with self.session_factory() as db:
-                db.add_all([
-                    User(id="stud-cmd", name="CMD", email="cmd@test.local", role="student"),
-                    Lab(slug="cmd-lab", title="CMD Lab"),
-                    LearningSession(
-                        id="sess-cmd", user_id="stud-cmd", lab_slug="cmd-lab",
-                        status="active", started_at=_ts(0),
-                    ),
-                    BehavioralEvent(
-                        id="evt-cmd-1",
-                        session_id="sess-cmd", user_id="stud-cmd", lab_slug="cmd-lab",
-                        timestamp=_ts(0), event_type="command",
-                        action="ping", success=True,
-                    ),
-                ])
+                db.add_all(
+                    [
+                        User(id="stud-cmd", name="CMD", email="cmd@test.local", role="student"),
+                        Lab(slug="cmd-lab", title="CMD Lab"),
+                        LearningSession(
+                            id="sess-cmd",
+                            user_id="stud-cmd",
+                            lab_slug="cmd-lab",
+                            status="active",
+                            started_at=_ts(0),
+                        ),
+                        BehavioralEvent(
+                            id="evt-cmd-1",
+                            session_id="sess-cmd",
+                            user_id="stud-cmd",
+                            lab_slug="cmd-lab",
+                            timestamp=_ts(0),
+                            event_type="command",
+                            action="ping",
+                            success=True,
+                        ),
+                    ]
+                )
                 await db.commit()
 
         with autotest.step("Act"):
@@ -138,14 +162,19 @@ class TestBuildSessionTimeline:
     async def test_endpoint_foreign_session_returns_404(self):
         with autotest.step("Arrange: сессия принадлежит другому пользователю"):
             async with self.session_factory() as db:
-                db.add_all([
-                    User(id="owner", name="Owner", email="owner@test.local", role="student"),
-                    Lab(slug="ep-lab", title="EP Lab"),
-                    LearningSession(
-                        id="sess-ep", user_id="owner", lab_slug="ep-lab",
-                        status="active", started_at=_ts(0),
-                    ),
-                ])
+                db.add_all(
+                    [
+                        User(id="owner", name="Owner", email="owner@test.local", role="student"),
+                        Lab(slug="ep-lab", title="EP Lab"),
+                        LearningSession(
+                            id="sess-ep",
+                            user_id="owner",
+                            lab_slug="ep-lab",
+                            status="active",
+                            started_at=_ts(0),
+                        ),
+                    ]
+                )
                 await db.commit()
 
         with autotest.step("Act + Assert: user_id='other' → 404"):

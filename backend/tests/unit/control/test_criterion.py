@@ -48,7 +48,9 @@ class TestCriterion:
 
     @autotest.num("1424")
     @autotest.external_id("00208a1c-033f-47c9-9087-60a60de6b614")
-    @autotest.name("compute_J: ложное вмешательство засчитывается при преждевременном выходе из спелла")
+    @autotest.name(
+        "compute_J: ложное вмешательство засчитывается при преждевременном выходе из спелла"
+    )
     def test_00208a1c_count_false_flags_premature_intervention(self):
         def _spell(start: int, duration: int, with_iv: bool) -> list[dict]:
             """Возвращает сэмплы одного спелла [start, start+duration]."""

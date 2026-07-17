@@ -15,11 +15,20 @@ pytestmark = [pytest.mark.unit]
 
 
 class _Cap:
-    def __init__(self): self.added = []
-    async def __aenter__(self): return self
-    async def __aexit__(self, *a): return False
-    def add(self, obj): self.added.append(obj)
-    async def commit(self): pass
+    def __init__(self):
+        self.added = []
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *a):
+        return False
+
+    def add(self, obj):
+        self.added.append(obj)
+
+    async def commit(self):
+        pass
 
 
 class TestMonitorStateLog:
@@ -30,8 +39,10 @@ class TestMonitorStateLog:
         with autotest.step("Arrange: монитор с захватывающей сессией БД"):
             cap = _Cap()
             monitor = SessionMonitor(
-                mcp_client=MagicMock(), db_factory=lambda: cap,
-                orchestrator=MagicMock(), learning_analytics_config=LearningAnalyticsConfig(),
+                mcp_client=MagicMock(),
+                db_factory=lambda: cap,
+                orchestrator=MagicMock(),
+                learning_analytics_config=LearningAnalyticsConfig(),
             )
             monitor._session_id, monitor._user_id, monitor._lab_slug = "s1", "u1", "lab-1"
             a = SimpleNamespace(struggle_detected=True, struggle_type=StruggleType.IDLE)

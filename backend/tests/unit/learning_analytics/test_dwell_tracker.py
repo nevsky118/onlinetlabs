@@ -24,7 +24,9 @@ class TestDwellTracker:
             obs30 = dt.observe(ProcessRegime.STUCK_ON_STEP, t + timedelta(seconds=30))
             obs_switch = dt.observe(ProcessRegime.PRODUCTIVE, t + timedelta(seconds=45))
 
-        with autotest.step("Assert: первое наблюдение — 0; последующие накапливают; смена режима сбрасывает"):
+        with autotest.step(
+            "Assert: первое наблюдение — 0; последующие накапливают; смена режима сбрасывает"
+        ):
             assert_equal(obs0, 0.0, "первое наблюдение — 0.0")
             assert_equal(obs15, 15.0, "через 15 сек — 15.0")
             assert_equal(obs30, 30.0, "через 30 сек — 30.0")

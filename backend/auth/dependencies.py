@@ -23,7 +23,9 @@ def may_select_model(role: str, can_select_model: bool | None, selectable_roles:
     return role in selectable_roles
 
 
-def may_view_agent_logs(role: str, can_view_agent_logs: bool | None, viewer_roles: set[str]) -> bool:
+def may_view_agent_logs(
+    role: str, can_view_agent_logs: bool | None, viewer_roles: set[str]
+) -> bool:
     """Право видеть лог агентов: per-user тоггл важнее, иначе роль-дефолт."""
     if can_view_agent_logs is not None:
         return can_view_agent_logs
@@ -37,7 +39,13 @@ def can_view_session_activity(user: dict, session) -> bool:
     return session.user_id == user["id"] or user.get("role") in ("instructor", "admin")
 
 
-def create_backend_token(user_id: str, role: str, can_select: bool = False, can_view_logs: bool = False, is_active: bool = False) -> str:
+def create_backend_token(
+    user_id: str,
+    role: str,
+    can_select: bool = False,
+    can_view_logs: bool = False,
+    is_active: bool = False,
+) -> str:
     """Выдать HS256 JWT с claims sub, role, can_select, can_view_logs, is_active, время жизни 5 минут."""
     now = datetime.now(timezone.utc)
     payload = {
@@ -66,10 +74,14 @@ async def get_current_user(
         user_id = payload.get("sub")
         role = payload.get("role")
         if user_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
-            )
-        return {"id": user_id, "role": role, "can_select": bool(payload.get("can_select")), "can_view_logs": bool(payload.get("can_view_logs")), "is_active": bool(payload.get("is_active"))}
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+        return {
+            "id": user_id,
+            "role": role,
+            "can_select": bool(payload.get("can_select")),
+            "can_view_logs": bool(payload.get("can_view_logs")),
+            "is_active": bool(payload.get("is_active")),
+        }
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token"
@@ -77,9 +89,7 @@ async def get_current_user(
 
 
 async def get_current_user_optional(
-    credentials: HTTPAuthorizationCredentials | None = Depends(
-        HTTPBearer(auto_error=False)
-    ),
+    credentials: HTTPAuthorizationCredentials | None = Depends(HTTPBearer(auto_error=False)),
 ) -> dict | None:
     """FastAPI зависимость. Возвращает пользователя из JWT или None без ошибки."""
     if credentials is None:
@@ -90,7 +100,13 @@ async def get_current_user_optional(
         role = payload.get("role")
         if user_id is None:
             return None
-        return {"id": user_id, "role": role, "can_select": bool(payload.get("can_select")), "can_view_logs": bool(payload.get("can_view_logs")), "is_active": bool(payload.get("is_active"))}
+        return {
+            "id": user_id,
+            "role": role,
+            "can_select": bool(payload.get("can_select")),
+            "can_view_logs": bool(payload.get("can_view_logs")),
+            "is_active": bool(payload.get("is_active")),
+        }
     except JWTError:
         return None
 
@@ -98,9 +114,7 @@ async def get_current_user_optional(
 def require_admin(current_user: dict = Depends(get_current_user)) -> dict:
     """FastAPI зависимость. Пропускает только роль admin."""
     if current_user.get("role") != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Admin only"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin only")
     return current_user
 
 
@@ -111,9 +125,7 @@ def require_instructor(current_user: dict = Depends(get_current_user)) -> dict:
     доступен ролям instructor и admin, но не student.
     """
     if current_user.get("role") not in ("instructor", "admin"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Instructor only"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Instructor only")
     return current_user
 
 
@@ -151,7 +163,13 @@ async def verify_jwt_for_ws(token: str | None) -> dict | None:
         role = payload.get("role")
         if user_id is None:
             return None
-        return {"id": user_id, "role": role, "can_select": bool(payload.get("can_select")), "can_view_logs": bool(payload.get("can_view_logs")), "is_active": bool(payload.get("is_active"))}
+        return {
+            "id": user_id,
+            "role": role,
+            "can_select": bool(payload.get("can_select")),
+            "can_view_logs": bool(payload.get("can_view_logs")),
+            "is_active": bool(payload.get("is_active")),
+        }
     except JWTError as exc:
         logger.warning("ws jwt verify failed", extra={"error": str(exc)})
         return None

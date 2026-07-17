@@ -58,7 +58,9 @@ class TestExchangeRateLimitKey:
 
     @autotest.num("723")
     @autotest.external_id("07080910-0b0c-4d4e-8f56-890abcdef012")
-    @autotest.name("exchange_rate_limit_key: без субъекта → fallback на IP, не путается с email-ключами")
+    @autotest.name(
+        "exchange_rate_limit_key: без субъекта → fallback на IP, не путается с email-ключами"
+    )
     def test_07080910_fallback_ip_distinct_from_subject(self):
         with autotest.step("Act: ключ без exchange_subject"):
             ip_key = exchange_rate_limit_key(_request(None, client_ip="10.0.0.1"))

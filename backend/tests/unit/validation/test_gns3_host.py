@@ -6,7 +6,9 @@ pytestmark = [pytest.mark.unit]
 
 
 def _settings(node_host="", internal="http://gns3-server:3080", public="http://localhost:3080"):
-    return SimpleNamespace(gns3=SimpleNamespace(node_host=node_host, internal_url=internal, public_url=public))
+    return SimpleNamespace(
+        gns3=SimpleNamespace(node_host=node_host, internal_url=internal, public_url=public)
+    )
 
 
 def test_derives_host_from_internal_url():

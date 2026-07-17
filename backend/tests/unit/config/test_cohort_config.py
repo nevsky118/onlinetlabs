@@ -15,6 +15,10 @@ class TestLearningAnalyticsConfig:
         with autotest.step("Act: создать конфиг с дефолтами"):
             c = LearningAnalyticsConfig()
 
-        with autotest.step("Assert: cohort_horizon_days > 0 и autonomy_intervention_threshold >= 0"):
+        with autotest.step(
+            "Assert: cohort_horizon_days > 0 и autonomy_intervention_threshold >= 0"
+        ):
             assert_greater(c.cohort_horizon_days, 0, "cohort_horizon_days > 0")
-            assert_greater_equal(c.autonomy_intervention_threshold, 0, "autonomy_intervention_threshold >= 0")
+            assert_greater_equal(
+                c.autonomy_intervention_threshold, 0, "autonomy_intervention_threshold >= 0"
+            )

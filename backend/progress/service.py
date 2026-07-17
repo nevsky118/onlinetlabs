@@ -38,9 +38,7 @@ async def record_lab_validation(
     now = datetime.now(timezone.utc)
 
     result = await db.execute(
-        select(LabProgress).where(
-            LabProgress.user_id == user_id, LabProgress.lab_slug == lab_slug
-        )
+        select(LabProgress).where(LabProgress.user_id == user_id, LabProgress.lab_slug == lab_slug)
     )
     lp = result.scalar_one_or_none()
     if lp is None:
@@ -66,9 +64,7 @@ async def record_lab_validation(
 async def start_lab(db: AsyncSession, user_id: str, lab_slug: str) -> LabProgress:
     """Возвращает существующий прогресс по лабораторной или создаёт новый со статусом in_progress."""
     result = await db.execute(
-        select(LabProgress).where(
-            LabProgress.user_id == user_id, LabProgress.lab_slug == lab_slug
-        )
+        select(LabProgress).where(LabProgress.user_id == user_id, LabProgress.lab_slug == lab_slug)
     )
     existing = result.scalar_one_or_none()
     if existing is not None:
@@ -123,23 +119,17 @@ async def get_all_progress(db: AsyncSession, user_id: str) -> dict:
     courses_result = await db.execute(
         select(CourseProgress).where(CourseProgress.user_id == user_id)
     )
-    labs_result = await db.execute(
-        select(LabProgress).where(LabProgress.user_id == user_id)
-    )
+    labs_result = await db.execute(select(LabProgress).where(LabProgress.user_id == user_id))
     return {
         "courses": list(courses_result.scalars().all()),
         "labs": list(labs_result.scalars().all()),
     }
 
 
-async def get_lab_progress_detail(
-    db: AsyncSession, user_id: str, lab_slug: str
-) -> dict | None:
+async def get_lab_progress_detail(db: AsyncSession, user_id: str, lab_slug: str) -> dict | None:
     """Возвращает прогресс по лабораторной с попытками по шагам или None, если прогресса нет."""
     lp_result = await db.execute(
-        select(LabProgress).where(
-            LabProgress.user_id == user_id, LabProgress.lab_slug == lab_slug
-        )
+        select(LabProgress).where(LabProgress.user_id == user_id, LabProgress.lab_slug == lab_slug)
     )
     progress = lp_result.scalar_one_or_none()
     if progress is None:

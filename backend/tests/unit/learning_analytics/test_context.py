@@ -54,8 +54,12 @@ class TestAgentContext:
     def test_b2c3d4e5_to_prompt_empty(self):
         with autotest.step("Создаём пустой AgentContext"):
             ctx = AgentContext(
-                topology_summary="", recent_errors=[], recent_actions=[],
-                struggle_type=None, dominant_error=None, features_summary="",
+                topology_summary="",
+                recent_errors=[],
+                recent_actions=[],
+                struggle_type=None,
+                dominant_error=None,
+                features_summary="",
             )
 
         with autotest.step("to_prompt возвращает строку"):
@@ -76,10 +80,21 @@ class TestMCPContextBuilder:
                     Component(id="n2", name="R2", type="qemu", status="stopped", summary=""),
                 ],
                 actions=[
-                    UserAction(timestamp=now, component_id="n1", action="start_node", raw_command=None, success=True),
+                    UserAction(
+                        timestamp=now,
+                        component_id="n1",
+                        action="start_node",
+                        raw_command=None,
+                        success=True,
+                    ),
                 ],
                 errors=[
-                    ErrorEntry(timestamp=now, level=LogLevel.ERROR, message="OSPF timeout", component_id="n2"),
+                    ErrorEntry(
+                        timestamp=now,
+                        level=LogLevel.ERROR,
+                        message="OSPF timeout",
+                        component_id="n2",
+                    ),
                 ],
             )
             builder = MCPContextBuilder(mcp)
@@ -97,11 +112,14 @@ class TestMCPContextBuilder:
     @autotest.name("MCPContextBuilder.build: MCP недоступен → пустой контекст")
     async def test_d4e5f6a7_build_mcp_down(self):
         with autotest.step("Создаём MCP который бросает исключения"):
+
             class FailingMCP:
                 async def list_components(self, ctx):
                     raise ConnectionError("MCP down")
+
                 async def list_user_actions(self, ctx, limit=10):
                     raise ConnectionError("MCP down")
+
                 async def list_errors(self, ctx, since=None):
                     raise ConnectionError("MCP down")
 

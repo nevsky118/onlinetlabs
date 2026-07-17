@@ -1,4 +1,5 @@
 """Метрики оценки идентификатора в терминах управления: задержка, ложные/час, recall, CI."""
+
 import random
 import statistics
 from dataclasses import dataclass
@@ -22,12 +23,20 @@ class DetectionMetrics:
 
 
 def _in_window(scn: "LabeledScenario", d: "Detection") -> bool:
-    return (d.detected and d.detected_ts is not None and scn.onset_ts is not None
-            and scn.onset_ts <= d.detected_ts <= scn.onset_ts + scn.onset_window)
+    return (
+        d.detected
+        and d.detected_ts is not None
+        and scn.onset_ts is not None
+        and scn.onset_ts <= d.detected_ts <= scn.onset_ts + scn.onset_window
+    )
 
 
 def detection_latencies(pairs) -> list[float]:
-    return [d.detected_ts - scn.onset_ts for scn, d in pairs if not is_normal(scn) and _in_window(scn, d)]
+    return [
+        d.detected_ts - scn.onset_ts
+        for scn, d in pairs
+        if not is_normal(scn) and _in_window(scn, d)
+    ]
 
 
 def bootstrap_ci(values: list[float], n_resamples: int = 1000, seed: int = 0):
@@ -79,11 +88,17 @@ def confusion_matrix(
 ) -> dict[ProcessRegime, dict[ProcessRegime, int]]:
     """Матрица ошибок 5×5 (строки=truth, столбцы=detected; None-детект→PRODUCTIVE)."""
     regimes = list(ProcessRegime)
-    cm: dict[ProcessRegime, dict[ProcessRegime, int]] = {r: {c: 0 for c in regimes} for r in regimes}
+    cm: dict[ProcessRegime, dict[ProcessRegime, int]] = {
+        r: {c: 0 for c in regimes} for r in regimes
+    }
     for scn, d in pairs:
         truth = scn.truth_regime
         # нет детекта → PRODUCTIVE (не распознан)
-        detected = d.detected_regime if (d.detected and d.detected_regime is not None) else ProcessRegime.PRODUCTIVE
+        detected = (
+            d.detected_regime
+            if (d.detected and d.detected_regime is not None)
+            else ProcessRegime.PRODUCTIVE
+        )
         cm[truth][detected] += 1
     return cm
 
@@ -91,6 +106,7 @@ def confusion_matrix(
 @dataclass
 class OperatingPoint:
     """Точка рабочей кривой идентификатора при заданном пороге T_k."""
+
     t_k: float
     latency_median: float | None
     false_per_hour: float
@@ -147,7 +163,7 @@ def first_match_diagnostics(
     from agents.analytics.agent import STRUGGLE_RULES  # отложенный импорт — нет цикла
 
     firing = 0  # снапшотов, где сработало ≥1 правило
-    multi = 0   # снапшотов, где сработало ≥2 правил
+    multi = 0  # снапшотов, где сработало ≥2 правил
 
     for scn in scenarios:
         for snap in scn.snapshots:

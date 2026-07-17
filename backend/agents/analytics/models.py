@@ -33,6 +33,7 @@ class DifficultyRecommendation(BaseModel):
 
 class DifficultyLevel(str, Enum):
     """Уровни сложности."""
+
     BEGINNER = "beginner"
     INTERMEDIATE = "intermediate"
     ADVANCED = "advanced"
@@ -40,6 +41,7 @@ class DifficultyLevel(str, Enum):
 
 class StruggleType(str, Enum):
     """Типы затруднений студента: застрял на шаге, повтор ошибок, простой, метод проб и ошибок."""
+
     STUCK_ON_STEP = "stuck_on_step"
     REPEATING_ERRORS = "repeating_errors"
     IDLE = "idle"
@@ -48,6 +50,7 @@ class StruggleType(str, Enum):
 
 class SuggestedIntervention(str, Enum):
     """Рекомендуемые интервенции: подсказка, тьютор, упрощение или ничего."""
+
     HINT = "hint"
     TUTOR = "tutor"
     SIMPLIFY = "simplify"
@@ -56,6 +59,7 @@ class SuggestedIntervention(str, Enum):
 
 class SessionFeatures(BaseModel):
     """Вычисленные фичи сессии на момент времени."""
+
     # Темпоральные
     avg_inter_action_latency: float
     action_rate_slope: float
@@ -86,6 +90,7 @@ class SessionFeatures(BaseModel):
 
 class AnalyticsResult(BaseModel):
     """Результат аналитики сессии в реальном времени."""
+
     difficulty_recommendation: DifficultyRecommendation
     struggle_detected: bool
     struggle_type: StruggleType | None = None

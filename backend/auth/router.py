@@ -33,9 +33,7 @@ from db.session import get_db
 router = APIRouter()
 
 
-@router.post(
-    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 @limiter.limit("3/minute")
 async def register(
     request: FastAPIRequest,
@@ -45,9 +43,7 @@ async def register(
     """Регистрирует нового пользователя. При занятом email возвращает 409."""
     existing = await get_user_by_email(db, req.email)
     if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Email already registered"
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
 
     password_hash = await hash_password_async(req.password)
     user = await create_user(
@@ -71,14 +67,10 @@ async def login(
     """Проверяет email и пароль. При неверных данных возвращает 401."""
     user = await get_user_by_email(db, req.email)
     if not user or not user.password_hash:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     if not await verify_password_async(req.password, user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     return UserResponse(
         id=user.id, email=user.email, name=user.name, image=user.image, role=user.role
@@ -118,13 +110,21 @@ async def exchange(
     """
     user = await get_user_by_email(db, req.email)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
-    can_select = may_select_model(user.role, user.can_select_model, settings.agents.selectable_roles)
-    can_view_logs = may_view_agent_logs(user.role, user.can_view_agent_logs, settings.observability.viewer_roles)
-    token = create_backend_token(user_id=user.id, role=user.role, can_select=can_select, can_view_logs=can_view_logs, is_active=user.is_active)
+    can_select = may_select_model(
+        user.role, user.can_select_model, settings.agents.selectable_roles
+    )
+    can_view_logs = may_view_agent_logs(
+        user.role, user.can_view_agent_logs, settings.observability.viewer_roles
+    )
+    token = create_backend_token(
+        user_id=user.id,
+        role=user.role,
+        can_select=can_select,
+        can_view_logs=can_view_logs,
+        is_active=user.is_active,
+    )
     return TokenResponse(access_token=token)
 
 
@@ -137,9 +137,7 @@ async def delete_user_endpoint(
     """Удаляет пользователя по id (только для admin). При отсутствии возвращает 404."""
     deleted = await delete_user(db, user_id)
     if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
 
 @router.post("/github-callback", response_model=UserResponse)

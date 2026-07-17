@@ -13,8 +13,8 @@ pytestmark = [pytest.mark.unit]
 
 def _m(arm: str, esc: int, l2_pass: bool | None, repeated: int) -> SimpleNamespace:
     return SimpleNamespace(
-        base_arm=arm,       # training-arm; analysis.py группирует по base_arm
-        control_arm=arm,    # effective arm (аудит); здесь совпадает с base_arm
+        base_arm=arm,  # training-arm; analysis.py группирует по base_arm
+        control_arm=arm,  # effective arm (аудит); здесь совпадает с base_arm
         escalations=esc,
         l2_unassisted_pass=l2_pass,
         repeated_errors=repeated,

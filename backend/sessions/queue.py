@@ -59,9 +59,7 @@ class SessionQueueService:
 
     def __init__(self, redis_url: str | None = None) -> None:
         """Создаёт клиент Redis из переданного URL или настроек."""
-        self._redis = aioredis.from_url(
-            redis_url or settings.redis.url, decode_responses=True
-        )
+        self._redis = aioredis.from_url(redis_url or settings.redis.url, decode_responses=True)
 
     def _active_key(self, lab_slug: str) -> str:
         """Ключ Redis со счётчиком активных сессий лаборатории."""

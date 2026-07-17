@@ -24,7 +24,9 @@ class TestResolveInterventionModel:
 
     @autotest.num("1791")
     @autotest.external_id("b1c2d3e4-f5a6-4b7c-8d9e-f0a1b2c3d4e5")
-    @autotest.name("Orchestrator._resolve_intervention_model: follow_session возвращает session_model_id")
+    @autotest.name(
+        "Orchestrator._resolve_intervention_model: follow_session возвращает session_model_id"
+    )
     def test_b1c2d3e4_follows_session(self, config_model):
         with autotest.step("Включаем interventions_follow_session"):
             config_model.agents.interventions_follow_session = True
@@ -38,7 +40,9 @@ class TestResolveInterventionModel:
 
     @autotest.num("1792")
     @autotest.external_id("c2d3e4f5-a6b7-4c8d-9e0f-a1b2c3d4e5f6")
-    @autotest.name("Orchestrator._resolve_intervention_model: follow_session + неизвестная модель → дефолт")
+    @autotest.name(
+        "Orchestrator._resolve_intervention_model: follow_session + неизвестная модель → дефолт"
+    )
     def test_c2d3e4f5_follows_session_unknown_model(self, config_model):
         with autotest.step("Включаем follow_session, передаём неизвестную модель"):
             config_model.agents.interventions_follow_session = True
@@ -52,7 +56,9 @@ class TestResolveInterventionModel:
 
     @autotest.num("1793")
     @autotest.external_id("d3e4f5a6-b7c8-4d9e-0f1a-b2c3d4e5f6a7")
-    @autotest.name("Orchestrator._resolve_intervention_model: follow_session=True + пустой payload → дефолт (без KeyError)")
+    @autotest.name(
+        "Orchestrator._resolve_intervention_model: follow_session=True + пустой payload → дефолт (без KeyError)"
+    )
     def test_d3e4f5a6_follow_session_empty_payload(self, config_model):
         with autotest.step("Включаем follow_session"):
             config_model.agents.interventions_follow_session = True
@@ -64,7 +70,9 @@ class TestResolveInterventionModel:
 
     @autotest.num("1794")
     @autotest.external_id("e4f5a6b7-c8d9-4e0f-1a2b-c3d4e5f6a7b8")
-    @autotest.name("Orchestrator._resolve_intervention_model: follow_session=True + валидный session_model_id → session id")
+    @autotest.name(
+        "Orchestrator._resolve_intervention_model: follow_session=True + валидный session_model_id → session id"
+    )
     def test_e4f5a6b7_follow_session_valid_id(self, config_model):
         with autotest.step("Включаем follow_session"):
             config_model.agents.interventions_follow_session = True
@@ -99,9 +107,13 @@ class TestInterventionMetadata:
             )
 
         with autotest.step("Имитируем resolve_model → проверяем сборку metadata"):
-            with patch("agents.orchestrator.agent.resolve_model", return_value=(fake_creds, fake_entry)):
+            with patch(
+                "agents.orchestrator.agent.resolve_model", return_value=(fake_creds, fake_entry)
+            ):
                 # Воспроизводим логику ветки LLM в intervene
-                creds, _ = __import__("agents.orchestrator.agent", fromlist=["resolve_model"]).resolve_model(model_id)
+                creds, _ = __import__(
+                    "agents.orchestrator.agent", fromlist=["resolve_model"]
+                ).resolve_model(model_id)
                 llm_meta = {"model": model_id, "provider": creds.provider.value}
 
             assert llm_meta["model"] == model_id

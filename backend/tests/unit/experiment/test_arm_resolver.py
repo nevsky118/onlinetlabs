@@ -47,10 +47,15 @@ class TestArmResolver:
     @autotest.external_id("d7dfdad5-12b9-4bd6-a6f4-1a70cdfa4192")
     @autotest.name("resolve_control_arm: существующее плечо не перезаписывается")
     async def test_d7dfdad5_returns_existing_arm_without_reassign(self, db_setup, monkeypatch):
-        with autotest.step("Arrange: пользователь с control_arm=closed; assign_arm → ошибка при вызове"):
+        with autotest.step(
+            "Arrange: пользователь с control_arm=closed; assign_arm → ошибка при вызове"
+        ):
             session_factory = db_setup
             import experiment.control_arm as m
-            monkeypatch.setattr(m.random, "choice", lambda seq: (_ for _ in ()).throw(AssertionError("reassigned")))
+
+            monkeypatch.setattr(
+                m.random, "choice", lambda seq: (_ for _ in ()).throw(AssertionError("reassigned"))
+            )
             async with session_factory() as db:
                 db.add(User(id="u2", email="u2@test.local", control_arm="closed"))
                 await db.commit()

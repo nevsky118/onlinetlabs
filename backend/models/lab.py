@@ -31,7 +31,9 @@ class Lab(Base):
     gns3_template_project_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     gns3_template_project_id_iosvl2: Mapped[str | None] = mapped_column(String(255), nullable=True)
     gns3_template_project_id_frr: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    gns3_completed_template_project_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    gns3_completed_template_project_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )
     meta: Mapped[dict | None] = mapped_column(JSON, default=None)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
@@ -56,9 +58,7 @@ class LabStep(Base):
     __tablename__ = "lab_steps"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    lab_slug: Mapped[str] = mapped_column(
-        String(255), ForeignKey("labs.slug", ondelete="CASCADE")
-    )
+    lab_slug: Mapped[str] = mapped_column(String(255), ForeignKey("labs.slug", ondelete="CASCADE"))
     step_order: Mapped[int] = mapped_column(Integer)
     slug: Mapped[str] = mapped_column(String(255))
     title: Mapped[str] = mapped_column(String(500))

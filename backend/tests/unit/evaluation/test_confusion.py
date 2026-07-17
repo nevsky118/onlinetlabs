@@ -14,7 +14,9 @@ class TestConfusion:
     @autotest.external_id("fb8c9b70-a34c-49f0-91e7-abc74e75b8c5")
     @autotest.name("confusion: правильный тип на диагонали, ошибка типа вне диагонали")
     def test_fb8c9b70_matrix(self):
-        with autotest.step("Arrange: repeating детектнут как repeating; stuck детектнут как idle (ошибка типа)"):
+        with autotest.step(
+            "Arrange: repeating детектнут как repeating; stuck детектнут как idle (ошибка типа)"
+        ):
             s1 = make_struggle_scenario(ProcessRegime.REPEATING_ERRORS, onset_index=4)
             s2 = make_struggle_scenario(ProcessRegime.STUCK_ON_STEP, onset_index=4)
             pairs = [
@@ -24,7 +26,9 @@ class TestConfusion:
         with autotest.step("Act"):
             cm = confusion_matrix(pairs)
         with autotest.step("Assert: диагональ repeating=1, stuck→idle=1"):
-            assert_equal(cm[ProcessRegime.REPEATING_ERRORS][ProcessRegime.REPEATING_ERRORS], 1, "верный тип")
+            assert_equal(
+                cm[ProcessRegime.REPEATING_ERRORS][ProcessRegime.REPEATING_ERRORS], 1, "верный тип"
+            )
             assert_equal(cm[ProcessRegime.STUCK_ON_STEP][ProcessRegime.IDLE], 1, "ошибка типа")
 
     @autotest.num("1681")
@@ -37,4 +41,6 @@ class TestConfusion:
         with autotest.step("Act"):
             cm = confusion_matrix(pairs)
         with autotest.step("Assert: idle строка, PRODUCTIVE столбец = 1"):
-            assert_equal(cm[ProcessRegime.IDLE][ProcessRegime.PRODUCTIVE], 1, "пропуск → PRODUCTIVE")
+            assert_equal(
+                cm[ProcessRegime.IDLE][ProcessRegime.PRODUCTIVE], 1, "пропуск → PRODUCTIVE"
+            )

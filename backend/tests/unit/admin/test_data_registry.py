@@ -1,4 +1,5 @@
 """Unit tests for admin.data_registry."""
+
 import types
 
 import pytest

@@ -1,4 +1,5 @@
 """PATCH /sessions/{id}: зашифрованные креды (session.meta) не должны утекать в ответ."""
+
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -50,19 +51,25 @@ class TestLifecycleMetaLeak:
             await conn.run_sync(ExperimentMetrics.__table__.create)
 
         async with self.session_factory() as db:
-            db.add(User(
-                id=_USER_ID, email="meta-leak@test.local",
-                control_arm="closed", experiment_group="group_b",
-            ))
+            db.add(
+                User(
+                    id=_USER_ID,
+                    email="meta-leak@test.local",
+                    control_arm="closed",
+                    experiment_group="group_b",
+                )
+            )
             db.add(Lab(slug="lab-meta", title="Lab Meta"))
-            db.add(LearningSession(
-                id=_SESSION_ID,
-                user_id=_USER_ID,
-                lab_slug="lab-meta",
-                status="active",
-                started_at=datetime.now(timezone.utc) - timedelta(minutes=5),
-                meta=dict(_SECRET_META),
-            ))
+            db.add(
+                LearningSession(
+                    id=_SESSION_ID,
+                    user_id=_USER_ID,
+                    lab_slug="lab-meta",
+                    status="active",
+                    started_at=datetime.now(timezone.utc) - timedelta(minutes=5),
+                    meta=dict(_SECRET_META),
+                )
+            )
             await db.commit()
 
         app = FastAPI()

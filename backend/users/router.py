@@ -100,11 +100,7 @@ async def revoke_session(
 
 
 @router.delete("/sessions", response_model=RevokeResponse)
-async def revoke_all_sessions(
-    current_user=Depends(get_current_user), db=Depends(get_db)
-):
-    result = await db.execute(
-        delete(Session).where(Session.user_id == current_user["id"])
-    )
+async def revoke_all_sessions(current_user=Depends(get_current_user), db=Depends(get_db)):
+    result = await db.execute(delete(Session).where(Session.user_id == current_user["id"]))
     await db.commit()
     return RevokeResponse(revoked=result.rowcount)

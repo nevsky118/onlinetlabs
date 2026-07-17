@@ -56,14 +56,16 @@ def _make_monitor(activity_log, config_model) -> SessionMonitor:
     monitor._ctx = MagicMock()
     monitor._analytics_agent = analytics_agent
     # Замокаем context_builder.build → AgentContext
-    monitor._context_builder.build = AsyncMock(return_value=AgentContext(
-        topology_summary="1 router",
-        recent_errors=["bad ip", "bad ip", "bad ip", "bad ip"],
-        recent_actions=["cfg_err"],
-        struggle_type="repeating_errors",
-        dominant_error="bad ip",
-        features_summary="4 повтора ошибки",
-    ))
+    monitor._context_builder.build = AsyncMock(
+        return_value=AgentContext(
+            topology_summary="1 router",
+            recent_errors=["bad ip", "bad ip", "bad ip", "bad ip"],
+            recent_actions=["cfg_err"],
+            struggle_type="repeating_errors",
+            dominant_error="bad ip",
+            features_summary="4 повтора ошибки",
+        )
+    )
     return monitor
 
 

@@ -25,23 +25,17 @@ class LabTools:
         ctx = self._build_ctx(input_data)
         return await self._mcp.list_components(ctx)
 
-    async def get_component_state(
-        self, input_data, component_id: str
-    ) -> ComponentDetail:
+    async def get_component_state(self, input_data, component_id: str) -> ComponentDetail:
         """Получить детальное состояние компонента."""
         ctx = self._build_ctx(input_data)
         return await self._mcp.get_component(ctx, component_id)
 
-    async def execute_action(
-        self, input_data, action_name: str, params: dict
-    ) -> ActionResult:
+    async def execute_action(self, input_data, action_name: str, params: dict) -> ActionResult:
         """Выполнить действие через MCP ActionProvider."""
         ctx = self._build_ctx(input_data)
         return await self._mcp.execute_action(ctx, action_name, params)
 
-    async def interpret_state(
-        self, input_data, components: list[Component]
-    ) -> str:
+    async def interpret_state(self, input_data, components: list[Component]) -> str:
         """Интерпретация списка компонентов в текстовое описание."""
         lines = []
         for c in components:

@@ -100,9 +100,7 @@ class MCPClient:
         items = data.get("result", data) if isinstance(data, dict) else data
         return [Component.model_validate(item) for item in items]
 
-    async def get_component(
-        self, ctx: SessionContext, component_id: str
-    ) -> ComponentDetail:
+    async def get_component(self, ctx: SessionContext, component_id: str) -> ComponentDetail:
         """Получить детальное состояние компонента по его id."""
         data = await self._call_tool(
             "get_component", {"ctx": self._ctx_dict(ctx), "component_id": component_id}
@@ -147,9 +145,7 @@ class MCPClient:
 
     # HistoryProvider — пользовательские действия
 
-    async def list_user_actions(
-        self, ctx: SessionContext, limit: int = 50
-    ) -> list[UserAction]:
+    async def list_user_actions(self, ctx: SessionContext, limit: int = 50) -> list[UserAction]:
         """Получить историю действий пользователя в среде."""
         data = await self._call_tool(
             "list_user_actions", {"ctx": self._ctx_dict(ctx), "limit": limit}
@@ -158,6 +154,7 @@ class MCPClient:
         return [UserAction.model_validate(item) for item in items]
 
     # Domain-тулзы (прямой проброс)
+
 
 class MCPToolError(Exception):
     """Ошибка при вызове MCP tool."""

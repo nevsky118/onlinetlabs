@@ -42,9 +42,7 @@ async def launch_endpoint(
     """
     # Прокидываем user_id и lab_slug в structlog contextvars, чтобы все
     # последующие логи в рамках запроса автоматически содержали эти поля.
-    structlog.contextvars.bind_contextvars(
-        user_id=current_user["id"], lab_slug=body.lab_slug
-    )
+    structlog.contextvars.bind_contextvars(user_id=current_user["id"], lab_slug=body.lab_slug)
     # Релонч уже активной сессии не должен брать слот очереди и задваивать
     # счётчики: слот/мониторинг/gauge трогаем только для нового запуска.
     existing = await get_active_session(db, current_user["id"], body.lab_slug)
@@ -83,6 +81,7 @@ async def launch_endpoint(
         ctx = build_session_context(session)
         await monitor_registry.start(session.id, session.user_id, session.lab_slug, ctx)
         from observability.metrics import active_sessions_gauge
+
         active_sessions_gauge.labels(lab_slug=body.lab_slug).inc()
     return LaunchResponse(
         session_id=session.id,

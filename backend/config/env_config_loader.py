@@ -56,12 +56,16 @@ def build_agents_config(values: dict[str, str | None]) -> AgentsConfig:
             yandex_folder=values.get("AGENTS_YANDEX_FOLDER") or None,
         )
         entry = ModelEntry(
-            id="legacy-default", label=values.get("AGENTS_MODEL", "default"),
-            provider_ref=ref, model=values.get("AGENTS_MODEL", "yandexgpt/latest"),
+            id="legacy-default",
+            label=values.get("AGENTS_MODEL", "default"),
+            provider_ref=ref,
+            model=values.get("AGENTS_MODEL", "yandexgpt/latest"),
         )
         return AgentsConfig(
-            providers={ref: creds}, catalog=[entry],
-            chat_model="legacy-default", intervention_model="legacy-default",
+            providers={ref: creds},
+            catalog=[entry],
+            chat_model="legacy-default",
+            intervention_model="legacy-default",
             temperature=float(values.get("AGENTS_TEMPERATURE", "0.3")),
             max_tokens=int(values.get("AGENTS_MAX_TOKENS", "4096")),
             request_timeout=int(values.get("AGENTS_REQUEST_TIMEOUT", "30")),
@@ -102,7 +106,8 @@ def build_agents_config(values: dict[str, str | None]) -> AgentsConfig:
         fallback = catalog[0].id
         logger.warning(
             "AGENTS_CHAT_MODEL '%s' not in filtered catalog; falling back to '%s'",
-            chat_model, fallback,
+            chat_model,
+            fallback,
         )
         chat_model = fallback
 
@@ -111,7 +116,8 @@ def build_agents_config(values: dict[str, str | None]) -> AgentsConfig:
         fallback = catalog[0].id
         logger.warning(
             "AGENTS_INTERVENTION_MODEL '%s' not in filtered catalog; falling back to '%s'",
-            intervention_model, fallback,
+            intervention_model,
+            fallback,
         )
         intervention_model = fallback
 
@@ -120,7 +126,9 @@ def build_agents_config(values: dict[str, str | None]) -> AgentsConfig:
         catalog=catalog,
         chat_model=chat_model,
         intervention_model=intervention_model,
-        interventions_follow_session=_str2bool(values.get("AGENTS_INTERVENTIONS_FOLLOW_SESSION", "false")),
+        interventions_follow_session=_str2bool(
+            values.get("AGENTS_INTERVENTIONS_FOLLOW_SESSION", "false")
+        ),
         temperature=float(values.get("AGENTS_TEMPERATURE", "0.3")),
         max_tokens=int(values.get("AGENTS_MAX_TOKENS", "4096")),
         request_timeout=int(values.get("AGENTS_REQUEST_TIMEOUT", "30")),

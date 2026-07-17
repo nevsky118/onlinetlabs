@@ -13,9 +13,7 @@ class ChatMessage(Base):
 
     __tablename__ = "chat_messages"
 
-    id: Mapped[str] = mapped_column(
-        String(255), primary_key=True, default=lambda: str(uuid4())
-    )
+    id: Mapped[str] = mapped_column(String(255), primary_key=True, default=lambda: str(uuid4()))
     session_id: Mapped[str] = mapped_column(
         String(255), ForeignKey("learning_sessions.id", ondelete="CASCADE"), index=True
     )

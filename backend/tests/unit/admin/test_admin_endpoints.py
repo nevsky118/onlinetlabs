@@ -1,4 +1,5 @@
 """Task 2: тесты чистых сборщиков admin-роутера (без подъёма FastAPI)."""
+
 import datetime
 import uuid
 
@@ -72,7 +73,9 @@ class TestAdminEndpoints:
 
     @autotest.num("1812")
     @autotest.external_id("c6e9f4g3-ad1b-5c2f-be34-7g8f2h3i4j5k")
-    @autotest.name("admin: build_overview пустая БД — возвращает dict с ключами ab/cohort/identifier/ops")
+    @autotest.name(
+        "admin: build_overview пустая БД — возвращает dict с ключами ab/cohort/identifier/ops"
+    )
     async def test_c6e9f4g3_overview_empty_db(self, empty_admin_db):
         from admin.router import build_overview
 
@@ -175,13 +178,17 @@ class TestAdminUsersEndpoints:
 
         # Сеять тестовых пользователей.
         async with self.session_factory() as db:
-            db.add_all([
-                User(id="u1", name="Alice", email="alice@test.local", role="student"),
-                User(id="u2", name="Bob", email="bob@test.local", role="instructor"),
-                User(id="u3", name="Charlie", email="charlie@test.local", role="admin"),
-                User(id="admin-001", name="AdminSelf", email="adminself@test.local", role="admin"),
-                User(id="student-001", name="Stu", email="stu@test.local", role="student"),
-            ])
+            db.add_all(
+                [
+                    User(id="u1", name="Alice", email="alice@test.local", role="student"),
+                    User(id="u2", name="Bob", email="bob@test.local", role="instructor"),
+                    User(id="u3", name="Charlie", email="charlie@test.local", role="admin"),
+                    User(
+                        id="admin-001", name="AdminSelf", email="adminself@test.local", role="admin"
+                    ),
+                    User(id="student-001", name="Stu", email="stu@test.local", role="student"),
+                ]
+            )
             await db.commit()
 
         yield
@@ -191,7 +198,9 @@ class TestAdminUsersEndpoints:
         return AsyncClient(transport=ASGITransport(app=self.app), base_url="http://testserver")
 
     def _student_client(self) -> AsyncClient:
-        return AsyncClient(transport=ASGITransport(app=self.student_app), base_url="http://testserver")
+        return AsyncClient(
+            transport=ASGITransport(app=self.student_app), base_url="http://testserver"
+        )
 
     @autotest.num("1816")
     @autotest.external_id("550e8400-e29b-41d4-a716-446655440001")
@@ -342,7 +351,9 @@ class TestAdminDataEndpoints:
         return AsyncClient(transport=ASGITransport(app=self.app), base_url="http://testserver")
 
     def _student_client(self) -> AsyncClient:
-        return AsyncClient(transport=ASGITransport(app=self.student_app), base_url="http://testserver")
+        return AsyncClient(
+            transport=ASGITransport(app=self.student_app), base_url="http://testserver"
+        )
 
     async def _seed_audit_rows(self, rows: list[MCPAudit]) -> None:
         async with self.session_factory() as db:
@@ -378,8 +389,24 @@ class TestAdminDataEndpoints:
     async def test_d797ce5c_pagination_and_total(self):
         now = datetime.datetime.now(datetime.timezone.utc)
         rows = [
-            MCPAudit(id=str(uuid.uuid4()), user_id="u1", session_id="s1", tool="ping", kind="observe", ts=now, success=True),
-            MCPAudit(id=str(uuid.uuid4()), user_id="u2", session_id="s2", tool="pong", kind="act", ts=now, success=False),
+            MCPAudit(
+                id=str(uuid.uuid4()),
+                user_id="u1",
+                session_id="s1",
+                tool="ping",
+                kind="observe",
+                ts=now,
+                success=True,
+            ),
+            MCPAudit(
+                id=str(uuid.uuid4()),
+                user_id="u2",
+                session_id="s2",
+                tool="pong",
+                kind="act",
+                ts=now,
+                success=False,
+            ),
         ]
         await self._seed_audit_rows(rows)
 
@@ -403,8 +430,24 @@ class TestAdminDataEndpoints:
     async def test_103b8e07_search_narrows(self):
         now = datetime.datetime.now(datetime.timezone.utc)
         rows = [
-            MCPAudit(id=str(uuid.uuid4()), user_id="u1", session_id="s1", tool="gns3.list_nodes", kind="observe", ts=now, success=True),
-            MCPAudit(id=str(uuid.uuid4()), user_id="u2", session_id="s2", tool="docker.run", kind="act", ts=now, success=True),
+            MCPAudit(
+                id=str(uuid.uuid4()),
+                user_id="u1",
+                session_id="s1",
+                tool="gns3.list_nodes",
+                kind="observe",
+                ts=now,
+                success=True,
+            ),
+            MCPAudit(
+                id=str(uuid.uuid4()),
+                user_id="u2",
+                session_id="s2",
+                tool="docker.run",
+                kind="act",
+                ts=now,
+                success=True,
+            ),
         ]
         await self._seed_audit_rows(rows)
 
@@ -425,8 +468,24 @@ class TestAdminDataEndpoints:
         t1 = datetime.datetime(2025, 1, 1, tzinfo=datetime.timezone.utc)
         t2 = datetime.datetime(2025, 6, 1, tzinfo=datetime.timezone.utc)
         rows = [
-            MCPAudit(id=str(uuid.uuid4()), user_id="u1", session_id="s1", tool="a", kind="observe", ts=t1, success=True),
-            MCPAudit(id=str(uuid.uuid4()), user_id="u2", session_id="s2", tool="b", kind="observe", ts=t2, success=True),
+            MCPAudit(
+                id=str(uuid.uuid4()),
+                user_id="u1",
+                session_id="s1",
+                tool="a",
+                kind="observe",
+                ts=t1,
+                success=True,
+            ),
+            MCPAudit(
+                id=str(uuid.uuid4()),
+                user_id="u2",
+                session_id="s2",
+                tool="b",
+                kind="observe",
+                ts=t2,
+                success=True,
+            ),
         ]
         await self._seed_audit_rows(rows)
 

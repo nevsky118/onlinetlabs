@@ -4,21 +4,29 @@ from agents.hint.models import HintInput, HintResponse
 from agents.hint.tools import HintTools, MAX_HINTS
 from agents.hint.agent import HintAgent
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true, assert_greater, assert_greater_equal
+from mcp_sdk.testing.custom_assertions import (
+    assert_equal,
+    assert_true,
+    assert_greater,
+    assert_greater_equal,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.agents]
 
 
 def _make_hint_input(**overrides):
     defaults = dict(
-        session_id="s1", user_id="u1",
-        lab_slug="lab-traceroute", step_slug="step-1",
+        session_id="s1",
+        user_id="u1",
+        lab_slug="lab-traceroute",
+        step_slug="step-1",
         attempts_count=0,
     )
     return HintInput(**(defaults | overrides))
 
 
 # HintTools
+
 
 class TestHintTools:
     @autotest.num("450")
@@ -73,6 +81,7 @@ class TestHintTools:
 
 
 # HintAgent
+
 
 class TestHintAgent:
     @autotest.num("455")

@@ -10,7 +10,9 @@ pytestmark = [pytest.mark.unit]
 class TestExperimentConfig:
     @autotest.num("1272")
     @autotest.external_id("ba8bba52-af24-410d-9cbc-899f3e465de6")
-    @autotest.name("LearningAnalyticsConfig: ключевые параметры эксперимента имеют допустимые значения")
+    @autotest.name(
+        "LearningAnalyticsConfig: ключевые параметры эксперимента имеют допустимые значения"
+    )
     def test_ba8bba52_experiment_params(self):
         with autotest.step("Act: создаём конфиг по умолчанию"):
             c = LearningAnalyticsConfig()

@@ -36,9 +36,7 @@ async def _reclaim_idle_sessions(gns3_client) -> None:
     """Останавливает узлы активных сессий без активности дольше порога простоя."""
     cutoff = datetime.now(timezone.utc) - timedelta(minutes=IDLE_THRESHOLD_MIN)
     async with async_session() as db:
-        result = await db.execute(
-            select(LearningSession).where(LearningSession.status == "active")
-        )
+        result = await db.execute(select(LearningSession).where(LearningSession.status == "active"))
         sessions = result.scalars().all()
 
     reclaimed = 0
@@ -53,7 +51,8 @@ async def _reclaim_idle_sessions(gns3_client) -> None:
             await gns3_client.bulk_node_action(gns3_sid, "stop")
             logger.info(
                 "idle_reclaim: stopped nodes session=%s last_activity=%s",
-                session.id, last_activity.isoformat(),
+                session.id,
+                last_activity.isoformat(),
             )
             try:
                 idle_reclaimed_counter.labels(lab_slug=session.lab_slug).inc()

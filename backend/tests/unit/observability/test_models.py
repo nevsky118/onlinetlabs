@@ -19,7 +19,11 @@ pytestmark = [pytest.mark.unit]
 def test_d8f8a39f_struggle_event_shape():
     with autotest.step("Создаём событие затруднения"):
         e = event_struggle_detected(
-            "s1", "u1", struggle_type="repeating_errors", confidence=0.8, crossed=["error_repeat_count>=3"]
+            "s1",
+            "u1",
+            struggle_type="repeating_errors",
+            confidence=0.8,
+            crossed=["error_repeat_count>=3"],
         )
     with autotest.step("Проверяем source и kind"):
         assert e.source == ActivitySource.INTERVENTION

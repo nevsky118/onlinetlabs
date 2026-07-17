@@ -23,9 +23,7 @@ _CISCO_NEIGHBOR_LINE_RE = re.compile(r"^\s*(\S+)\s+\d+\s+(\S+)")
 _CISCO_ROUTE_LINE_RE = re.compile(r"^\s*([A-Z][A-Z*]*)\s+(\d+\.\d+\.\d+\.\d+/\d+)\b")
 
 # `FastEthernet0/0.10  192.168.10.1    YES manual up                    up`
-_CISCO_IFACE_LINE_RE = re.compile(
-    r"^\s*(\S+)\s+(\S+)\s+\S+\s+\S+\s+(\S+(?:\s+\S+)?)\s+(\S+)\s*$"
-)
+_CISCO_IFACE_LINE_RE = re.compile(r"^\s*(\S+)\s+(\S+)\s+\S+\s+\S+\s+(\S+(?:\s+\S+)?)\s+(\S+)\s*$")
 
 _CONNECT_TIMEOUT = 5.0
 _READ_TIMEOUT = 6.0
@@ -219,9 +217,7 @@ async def _exec_cisco(
     return raw.decode("utf-8", errors="replace"), None
 
 
-async def cisco_ospf_neighbor(
-    ctx: CheckContext, params: dict, expect: dict
-) -> CheckResult:
+async def cisco_ospf_neighbor(ctx: CheckContext, params: dict, expect: dict) -> CheckResult:
     """`show ip ospf neighbor` → проверка state конкретного соседа.
 
     params: `{node: "R1"}`
@@ -252,9 +248,7 @@ async def cisco_ospf_neighbor(
     return CheckResult(ok=ok, expected=expect, actual=actual, log=stdout or "")
 
 
-async def cisco_route_in_table(
-    ctx: CheckContext, params: dict, expect: dict
-) -> CheckResult:
+async def cisco_route_in_table(ctx: CheckContext, params: dict, expect: dict) -> CheckResult:
     """`show ip route ospf` → проверка наличия маршрута с нужным protocol-кодом.
 
     params: `{node: "R1"}`
@@ -288,9 +282,7 @@ async def cisco_route_in_table(
     return CheckResult(ok=ok, expected=expect, actual=actual, log=stdout or "")
 
 
-async def cisco_interface_brief(
-    ctx: CheckContext, params: dict, expect: dict
-) -> CheckResult:
+async def cisco_interface_brief(ctx: CheckContext, params: dict, expect: dict) -> CheckResult:
     """`show ip interface brief` → проверка IP/status конкретного интерфейса.
 
     params: `{node: "R1", interface: "FastEthernet0/0.10"}`
@@ -303,9 +295,7 @@ async def cisco_interface_brief(
     if not interface:
         return _missing_param("interface", expect)
 
-    stdout, err = await _exec_cisco(
-        ctx, node_name, "show ip interface brief", expect
-    )
+    stdout, err = await _exec_cisco(ctx, node_name, "show ip interface brief", expect)
     if err is not None:
         return err
 

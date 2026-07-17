@@ -58,6 +58,7 @@ from mcp_sdk.models import (
 
 # Fake MCP клиенты
 
+
 class FakeMCPClient:
     """Реализация StateProvider + ActionProvider для тестов."""
 
@@ -89,8 +90,13 @@ class FakeMCPClient:
         for c in self._components:
             if c.id == component_id:
                 return ComponentDetail(
-                    id=c.id, name=c.name, type=c.type, status=c.status,
-                    summary=c.summary, properties={}, relationships=[],
+                    id=c.id,
+                    name=c.name,
+                    type=c.type,
+                    status=c.status,
+                    summary=c.summary,
+                    properties={},
+                    relationships=[],
                 )
         raise ComponentNotFoundError(component_id)
 
@@ -98,7 +104,9 @@ class FakeMCPClient:
         self.calls.append(("get_system_overview", (ctx,), {}))
         return self._overview
 
-    async def execute_action(self, ctx: SessionContext, action_name: str, params: dict) -> ActionResult:
+    async def execute_action(
+        self, ctx: SessionContext, action_name: str, params: dict
+    ) -> ActionResult:
         self.calls.append(("execute_action", (ctx, action_name, params), {}))
         return ActionResult(
             success=self._action_result.success,
@@ -117,12 +125,21 @@ class FakeFailingMCPClient(FakeMCPClient):
 
 # Фикстуры
 
+
 @pytest.fixture()
 def agents_config():
     return AgentsConfig(
-        providers={"yandex": ProviderCreds(provider=LlmProvider.YANDEX, api_key="k", yandex_folder="f")},
-        catalog=[ModelEntry(id="yandex-gpt-5.1", label="YandexGPT 5.1 Pro",
-                            provider_ref="yandex", model="yandexgpt/latest")],
+        providers={
+            "yandex": ProviderCreds(provider=LlmProvider.YANDEX, api_key="k", yandex_folder="f")
+        },
+        catalog=[
+            ModelEntry(
+                id="yandex-gpt-5.1",
+                label="YandexGPT 5.1 Pro",
+                provider_ref="yandex",
+                model="yandexgpt/latest",
+            )
+        ],
         chat_model="yandex-gpt-5.1",
         intervention_model="yandex-gpt-5.1",
     )
@@ -133,7 +150,9 @@ def config_model(agents_config):
     return ConfigModel(
         database=DatabaseConfig(user="u", password="p", host="h", port=5432, db="d"),
         redis=RedisConfig(url="redis://localhost:6379/0"),
-        api=ApiConfig(environment="test", jwt_secret="test-secret", frontend_url="http://localhost:3000"),
+        api=ApiConfig(
+            environment="test", jwt_secret="test-secret", frontend_url="http://localhost:3000"
+        ),
         log=LogConfig(log_level="DEBUG"),
         agents=agents_config,
         gns3=GNS3Config(

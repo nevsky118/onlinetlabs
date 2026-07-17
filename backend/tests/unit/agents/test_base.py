@@ -52,17 +52,25 @@ class TestBaseAgent:
             model = agent._build_model("yandex-gpt-5.1")
 
         with autotest.step("Проверяем тип"):
-            assert_true(isinstance(model, OpenAIModel), f"ожидался OpenAIModel, получен {type(model)}")
+            assert_true(
+                isinstance(model, OpenAIModel), f"ожидался OpenAIModel, получен {type(model)}"
+            )
 
         with autotest.step("Проверяем model_name — gpt://<folder>/<model>"):
             # resolve_model reads global settings built from env; YANDEX_FOLDER=test-folder in conftest env
-            assert_equal(model.model_name, "gpt://test-folder/yandexgpt/latest", "model_name должен быть gpt:// URI")
+            assert_equal(
+                model.model_name,
+                "gpt://test-folder/yandexgpt/latest",
+                "model_name должен быть gpt:// URI",
+            )
 
     @autotest.num("405")
     @autotest.external_id("637256be-7d8b-4fb3-9da8-401877afbab9")
     @autotest.name("BaseAgent: _build_model raises ValueError если yandex_folder=None")
     def test_637256be_build_model_yandex_no_folder(self, config_model):
-        with autotest.step("Патчим глобальный settings.agents: yandex_folder=None через model_construct"):
+        with autotest.step(
+            "Патчим глобальный settings.agents: yandex_folder=None через model_construct"
+        ):
             from config.config_model import LlmProvider, ProviderCreds
             from config.env_config_loader import settings
 

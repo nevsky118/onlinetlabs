@@ -21,7 +21,12 @@ async def get_activity_endpoint(
 ):
     """Возвращает ленту активности сессии с постраничной навигацией по курсору."""
     result = await proxy_activity(
-        db, session_id, current_user["id"], limit, cursor, gns3_client,
+        db,
+        session_id,
+        current_user["id"],
+        limit,
+        cursor,
+        gns3_client,
     )
     if result is None:
         raise HTTPException(status_code=404, detail="Session not found")

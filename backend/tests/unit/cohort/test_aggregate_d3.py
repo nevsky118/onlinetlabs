@@ -9,10 +9,20 @@ pytestmark = [pytest.mark.unit]
 
 def _rec(reached, ttl, active=None, sessions=None, l1i=1, l2i=0, obs=100.0):
     return LearnerOutcome(
-        user_id="u", skill="s", arm="closed", reached_l2=reached,
-        time_to_l2_seconds=ttl, active_seconds=active, sessions_to_l2=sessions,
-        l1_interventions=l1i, l2_interventions=l2i, l1_escalations=0, l2_escalations=0,
-        l1_repeated_errors=0, l2_repeated_errors=0, observation_seconds=obs,
+        user_id="u",
+        skill="s",
+        arm="closed",
+        reached_l2=reached,
+        time_to_l2_seconds=ttl,
+        active_seconds=active,
+        sessions_to_l2=sessions,
+        l1_interventions=l1i,
+        l2_interventions=l2i,
+        l1_escalations=0,
+        l2_escalations=0,
+        l1_repeated_errors=0,
+        l2_repeated_errors=0,
+        observation_seconds=obs,
         censored=not reached,
     )
 

@@ -79,18 +79,14 @@ class TestSessionMonitor:
                 mcp_client=MagicMock(),
                 db_factory=MagicMock(),
                 orchestrator=MagicMock(),
-                learning_analytics_config=LearningAnalyticsConfig(
-                    cooldown_period=60.0
-                ),
+                learning_analytics_config=LearningAnalyticsConfig(cooldown_period=60.0),
             )
             monitor._last_intervention_at = datetime.now(tz=timezone.utc)
 
         # Act
         # Assert
         with autotest.step("Проверяем блокировку"):
-            assert_true(
-                not monitor._should_trigger_intervention(), "cooldown блокирует"
-            )
+            assert_true(not monitor._should_trigger_intervention(), "cooldown блокирует")
 
     @autotest.num("543")
     @autotest.external_id("ab0e2f3a-b5c6-4d7e-9f8a-0b1c2d3e4f5a")
@@ -108,9 +104,7 @@ class TestSessionMonitor:
         # Act
         # Assert
         with autotest.step("Проверяем блокировку"):
-            assert_true(
-                not monitor._should_trigger_intervention(), "disabled блокирует"
-            )
+            assert_true(not monitor._should_trigger_intervention(), "disabled блокирует")
 
     @autotest.num("544")
     @autotest.external_id("bc1f3a4b-c6d7-4e8f-8a9b-1c2d3e4f5a6b")

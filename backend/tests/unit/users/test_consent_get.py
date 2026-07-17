@@ -1,4 +1,5 @@
 """Тесты GET /users/me/consent."""
+
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
@@ -28,7 +29,9 @@ class TestConsentGet:
             await conn.run_sync(Consent.__table__.create)
 
         async with self.session_factory() as db:
-            db.add(User(id="user-consent-test", name="Test", email="test@test.local", role="student"))
+            db.add(
+                User(id="user-consent-test", name="Test", email="test@test.local", role="student")
+            )
             await db.commit()
 
         app = FastAPI()
@@ -54,7 +57,9 @@ class TestConsentGet:
         return AsyncClient(transport=ASGITransport(app=self.app), base_url="http://testserver")
 
     def _unauth_client(self) -> AsyncClient:
-        return AsyncClient(transport=ASGITransport(app=self.unauth_app), base_url="http://testserver")
+        return AsyncClient(
+            transport=ASGITransport(app=self.unauth_app), base_url="http://testserver"
+        )
 
     @autotest.num("1949")
     @autotest.external_id("48fe4a5d-8f48-44d1-9d89-a63d220acd29")
@@ -65,7 +70,9 @@ class TestConsentGet:
                 resp = await client.get("/users/me/consent")
 
         with autotest.step("Assert: 401 или 403"):
-            assert_true(resp.status_code in (401, 403), f"ожидали 401/403, получили {resp.status_code}")
+            assert_true(
+                resp.status_code in (401, 403), f"ожидали 401/403, получили {resp.status_code}"
+            )
 
     @autotest.num("1950")
     @autotest.external_id("99ff576e-a9d6-44b9-a721-26b4ca3736b0")

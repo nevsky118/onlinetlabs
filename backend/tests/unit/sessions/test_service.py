@@ -54,7 +54,9 @@ class TestAssignExperimentGroupIfNeeded:
         with autotest.step("Вызываем с фейк-assigner через DI"):
             async with self.session_factory() as db:
                 await assign_experiment_group_if_needed(
-                    db, "u1", group_assigner=lambda: ExperimentGroup.GROUP_B,
+                    db,
+                    "u1",
+                    group_assigner=lambda: ExperimentGroup.GROUP_B,
                 )
                 await db.commit()
 
@@ -82,7 +84,9 @@ class TestAssignExperimentGroupIfNeeded:
 
             async with self.session_factory() as db:
                 await assign_experiment_group_if_needed(
-                    db, "u1", group_assigner=assign_forbidden,
+                    db,
+                    "u1",
+                    group_assigner=assign_forbidden,
                 )
                 await db.commit()
 

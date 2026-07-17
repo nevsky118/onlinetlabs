@@ -16,14 +16,23 @@ async def get_all_labs(db: AsyncSession, course_slug: str | None = None) -> list
 
 
 async def create_lab(
-    db: AsyncSession, slug: str, title: str,
-    description: str | None = None, difficulty: str = "beginner",
-    environment_type: str = "none", gns3_template_project_id: str | None = None,
+    db: AsyncSession,
+    slug: str,
+    title: str,
+    description: str | None = None,
+    difficulty: str = "beginner",
+    environment_type: str = "none",
+    gns3_template_project_id: str | None = None,
 ) -> Lab:
     """Создаёт и сохраняет в БД новую лабораторную работу."""
-    lab = Lab(slug=slug, title=title, description=description,
-              difficulty=difficulty, environment_type=environment_type,
-              gns3_template_project_id=gns3_template_project_id)
+    lab = Lab(
+        slug=slug,
+        title=title,
+        description=description,
+        difficulty=difficulty,
+        environment_type=environment_type,
+        gns3_template_project_id=gns3_template_project_id,
+    )
     db.add(lab)
     await db.commit()
     await db.refresh(lab)
@@ -42,9 +51,7 @@ async def delete_lab(db: AsyncSession, slug: str) -> bool:
 
 async def get_lab_by_slug(db: AsyncSession, slug: str) -> Lab | None:
     """Возвращает лабораторную работу по slug вместе с её шагами или None."""
-    result = await db.execute(
-        select(Lab).options(selectinload(Lab.steps)).where(Lab.slug == slug)
-    )
+    result = await db.execute(select(Lab).options(selectinload(Lab.steps)).where(Lab.slug == slug))
     return result.scalar_one_or_none()
 
 

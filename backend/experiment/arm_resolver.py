@@ -1,4 +1,5 @@
 """Перманентный резолвинг плеча эксперимента на пользователя."""
+
 from sqlalchemy import select
 
 from experiment.control_arm import ControlArm, assign_arm
@@ -27,15 +28,21 @@ async def is_l2_session(db, user_id: str, lab_slug: str) -> bool:
     if not skill:
         return False
     # slugи пройденных лаб того же навыка, кроме текущей
-    completed_slugs = (await db.execute(
-        select(Lab.slug)
-        .join(LabProgress, LabProgress.lab_slug == Lab.slug)
-        .where(
-            LabProgress.user_id == user_id,
-            LabProgress.status == "completed",
-            Lab.slug != lab_slug,
+    completed_slugs = (
+        (
+            await db.execute(
+                select(Lab.slug)
+                .join(LabProgress, LabProgress.lab_slug == Lab.slug)
+                .where(
+                    LabProgress.user_id == user_id,
+                    LabProgress.status == "completed",
+                    Lab.slug != lab_slug,
+                )
+            )
         )
-    )).scalars().all()
+        .scalars()
+        .all()
+    )
     for prior_slug in completed_slugs:
         prior = (await db.execute(select(Lab).where(Lab.slug == prior_slug))).scalar_one_or_none()
         if prior and skill_tag(prior) == skill:

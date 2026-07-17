@@ -7,9 +7,22 @@ pytestmark = [pytest.mark.unit]
 
 
 def _snap(ok, actual):
-    return [{"id": "s1", "title": "A", "ok": ok, "checks": [
-        {"kind": "vpcs.show_ip", "params": {"node": "PC1"}, "ok": ok,
-         "expected": {"ip": "x"}, "actual": actual}]}]
+    return [
+        {
+            "id": "s1",
+            "title": "A",
+            "ok": ok,
+            "checks": [
+                {
+                    "kind": "vpcs.show_ip",
+                    "params": {"node": "PC1"},
+                    "ok": ok,
+                    "expected": {"ip": "x"},
+                    "actual": actual,
+                }
+            ],
+        }
+    ]
 
 
 def test_first_cycle_none_returns_empty():

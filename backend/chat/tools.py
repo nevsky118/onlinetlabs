@@ -64,9 +64,7 @@ async def _run_vpcs_show_ip(node_name: str, ctx, mcp_client) -> dict:
 
     # Находим ноду по имени
     components = await mcp_client.list_components(ctx)
-    node = next(
-        (c for c in components if c.name == node_name and c.type == "vpcs"), None
-    )
+    node = next((c for c in components if c.name == node_name and c.type == "vpcs"), None)
     if node is None:
         return {"error": f"VPCS-узел '{node_name}' не найден"}
     if node.status != "started":

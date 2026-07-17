@@ -19,9 +19,7 @@ class PlatformEvent(Base):
         Index("ix_platform_events_name_ts", "event_name", "server_ts"),
     )
 
-    id: Mapped[str] = mapped_column(
-        String(255), primary_key=True, default=lambda: str(uuid4())
-    )
+    id: Mapped[str] = mapped_column(String(255), primary_key=True, default=lambda: str(uuid4()))
     event_name: Mapped[str] = mapped_column(String(100))
     user_id: Mapped[str | None] = mapped_column(
         String(255), ForeignKey("users.id", ondelete="SET NULL"), nullable=True

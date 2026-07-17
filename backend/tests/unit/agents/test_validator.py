@@ -12,9 +12,11 @@ pytestmark = [pytest.mark.unit, pytest.mark.agents]
 
 def _make_validation_input(**overrides):
     defaults = dict(
-        session_id="s1", user_id="u1",
+        session_id="s1",
+        user_id="u1",
         environment_url="http://localhost:3080",
-        project_id="p1", lab_slug="lab-traceroute",
+        project_id="p1",
+        lab_slug="lab-traceroute",
         step_slug="step-1",
         criteria=[{"component_id": "n1", "expected_status": "running"}],
     )
@@ -22,6 +24,7 @@ def _make_validation_input(**overrides):
 
 
 # ValidatorTools
+
 
 class TestValidatorTools:
     @autotest.num("420")
@@ -78,6 +81,7 @@ class TestValidatorTools:
 
 
 # ValidatorAgent
+
 
 class TestValidatorAgent:
     @autotest.num("425")
@@ -141,15 +145,19 @@ class TestValidatorAgent:
         from mcp_sdk.models import Component
 
         with autotest.step("Создаём среду с двумя компонентами"):
-            mcp = FakeMCPClient(components=[
-                Component(id="n1", name="R1", type="router", status="running", summary="R1"),
-                Component(id="n2", name="R2", type="router", status="stopped", summary="R2"),
-            ])
+            mcp = FakeMCPClient(
+                components=[
+                    Component(id="n1", name="R1", type="router", status="running", summary="R1"),
+                    Component(id="n2", name="R2", type="router", status="stopped", summary="R2"),
+                ]
+            )
             agent = ValidatorAgent(config_model, mcp)
-            inp = _make_validation_input(criteria=[
-                {"component_id": "n1", "expected_status": "running"},
-                {"component_id": "n2", "expected_status": "running"},
-            ])
+            inp = _make_validation_input(
+                criteria=[
+                    {"component_id": "n1", "expected_status": "running"},
+                    {"component_id": "n2", "expected_status": "running"},
+                ]
+            )
 
         with autotest.step("Запускаем run"):
             result = await agent.run(inp)

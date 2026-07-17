@@ -31,15 +31,33 @@ async def audit_engine():
 
 
 def _make_analysis():
-    from agents.analytics.models import AnalyticsResult, SuggestedIntervention, DifficultyRecommendation, StudentMetrics, SessionFeatures
+    from agents.analytics.models import (
+        AnalyticsResult,
+        SuggestedIntervention,
+        DifficultyRecommendation,
+        StudentMetrics,
+        SessionFeatures,
+    )
+
     features = SessionFeatures(
-        session_id="s1", computed_at=datetime(2026, 6, 21, 12, 0, tzinfo=timezone.utc),
-        avg_inter_action_latency=10.0, action_rate_slope=0.0, idle_periods=1,
-        total_active_time=120.0, time_on_current_step=60.0,
-        error_repeat_count=2, error_repeat_rate=0.5, action_sequence_entropy=0.3,
-        undo_redo_ratio=0.0, error_frequency=0.3, error_frequency_slope=0.0,
-        unique_error_types=1, dominant_error=None, components_touched=1,
-        action_diversity=0.2, events_total=10,
+        session_id="s1",
+        computed_at=datetime(2026, 6, 21, 12, 0, tzinfo=timezone.utc),
+        avg_inter_action_latency=10.0,
+        action_rate_slope=0.0,
+        idle_periods=1,
+        total_active_time=120.0,
+        time_on_current_step=60.0,
+        error_repeat_count=2,
+        error_repeat_rate=0.5,
+        action_sequence_entropy=0.3,
+        undo_redo_ratio=0.0,
+        error_frequency=0.3,
+        error_frequency_slope=0.0,
+        unique_error_types=1,
+        dominant_error=None,
+        components_touched=1,
+        action_diversity=0.2,
+        events_total=10,
     )
     return AnalyticsResult(
         struggle_detected=True,
@@ -47,10 +65,14 @@ def _make_analysis():
         confidence=0.9,
         suggested_intervention=SuggestedIntervention.HINT,
         difficulty_recommendation=DifficultyRecommendation(
-            current_difficulty="beginner", recommended_difficulty="beginner",
+            current_difficulty="beginner",
+            recommended_difficulty="beginner",
             reasoning="ok",
             metrics=StudentMetrics(
-                total_attempts=5, success_rate=0.6, avg_time_per_step=30.0, struggling_steps=[],
+                total_attempts=5,
+                success_rate=0.6,
+                avg_time_per_step=30.0,
+                struggling_steps=[],
             ),
         ),
         features=features,
@@ -59,13 +81,24 @@ def _make_analysis():
 
 def _make_monitor(db_factory) -> SessionMonitor:
     cfg = LearningAnalyticsConfig()
-    cfg.dwell_thresholds = {"idle": 0.0, "stuck_on_step": 0.0, "repeating_errors": 0.0, "trial_and_error": 0.0}
+    cfg.dwell_thresholds = {
+        "idle": 0.0,
+        "stuck_on_step": 0.0,
+        "repeating_errors": 0.0,
+        "trial_and_error": 0.0,
+    }
     orchestrator = MagicMock()
-    orchestrator.intervene = AsyncMock(return_value=OrchestratorResponse(
-        success=True, agent_used="tutor", agent_backend="openrouter",
-        data={"hint": "test hint", "hint_level": 1}, metadata={"model": "m"}, error=None,
-        latency_ms=10,
-    ))
+    orchestrator.intervene = AsyncMock(
+        return_value=OrchestratorResponse(
+            success=True,
+            agent_used="tutor",
+            agent_backend="openrouter",
+            data={"hint": "test hint", "hint_level": 1},
+            metadata={"model": "m"},
+            error=None,
+            latency_ms=10,
+        )
+    )
     gateway = MagicMock()
     gateway.send_intervention = AsyncMock()
     m = SessionMonitor(
@@ -94,20 +127,39 @@ class TestInterventionAudit:
 
             # Фабрика: для поведенческих событий — заглушка, для аудита — реальная
             class _BehCap:
-                def __init__(self): self.added = []
-                async def __aenter__(self): return self
-                async def __aexit__(self, *a): return False
-                def add(self, obj): self.added.append(obj)
-                async def commit(self): pass
+                def __init__(self):
+                    self.added = []
+
+                async def __aenter__(self):
+                    return self
+
+                async def __aexit__(self, *a):
+                    return False
+
+                def add(self, obj):
+                    self.added.append(obj)
+
+                async def commit(self):
+                    pass
+
                 async def execute(self, stmt):
                     return _SR(None)
-                async def get(self, model, key): return None
+
+                async def get(self, model, key):
+                    return None
 
             class _SR:
-                def __init__(self, v): self._v = v
-                def scalar_one_or_none(self): return self._v
-                def scalars(self): return self
-                def all(self): return []
+                def __init__(self, v):
+                    self._v = v
+
+                def scalar_one_or_none(self):
+                    return self._v
+
+                def scalars(self):
+                    return self
+
+                def all(self):
+                    return []
 
             beh_cap = _BehCap()
 
@@ -126,11 +178,17 @@ class TestInterventionAudit:
             analysis = _make_analysis()
 
             from learning_analytics.context import AgentContext
-            m._context_builder.build = AsyncMock(return_value=AgentContext(
-                topology_summary="1 router",
-                recent_errors=[], recent_actions=[],
-                struggle_type="idle", dominant_error=None, features_summary="",
-            ))
+
+            m._context_builder.build = AsyncMock(
+                return_value=AgentContext(
+                    topology_summary="1 router",
+                    recent_errors=[],
+                    recent_actions=[],
+                    struggle_type="idle",
+                    dominant_error=None,
+                    features_summary="",
+                )
+            )
             features = MagicMock()
             features.dominant_error = None
             features.error_repeat_count = 0
@@ -143,6 +201,7 @@ class TestInterventionAudit:
                 await m._persist_intervention(db, pending)
             # Вручную вызываем audit (как в _run_analysis после persist)
             from control_interface.audit import record as audit_record
+
             async with session_factory() as db:
                 await audit_record(
                     db,
@@ -172,23 +231,48 @@ class TestInterventionAudit:
             session_factory = async_sessionmaker(audit_engine, expire_on_commit=False)
 
             class _Cap:
-                def __init__(self): self.added = []
-                async def __aenter__(self): return self
-                async def __aexit__(self, *a): return False
-                def add(self, obj): self.added.append(obj)
-                async def commit(self): pass
-                async def execute(self, stmt): return _SR(None)
-                async def get(self, model, key): return None
+                def __init__(self):
+                    self.added = []
+
+                async def __aenter__(self):
+                    return self
+
+                async def __aexit__(self, *a):
+                    return False
+
+                def add(self, obj):
+                    self.added.append(obj)
+
+                async def commit(self):
+                    pass
+
+                async def execute(self, stmt):
+                    return _SR(None)
+
+                async def get(self, model, key):
+                    return None
 
             class _SR:
-                def __init__(self, v): self._v = v
-                def scalar_one_or_none(self): return self._v
-                def scalars(self): return self
-                def all(self): return []
+                def __init__(self, v):
+                    self._v = v
+
+                def scalar_one_or_none(self):
+                    return self._v
+
+                def scalars(self):
+                    return self
+
+                def all(self):
+                    return []
 
             cap = _Cap()
             cfg = LearningAnalyticsConfig()
-            cfg.dwell_thresholds = {"idle": 0.0, "stuck_on_step": 0.0, "repeating_errors": 0.0, "trial_and_error": 0.0}
+            cfg.dwell_thresholds = {
+                "idle": 0.0,
+                "stuck_on_step": 0.0,
+                "repeating_errors": 0.0,
+                "trial_and_error": 0.0,
+            }
             m = SessionMonitor(
                 mcp_client=MagicMock(),
                 db_factory=lambda: cap,

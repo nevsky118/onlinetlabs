@@ -74,14 +74,16 @@ def _make_monitor(observer, config_model) -> SessionMonitor:
     monitor._lab_slug = "lab-gns3"
     monitor._ctx = MagicMock()
     monitor._analytics_agent = analytics_agent
-    monitor._context_builder.build = AsyncMock(return_value=AgentContext(
-        topology_summary="1 router",
-        recent_errors=["ping failed"] * 4,
-        recent_actions=["ping"],
-        struggle_type="repeating_errors",
-        dominant_error="ping failed",
-        features_summary="4 повтора ошибки",
-    ))
+    monitor._context_builder.build = AsyncMock(
+        return_value=AgentContext(
+            topology_summary="1 router",
+            recent_errors=["ping failed"] * 4,
+            recent_actions=["ping"],
+            struggle_type="repeating_errors",
+            dominant_error="ping failed",
+            features_summary="4 повтора ошибки",
+        )
+    )
     return monitor
 
 
@@ -129,9 +131,7 @@ class TestInterventionContextFromObserver:
             assert pending is not None, "интервенция должна быть создана"
             fc = pending.payload.context["failing_check"]
             assert fc is not None, "failing_check не должен быть None"
-            assert fc["kind"] == "vpcs.ping", (
-                f"ожидали 'vpcs.ping', получили {fc['kind']!r}"
-            )
+            assert fc["kind"] == "vpcs.ping", f"ожидали 'vpcs.ping', получили {fc['kind']!r}"
 
     @autotest.num("592")
     @autotest.external_id("c2d3e4f5-a6b7-4282-d3e4-f5a6b7c8d9ea")
@@ -152,4 +152,6 @@ class TestInterventionContextFromObserver:
             assert pending is not None
             ctx = pending.payload.context
             assert ctx["step_slug"] == "current", f"fallback step_slug: {ctx['step_slug']!r}"
-            assert ctx["failing_check"] is None, f"failing_check должен быть None: {ctx['failing_check']!r}"
+            assert ctx["failing_check"] is None, (
+                f"failing_check должен быть None: {ctx['failing_check']!r}"
+            )

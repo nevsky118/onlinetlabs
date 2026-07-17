@@ -26,17 +26,25 @@ class TestAnalyticsTools:
         with autotest.step("Создаём 3 попытки: 2 pass, 1 fail"):
             attempts = [
                 AttemptData(
-                    step_slug="step-1", result="pass", attempt_number=1,
+                    step_slug="step-1",
+                    result="pass",
+                    attempt_number=1,
                     started_at=now - timedelta(minutes=10),
                     ended_at=now - timedelta(minutes=5),
                 ),
                 AttemptData(
-                    id="a2", step_slug="step-1", result="fail", attempt_number=2,
+                    id="a2",
+                    step_slug="step-1",
+                    result="fail",
+                    attempt_number=2,
                     started_at=now - timedelta(minutes=4),
                     ended_at=now - timedelta(minutes=2),
                 ),
                 AttemptData(
-                    id="a3", step_slug="step-2", result="pass", attempt_number=1,
+                    id="a3",
+                    step_slug="step-2",
+                    result="pass",
+                    attempt_number=1,
                     started_at=now - timedelta(minutes=2),
                     ended_at=now,
                 ),
@@ -75,7 +83,9 @@ class TestAnalyticsTools:
         with autotest.step("Создаём 3 неудачи подряд на step-1"):
             attempts = [
                 AttemptData(
-                    id=f"a{i}", step_slug="step-1", result="fail",
+                    id=f"a{i}",
+                    step_slug="step-1",
+                    result="fail",
                     attempt_number=i,
                     started_at=now - timedelta(minutes=10 - i),
                     ended_at=now - timedelta(minutes=9 - i),
@@ -173,7 +183,9 @@ class TestAnalyticsAgent:
         with autotest.step("Создаём 10 успешных попыток"):
             attempts = [
                 AttemptData(
-                    id=f"a{i}", step_slug=f"step-{i}", result="pass",
+                    id=f"a{i}",
+                    step_slug=f"step-{i}",
+                    result="pass",
                     started_at=now - timedelta(minutes=i + 1),
                     ended_at=now - timedelta(minutes=i),
                 )
@@ -196,7 +208,9 @@ class TestAnalyticsAgent:
         with autotest.step("Создаём 10 неудачных попыток"):
             attempts = [
                 AttemptData(
-                    id=f"a{i}", step_slug="step-1", result="fail",
+                    id=f"a{i}",
+                    step_slug="step-1",
+                    result="fail",
                     started_at=now - timedelta(minutes=i + 1),
                     ended_at=now - timedelta(minutes=i),
                     error_details="failed",

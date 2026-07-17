@@ -125,9 +125,7 @@ async def frr_ospf_neighbor(ctx: CheckContext, params: dict, expect: dict) -> Ch
             log="",
         )
 
-    exec_result, err = await _exec_or_error(
-        ctx, node_name, "show ip ospf neighbor", expect
-    )
+    exec_result, err = await _exec_or_error(ctx, node_name, "show ip ospf neighbor", expect)
     if err is not None:
         return err
     stdout = exec_result.get("stdout", "")

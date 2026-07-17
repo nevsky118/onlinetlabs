@@ -16,9 +16,7 @@ class TestAnalysis:
         # Arrange
         with autotest.step("Создаём данные с явной разницей"):
             group_a = [ExperimentMetricsData("group_a", 2400, 10, 8) for _ in range(20)]
-            group_b = [
-                ExperimentMetricsData("group_b", 1600, 5, 3, 4) for _ in range(20)
-            ]
+            group_b = [ExperimentMetricsData("group_b", 1600, 5, 3, 4) for _ in range(20)]
             all_metrics = group_a + group_b
 
         # Act
@@ -29,12 +27,8 @@ class TestAnalysis:
         with autotest.step("Проверяем результат"):
             assert_equal(result["sample_size"]["group_a"], 20, "20 group_a")
             assert_equal(result["sample_size"]["group_b"], 20, "20 group_b")
-            assert_equal(
-                result["h1_time_to_completion"]["group_a_mean"], 2400, "group_a mean"
-            )
-            assert_equal(
-                result["h1_time_to_completion"]["group_b_mean"], 1600, "group_b mean"
-            )
+            assert_equal(result["h1_time_to_completion"]["group_a_mean"], 2400, "group_a mean")
+            assert_equal(result["h1_time_to_completion"]["group_b_mean"], 1600, "group_b mean")
             assert_greater(
                 result["h1_time_to_completion"]["reduction_percent"],
                 0,
@@ -45,9 +39,7 @@ class TestAnalysis:
                 0,
                 "ошибки сократились",
             )
-            assert_true(
-                result["h1_time_to_completion"]["significant"], "разница значима"
-            )
+            assert_true(result["h1_time_to_completion"]["significant"], "разница значима")
 
     @autotest.num("621")
     @autotest.external_id("f6a7b8c9-d0e1-4234-fabc-621000000006")

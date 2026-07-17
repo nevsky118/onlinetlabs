@@ -6,12 +6,15 @@ from auth.dependencies import may_select_model
 pytestmark = [pytest.mark.unit, pytest.mark.auth]
 
 
-@pytest.mark.parametrize("role,toggle,expected", [
-    ("student", None, True),       # пермиссивный дефолт: роль в selectable_roles
-    ("student", False, False),     # точечный дизейбл перебивает роль
-    ("instructor", None, True),
-    ("student", True, True),       # явный тоггл включён — даёт доступ
-])
+@pytest.mark.parametrize(
+    "role,toggle,expected",
+    [
+        ("student", None, True),  # пермиссивный дефолт: роль в selectable_roles
+        ("student", False, False),  # точечный дизейбл перебивает роль
+        ("instructor", None, True),
+        ("student", True, True),  # явный тоггл включён — даёт доступ
+    ],
+)
 @autotest.name("may_select_model: матрица роль/тоггл/selectable_roles")
 def test_may_select_model(role, toggle, expected):
     roles = {"student", "instructor", "admin"}

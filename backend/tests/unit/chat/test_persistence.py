@@ -116,7 +116,6 @@ class _DBTestBase:
 
 
 class TestSaveUserMessage(_DBTestBase):
-
     @autotest.num("1914")
     @autotest.external_id("a7b1f8d3-8d2e-4c91-9b7e-2f4a6c1d8e0a")
     @autotest.name("save_user_message: последнее user-сообщение → INSERT с теми же parts")
@@ -174,7 +173,6 @@ class TestSaveUserMessage(_DBTestBase):
 
 
 class TestSaveAssistantMessage(_DBTestBase):
-
     @autotest.num("1917")
     @autotest.external_id("e6c2a489-4d72-49f3-b2c8-1f0e7d4b8a5c")
     @autotest.name("save_assistant_message: parts + usage → INSERT")
@@ -210,7 +208,6 @@ class TestSaveAssistantMessage(_DBTestBase):
 
 
 class TestGetChatHistory(_DBTestBase):
-
     @autotest.num("1919")
     @autotest.external_id("b4e7c8a2-5f9d-4a1b-c3d6-7e8f9a0b1c2d")
     @autotest.name("get_chat_history: порядок по created_at ASC")
@@ -218,21 +215,30 @@ class TestGetChatHistory(_DBTestBase):
         with autotest.step("Кладём 3 сообщения с явным created_at в перемешанном порядке"):
             base = datetime(2026, 6, 1, 12, 0, 0, tzinfo=timezone.utc)
             async with self.session_factory() as db:
-                db.add(ChatMessage(
-                    session_id="sess-h", role="user",
-                    parts=[{"type": "text", "text": "second"}],
-                    created_at=base + timedelta(seconds=10),
-                ))
-                db.add(ChatMessage(
-                    session_id="sess-h", role="assistant",
-                    parts=[{"type": "text", "text": "third"}],
-                    created_at=base + timedelta(seconds=20),
-                ))
-                db.add(ChatMessage(
-                    session_id="sess-h", role="user",
-                    parts=[{"type": "text", "text": "first"}],
-                    created_at=base,
-                ))
+                db.add(
+                    ChatMessage(
+                        session_id="sess-h",
+                        role="user",
+                        parts=[{"type": "text", "text": "second"}],
+                        created_at=base + timedelta(seconds=10),
+                    )
+                )
+                db.add(
+                    ChatMessage(
+                        session_id="sess-h",
+                        role="assistant",
+                        parts=[{"type": "text", "text": "third"}],
+                        created_at=base + timedelta(seconds=20),
+                    )
+                )
+                db.add(
+                    ChatMessage(
+                        session_id="sess-h",
+                        role="user",
+                        parts=[{"type": "text", "text": "first"}],
+                        created_at=base,
+                    )
+                )
                 await db.commit()
 
         with autotest.step("Читаем историю"):

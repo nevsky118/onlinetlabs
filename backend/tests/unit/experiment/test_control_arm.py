@@ -23,6 +23,7 @@ class TestControlArm:
     def test_6e20da78_assign_arm_valid(self, monkeypatch):
         with autotest.step("Arrange: подменить random.choice → первый элемент"):
             import experiment.control_arm as m
+
             monkeypatch.setattr(m.random, "choice", lambda seq: seq[0])
         with autotest.step("Act: вызвать assign_arm"):
             result = assign_arm()

@@ -1,4 +1,5 @@
 """Отчёт по оценке идентификатора П1: рабочая кривая + матрица путаницы + first-match."""
+
 import asyncio
 
 from config.env_config_loader import load_settings
@@ -81,6 +82,7 @@ async def main():
         cfg = settings.learning_analytics
     except Exception:
         from config.config_model import LearningAnalyticsConfig
+
         cfg = LearningAnalyticsConfig()
 
     costs = Costs(c_stuck=1.0, c_intervention=1.0, c_false=5.0)
@@ -100,6 +102,7 @@ async def main():
 
     # Матрица и recall на J-оптимальном T_k
     from evaluation.harness import run_identifier
+
     pairs_best = [(scn, run_identifier(scn, best.t_k, cfg)) for scn in scns]
     cm = confusion_matrix(pairs_best)
     per_type = _per_type_recall(pairs_best, best.t_k, cfg)
@@ -113,11 +116,7 @@ async def main():
         lat = "—" if p.latency_median is None else f"{p.latency_median:.1f}"
         marker = " *" if p is best else ""
         print(
-            f"| {p.t_k:.0f}{marker} "
-            f"| {lat} "
-            f"| {p.false_per_hour:.2f} "
-            f"| {p.recall:.2f} "
-            f"| {p.J:.2f} |"
+            f"| {p.t_k:.0f}{marker} | {lat} | {p.false_per_hour:.2f} | {p.recall:.2f} | {p.J:.2f} |"
         )
 
     print(f"\n_* J-оптимум при T_k={best.t_k:.0f}с_\n")

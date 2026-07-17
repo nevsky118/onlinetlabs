@@ -15,13 +15,15 @@ class TestMetrics:
     @autotest.name("metrics: TP/recall/latency/ложные-час по детекциям")
     def test_e44cc247_evaluate(self):
         with autotest.step("Arrange: 1 струггл детектнут в окне, 1 пропущен, 1 нормальная ложная"):
-            s_hit = make_struggle_scenario(ProcessRegime.REPEATING_ERRORS, onset_index=4, n=12, step=15.0)  # онсет 60
+            s_hit = make_struggle_scenario(
+                ProcessRegime.REPEATING_ERRORS, onset_index=4, n=12, step=15.0
+            )  # онсет 60
             s_miss = make_struggle_scenario(ProcessRegime.IDLE, onset_index=4, n=12, step=15.0)
             s_norm = make_normal_scenario(n=12, step=15.0)  # длительность 180с
             pairs = [
-                (s_hit, Detection(True, 75.0, ProcessRegime.REPEATING_ERRORS)),   # в окне [60,90]
-                (s_miss, Detection(False, None, None)),                            # пропуск
-                (s_norm, Detection(True, 30.0, ProcessRegime.STUCK_ON_STEP)),      # ложное
+                (s_hit, Detection(True, 75.0, ProcessRegime.REPEATING_ERRORS)),  # в окне [60,90]
+                (s_miss, Detection(False, None, None)),  # пропуск
+                (s_norm, Detection(True, 30.0, ProcessRegime.STUCK_ON_STEP)),  # ложное
             ]
         with autotest.step("Act"):
             m = evaluate(pairs)

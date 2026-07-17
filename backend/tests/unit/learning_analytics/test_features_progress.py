@@ -25,14 +25,14 @@ def _e(action, cid, actual, t):
 def test_distinct_actuals_and_unchanged_run():
     base = datetime(2026, 1, 1, tzinfo=timezone.utc)
     evs = [
-        _e("check_retry",   "PC1", {"ip": "a"}, base),
-        _e("check_retry",   "PC1", {"ip": "b"}, base + timedelta(seconds=25)),
+        _e("check_retry", "PC1", {"ip": "a"}, base),
+        _e("check_retry", "PC1", {"ip": "b"}, base + timedelta(seconds=25)),
         _e("check_failing", "PC1", {"ip": "b"}, base + timedelta(seconds=50)),
         _e("check_failing", "PC1", {"ip": "b"}, base + timedelta(seconds=75)),
     ]
     f = FeatureExtractor().compute("s1", evs)
-    assert f.distinct_failing_actuals >= 2   # a,b
-    assert f.cycles_failing_unchanged == 2   # хвост check_failing
+    assert f.distinct_failing_actuals >= 2  # a,b
+    assert f.cycles_failing_unchanged == 2  # хвост check_failing
 
 
 def test_empty_events_returns_zero():
@@ -64,7 +64,7 @@ def test_cycles_broken_by_different_component():
     """Хвост обрывается при смене component_id."""
     base = datetime(2026, 1, 1, tzinfo=timezone.utc)
     evs = [
-        _e("check_failing", "R1",  {"ip": "x"}, base),
+        _e("check_failing", "R1", {"ip": "x"}, base),
         _e("check_failing", "PC1", {"ip": "y"}, base + timedelta(seconds=25)),
         _e("check_failing", "PC1", {"ip": "y"}, base + timedelta(seconds=50)),
     ]
@@ -79,7 +79,7 @@ def test_cycles_broken_by_check_passed():
     evs = [
         _e("check_failing", "PC1", {"ip": "y"}, base),
         _e("check_failing", "PC1", {"ip": "y"}, base + timedelta(seconds=25)),
-        _e("check_passed",  "PC1", {"ip": "x"}, base + timedelta(seconds=50)),
+        _e("check_passed", "PC1", {"ip": "x"}, base + timedelta(seconds=50)),
     ]
     f = FeatureExtractor().compute("s1", evs)
     assert f.cycles_failing_unchanged == 0
@@ -87,13 +87,14 @@ def test_cycles_broken_by_check_passed():
 
 # Регрессионные тесты FIX 1: _current_error_run сбрасывается по check_passed
 
+
 def test_error_run_reset_by_check_passed():
     """check_passed обрывает серию → error_repeat_count == 0."""
     base = datetime(2026, 1, 1, tzinfo=timezone.utc)
     evs = [
         _e("check_failing", "PC1", {"ip": "x"}, base),
         _e("check_failing", "PC1", {"ip": "x"}, base + timedelta(seconds=25)),
-        _e("check_passed",  "PC1", {"ip": "x"}, base + timedelta(seconds=50)),
+        _e("check_passed", "PC1", {"ip": "x"}, base + timedelta(seconds=50)),
     ]
     f = FeatureExtractor().compute("s1", evs)
     assert f.error_repeat_count == 0

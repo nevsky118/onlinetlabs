@@ -16,9 +16,19 @@ class _FakeSettings:
 
 def _yandex_agents() -> AgentsConfig:
     return AgentsConfig(
-        providers={"yandex": ProviderCreds(provider=LlmProvider.YANDEX, api_key="test-key", yandex_folder="my-folder")},
-        catalog=[ModelEntry(id="yandex-gpt-5.1", label="YandexGPT 5.1 Pro",
-                            provider_ref="yandex", model="yandexgpt/latest")],
+        providers={
+            "yandex": ProviderCreds(
+                provider=LlmProvider.YANDEX, api_key="test-key", yandex_folder="my-folder"
+            )
+        },
+        catalog=[
+            ModelEntry(
+                id="yandex-gpt-5.1",
+                label="YandexGPT 5.1 Pro",
+                provider_ref="yandex",
+                model="yandexgpt/latest",
+            )
+        ],
         chat_model="yandex-gpt-5.1",
         intervention_model="yandex-gpt-5.1",
     )
@@ -28,16 +38,30 @@ def _multi_agents() -> AgentsConfig:
     return AgentsConfig(
         providers={
             "yandex": ProviderCreds(provider=LlmProvider.YANDEX, api_key="yk", yandex_folder="fld"),
-            "openrouter": ProviderCreds(provider=LlmProvider.OPENAI, api_key="ork",
-                                        base_url="https://openrouter.ai/api/v1"),
+            "openrouter": ProviderCreds(
+                provider=LlmProvider.OPENAI, api_key="ork", base_url="https://openrouter.ai/api/v1"
+            ),
         },
         catalog=[
-            ModelEntry(id="yandex-gpt-5.1", label="YandexGPT 5.1 Pro",
-                       provider_ref="yandex", model="yandexgpt/latest"),
-            ModelEntry(id="claude-opus-4.8", label="Claude Opus 4.8",
-                       provider_ref="openrouter", model="anthropic/claude-opus-4.8"),
-            ModelEntry(id="no-tools-model", label="No Tools", provider_ref="openrouter",
-                       model="some/model", tools=False),
+            ModelEntry(
+                id="yandex-gpt-5.1",
+                label="YandexGPT 5.1 Pro",
+                provider_ref="yandex",
+                model="yandexgpt/latest",
+            ),
+            ModelEntry(
+                id="claude-opus-4.8",
+                label="Claude Opus 4.8",
+                provider_ref="openrouter",
+                model="anthropic/claude-opus-4.8",
+            ),
+            ModelEntry(
+                id="no-tools-model",
+                label="No Tools",
+                provider_ref="openrouter",
+                model="some/model",
+                tools=False,
+            ),
         ],
         chat_model="yandex-gpt-5.1",
         intervention_model="yandex-gpt-5.1",
@@ -51,9 +75,11 @@ class TestResolveModel:
     @autotest.name("resolve_model: возвращает (creds, entry) по model_id")
     def test_66ac44a1_resolve_model_returns_creds_and_entry(self, monkeypatch):
         import llm.client as client_mod
+
         monkeypatch.setattr(client_mod, "settings", _FakeSettings(_yandex_agents()))
 
         from llm.client import resolve_model
+
         creds, entry = resolve_model("yandex-gpt-5.1")
 
         with autotest.step("Проверяем provider"):
@@ -67,9 +93,11 @@ class TestResolveModel:
     @autotest.name("resolve_model: неизвестный model_id → KeyError")
     def test_b7ffe61d_resolve_model_unknown_raises(self, monkeypatch):
         import llm.client as client_mod
+
         monkeypatch.setattr(client_mod, "settings", _FakeSettings(_yandex_agents()))
 
         from llm.client import resolve_model
+
         with autotest.step("Ожидаем KeyError на несуществующий id"):
             with pytest.raises(KeyError):
                 resolve_model("nope")
@@ -82,13 +110,17 @@ class TestModelUri:
     @autotest.name("model_uri: yandex → gpt://<folder>/<model>")
     def test_0d3311cf_model_uri_yandex(self, monkeypatch):
         import llm.client as client_mod
+
         monkeypatch.setattr(client_mod, "settings", _FakeSettings(_yandex_agents()))
 
         from llm.client import model_uri
+
         uri = model_uri("yandex-gpt-5.1")
 
         with autotest.step("Проверяем формат URI для Yandex"):
-            assert_true(uri.startswith("gpt://my-folder/"), f"URI начинается с gpt://my-folder/: {uri}")
+            assert_true(
+                uri.startswith("gpt://my-folder/"), f"URI начинается с gpt://my-folder/: {uri}"
+            )
             assert_equal(uri, "gpt://my-folder/yandexgpt/latest", "полный URI")
 
     @autotest.num("203")
@@ -96,9 +128,11 @@ class TestModelUri:
     @autotest.name("model_uri: openrouter → слаг модели")
     def test_cc3ff501_model_uri_openrouter(self, monkeypatch):
         import llm.client as client_mod
+
         monkeypatch.setattr(client_mod, "settings", _FakeSettings(_multi_agents()))
 
         from llm.client import model_uri
+
         uri = model_uri("claude-opus-4.8")
 
         with autotest.step("Проверяем, что URI = model slug"):
@@ -112,9 +146,11 @@ class TestModelSupportsTools:
     @autotest.name("model_supports_tools: читает ModelEntry.tools")
     def test_91b00c8b_model_supports_tools_true(self, monkeypatch):
         import llm.client as client_mod
+
         monkeypatch.setattr(client_mod, "settings", _FakeSettings(_multi_agents()))
 
         from llm.client import model_supports_tools
+
         with autotest.step("tools=True по умолчанию"):
             assert_true(model_supports_tools("yandex-gpt-5.1"), "yandex-gpt-5.1 поддерживает tools")
 
@@ -123,9 +159,11 @@ class TestModelSupportsTools:
     @autotest.name("model_supports_tools: tools=False → False")
     def test_38adec45_model_supports_tools_false(self, monkeypatch):
         import llm.client as client_mod
+
         monkeypatch.setattr(client_mod, "settings", _FakeSettings(_multi_agents()))
 
         from llm.client import model_supports_tools
+
         with autotest.step("tools=False возвращает False"):
             result = model_supports_tools("no-tools-model")
             assert_true(not result, "no-tools-model не поддерживает tools")
@@ -141,8 +179,14 @@ def _openrouter_with_headers_agents() -> AgentsConfig:
                 extra_headers={"HTTP-Referer": "https://example.com"},
             )
         },
-        catalog=[ModelEntry(id="claude-opus-4.8", label="Claude Opus 4.8",
-                            provider_ref="openrouter", model="anthropic/claude-opus-4.8")],
+        catalog=[
+            ModelEntry(
+                id="claude-opus-4.8",
+                label="Claude Opus 4.8",
+                provider_ref="openrouter",
+                model="anthropic/claude-opus-4.8",
+            )
+        ],
         chat_model="claude-opus-4.8",
         intervention_model="claude-opus-4.8",
     )
@@ -155,10 +199,12 @@ class TestBuildClient:
     @autotest.name("build_client: возвращает AsyncOpenAI для yandex")
     def test_ae2f409a_build_client_yandex(self, monkeypatch):
         import llm.client as client_mod
+
         monkeypatch.setattr(client_mod, "settings", _FakeSettings(_yandex_agents()))
 
         from openai import AsyncOpenAI
         from llm.client import build_client
+
         with autotest.step("Создаём клиент для yandex"):
             client = build_client("yandex-gpt-5.1")
             assert_true(isinstance(client, AsyncOpenAI), "результат — AsyncOpenAI")
@@ -168,9 +214,13 @@ class TestBuildClient:
     @autotest.name("build_client: extra_headers провайдера попадают в AsyncOpenAI (openrouter)")
     def test_f7aa1cb2_build_client_propagates_extra_headers(self, monkeypatch):
         import llm.client as client_mod
-        monkeypatch.setattr(client_mod, "settings", _FakeSettings(_openrouter_with_headers_agents()))
+
+        monkeypatch.setattr(
+            client_mod, "settings", _FakeSettings(_openrouter_with_headers_agents())
+        )
 
         from llm.client import build_client
+
         with autotest.step("Строим клиент для openrouter-провайдера с extra_headers"):
             client = build_client("claude-opus-4.8")
 

@@ -3,7 +3,11 @@
 import pytest
 from mcp_sdk.testing import autotest
 
-from learning_analytics.progress_observer import LabProgressObserver, ProgressState, derive_current_step
+from learning_analytics.progress_observer import (
+    LabProgressObserver,
+    ProgressState,
+    derive_current_step,
+)
 
 pytestmark = [pytest.mark.unit]
 
@@ -65,7 +69,13 @@ def test_derive_current_step_filters_failing_checks():
             "ok": False,
             "checks": [
                 {"kind": "ping", "params": {}, "ok": True, "expected": {}, "actual": {}},
-                {"kind": "ip", "params": {}, "ok": False, "expected": {"ip": "1"}, "actual": {"ip": "2"}},
+                {
+                    "kind": "ip",
+                    "params": {},
+                    "ok": False,
+                    "expected": {"ip": "1"},
+                    "actual": {"ip": "2"},
+                },
             ],
         }
     ]

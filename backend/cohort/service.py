@@ -1,4 +1,5 @@
 """Сборка LearnerOutcome из БД и расчёт когортных метрик. Единый источник (эндпоинт/скрипт/вью)."""
+
 from sqlalchemy import select
 
 from cohort.metrics import LearnerOutcome, aggregate_cohort
@@ -17,7 +18,9 @@ async def _skill_of(db, lab_slug: str, cache: dict) -> str | None:
     return cache[lab_slug]
 
 
-async def _sessions_for_skill(sessions: list, user_id: str, skill: str, skill_cache: dict, db) -> list:
+async def _sessions_for_skill(
+    sessions: list, user_id: str, skill: str, skill_cache: dict, db
+) -> list:
     """Сессии пользователя по навыку (без await в list comprehension)."""
     result = []
     for s in sessions:
@@ -75,13 +78,18 @@ async def compute_cohort_metrics(db, horizon_seconds: float, by_arm: bool = Fals
         # сессии до (включая) момента L2-pass
         l2_time = l2_lp.completed_at if reached else None
         rel_sessions = [
-            s for s in user_skill_sessions
+            s
+            for s in user_skill_sessions
             if l2_time is None or (s.started_at and s.started_at <= l2_time)
         ]
-        active_sec = sum(
-            (s.ended_at - s.started_at).total_seconds()
-            for s in rel_sessions if s.ended_at and s.started_at
-        ) or None
+        active_sec = (
+            sum(
+                (s.ended_at - s.started_at).total_seconds()
+                for s in rel_sessions
+                if s.ended_at and s.started_at
+            )
+            or None
+        )
 
         # время наблюдения: последняя активность − l1_start. Без завершённых сессий
         # фолбэк на завершение/обновление L1 (не на l1_start → не схлопывать цензур в 0).
@@ -93,25 +101,28 @@ async def compute_cohort_metrics(db, horizon_seconds: float, by_arm: bool = Fals
         em_l2 = em_by_user_lab.get((user_id, l2_lp.lab_slug)) if reached else None
         arm = (em_l1.base_arm if em_l1 else None) or (em_l2.base_arm if em_l2 else None)
 
-        records.append(LearnerOutcome(
-            user_id=user_id,
-            skill=skill,
-            arm=arm,
-            reached_l2=reached,
-            time_to_l2_seconds=(
-                (l2_time - l1_start).total_seconds()
-                if (reached and l1_start and l2_time) else None
-            ),
-            active_seconds=active_sec,
-            sessions_to_l2=(len(rel_sessions) if reached else None),
-            l1_interventions=(em_l1.interventions_received if em_l1 else 0),
-            l2_interventions=(em_l2.interventions_received if em_l2 else None),
-            l1_escalations=(em_l1.escalations if em_l1 else 0),
-            l2_escalations=(em_l2.escalations if em_l2 else None),
-            l1_repeated_errors=(em_l1.repeated_errors if em_l1 else 0),
-            l2_repeated_errors=(em_l2.repeated_errors if em_l2 else None),
-            observation_seconds=observation,
-            censored=not reached,
-        ))
+        records.append(
+            LearnerOutcome(
+                user_id=user_id,
+                skill=skill,
+                arm=arm,
+                reached_l2=reached,
+                time_to_l2_seconds=(
+                    (l2_time - l1_start).total_seconds()
+                    if (reached and l1_start and l2_time)
+                    else None
+                ),
+                active_seconds=active_sec,
+                sessions_to_l2=(len(rel_sessions) if reached else None),
+                l1_interventions=(em_l1.interventions_received if em_l1 else 0),
+                l2_interventions=(em_l2.interventions_received if em_l2 else None),
+                l1_escalations=(em_l1.escalations if em_l1 else 0),
+                l2_escalations=(em_l2.escalations if em_l2 else None),
+                l1_repeated_errors=(em_l1.repeated_errors if em_l1 else 0),
+                l2_repeated_errors=(em_l2.repeated_errors if em_l2 else None),
+                observation_seconds=observation,
+                censored=not reached,
+            )
+        )
 
     return aggregate_cohort(records, horizon_seconds, by_arm=by_arm)

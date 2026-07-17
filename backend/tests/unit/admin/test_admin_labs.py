@@ -1,4 +1,5 @@
 """P4 task 1 + task 3: тесты /admin/labs (GET, PATCH, rebuild-template)."""
+
 import uuid
 from unittest.mock import AsyncMock
 
@@ -61,7 +62,9 @@ class TestAdminLabsEndpoints:
         return AsyncClient(transport=ASGITransport(app=self.app), base_url="http://testserver")
 
     def _student_client(self) -> AsyncClient:
-        return AsyncClient(transport=ASGITransport(app=self.student_app), base_url="http://testserver")
+        return AsyncClient(
+            transport=ASGITransport(app=self.student_app), base_url="http://testserver"
+        )
 
     async def _seed(self, labs: list[Lab]) -> None:
         async with self.session_factory() as db:
@@ -83,27 +86,29 @@ class TestAdminLabsEndpoints:
     @autotest.external_id("c1d2e3f4-a5b6-4c7d-9e8f-0a1b2c3d4e5f")
     @autotest.name("GET /admin/labs: возвращает вставленные лабы с корректным template_ready")
     async def test_c1d2e3f4_list_labs_template_ready(self):
-        await self._seed([
-            Lab(
-                slug="gns3-lab-with-tpl",
-                title="GNS3 with template",
-                environment_type="gns3",
-                gns3_template_project_id="tpl-uuid-123",
-                enabled=True,
-            ),
-            Lab(
-                slug="none-lab",
-                title="None env lab",
-                environment_type="none",
-                enabled=True,
-            ),
-            Lab(
-                slug="gns3-lab-no-tpl",
-                title="GNS3 no template",
-                environment_type="gns3",
-                enabled=True,
-            ),
-        ])
+        await self._seed(
+            [
+                Lab(
+                    slug="gns3-lab-with-tpl",
+                    title="GNS3 with template",
+                    environment_type="gns3",
+                    gns3_template_project_id="tpl-uuid-123",
+                    enabled=True,
+                ),
+                Lab(
+                    slug="none-lab",
+                    title="None env lab",
+                    environment_type="none",
+                    enabled=True,
+                ),
+                Lab(
+                    slug="gns3-lab-no-tpl",
+                    title="GNS3 no template",
+                    environment_type="gns3",
+                    enabled=True,
+                ),
+            ]
+        )
 
         with autotest.step("Act: GET /admin/labs"):
             async with self._client() as client:
@@ -130,9 +135,11 @@ class TestAdminLabsEndpoints:
     @autotest.external_id("d2e3f4a5-b6c7-4d8e-af9f-1b2c3d4e5f6a")
     @autotest.name("PATCH /admin/labs/{slug}: переключает enabled → false")
     async def test_d2e3f4a5_patch_toggles_enabled(self):
-        await self._seed([
-            Lab(slug="toggle-lab", title="Toggle Lab", environment_type="none", enabled=True),
-        ])
+        await self._seed(
+            [
+                Lab(slug="toggle-lab", title="Toggle Lab", environment_type="none", enabled=True),
+            ]
+        )
 
         with autotest.step("Act: PATCH enabled=false"):
             async with self._client() as client:
@@ -151,9 +158,11 @@ class TestAdminLabsEndpoints:
     @autotest.external_id("e3f4a5b6-c7d8-4e9f-b0a1-2c3d4e5f6a7b")
     @autotest.name("PATCH /admin/labs/{slug}: устанавливает gns3_template_project_id")
     async def test_e3f4a5b6_patch_sets_template_id(self):
-        await self._seed([
-            Lab(slug="tpl-lab", title="Template Lab", environment_type="gns3", enabled=True),
-        ])
+        await self._seed(
+            [
+                Lab(slug="tpl-lab", title="Template Lab", environment_type="gns3", enabled=True),
+            ]
+        )
 
         with autotest.step("Act: PATCH gns3_template_project_id"):
             async with self._client() as client:
@@ -183,9 +192,17 @@ class TestAdminLabsEndpoints:
     @autotest.external_id("a5b6c7d8-e9f0-4a1b-d2c3-4e5f6a7b8c9d")
     @autotest.name("GET /admin/labs: template_status по умолчанию 'unknown' при meta=null")
     async def test_a5b6c7d8_template_status_default_unknown(self):
-        await self._seed([
-            Lab(slug="no-meta-lab", title="No Meta", environment_type="none", enabled=True, meta=None),
-        ])
+        await self._seed(
+            [
+                Lab(
+                    slug="no-meta-lab",
+                    title="No Meta",
+                    environment_type="none",
+                    enabled=True,
+                    meta=None,
+                ),
+            ]
+        )
 
         with autotest.step("Act: GET /admin/labs"):
             async with self._client() as client:
@@ -241,7 +258,9 @@ class TestRebuildTemplate:
         return AsyncClient(transport=ASGITransport(app=self.app), base_url="http://testserver")
 
     def _student_client(self) -> AsyncClient:
-        return AsyncClient(transport=ASGITransport(app=self.student_app), base_url="http://testserver")
+        return AsyncClient(
+            transport=ASGITransport(app=self.student_app), base_url="http://testserver"
+        )
 
     async def _seed(self, labs: list[Lab]) -> None:
         async with self.session_factory() as db:
@@ -252,9 +271,11 @@ class TestRebuildTemplate:
     @autotest.external_id("b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e")
     @autotest.name("POST rebuild-template: не-admin → 403")
     async def test_b1c2d3e4_rebuild_non_admin_403(self):
-        await self._seed([
-            Lab(slug="gns3-lab", title="GNS3", environment_type="gns3", enabled=True),
-        ])
+        await self._seed(
+            [
+                Lab(slug="gns3-lab", title="GNS3", environment_type="gns3", enabled=True),
+            ]
+        )
         with autotest.step("Act"):
             async with self._student_client() as client:
                 resp = await client.post("/admin/labs/gns3-lab/rebuild-template")
@@ -275,9 +296,11 @@ class TestRebuildTemplate:
     @autotest.external_id("d3e4f5a6-b7c8-4d9e-af0f-2b3c4d5e6f7a")
     @autotest.name("POST rebuild-template: не-gns3 лаба → 400")
     async def test_d3e4f5a6_rebuild_non_gns3_400(self):
-        await self._seed([
-            Lab(slug="none-lab", title="None", environment_type="none", enabled=True),
-        ])
+        await self._seed(
+            [
+                Lab(slug="none-lab", title="None", environment_type="none", enabled=True),
+            ]
+        )
         with autotest.step("Act"):
             async with self._client() as client:
                 resp = await client.post("/admin/labs/none-lab/rebuild-template")
@@ -292,9 +315,11 @@ class TestRebuildTemplate:
         # committed "building" synchronously (confirmed by 202 response) without
         # racing against the background task overwriting the DB state.
         self.stub_client.build_template = AsyncMock(side_effect=RuntimeError("stubbed"))
-        await self._seed([
-            Lab(slug="build-lab", title="Build", environment_type="gns3", enabled=True),
-        ])
+        await self._seed(
+            [
+                Lab(slug="build-lab", title="Build", environment_type="gns3", enabled=True),
+            ]
+        )
         with autotest.step("Act: POST rebuild-template"):
             async with self._client() as client:
                 resp = await client.post("/admin/labs/build-lab/rebuild-template")
@@ -304,6 +329,7 @@ class TestRebuildTemplate:
         with autotest.step("Assert: meta.template_status в БД — building→error (worker ran)"):
             async with self.session_factory() as db:
                 from labs.service import get_lab_by_slug
+
                 lab = await get_lab_by_slug(db, "build-lab")
                 # endpoint commits "building" synchronously; background task then runs and
                 # writes "error" (stub raises). Either value confirms the endpoint committed.
@@ -316,15 +342,17 @@ class TestRebuildTemplate:
     @autotest.external_id("f5a6b7c8-d9e0-4f1a-c2b3-4d5e6f7a8b9c")
     @autotest.name("POST rebuild-template: idempotent — не запускает второй билд")
     async def test_f5a6b7c8_rebuild_idempotent(self):
-        await self._seed([
-            Lab(
-                slug="already-building",
-                title="Building",
-                environment_type="gns3",
-                enabled=True,
-                meta={"template_status": "building"},
-            ),
-        ])
+        await self._seed(
+            [
+                Lab(
+                    slug="already-building",
+                    title="Building",
+                    environment_type="gns3",
+                    enabled=True,
+                    meta={"template_status": "building"},
+                ),
+            ]
+        )
         self.stub_client.build_template.reset_mock()
         with autotest.step("Act: POST на уже строящуюся лабу"):
             async with self._client() as client:
@@ -338,9 +366,11 @@ class TestRebuildTemplate:
     @autotest.external_id("a6b7c8d9-e0f1-4a2b-d3c4-5e6f7a8b9c0d")
     @autotest.name("Worker: успех — записывает template_id и status=ready")
     async def test_a6b7c8d9_worker_success(self):
-        await self._seed([
-            Lab(slug="worker-ok", title="Worker OK", environment_type="gns3", enabled=True),
-        ])
+        await self._seed(
+            [
+                Lab(slug="worker-ok", title="Worker OK", environment_type="gns3", enabled=True),
+            ]
+        )
         expected_id = str(uuid.uuid4())
         client = AsyncMock()
         client.build_template = AsyncMock(return_value=expected_id)
@@ -351,6 +381,7 @@ class TestRebuildTemplate:
         with autotest.step("Assert: template_id и status=ready в БД"):
             async with self.session_factory() as db:
                 from labs.service import get_lab_by_slug
+
                 lab = await get_lab_by_slug(db, "worker-ok")
                 assert_equal(lab.gns3_template_project_id, expected_id, "template_id записан")
                 assert_equal(lab.meta["template_status"], "ready", "status=ready")
@@ -359,9 +390,11 @@ class TestRebuildTemplate:
     @autotest.external_id("b7c8d9e0-f1a2-4b3c-e4d5-6f7a8b9c0d1e")
     @autotest.name("Worker: ошибка build_template → status=error")
     async def test_b7c8d9e0_worker_error(self):
-        await self._seed([
-            Lab(slug="worker-err", title="Worker Err", environment_type="gns3", enabled=True),
-        ])
+        await self._seed(
+            [
+                Lab(slug="worker-err", title="Worker Err", environment_type="gns3", enabled=True),
+            ]
+        )
         client = AsyncMock()
         client.build_template = AsyncMock(side_effect=RuntimeError("gns3 down"))
 
@@ -371,6 +404,7 @@ class TestRebuildTemplate:
         with autotest.step("Assert: status=error, template_id не перезаписан"):
             async with self.session_factory() as db:
                 from labs.service import get_lab_by_slug
+
                 lab = await get_lab_by_slug(db, "worker-err")
                 assert_equal(lab.meta["template_status"], "error", "status=error")
                 assert_true(lab.gns3_template_project_id is None, "template_id не установлен")

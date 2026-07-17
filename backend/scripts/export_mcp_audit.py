@@ -1,4 +1,5 @@
 """Выгрузка сводки mcp_audit по сессиям (observe/act/отказы)."""
+
 import asyncio
 
 from models.mcp_audit import MCPAudit  # проверяем зависимость без env
@@ -10,15 +11,18 @@ async def main():
     from db.session import async_session  # noqa: PLC0415
 
     async with async_session() as db:
-        rows = (await db.execute(
-            select(
-                MCPAudit.session_id,
-                MCPAudit.kind,
-                MCPAudit.success,
-                func.count().label("n"),
-            ).group_by(MCPAudit.session_id, MCPAudit.kind, MCPAudit.success)
-            .order_by(MCPAudit.session_id, MCPAudit.kind)
-        )).all()
+        rows = (
+            await db.execute(
+                select(
+                    MCPAudit.session_id,
+                    MCPAudit.kind,
+                    MCPAudit.success,
+                    func.count().label("n"),
+                )
+                .group_by(MCPAudit.session_id, MCPAudit.kind, MCPAudit.success)
+                .order_by(MCPAudit.session_id, MCPAudit.kind)
+            )
+        ).all()
 
     # Свернуть в session_id → {observe_ok, observe_deny, act_ok, act_deny}
     sessions: dict[str, dict[str, int]] = {}
@@ -33,7 +37,9 @@ async def main():
     print("| session_id | observe | observe_deny | act | act_deny |")
     print("|-|-|-|-|-|")
     for sid, c in sessions.items():
-        print(f"| {sid[:12]}… | {c['observe_ok']} | {c['observe_deny']} | {c['act_ok']} | {c['act_deny']} |")
+        print(
+            f"| {sid[:12]}… | {c['observe_ok']} | {c['observe_deny']} | {c['act_ok']} | {c['act_deny']} |"
+        )
 
     total_act = sum(c["act_ok"] for c in sessions.values())
     total_deny = sum(c["observe_deny"] + c["act_deny"] for c in sessions.values())

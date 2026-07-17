@@ -40,7 +40,9 @@ class TestRequireInternalCaller:
 
     @autotest.num("2432")
     @autotest.external_id("d815a905-e342-47b2-92b7-aab576743b79")
-    @autotest.name("require_internal_caller: пустой internal_api_token → HTTPException 401 при любом токене")
+    @autotest.name(
+        "require_internal_caller: пустой internal_api_token → HTTPException 401 при любом токене"
+    )
     def test_d815a905_empty_configured_token_raises_401(self, monkeypatch):
         with autotest.step("Arrange: internal_api_token пуст, presented token непустой"):
             monkeypatch.setattr(settings.security, "internal_api_token", "")

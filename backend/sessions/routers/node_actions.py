@@ -30,8 +30,13 @@ async def node_action_endpoint(
 ):
     """Выполняет действие над узлом топологии (start, stop, suspend, reload)."""
     ok = await proxy_node_action(
-        db, session_id, current_user["id"], node_id, action,
-        gns3_client, state_cache,
+        db,
+        session_id,
+        current_user["id"],
+        node_id,
+        action,
+        gns3_client,
+        state_cache,
     )
     if not ok:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -52,8 +57,12 @@ async def bulk_node_action_endpoint(
 ):
     """Выполняет действие сразу над всеми узлами топологии сессии."""
     ok = await proxy_bulk_node_action(
-        db, session_id, current_user["id"], action,
-        gns3_client, state_cache,
+        db,
+        session_id,
+        current_user["id"],
+        action,
+        gns3_client,
+        state_cache,
         semaphore=bulk_semaphore,
     )
     if not ok:

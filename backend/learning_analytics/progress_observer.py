@@ -58,26 +58,53 @@ def diff_snapshots(prev: list[dict] | None, curr: list[dict]) -> list[dict]:
 
             if not p_ok and c_ok:
                 # исправлено
-                events.append({"event_type": "action", "action": "check_passed",
-                                "component_id": component_id, "message": key,
-                                "success": True, "extra_data": None})
+                events.append(
+                    {
+                        "event_type": "action",
+                        "action": "check_passed",
+                        "component_id": component_id,
+                        "message": key,
+                        "success": True,
+                        "extra_data": None,
+                    }
+                )
             elif p_ok and not c_ok:
                 # регресс
-                events.append({"event_type": "error", "action": "check_regressed",
-                                "component_id": component_id, "message": key,
-                                "success": False, "extra_data": {"actual": c_actual}})
+                events.append(
+                    {
+                        "event_type": "error",
+                        "action": "check_regressed",
+                        "component_id": component_id,
+                        "message": key,
+                        "success": False,
+                        "extra_data": {"actual": c_actual},
+                    }
+                )
             elif not p_ok and not c_ok:
                 if p_actual == c_actual:
                     # без изменений
-                    events.append({"event_type": "error", "action": "check_failing",
-                                   "component_id": component_id, "message": key,
-                                   "success": False, "extra_data": {"actual": c_actual}})
+                    events.append(
+                        {
+                            "event_type": "error",
+                            "action": "check_failing",
+                            "component_id": component_id,
+                            "message": key,
+                            "success": False,
+                            "extra_data": {"actual": c_actual},
+                        }
+                    )
                 else:
                     # другая ошибка — студент пробует
-                    events.append({"event_type": "error", "action": "check_retry",
-                                   "component_id": component_id, "message": key,
-                                   "success": False,
-                                   "extra_data": {"prev_actual": p_actual, "actual": c_actual}})
+                    events.append(
+                        {
+                            "event_type": "error",
+                            "action": "check_retry",
+                            "component_id": component_id,
+                            "message": key,
+                            "success": False,
+                            "extra_data": {"prev_actual": p_actual, "actual": c_actual},
+                        }
+                    )
             # both ok → нет события
     return events
 
@@ -85,7 +112,9 @@ def diff_snapshots(prev: list[dict] | None, curr: list[dict]) -> list[dict]:
 class LabProgressObserver:
     """Периодически прогоняет spec-проверки и хранит текущий шаг."""
 
-    def __init__(self, gns3_client, db_factory, settings, learning_analytics_config: LearningAnalyticsConfig):
+    def __init__(
+        self, gns3_client, db_factory, settings, learning_analytics_config: LearningAnalyticsConfig
+    ):
         """Инициализация с GNS3-клиентом, фабрикой DB и конфигом."""
         self._gns3 = gns3_client
         self._db_factory = db_factory
@@ -148,24 +177,28 @@ class LabProgressObserver:
         if events:
             from datetime import datetime, timezone
             from uuid import uuid4
+
             now = datetime.now(tz=timezone.utc)
             for evt in events:
-                evt.update({
-                    "id": str(uuid4()),
-                    "session_id": self._session_id,
-                    "user_id": self._user_id,
-                    "lab_slug": self._lab_slug,
-                    "timestamp": now,
-                    "component_type": None,
-                    "raw_command": None,
-                    "severity": None,
-                })
+                evt.update(
+                    {
+                        "id": str(uuid4()),
+                        "session_id": self._session_id,
+                        "user_id": self._user_id,
+                        "lab_slug": self._lab_slug,
+                        "timestamp": now,
+                        "component_type": None,
+                        "raw_command": None,
+                        "severity": None,
+                    }
+                )
             await self._persist(events)
         self._prev_snapshot = snapshot
 
     async def _persist(self, events: list[dict]) -> None:
         """Пакетная запись событий в DB."""
         from models.behavioral_event import BehavioralEvent
+
         try:
             async with self._db_factory() as session:
                 for evt in events:

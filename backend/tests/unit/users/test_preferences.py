@@ -29,10 +29,12 @@ class TestPreferencesEndpoints:
             await conn.run_sync(User.__table__.create)
 
         async with self.session_factory() as db:
-            db.add_all([
-                User(id="user-ns", name="NoSelect", email="nosel@test.local", role="student"),
-                User(id="user-cs", name="CanSelect", email="cansel@test.local", role="student"),
-            ])
+            db.add_all(
+                [
+                    User(id="user-ns", name="NoSelect", email="nosel@test.local", role="student"),
+                    User(id="user-cs", name="CanSelect", email="cansel@test.local", role="student"),
+                ]
+            )
             await db.commit()
 
         self.app_no_select = self._build_app(_USER_NO_SELECT)
@@ -128,4 +130,6 @@ class TestPreferencesEndpoints:
             async with self._client(can_select=True) as client:
                 get_resp = await client.get("/users/me/preferences")
             assert_equal(get_resp.status_code, 200, "GET 200")
-            assert_equal(get_resp.json()["default_model_id"], _VALID_MODEL_ID, "GET возвращает модель")
+            assert_equal(
+                get_resp.json()["default_model_id"], _VALID_MODEL_ID, "GET возвращает модель"
+            )

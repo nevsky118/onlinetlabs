@@ -8,10 +8,13 @@ pytestmark = [pytest.mark.unit]
 
 
 class TestGroupAssigner:
-    @pytest.mark.parametrize("forced_group", [
-        ExperimentGroup.GROUP_A,
-        ExperimentGroup.GROUP_B,
-    ])
+    @pytest.mark.parametrize(
+        "forced_group",
+        [
+            ExperimentGroup.GROUP_A,
+            ExperimentGroup.GROUP_B,
+        ],
+    )
     @autotest.num("600")
     @autotest.external_id("a1b2c3d4-e5f6-4789-abcd-600000000001")
     @autotest.name("assign_group: возвращает обе валидные группы")

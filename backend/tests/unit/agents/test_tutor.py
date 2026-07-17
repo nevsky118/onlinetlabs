@@ -17,6 +17,7 @@ def _make_tutor_input(**overrides):
 
 # TutorTools
 
+
 class TestTutorTools:
     @autotest.num("440")
     @autotest.external_id("a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c4d5")
@@ -56,6 +57,7 @@ class TestTutorTools:
 
 # TutorAgent
 
+
 class TestTutorAgent:
     @autotest.num("443")
     @autotest.external_id("d4e5f6a7-b8c9-4d0e-1f2a-b3c4d5e6f7a8")
@@ -86,7 +88,9 @@ class TestTutorAgent:
             agent = TutorAgent(config_model)
             fake_result = AsyncMock()
             fake_result.output = "Ответ тьютора"
-            monkeypatch.setattr(agent, "_agent_for", lambda mid: AsyncMock(run=AsyncMock(return_value=fake_result)))
+            monkeypatch.setattr(
+                agent, "_agent_for", lambda mid: AsyncMock(run=AsyncMock(return_value=fake_result))
+            )
             result = await agent.run(_make_tutor_input())
 
         with autotest.step("Проверяем TutorResponse"):
@@ -100,7 +104,11 @@ class TestTutorAgent:
     async def test_a7b8c9d0_run_llm_failure_raises(self, config_model, monkeypatch):
         with autotest.step("Мок LLM выбрасывает"):
             agent = TutorAgent(config_model)
-            monkeypatch.setattr(agent, "_agent_for", lambda mid: AsyncMock(run=AsyncMock(side_effect=RuntimeError("llm down"))))
+            monkeypatch.setattr(
+                agent,
+                "_agent_for",
+                lambda mid: AsyncMock(run=AsyncMock(side_effect=RuntimeError("llm down"))),
+            )
 
         with autotest.step("Ожидаем re-raise"):
             with pytest.raises(Exception):

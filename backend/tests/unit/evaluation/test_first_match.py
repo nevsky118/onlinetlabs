@@ -14,7 +14,9 @@ class TestFirstMatch:
     @autotest.external_id("f8a7fbd6-d1fb-4c48-963b-20e3a53301bd")
     @autotest.name("first_match: диагностика мульти-совпадений и order-sensitivity")
     def test_f8a7fbd6_diagnostics(self):
-        with autotest.step("Arrange: trial_and_error пробивает >1 правила (distinct + entropy/freq)"):
+        with autotest.step(
+            "Arrange: trial_and_error пробивает >1 правила (distinct + entropy/freq)"
+        ):
             s = make_struggle_scenario(ProcessRegime.TRIAL_AND_ERROR, onset_index=4, n=12)
         with autotest.step("Act"):
             diag = first_match_diagnostics([s], LearningAnalyticsConfig())

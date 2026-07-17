@@ -18,4 +18,3 @@ class HintTools:
     def get_remaining_hints(self, current_level: int) -> int:
         """Сколько уровней подсказок осталось."""
         return max(0, MAX_HINTS - current_level)
-

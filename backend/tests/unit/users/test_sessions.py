@@ -1,4 +1,5 @@
 """Тесты GET/DELETE /users/me/sessions."""
+
 import uuid
 from datetime import datetime, timezone
 
@@ -22,6 +23,7 @@ _USER_B = {"id": "user-b", "role": "student"}
 
 def _make_session(session_id: str, user_id: str, offset_days: int = 0) -> Session:
     from datetime import timedelta
+
     return Session(
         id=session_id,
         session_token=str(uuid.uuid4()),
@@ -40,10 +42,12 @@ class TestSessionEndpoints:
             await conn.run_sync(Session.__table__.create)
 
         async with self.session_factory() as db:
-            db.add_all([
-                User(id="user-a", name="Alice", email="alice@test.local", role="student"),
-                User(id="user-b", name="Bob", email="bob@test.local", role="student"),
-            ])
+            db.add_all(
+                [
+                    User(id="user-a", name="Alice", email="alice@test.local", role="student"),
+                    User(id="user-b", name="Bob", email="bob@test.local", role="student"),
+                ]
+            )
             await db.commit()
 
         self.app = self._build_app(_USER_A)

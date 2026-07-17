@@ -18,18 +18,12 @@ class BehavioralEvent(Base):
         Index("ix_behavioral_events_session_type", "session_id", "event_type"),
     )
 
-    id: Mapped[str] = mapped_column(
-        String(255), primary_key=True, default=lambda: str(uuid4())
-    )
+    id: Mapped[str] = mapped_column(String(255), primary_key=True, default=lambda: str(uuid4()))
     session_id: Mapped[str] = mapped_column(
         String(255), ForeignKey("learning_sessions.id", ondelete="CASCADE")
     )
-    user_id: Mapped[str] = mapped_column(
-        String(255), ForeignKey("users.id", ondelete="CASCADE")
-    )
-    lab_slug: Mapped[str] = mapped_column(
-        String(255), ForeignKey("labs.slug", ondelete="CASCADE")
-    )
+    user_id: Mapped[str] = mapped_column(String(255), ForeignKey("users.id", ondelete="CASCADE"))
+    lab_slug: Mapped[str] = mapped_column(String(255), ForeignKey("labs.slug", ondelete="CASCADE"))
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     event_type: Mapped[str] = mapped_column(String(50))
     component_id: Mapped[str | None] = mapped_column(String(255))

@@ -1,4 +1,5 @@
 """Защитный экспорт всех метрик контура 2.3.4 → stdout + md-артефакт."""
+
 import asyncio
 from pathlib import Path
 
@@ -54,6 +55,7 @@ def _build_synthetic_scenarios():
 
 def _build_synthetic_sessions():
     """Синтет-сессии для кривой T_k (зеркало derive_thresholds.__main__)."""
+
     def _session(spell_len, regime="stuck_on_step", t_step=15):
         samples, t, dwell = [], 0, 0.0
         while t <= spell_len:
@@ -64,8 +66,13 @@ def _build_synthetic_sessions():
         return {"samples": samples}
 
     return [
-        _session(30), _session(30), _session(60),
-        _session(120), _session(180), _session(300), _session(600),
+        _session(30),
+        _session(30),
+        _session(60),
+        _session(120),
+        _session(180),
+        _session(300),
+        _session(600),
     ]
 
 
@@ -99,7 +106,7 @@ def _section_ab(lines, db_metrics, cfg):
             f"| Cohen's d | {ec['cohens_d']} | sig={ec['significant']} |",
         ]
     else:
-        lines.append(f"\n> {ec.get('error','Нет данных')}")
+        lines.append(f"\n> {ec.get('error', 'Нет данных')}")
     lines += [
         "",
         "_Дельта плеч — каузально (рандомизация). Ч наставника = контрфактуал A/B, не сырые обращения._",
@@ -223,7 +230,9 @@ def _section_tk(lines, cfg):
     ]
 
     curve = sensitivity_curve(
-        sessions, ratios, grid,
+        sessions,
+        ratios,
+        grid,
         base_c_intervention=c_int,
         c_false=c_false,
         cooldown_seconds=cfg.cooldown_period,
@@ -252,6 +261,7 @@ async def main():
         cfg = cfg_obj.learning_analytics
     except Exception:
         from config.config_model import LearningAnalyticsConfig
+
         cfg = LearningAnalyticsConfig()
 
     lines = [

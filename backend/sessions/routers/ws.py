@@ -20,9 +20,7 @@ router = APIRouter()
 
 
 @router.websocket("/ws/sessions/{session_id}")
-async def session_interventions_ws(
-    websocket: WebSocket, session_id: str, token: str = Query(...)
-):
+async def session_interventions_ws(websocket: WebSocket, session_id: str, token: str = Query(...)):
     """Поток интервенций (TutorAgent, HintAgent) для активной сессии."""
     try:
         payload = decode_backend_token(token, settings.api.jwt_secret)
@@ -83,7 +81,9 @@ async def session_events_ws(
     register_connection(websocket)
     try:
         await forward_session_events(
-            websocket, settings.gns3.service_url, gns3_sid,
+            websocket,
+            settings.gns3.service_url,
+            gns3_sid,
         )
     except WebSocketDisconnect:
         pass
@@ -108,6 +108,7 @@ async def session_activity_observe_ws(
         return
     async with async_session() as db:
         from models.session import LearningSession
+
         session = await db.get(LearningSession, session_id)
     if session is None or not can_view_session_activity(user, session):
         await websocket.close(code=4403)

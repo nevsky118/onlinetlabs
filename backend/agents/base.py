@@ -37,6 +37,7 @@ class BaseAgent:
             if not creds.yandex_folder:
                 raise ValueError(f"yandex_folder required for YANDEX provider, model {model_id}")
             from openai import AsyncOpenAI
+
             client = AsyncOpenAI(
                 api_key=api_key,
                 base_url=base_url or "https://ai.api.cloud.yandex.net/v1",
@@ -46,6 +47,7 @@ class BaseAgent:
             return OpenAIModel(model_name, provider=OpenAIProvider(openai_client=client))
         # openrouter / openai-compatible
         from openai import AsyncOpenAI
+
         client = AsyncOpenAI(api_key=api_key, base_url=base_url, default_headers=headers or None)
         return OpenAIModel(model_name, provider=OpenAIProvider(openai_client=client))
 

@@ -1,4 +1,5 @@
 """Загрузка реальных сценариев из open-плеча + согласие разметчиков (Cohen's κ)."""
+
 from datetime import datetime, timezone
 
 from sqlalchemy import select
@@ -26,7 +27,13 @@ def labeled_real_count(scenarios) -> int:
 
 async def harvest_open_arm_sessions(db) -> list[str]:
     """session_id'ы, где base_arm == 'open' (без вмешательств)."""
-    rows = (await db.execute(
-        select(ExperimentMetrics.session_id).where(ExperimentMetrics.base_arm == "open")
-    )).scalars().all()
+    rows = (
+        (
+            await db.execute(
+                select(ExperimentMetrics.session_id).where(ExperimentMetrics.base_arm == "open")
+            )
+        )
+        .scalars()
+        .all()
+    )
     return list(rows)

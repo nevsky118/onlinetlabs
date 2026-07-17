@@ -10,7 +10,6 @@ pytestmark = [pytest.mark.unit]
 
 
 class TestRouterConstants:
-
     @autotest.num("770")
     @autotest.external_id("5d0b1f3a-7e91-4c82-9b6d-2a4f8c1d3e5b")
     @autotest.name("MAX_TOOL_ROUNDS == 5 — анти-бесконечный-цикл инструментов")

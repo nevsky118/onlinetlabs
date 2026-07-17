@@ -24,9 +24,7 @@ class TestOpenClawInterventionAdapter:
         # Arrange
         with autotest.step("Готовим input интервенции и локальный OpenClaw Gateway"):
             agent_context = AgentContextData().context
-            server = OpenClawGatewayServer(
-                [completion_response("Проверь trunk на SW1")]
-            )
+            server = OpenClawGatewayServer([completion_response("Проверь trunk на SW1")])
             intervention = InterventionInput(
                 session_id="s1",
                 user_id="u1",

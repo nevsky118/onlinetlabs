@@ -44,9 +44,7 @@ class ValidatorAgent(BaseAgent):
         all_passed = all(c.passed for c in checks)
 
         feedback = (
-            "Все проверки пройдены."
-            if all_passed
-            else f"Пройдено {passed_count}/{total} проверок."
+            "Все проверки пройдены." if all_passed else f"Пройдено {passed_count}/{total} проверок."
         )
 
         return ValidationResult(

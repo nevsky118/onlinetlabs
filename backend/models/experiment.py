@@ -14,15 +14,11 @@ class ExperimentMetrics(Base):
 
     __tablename__ = "experiment_metrics"
 
-    id: Mapped[str] = mapped_column(
-        String(255), primary_key=True, default=lambda: str(uuid4())
-    )
+    id: Mapped[str] = mapped_column(String(255), primary_key=True, default=lambda: str(uuid4()))
     session_id: Mapped[str] = mapped_column(
         String(255), ForeignKey("learning_sessions.id", ondelete="CASCADE")
     )
-    user_id: Mapped[str] = mapped_column(
-        String(255), ForeignKey("users.id", ondelete="CASCADE")
-    )
+    user_id: Mapped[str] = mapped_column(String(255), ForeignKey("users.id", ondelete="CASCADE"))
     lab_slug: Mapped[str] = mapped_column(String(255))
     experiment_group: Mapped[str] = mapped_column(String(20))
     agent_backend: Mapped[str | None] = mapped_column(String(50), default=None)

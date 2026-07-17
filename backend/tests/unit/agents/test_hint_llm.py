@@ -17,8 +17,10 @@ class TestHintAgentLLM:
         with autotest.step("Создаём агент и вход без контекста"):
             agent = HintAgent(config_model)
             inp = HintInput(
-                session_id="s1", user_id="u1",
-                lab_slug="lab-ospf", step_slug="step-1",
+                session_id="s1",
+                user_id="u1",
+                lab_slug="lab-ospf",
+                step_slug="step-1",
                 attempts_count=0,
             )
 
@@ -32,14 +34,19 @@ class TestHintAgentLLM:
     async def test_b2c3d4e5_run_with_context(self, config_model, monkeypatch):
         with autotest.step("Создаём агент с контекстом"):
             from unittest.mock import AsyncMock
+
             agent = HintAgent(config_model)
             context = AgentContextData().context
             fake_result = AsyncMock()
             fake_result.output = "Проверь маршрут OSPF на R1"
-            monkeypatch.setattr(agent, "_agent_for", lambda mid: AsyncMock(run=AsyncMock(return_value=fake_result)))
+            monkeypatch.setattr(
+                agent, "_agent_for", lambda mid: AsyncMock(run=AsyncMock(return_value=fake_result))
+            )
             inp = HintInput(
-                session_id="s1", user_id="u1",
-                lab_slug="lab-ospf", step_slug="step-1",
+                session_id="s1",
+                user_id="u1",
+                lab_slug="lab-ospf",
+                step_slug="step-1",
                 attempts_count=4,
                 last_error="OSPF timeout",
                 agent_context=context,
@@ -67,6 +74,7 @@ class TestHintAgentLLM:
     async def test_d4e5f6a7_failing_check_in_prompt(self, config_model, monkeypatch):
         """Регрессия FIX 2: failing_check{expected/actual} виден LLM."""
         from unittest.mock import AsyncMock
+
         agent = HintAgent(config_model)
         context = AgentContextData().context
         captured_prompt: list[str] = []
@@ -79,8 +87,10 @@ class TestHintAgentLLM:
 
         monkeypatch.setattr(agent, "_agent_for", lambda mid: AsyncMock(run=fake_run))
         inp = HintInput(
-            session_id="s1", user_id="u1",
-            lab_slug="lab-ospf", step_slug="step-1",
+            session_id="s1",
+            user_id="u1",
+            lab_slug="lab-ospf",
+            step_slug="step-1",
             attempts_count=2,
             failing_check={
                 "kind": "vpcs_ip",

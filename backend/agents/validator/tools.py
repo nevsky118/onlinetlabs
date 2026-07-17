@@ -41,9 +41,7 @@ class ValidatorTools:
             actual=component.status,
         )
 
-    async def check_connectivity(
-        self, input_data, source_id: str, target_id: str
-    ) -> CheckResult:
+    async def check_connectivity(self, input_data, source_id: str, target_id: str) -> CheckResult:
         """Проверить связность между двумя компонентами."""
         ctx = self._build_ctx(input_data)
         source = await self._mcp.get_component(ctx, source_id)

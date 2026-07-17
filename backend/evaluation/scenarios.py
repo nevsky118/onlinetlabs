@@ -1,4 +1,5 @@
 """Размеченные сценарии для оценки идентификатора П1 (синтетика + загруженные реальные)."""
+
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
@@ -11,18 +12,18 @@ _EPOCH = datetime(2026, 1, 1, tzinfo=timezone.utc)
 
 @dataclass
 class Snapshot:
-    ts: float                  # секунды от старта сессии
+    ts: float  # секунды от старта сессии
     features: SessionFeatures
 
 
 @dataclass
 class LabeledScenario:
     snapshots: list["Snapshot"]
-    onset_ts: float | None     # None ⟺ нормальная сессия
-    onset_window: float        # ±Δ допуск (сек)
+    onset_ts: float | None  # None ⟺ нормальная сессия
+    onset_window: float  # ±Δ допуск (сек)
     truth_regime: ProcessRegime
     duration_seconds: float
-    source: str                # "synthetic" | "real"
+    source: str  # "synthetic" | "real"
 
 
 def is_normal(s: "LabeledScenario") -> bool:
@@ -58,7 +59,9 @@ def _features(ts_index: int, regime: ProcessRegime, fired: bool) -> SessionFeatu
         if regime == ProcessRegime.REPEATING_ERRORS:
             base.update(error_repeat_count=5, error_repeat_rate=0.6, error_frequency=0.6)
         elif regime == ProcessRegime.TRIAL_AND_ERROR:
-            base.update(distinct_failing_actuals=5, action_sequence_entropy=0.9, error_frequency=0.6)
+            base.update(
+                distinct_failing_actuals=5, action_sequence_entropy=0.9, error_frequency=0.6
+            )
         elif regime == ProcessRegime.STUCK_ON_STEP:
             base.update(cycles_failing_unchanged=4)
         elif regime == ProcessRegime.IDLE:
@@ -67,7 +70,9 @@ def _features(ts_index: int, regime: ProcessRegime, fired: bool) -> SessionFeatu
     return SessionFeatures(**base)
 
 
-def make_normal_scenario(n: int = 12, step: float = 15.0, source: str = "synthetic") -> "LabeledScenario":
+def make_normal_scenario(
+    n: int = 12, step: float = 15.0, source: str = "synthetic"
+) -> "LabeledScenario":
     snaps = [Snapshot(i * step, _features(i, ProcessRegime.PRODUCTIVE, False)) for i in range(n)]
     return LabeledScenario(snaps, None, 0.0, ProcessRegime.PRODUCTIVE, n * step, source)
 

@@ -1,4 +1,5 @@
 """POST /sessions: релонч уже активной сессии не течёт слот очереди и не задваивает gauge."""
+
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -55,17 +56,19 @@ class TestLaunchSlotRelease:
     @autotest.name("launch: релонч активной сессии не берёт слот и не инкрементит gauge")
     async def test_453610e2_reuse_does_not_leak_slot_or_double_count(self):
         queue, monitor_registry = self._mocks()
-        existing = SimpleNamespace(
-            id="s1", user_id="user-1", lab_slug="lab-x", status="active"
-        )
-        with patch.object(launch_mod, "get_active_session", AsyncMock(return_value=existing)), \
-             patch.object(launch_mod, "launch_session", AsyncMock(return_value=(existing, _CREDS))), \
-             patch.object(launch_mod, "build_session_context", MagicMock(return_value=object())), \
-             patch("observability.metrics.active_sessions_gauge") as gauge:
+        existing = SimpleNamespace(id="s1", user_id="user-1", lab_slug="lab-x", status="active")
+        with (
+            patch.object(launch_mod, "get_active_session", AsyncMock(return_value=existing)),
+            patch.object(launch_mod, "launch_session", AsyncMock(return_value=(existing, _CREDS))),
+            patch.object(launch_mod, "build_session_context", MagicMock(return_value=object())),
+            patch("observability.metrics.active_sessions_gauge") as gauge,
+        ):
             with autotest.step("Act: релонч уже активной сессии"):
                 resp = await self._call(queue, monitor_registry)
 
-        with autotest.step("Assert: слот не берётся/не освобождается, gauge и monitor не трогаются"):
+        with autotest.step(
+            "Assert: слот не берётся/не освобождается, gauge и monitor не трогаются"
+        ):
             queue.try_acquire.assert_not_awaited()
             queue.release.assert_not_awaited()
             monitor_registry.start.assert_not_awaited()
@@ -77,13 +80,13 @@ class TestLaunchSlotRelease:
     @autotest.name("launch: новый запуск активной сессии инкрементит gauge ровно один раз")
     async def test_cbca5d12_new_launch_increments_gauge_once(self):
         queue, monitor_registry = self._mocks()
-        new_sess = SimpleNamespace(
-            id="s2", user_id="user-1", lab_slug="lab-x", status="active"
-        )
-        with patch.object(launch_mod, "get_active_session", AsyncMock(return_value=None)), \
-             patch.object(launch_mod, "launch_session", AsyncMock(return_value=(new_sess, _CREDS))), \
-             patch.object(launch_mod, "build_session_context", MagicMock(return_value=object())), \
-             patch("observability.metrics.active_sessions_gauge") as gauge:
+        new_sess = SimpleNamespace(id="s2", user_id="user-1", lab_slug="lab-x", status="active")
+        with (
+            patch.object(launch_mod, "get_active_session", AsyncMock(return_value=None)),
+            patch.object(launch_mod, "launch_session", AsyncMock(return_value=(new_sess, _CREDS))),
+            patch.object(launch_mod, "build_session_context", MagicMock(return_value=object())),
+            patch("observability.metrics.active_sessions_gauge") as gauge,
+        ):
             with autotest.step("Act: новый запуск"):
                 await self._call(queue, monitor_registry)
 

@@ -1,4 +1,5 @@
 """Схемы ответов admin-эндпоинтов."""
+
 from pydantic import BaseModel
 
 from models.user import UserRole

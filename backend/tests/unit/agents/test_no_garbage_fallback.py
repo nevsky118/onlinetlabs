@@ -29,13 +29,18 @@ async def test_hint_llm_failure_raises(config_model, monkeypatch):
     """HintAgent: LLM exception → re-raise, не шаблон."""
     agent = HintAgent(config_model)
     monkeypatch.setattr(
-        agent, "_agent_for",
+        agent,
+        "_agent_for",
         lambda mid: AsyncMock(run=AsyncMock(side_effect=RuntimeError("llm down"))),
     )
     inp = HintInput(
-        session_id="s", user_id="u", lab_slug="l",
-        step_slug="connectivity", attempts_count=3,
-        last_error="ping failed", agent_context=_hint_context(),
+        session_id="s",
+        user_id="u",
+        lab_slug="l",
+        step_slug="connectivity",
+        attempts_count=3,
+        last_error="ping failed",
+        agent_context=_hint_context(),
     )
     with pytest.raises(Exception):
         await agent.run(inp, "yandex-gpt-5.1")
@@ -45,8 +50,11 @@ async def test_hint_no_context_raises(config_model):
     """HintAgent: без agent_context → ValueError."""
     agent = HintAgent(config_model)
     inp = HintInput(
-        session_id="s", user_id="u", lab_slug="l",
-        step_slug="connectivity", attempts_count=1,
+        session_id="s",
+        user_id="u",
+        lab_slug="l",
+        step_slug="connectivity",
+        attempts_count=1,
     )
     with pytest.raises(ValueError, match="hint requires agent_context"):
         await agent.run(inp, "yandex-gpt-5.1")
@@ -56,7 +64,8 @@ async def test_tutor_llm_failure_raises(config_model, monkeypatch):
     """TutorAgent: LLM exception → re-raise, не шаблон."""
     agent = TutorAgent(config_model)
     monkeypatch.setattr(
-        agent, "_agent_for",
+        agent,
+        "_agent_for",
         lambda mid: AsyncMock(run=AsyncMock(side_effect=RuntimeError("llm down"))),
     )
     inp = TutorInput(session_id="s", user_id="u", question="Что такое OSPF?")
@@ -74,11 +83,14 @@ async def test_orchestrator_intervene_catches_agent_raise(config_model, monkeypa
     monkeypatch.setattr(orch, "_get_agent", lambda name: fake_agent)
 
     inp = InterventionInput(
-        session_id="s", user_id="u",
+        session_id="s",
+        user_id="u",
         intervention_type="hint",
         context={
-            "lab_slug": "l", "step_slug": "connectivity",
-            "attempts_count": 3, "last_error": "ping failed",
+            "lab_slug": "l",
+            "step_slug": "connectivity",
+            "attempts_count": 3,
+            "last_error": "ping failed",
             "agent_context": _hint_context().model_dump(),
         },
     )

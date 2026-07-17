@@ -1,10 +1,16 @@
 """Task 7: тест compute_cohort_metrics через in-memory SQLite."""
+
 from datetime import datetime, timedelta, timezone
 
 import pytest
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true, assert_is_none, assert_is_not_none
+from mcp_sdk.testing.custom_assertions import (
+    assert_equal,
+    assert_true,
+    assert_is_none,
+    assert_is_not_none,
+)
 
 from models.experiment import ExperimentMetrics
 from models.lab import Lab
@@ -37,47 +43,105 @@ async def cohort_db():
     l2_end = _NOW - timedelta(days=2)
 
     async with session_factory() as db:
-        db.add(User(id="cohort-u1", email="u1@t.local", name="u1", role="student", control_arm="closed"))
+        db.add(
+            User(
+                id="cohort-u1", email="u1@t.local", name="u1", role="student", control_arm="closed"
+            )
+        )
         db.add(Lab(slug="lan-static-ip", title="L1 Static IP", meta={"skill": _SKILL}))
         db.add(Lab(slug="lan-static-ip-b", title="L2 Static IP", meta={"skill": _SKILL}))
 
         # LabProgress: L1 завершена 10 дней назад, L2 — 2 дня назад
-        db.add(LabProgress(
-            id="lp-l1", user_id="cohort-u1", lab_slug="lan-static-ip",
-            status="completed", started_at=l1_start, completed_at=l1_end,
-        ))
-        db.add(LabProgress(
-            id="lp-l2", user_id="cohort-u1", lab_slug="lan-static-ip-b",
-            status="completed", started_at=l2_start, completed_at=l2_end,
-        ))
+        db.add(
+            LabProgress(
+                id="lp-l1",
+                user_id="cohort-u1",
+                lab_slug="lan-static-ip",
+                status="completed",
+                started_at=l1_start,
+                completed_at=l1_end,
+            )
+        )
+        db.add(
+            LabProgress(
+                id="lp-l2",
+                user_id="cohort-u1",
+                lab_slug="lan-static-ip-b",
+                status="completed",
+                started_at=l2_start,
+                completed_at=l2_end,
+            )
+        )
 
         # LearningSession: по одной сессии на каждую лабу
-        db.add(LearningSession(
-            id="sess-l1", user_id="cohort-u1", lab_slug="lan-static-ip",
-            status="ended", started_at=l1_start, ended_at=l1_end,
-        ))
-        db.add(LearningSession(
-            id="sess-l2", user_id="cohort-u1", lab_slug="lan-static-ip-b",
-            status="ended", started_at=l2_start, ended_at=l2_end,
-        ))
+        db.add(
+            LearningSession(
+                id="sess-l1",
+                user_id="cohort-u1",
+                lab_slug="lan-static-ip",
+                status="ended",
+                started_at=l1_start,
+                ended_at=l1_end,
+            )
+        )
+        db.add(
+            LearningSession(
+                id="sess-l2",
+                user_id="cohort-u1",
+                lab_slug="lan-static-ip-b",
+                status="ended",
+                started_at=l2_start,
+                ended_at=l2_end,
+            )
+        )
 
         # ExperimentMetrics: L1-сессия (без l2_unassisted_pass), L2-сессия (l2_unassisted_pass=True)
-        db.add(ExperimentMetrics(
-            id="em-l1", session_id="sess-l1", user_id="cohort-u1", lab_slug="lan-static-ip",
-            experiment_group="closed", base_arm="closed",
-            total_time_seconds=7200.0, steps_completed=5, total_errors=3, repeated_errors=2,
-            unique_error_types=2, interventions_received=2, interventions_succeeded=1,
-            interventions_failed=0, interventions_accepted=1, escalations=1,
-            l2_unassisted_pass=None, final_score=0.8, completed=True,
-        ))
-        db.add(ExperimentMetrics(
-            id="em-l2", session_id="sess-l2", user_id="cohort-u1", lab_slug="lan-static-ip-b",
-            experiment_group="closed", base_arm="closed",
-            total_time_seconds=3600.0, steps_completed=5, total_errors=0, repeated_errors=0,
-            unique_error_types=0, interventions_received=0, interventions_succeeded=0,
-            interventions_failed=0, interventions_accepted=0, escalations=0,
-            l2_unassisted_pass=True, final_score=1.0, completed=True,
-        ))
+        db.add(
+            ExperimentMetrics(
+                id="em-l1",
+                session_id="sess-l1",
+                user_id="cohort-u1",
+                lab_slug="lan-static-ip",
+                experiment_group="closed",
+                base_arm="closed",
+                total_time_seconds=7200.0,
+                steps_completed=5,
+                total_errors=3,
+                repeated_errors=2,
+                unique_error_types=2,
+                interventions_received=2,
+                interventions_succeeded=1,
+                interventions_failed=0,
+                interventions_accepted=1,
+                escalations=1,
+                l2_unassisted_pass=None,
+                final_score=0.8,
+                completed=True,
+            )
+        )
+        db.add(
+            ExperimentMetrics(
+                id="em-l2",
+                session_id="sess-l2",
+                user_id="cohort-u1",
+                lab_slug="lan-static-ip-b",
+                experiment_group="closed",
+                base_arm="closed",
+                total_time_seconds=3600.0,
+                steps_completed=5,
+                total_errors=0,
+                repeated_errors=0,
+                unique_error_types=0,
+                interventions_received=0,
+                interventions_succeeded=0,
+                interventions_failed=0,
+                interventions_accepted=0,
+                escalations=0,
+                l2_unassisted_pass=True,
+                final_score=1.0,
+                completed=True,
+            )
+        )
         await db.commit()
 
     async with session_factory() as db:
@@ -102,24 +166,59 @@ async def censored_db():
     l1_end = _NOW - timedelta(days=5)
 
     async with session_factory() as db:
-        db.add(User(id="cens-u1", email="cens@t.local", name="cens", role="student", control_arm="closed"))
+        db.add(
+            User(
+                id="cens-u1",
+                email="cens@t.local",
+                name="cens",
+                role="student",
+                control_arm="closed",
+            )
+        )
         db.add(Lab(slug="lan-static-ip", title="L1 Static IP", meta={"skill": _SKILL}))
-        db.add(LabProgress(
-            id="lp-cens-l1", user_id="cens-u1", lab_slug="lan-static-ip",
-            status="completed", started_at=l1_start, completed_at=l1_end,
-        ))
-        db.add(LearningSession(
-            id="sess-cens-l1", user_id="cens-u1", lab_slug="lan-static-ip",
-            status="ended", started_at=l1_start, ended_at=l1_end,
-        ))
-        db.add(ExperimentMetrics(
-            id="em-cens-l1", session_id="sess-cens-l1", user_id="cens-u1", lab_slug="lan-static-ip",
-            experiment_group="closed", base_arm="closed",
-            total_time_seconds=432000.0, steps_completed=3, total_errors=3, repeated_errors=2,
-            unique_error_types=2, interventions_received=2, interventions_succeeded=0,
-            interventions_failed=1, interventions_accepted=1, escalations=1,
-            l2_unassisted_pass=None, final_score=0.5, completed=True,
-        ))
+        db.add(
+            LabProgress(
+                id="lp-cens-l1",
+                user_id="cens-u1",
+                lab_slug="lan-static-ip",
+                status="completed",
+                started_at=l1_start,
+                completed_at=l1_end,
+            )
+        )
+        db.add(
+            LearningSession(
+                id="sess-cens-l1",
+                user_id="cens-u1",
+                lab_slug="lan-static-ip",
+                status="ended",
+                started_at=l1_start,
+                ended_at=l1_end,
+            )
+        )
+        db.add(
+            ExperimentMetrics(
+                id="em-cens-l1",
+                session_id="sess-cens-l1",
+                user_id="cens-u1",
+                lab_slug="lan-static-ip",
+                experiment_group="closed",
+                base_arm="closed",
+                total_time_seconds=432000.0,
+                steps_completed=3,
+                total_errors=3,
+                repeated_errors=2,
+                unique_error_types=2,
+                interventions_received=2,
+                interventions_succeeded=0,
+                interventions_failed=1,
+                interventions_accepted=1,
+                escalations=1,
+                l2_unassisted_pass=None,
+                final_score=0.5,
+                completed=True,
+            )
+        )
         await db.commit()
 
     async with session_factory() as db:
@@ -136,7 +235,9 @@ class TestComputeCohortMetrics:
         from cohort.service import compute_cohort_metrics
 
         with autotest.step("Act: вычислить метрики когорты для цензурированного учащегося"):
-            out = await compute_cohort_metrics(censored_db, horizon_seconds=30 * 86400.0, by_arm=False)
+            out = await compute_cohort_metrics(
+                censored_db, horizon_seconds=30 * 86400.0, by_arm=False
+            )
 
         with autotest.step("Assert: headline_arm и by_arm"):
             assert_equal(out["headline_arm"], "closed", "headline_arm=closed")
@@ -152,11 +253,15 @@ class TestComputeCohortMetrics:
             assert_equal(cell.time_to_competence.reach_rate, 0.0, "reach_rate=0")
             assert_equal(cell.time_to_competence.censored, 1, "censored=1")
             assert_is_none(cell.time_to_competence.median_calendar_seconds, "медиана=None")
-            assert_equal(cell.time_to_competence.reach_rate_at_horizon, 0.0, "reach_rate_at_horizon=0")
+            assert_equal(
+                cell.time_to_competence.reach_rate_at_horizon, 0.0, "reach_rate_at_horizon=0"
+            )
 
     @autotest.num("943")
     @autotest.external_id("9b201865-1bce-43b4-8b3b-2f5509941ded")
-    @autotest.name("compute_cohort_metrics: один учащийся достиг L2 — reach_rate=1, by_arm содержит closed")
+    @autotest.name(
+        "compute_cohort_metrics: один учащийся достиг L2 — reach_rate=1, by_arm содержит closed"
+    )
     async def test_9b201865_one_learner(self, cohort_db):
         from cohort.service import compute_cohort_metrics
 

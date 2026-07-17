@@ -1,4 +1,5 @@
 """Согласие обучаемого: study (эксперимент) и product (гранулярно observe/act)."""
+
 from datetime import datetime, timezone
 
 from sqlalchemy import Boolean, DateTime, String
@@ -12,7 +13,7 @@ class Consent(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     user_id: Mapped[str] = mapped_column(String(255), index=True)
-    scope: Mapped[str] = mapped_column(String(20))             # study | product
+    scope: Mapped[str] = mapped_column(String(20))  # study | product
     observe: Mapped[bool] = mapped_column(Boolean, default=False)
     act: Mapped[bool] = mapped_column(Boolean, default=False)
     granted_at: Mapped[datetime] = mapped_column(

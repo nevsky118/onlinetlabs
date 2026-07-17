@@ -79,9 +79,7 @@ class TestRecordLabValidation:
 
     async def _get(self) -> LabProgress:
         async with self.session_factory() as db:
-            r = await db.execute(
-                select(LabProgress).where(LabProgress.user_id == "u1")
-            )
+            r = await db.execute(select(LabProgress).where(LabProgress.user_id == "u1"))
             return r.scalar_one()
 
     @autotest.num("763")
@@ -90,9 +88,7 @@ class TestRecordLabValidation:
     async def test_full_pass_marks_completed(self):
         with autotest.step("Act: записываем полный успех"):
             async with self.session_factory() as db:
-                await record_lab_validation(
-                    db, "u1", "dhcp-basics", _steps([True, True], [True])
-                )
+                await record_lab_validation(db, "u1", "dhcp-basics", _steps([True, True], [True]))
         with autotest.step("Assert: completed, score 100, есть completed_at"):
             lp = await self._get()
             assert_equal(lp.status, "completed", "status")
@@ -105,9 +101,7 @@ class TestRecordLabValidation:
     async def test_partial_stays_in_progress(self):
         with autotest.step("Act: 1 из 2 проверок"):
             async with self.session_factory() as db:
-                await record_lab_validation(
-                    db, "u1", "dhcp-basics", _steps([True, False])
-                )
+                await record_lab_validation(db, "u1", "dhcp-basics", _steps([True, False]))
         with autotest.step("Assert: in_progress, score 50, без completed_at"):
             lp = await self._get()
             assert_equal(lp.status, "in_progress", "status")
@@ -120,14 +114,10 @@ class TestRecordLabValidation:
     async def test_best_score_kept_and_completed_sticky(self):
         with autotest.step("Arrange: сначала полный успех"):
             async with self.session_factory() as db:
-                await record_lab_validation(
-                    db, "u1", "dhcp-basics", _steps([True], [True])
-                )
+                await record_lab_validation(db, "u1", "dhcp-basics", _steps([True], [True]))
         with autotest.step("Act: затем неудачный повтор (1 из 2)"):
             async with self.session_factory() as db:
-                await record_lab_validation(
-                    db, "u1", "dhcp-basics", _steps([True, False])
-                )
+                await record_lab_validation(db, "u1", "dhcp-basics", _steps([True, False]))
         with autotest.step("Assert: остаётся completed и score 100"):
             lp = await self._get()
             assert_equal(lp.status, "completed", "status остаётся completed")

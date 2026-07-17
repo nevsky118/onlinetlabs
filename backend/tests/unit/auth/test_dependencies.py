@@ -58,9 +58,7 @@ class TestBackendTokenRoundTrip:
         with autotest.step("Arrange: вручную выпускаем токен с exp в прошлом"):
             past = datetime.now(timezone.utc) - timedelta(minutes=10)
             payload = {"sub": "user-702", "role": "student", "exp": past}
-            expired_token = jwt.encode(
-                payload, settings.api.jwt_secret, algorithm="HS256"
-            )
+            expired_token = jwt.encode(payload, settings.api.jwt_secret, algorithm="HS256")
 
         with autotest.step("Act + Assert: decode падает с JWTError"):
             with pytest.raises(JWTError):

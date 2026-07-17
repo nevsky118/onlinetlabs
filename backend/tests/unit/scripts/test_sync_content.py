@@ -1,4 +1,5 @@
 """Task 1: тесты sync_content — environment_type, CONTENT_DIR, idempotent upsert."""
+
 import importlib.util
 import textwrap
 from pathlib import Path
@@ -88,6 +89,7 @@ class TestSyncContent:
 
         with autotest.step("Assert: ровно одна строка в таблице"):
             from sqlalchemy import func, select
+
             async with factory() as db:
                 result = await db.execute(select(func.count()).select_from(Lab))
                 row_count = result.scalar()

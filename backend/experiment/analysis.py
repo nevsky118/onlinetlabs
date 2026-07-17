@@ -94,11 +94,7 @@ def _compare_groups(group_a_values: list[float], group_b_values: list[float]) ->
     t_stat, p_value = _welch_ttest_normal_approx(group_a_values, group_b_values)
     cohens_d = _cohens_d(group_a_values, group_b_values)
 
-    reduction = (
-        ((group_a_mean - group_b_mean) / group_a_mean * 100)
-        if group_a_mean != 0
-        else 0.0
-    )
+    reduction = ((group_a_mean - group_b_mean) / group_a_mean * 100) if group_a_mean != 0 else 0.0
 
     return {
         "group_a_mean": round(group_a_mean, 2),
@@ -111,9 +107,7 @@ def _compare_groups(group_a_values: list[float], group_b_values: list[float]) ->
     }
 
 
-def _welch_ttest_normal_approx(
-    group1: list[float], group2: list[float]
-) -> tuple[float, float]:
+def _welch_ttest_normal_approx(group1: list[float], group2: list[float]) -> tuple[float, float]:
     """Двусторонний t-test без scipy, с нормальной аппроксимацией для p-value."""
     mean1 = sum(group1) / len(group1)
     mean2 = sum(group2) / len(group2)

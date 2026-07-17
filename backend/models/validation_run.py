@@ -20,9 +20,7 @@ class ValidationRun(Base):
         ),
     )
 
-    id: Mapped[str] = mapped_column(
-        String(255), primary_key=True, default=lambda: str(uuid4())
-    )
+    id: Mapped[str] = mapped_column(String(255), primary_key=True, default=lambda: str(uuid4()))
     session_id: Mapped[str] = mapped_column(
         String(255),
         ForeignKey("learning_sessions.id", ondelete="CASCADE"),
@@ -39,6 +37,4 @@ class ValidationRun(Base):
         default=lambda: datetime.now(timezone.utc),
         server_default=text("now()"),
     )
-    finished_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
