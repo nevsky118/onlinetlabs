@@ -26,18 +26,18 @@ pytestmark = [pytest.mark.unit, pytest.mark.agents]
 
 class TestRouter:
     @autotest.num("460")
-    @autotest.external_id("d1e2f3a4-b5c6-4d7e-8f9a-efa012340001")
+    @autotest.external_id("3a1c644b-b32e-48cf-bc93-f116c135abc1")
     @autotest.name("resolve_agent: все известные intents")
-    def test_d1e2f3a4_resolve_known_intents(self):
+    def test_3a1c644b_resolve_known_intents(self):
         with autotest.step("Проверяем маппинг"):
             for intent, agent_name in INTENT_TO_AGENT.items():
                 result = resolve_agent(intent)
                 assert_equal(result, agent_name, f"intent={intent} → {agent_name}")
 
     @autotest.num("461")
-    @autotest.external_id("d2e3f4a5-b6c7-4d8e-8f9a-efa012340002")
+    @autotest.external_id("e156dc05-c6d1-4018-9d2a-9ae707bc5f6b")
     @autotest.name("resolve_agent: неизвестный intent → None")
-    def test_d2e3f4a5_resolve_unknown_intent(self):
+    def test_e156dc05_resolve_unknown_intent(self):
         with autotest.step("Проверяем unknown"):
             result = resolve_agent("unknown_intent")
             assert_is_none(result, "неизвестный intent → None")
@@ -48,9 +48,9 @@ class TestRouter:
 
 class TestOrchestrator:
     @autotest.num("462")
-    @autotest.external_id("d3e4f5a6-b7c8-4d9e-8f9a-efa012340003")
+    @autotest.external_id("ce96764d-cb45-4f43-95cd-11d671297249")
     @autotest.name("Orchestrator: инициализация")
-    def test_d3e4f5a6_init(self, config_model, fake_mcp):
+    def test_ce96764d_init(self, config_model, fake_mcp):
         with autotest.step("Создаём Orchestrator"):
             orch = Orchestrator(config_model, mcp_client=fake_mcp, db=None)
 
@@ -80,9 +80,9 @@ class TestOrchestratorIntervene:
             assert_equal(inp.session_id, "s1", "session_id")
 
     @autotest.num("471")
-    @autotest.external_id("d1e2f3a4-b5c6-4d7e-9f8a-b0c1d2e3f4a5")
+    @autotest.external_id("e86a32fb-e590-409c-b6a6-e61728963738")
     @autotest.name("Orchestrator.intervene: маршрутизация к hint агенту")
-    async def test_d1e2f3a4_intervene_routes_to_hint(self, config_model, fake_mcp):
+    async def test_e86a32fb_intervene_routes_to_hint(self, config_model, fake_mcp):
         with autotest.step("Создаём Orchestrator и InterventionInput с мок-агентом"):
             orch = Orchestrator(config_model, mcp_client=fake_mcp, db=None)
             _mock_hint_agent(orch)

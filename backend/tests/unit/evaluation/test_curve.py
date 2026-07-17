@@ -14,7 +14,7 @@ pytestmark = [pytest.mark.unit]
 
 
 class TestCurve:
-    @autotest.num("1700")
+    @autotest.num("2600")
     @autotest.external_id("9a885646-af51-4343-873a-8aa4a7caaa58")
     @autotest.name("curve: ложные/час не растут с T_k; J-оптимум выбран")
     def test_9a885646_curve_monotone(self):
@@ -39,7 +39,7 @@ class TestCurve:
             )
             assert_true(best in curve, "J-оптимум — точка кривой")
 
-    @autotest.num("1701")
+    @autotest.num("2601")
     @autotest.external_id("b3e7f2a1-04dc-4e8f-93b0-6d1c5e9f3a72")
     @autotest.name("curve: J не вырожден — раннее вмешательство лучше позднего при дорогом stuck")
     def test_b3e7f2a1_j_non_degenerate(self):

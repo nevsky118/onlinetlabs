@@ -16,9 +16,9 @@ class TestGroupAssigner:
         ],
     )
     @autotest.num("600")
-    @autotest.external_id("a1b2c3d4-e5f6-4789-abcd-600000000001")
+    @autotest.external_id("ac6b6c73-0f81-4d59-90f4-b1236d48c024")
     @autotest.name("assign_group: возвращает обе валидные группы")
-    def test_a1b2c3d4_assign_group_returns_forced_choice(self, monkeypatch, forced_group):
+    def test_ac6b6c73_assign_group_returns_forced_choice(self, monkeypatch, forced_group):
         # Arrange
         with autotest.step("Подменяем random.choice на детерминированную лямбду"):
             monkeypatch.setattr(
@@ -35,9 +35,9 @@ class TestGroupAssigner:
             assert_equal(result, forced_group, "assign_group вернул подменённое значение")
 
     @autotest.num("601")
-    @autotest.external_id("b2c3d4e5-f6a7-4890-bcde-601000000002")
+    @autotest.external_id("527c595c-5ac4-4df0-8de5-b4994cfaab5a")
     @autotest.name("ExperimentGroup: значения enum")
-    def test_b2c3d4e5_enum_values(self):
+    def test_527c595c_enum_values(self):
         # Arrange
         with autotest.step("Готовим ожидаемые значения групп"):
             expected_group_a = "group_a"

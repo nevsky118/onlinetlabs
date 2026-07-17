@@ -24,9 +24,9 @@ def _request(subject: str | None, client_ip: str = "10.0.0.1") -> Request:
 
 class TestExchangeRateLimitKey:
     @autotest.num("720")
-    @autotest.external_id("d4e5f607-0809-4a1b-8c23-567890abcdef")
+    @autotest.external_id("3ab9ff65-e172-4c35-8bfd-9957ef920e43")
     @autotest.name("exchange_rate_limit_key: ключ по email субъекта, не по IP")
-    def test_d4e5f607_key_uses_subject_email(self):
+    def test_3ab9ff65_key_uses_subject_email(self):
         with autotest.step("Act: ключ для запроса с exchange_subject"):
             key = exchange_rate_limit_key(_request("alice@example.com"))
 
@@ -35,9 +35,9 @@ class TestExchangeRateLimitKey:
             assert_true("10.0.0.1" not in key, "ключ не привязан к IP")
 
     @autotest.num("721")
-    @autotest.external_id("e5f60708-090a-4b2c-8d34-67890abcdef0")
+    @autotest.external_id("cfffd483-3120-4c56-9092-cbbd212dc95f")
     @autotest.name("exchange_rate_limit_key: разные юзеры → разные вёдра")
-    def test_e5f60708_distinct_users_distinct_keys(self):
+    def test_cfffd483_distinct_users_distinct_keys(self):
         with autotest.step("Act: ключи двух разных юзеров с одного IP"):
             key_a = exchange_rate_limit_key(_request("a@example.com"))
             key_b = exchange_rate_limit_key(_request("b@example.com"))
@@ -46,9 +46,9 @@ class TestExchangeRateLimitKey:
             assert_true(key_a != key_b, "ключи разных юзеров не совпадают")
 
     @autotest.num("722")
-    @autotest.external_id("f6070809-0a0b-4c3d-8e45-7890abcdef01")
+    @autotest.external_id("ff0bd12b-2448-4469-af79-c53b6371b02a")
     @autotest.name("exchange_rate_limit_key: один юзер → стабильный ключ")
-    def test_f6070809_same_user_stable_key(self):
+    def test_ff0bd12b_same_user_stable_key(self):
         with autotest.step("Act: ключ одного юзера дважды"):
             first = exchange_rate_limit_key(_request("same@example.com"))
             second = exchange_rate_limit_key(_request("same@example.com"))

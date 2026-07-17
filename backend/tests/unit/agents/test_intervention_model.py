@@ -12,10 +12,10 @@ pytestmark = [pytest.mark.unit, pytest.mark.agents]
 
 
 class TestResolveInterventionModel:
-    @autotest.num("1790")
-    @autotest.external_id("a0b1c2d3-e4f5-4a6b-7c8d-e9f0a1b2c3d4")
+    @autotest.num("2605")
+    @autotest.external_id("3d4fc426-0be0-4eca-b212-7b554626c99c")
     @autotest.name("Orchestrator._resolve_intervention_model: дефолт из конфига")
-    def test_a0b1c2d3_default(self, config_model):
+    def test_3d4fc426_default(self, config_model):
         with autotest.step("Создаём оркестратор"):
             orch = Orchestrator(config_model)
 
@@ -23,12 +23,12 @@ class TestResolveInterventionModel:
             result = orch._resolve_intervention_model(context={})
             assert result == config_model.agents.intervention_model
 
-    @autotest.num("1791")
-    @autotest.external_id("b1c2d3e4-f5a6-4b7c-8d9e-f0a1b2c3d4e5")
+    @autotest.num("2606")
+    @autotest.external_id("71310acd-74d5-4d8d-9913-b61ee64412c5")
     @autotest.name(
         "Orchestrator._resolve_intervention_model: follow_session возвращает session_model_id"
     )
-    def test_b1c2d3e4_follows_session(self, config_model):
+    def test_71310acd_follows_session(self, config_model):
         with autotest.step("Включаем interventions_follow_session"):
             config_model.agents.interventions_follow_session = True
             orch = Orchestrator(config_model)
@@ -39,12 +39,12 @@ class TestResolveInterventionModel:
             )
             assert result == "yandex-gpt-5.1"
 
-    @autotest.num("1792")
-    @autotest.external_id("c2d3e4f5-a6b7-4c8d-9e0f-a1b2c3d4e5f6")
+    @autotest.num("2607")
+    @autotest.external_id("9a370a8f-8c08-4385-b971-23563eae9cda")
     @autotest.name(
         "Orchestrator._resolve_intervention_model: follow_session + неизвестная модель → дефолт"
     )
-    def test_c2d3e4f5_follows_session_unknown_model(self, config_model):
+    def test_9a370a8f_follows_session_unknown_model(self, config_model):
         with autotest.step("Включаем follow_session, передаём неизвестную модель"):
             config_model.agents.interventions_follow_session = True
             orch = Orchestrator(config_model)
@@ -55,12 +55,12 @@ class TestResolveInterventionModel:
             )
             assert result == config_model.agents.intervention_model
 
-    @autotest.num("1793")
-    @autotest.external_id("d3e4f5a6-b7c8-4d9e-0f1a-b2c3d4e5f6a7")
+    @autotest.num("2608")
+    @autotest.external_id("705fe41b-caa9-4f53-bb17-af190b4c51b3")
     @autotest.name(
         "Orchestrator._resolve_intervention_model: follow_session=True + пустой payload → дефолт (без KeyError)"
     )
-    def test_d3e4f5a6_follow_session_empty_payload(self, config_model):
+    def test_705fe41b_follow_session_empty_payload(self, config_model):
         with autotest.step("Включаем follow_session"):
             config_model.agents.interventions_follow_session = True
             orch = Orchestrator(config_model)
@@ -70,11 +70,11 @@ class TestResolveInterventionModel:
             assert result == config_model.agents.intervention_model
 
     @autotest.num("1794")
-    @autotest.external_id("e4f5a6b7-c8d9-4e0f-1a2b-c3d4e5f6a7b8")
+    @autotest.external_id("f8527a65-43fd-48d6-8de9-bf1e10c91e75")
     @autotest.name(
         "Orchestrator._resolve_intervention_model: follow_session=True + валидный session_model_id → session id"
     )
-    def test_e4f5a6b7_follow_session_valid_id(self, config_model):
+    def test_f8527a65_follow_session_valid_id(self, config_model):
         with autotest.step("Включаем follow_session"):
             config_model.agents.interventions_follow_session = True
             orch = Orchestrator(config_model)
@@ -88,10 +88,10 @@ class TestResolveInterventionModel:
 
 class TestInterventionMetadata:
     @autotest.num("1795")
-    @autotest.external_id("f5a6b7c8-d9e0-4f1a-2b3c-d4e5f6a7b8c9")
+    @autotest.external_id("c12c25db-4087-4f9b-b976-d197ce305f0e")
     @autotest.name("intervene tutor/hint: metadata содержит model и provider")
     @pytest.mark.asyncio
-    async def test_f5a6b7c8_intervene_llm_metadata(self, config_model):
+    async def test_c12c25db_intervene_llm_metadata(self, config_model):
         """Полный intervene требует MCP/DB; тест проверяет сборку metadata через
         resolve_model — ту же ветку, что выполняется в intervene для LLM-агентов."""
         with autotest.step("Резолвим model_id через resolve_model с тестовым конфигом"):

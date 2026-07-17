@@ -49,9 +49,9 @@ class TestAdminEndpoints:
             assert_in("multi_match_rate", out["first_match"], "first_match.multi_match_rate")
 
     @autotest.num("1811")
-    @autotest.external_id("b5d8e3f2-9c0a-4b1e-ad23-6f7e1g2h3i4j")
+    @autotest.external_id("0955923d-b23e-4776-b7a0-8552600260f7")
     @autotest.name("admin: tk-sensitivity форма ответа")
-    def test_b5d8e3f2_tk_sensitivity_shape(self):
+    def test_0955923d_tk_sensitivity_shape(self):
         from admin.router import build_tk_sensitivity
 
         with autotest.step("Act: собрать кривую чувствительности"):
@@ -72,11 +72,11 @@ class TestAdminEndpoints:
             assert_in("c_intervention", out["costs"], "costs.c_intervention")
 
     @autotest.num("1812")
-    @autotest.external_id("c6e9f4g3-ad1b-5c2f-be34-7g8f2h3i4j5k")
+    @autotest.external_id("29876633-d902-47ca-9f2a-54b43167b0df")
     @autotest.name(
         "admin: build_overview пустая БД — возвращает dict с ключами ab/cohort/identifier/ops"
     )
-    async def test_c6e9f4g3_overview_empty_db(self, empty_admin_db):
+    async def test_29876633_overview_empty_db(self, empty_admin_db):
         from admin.router import build_overview
 
         with autotest.step("Act: build_overview на пустой БД"):
@@ -94,9 +94,9 @@ class TestAdminEndpoints:
             assert_true(out["ops"]["active_sessions"] >= 0, "active_sessions неотрицателен")
 
     @autotest.num("1813")
-    @autotest.external_id("d7f0g5h4-be2c-6d3g-cf45-8h9g3i4j5k6l")
+    @autotest.external_id("68b00e53-5e40-4fe2-9a62-0a64855fff33")
     @autotest.name("admin: build_overview с одной метрикой — не падает, возвращает числа")
-    async def test_d7f0g5h4_overview_with_seed(self, seeded_admin_db):
+    async def test_68b00e53_overview_with_seed(self, seeded_admin_db):
         from admin.router import build_overview
 
         with autotest.step("Act: build_overview с сидом"):
@@ -110,9 +110,9 @@ class TestAdminEndpoints:
             assert_true(out["ops"]["labeled_real_n"] >= 1, "хотя бы одна метрика")
 
     @autotest.num("1814")
-    @autotest.external_id("e8g1h6i5-cf3d-7e4h-dg56-9i0h4j5k6l7m")
+    @autotest.external_id("e9e284ed-16e2-4481-a76e-908aef728a03")
     @autotest.name("admin: роутер зарегистрирован под /admin в main.py")
-    def test_e8g1h6i5_router_registered(self):
+    def test_e9e284ed_router_registered(self):
         with autotest.step("Импортировать admin_router"):
             from admin.router import router as admin_router
 
@@ -123,9 +123,9 @@ class TestAdminEndpoints:
             assert_in("/tk-sensitivity", paths, "/tk-sensitivity")
 
     @autotest.num("1815")
-    @autotest.external_id("f9h2i7j6-dg4e-8f5i-eh67-0j1i5k6l7m8n")
+    @autotest.external_id("45ff77c3-a01a-4b80-865d-e89b51b6d9d3")
     @autotest.name("admin: require_admin отклоняет не-admin (403)")
-    def test_f9h2i7j6_require_admin_rejects(self):
+    def test_45ff77c3_require_admin_rejects(self):
         from fastapi import HTTPException
 
         from admin.router import require_admin
@@ -204,9 +204,9 @@ class TestAdminUsersEndpoints:
         )
 
     @autotest.num("1816")
-    @autotest.external_id("550e8400-e29b-41d4-a716-446655440001")
+    @autotest.external_id("db69554e-095b-4514-9f8c-6a747357d073")
     @autotest.name("GET /admin/users: пагинация и total")
-    async def test_550e8400_list_pagination_and_total(self):
+    async def test_db69554e_list_pagination_and_total(self):
         with autotest.step("Act: запросить страницу 1 из 2 пользователей"):
             async with self._client() as client:
                 resp = await client.get("/admin/users?page=1&page_size=2")
@@ -220,9 +220,9 @@ class TestAdminUsersEndpoints:
             assert_equal(len(body["items"]), 2, "items len=2")
 
     @autotest.num("1817")
-    @autotest.external_id("550e8400-e29b-41d4-a716-446655440002")
+    @autotest.external_id("8b4bdaf0-a21f-488b-827c-6267e08671d8")
     @autotest.name("GET /admin/users: сортировка по email desc")
-    async def test_550e8400_list_sort_email_desc(self):
+    async def test_8b4bdaf0_list_sort_email_desc(self):
         with autotest.step("Act: сортировать по email desc"):
             async with self._client() as client:
                 resp = await client.get("/admin/users?sort=email&order=desc&page_size=100")
@@ -233,9 +233,9 @@ class TestAdminUsersEndpoints:
             assert_true(emails == sorted(emails, reverse=True), "desc order")
 
     @autotest.num("1818")
-    @autotest.external_id("550e8400-e29b-41d4-a716-446655440003")
+    @autotest.external_id("2273c58d-4502-46ca-8838-418cf711be5c")
     @autotest.name("GET /admin/users: поиск по имени")
-    async def test_550e8400_list_search_by_name(self):
+    async def test_2273c58d_list_search_by_name(self):
         with autotest.step("Act: поиск search=Alice"):
             async with self._client() as client:
                 resp = await client.get("/admin/users?search=Alice")
@@ -247,9 +247,9 @@ class TestAdminUsersEndpoints:
             assert_equal(body["items"][0]["name"], "Alice", "name=Alice")
 
     @autotest.num("1819")
-    @autotest.external_id("550e8400-e29b-41d4-a716-446655440004")
+    @autotest.external_id("44130398-adf2-4add-b7eb-f603485c1548")
     @autotest.name("GET /admin/users: фильтр по роли")
-    async def test_550e8400_list_filter_by_role(self):
+    async def test_44130398_list_filter_by_role(self):
         with autotest.step("Act: filter role=instructor"):
             async with self._client() as client:
                 resp = await client.get("/admin/users?role=instructor")
@@ -261,9 +261,9 @@ class TestAdminUsersEndpoints:
             assert_equal(body["items"][0]["role"], "instructor", "role=instructor")
 
     @autotest.num("1820")
-    @autotest.external_id("550e8400-e29b-41d4-a716-446655440005")
+    @autotest.external_id("bb8ea7eb-a00a-42b4-9e39-c2b8747c4a92")
     @autotest.name("PATCH /admin/users/{id}: смена роли — успех")
-    async def test_550e8400_patch_role_success(self):
+    async def test_bb8ea7eb_patch_role_success(self):
         with autotest.step("Act: сменить роль u1 на instructor"):
             async with self._client() as client:
                 resp = await client.patch("/admin/users/u1", json={"role": "instructor"})
@@ -275,9 +275,9 @@ class TestAdminUsersEndpoints:
             assert_equal(body["role"], "instructor", "role=instructor")
 
     @autotest.num("1821")
-    @autotest.external_id("550e8400-e29b-41d4-a716-446655440006")
+    @autotest.external_id("7cdfa3fa-21e3-4c79-a6ba-710cef3113c4")
     @autotest.name("PATCH /admin/users/{id}: смена собственной роли — 400")
-    async def test_550e8400_patch_own_role_rejected(self):
+    async def test_7cdfa3fa_patch_own_role_rejected(self):
         with autotest.step("Act: admin-001 пытается сменить свою роль"):
             async with self._client() as client:
                 resp = await client.patch("/admin/users/admin-001", json={"role": "student"})
@@ -287,9 +287,9 @@ class TestAdminUsersEndpoints:
             assert_in("detail", resp.json(), "detail в ответе")
 
     @autotest.num("1822")
-    @autotest.external_id("550e8400-e29b-41d4-a716-446655440007")
+    @autotest.external_id("e3556b2c-9572-4579-8104-59a7b7645966")
     @autotest.name("PATCH /admin/users/{id}: смена флагов на себе — разрешено")
-    async def test_550e8400_patch_flags_on_self_allowed(self):
+    async def test_e3556b2c_patch_flags_on_self_allowed(self):
         with autotest.step("Act: admin-001 ставит can_select_model=true себе"):
             async with self._client() as client:
                 resp = await client.patch(
@@ -302,9 +302,9 @@ class TestAdminUsersEndpoints:
             assert_equal(resp.json()["can_select_model"], True, "can_select_model=True")
 
     @autotest.num("1823")
-    @autotest.external_id("550e8400-e29b-41d4-a716-446655440008")
+    @autotest.external_id("4ad6d8f1-3de4-4290-8085-d458057b9f12")
     @autotest.name("GET /admin/users: не-admin получает 403")
-    async def test_550e8400_non_admin_gets_403(self):
+    async def test_4ad6d8f1_non_admin_gets_403(self):
         with autotest.step("Act: student запрашивает /admin/users"):
             async with self._student_client() as client:
                 resp = await client.get("/admin/users")

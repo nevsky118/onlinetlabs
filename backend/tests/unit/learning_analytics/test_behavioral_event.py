@@ -33,9 +33,9 @@ class TestBehavioralEvent:
             assert_equal(event.session_id, "sess-1", "session_id")
 
     @autotest.num("511")
-    @autotest.external_id("f3a4b5c6-d7e8-4f9a-ab0c-d1e2f3a4b5c6")
+    @autotest.external_id("c99a22ee-25d2-4a5a-ab4d-7b9f6b3683ae")
     @autotest.name("BehavioralEvent: создание события ошибки")
-    def test_f3a4b5c6_create_error_event(self):
+    def test_c99a22ee_create_error_event(self):
         with autotest.step("Создаём событие типа error"):
             now = datetime.now(tz=UTC)
             event = BehavioralEvent(

@@ -33,9 +33,9 @@ class TestConsentService:
             assert_true(await has_consent(consent_db, "u1", ToolKind.ACT), "act")
 
     @autotest.num("1751")
-    @autotest.external_id("b4e3d2c5-8f90-5c67-ad12-3e4f5a6b7c8d")
+    @autotest.external_id("6aa6be22-d787-4a58-8dab-859e0cd22ab4")
     @autotest.name("consent: product гранулярно (observe да, act нет)")
-    async def test_b4e3d2c5_product_granular(self, consent_db):
+    async def test_6aa6be22_product_granular(self, consent_db):
         with autotest.step("Arrange: product observe=True act=False"):
             await grant(consent_db, "u2", "product", observe=True, act=False)
         with autotest.step("Assert: observe разрешён, act нет"):
@@ -43,9 +43,9 @@ class TestConsentService:
             assert_false(await has_consent(consent_db, "u2", ToolKind.ACT), "act-нет")
 
     @autotest.num("1752")
-    @autotest.external_id("c5f4e3d6-9a01-6d78-be23-4f5a6b7c8d9e")
+    @autotest.external_id("bf9e3fd5-7f19-4732-b87d-ec19e0c264b1")
     @autotest.name("consent: отзыв прекращает согласие")
-    async def test_c5f4e3d6_revoke(self, consent_db):
+    async def test_bf9e3fd5_revoke(self, consent_db):
         with autotest.step("Arrange+Act: дать study, затем отозвать"):
             await grant(consent_db, "u3", "study", observe=True, act=True)
             n = await revoke(consent_db, "u3", "study")

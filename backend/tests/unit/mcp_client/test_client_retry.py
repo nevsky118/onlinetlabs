@@ -41,9 +41,9 @@ def _build_call_tool_result(payload: str = '{"ok": true}'):
 
 class TestMCPClientRetry:
     @autotest.num("1830")
-    @autotest.external_id("a0b1c2d3-e4f5-4a6b-8c7d-720000000001")
+    @autotest.external_id("0326bce7-6376-4e0a-8acf-0aa5c55a8caa")
     @autotest.name("MCPClient._call_tool: успех со второй попытки после RequestError")
-    async def test_a0b1c2d3_retry_succeeds_on_second_attempt(self):
+    async def test_0326bce7_retry_succeeds_on_second_attempt(self):
         call_count = 0
 
         fake_session = AsyncMock()
@@ -78,9 +78,9 @@ class TestMCPClientRetry:
             assert_equal(result, {"ok": True}, "результат должен быть распарсенным JSON")
 
     @autotest.num("1831")
-    @autotest.external_id("b1c2d3e4-f5a6-4b7c-9d8e-720000000002")
+    @autotest.external_id("4ca60575-01a4-4559-8caf-b3720d28476e")
     @autotest.name("MCPClient._call_tool: три падения RequestError → reraise после 3 попыток")
-    async def test_b1c2d3e4_all_attempts_fail_reraises(self):
+    async def test_4ca60575_all_attempts_fail_reraises(self):
         call_count = 0
 
         @asynccontextmanager
@@ -107,9 +107,9 @@ class TestMCPClientRetry:
             assert_equal(call_count, 3, "должно быть ровно 3 попытки")
 
     @autotest.num("1832")
-    @autotest.external_id("c2d3e4f5-a6b7-4c8d-9e8f-720000000003")
+    @autotest.external_id("8afd21f0-7b8f-4a40-9e00-68fc8bf350fa")
     @autotest.name("MCPClient._call_tool: конфиг tenacity (stop_after_attempt=3)")
-    def test_c2d3e4f5_retry_config_stop_after_attempt(self):
+    def test_8afd21f0_retry_config_stop_after_attempt(self):
         with autotest.step("Достаём tenacity-обёртку с _call_tool"):
             retry_state = MCPClient._call_tool.retry
 
@@ -121,9 +121,9 @@ class TestMCPClientRetry:
             )
 
     @autotest.num("1833")
-    @autotest.external_id("d3e4f5a6-b7c8-4d9e-8a0f-720000000004")
+    @autotest.external_id("bf0341ee-4fbc-4e0e-8b7d-12641f5d716b")
     @autotest.name("MCPClient._call_tool: wait_exponential(multiplier=0.3, max=2.0)")
-    def test_d3e4f5a6_retry_config_wait_exponential(self):
+    def test_bf0341ee_retry_config_wait_exponential(self):
         with autotest.step("Достаём tenacity-обёртку"):
             wait = MCPClient._call_tool.retry.wait
 

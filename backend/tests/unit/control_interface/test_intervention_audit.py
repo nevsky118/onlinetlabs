@@ -118,9 +118,9 @@ def _make_monitor(db_factory) -> SessionMonitor:
 
 class TestInterventionAudit:
     @autotest.num("1800")
-    @autotest.external_id("c3d4e5f6-7a8b-9c0d-1e2f-3a4b5c6d7e8f")
+    @autotest.external_id("971f4132-1699-45e5-bab6-4ffa8891522b")
     @autotest.name("intervention audit: closed-arm dispatch пишет act-запись в mcp_audit")
-    async def test_c3d4e5f6_closed_arm_writes_act_audit(self, audit_engine):
+    async def test_971f4132_closed_arm_writes_act_audit(self, audit_engine):
         with autotest.step("Arrange: монитор CLOSED с реальной БД mcp_audit"):
             session_factory = async_sessionmaker(audit_engine, expire_on_commit=False)
 
@@ -223,9 +223,9 @@ class TestInterventionAudit:
             assert_equal(rows[0].lab_slug, "lan-static-ip", "lab_slug совпадает")
 
     @autotest.num("1801")
-    @autotest.external_id("d4e5f6a7-8b9c-0d1e-2f3a-4b5c6d7e8f9a")
+    @autotest.external_id("a56f5633-0466-4e49-9b83-97a733b05b1a")
     @autotest.name("intervention audit: open-arm НЕ пишет act-аудит (подавление)")
-    async def test_d4e5f6a7_open_arm_no_act_audit(self, audit_engine):
+    async def test_a56f5633_open_arm_no_act_audit(self, audit_engine):
         with autotest.step("Arrange: монитор OPEN — dispatch не вызывается"):
             session_factory = async_sessionmaker(audit_engine, expire_on_commit=False)
 

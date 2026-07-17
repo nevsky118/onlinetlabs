@@ -140,7 +140,7 @@ class TestInstructorService:
             await db.commit()
 
     @autotest.num("743")
-    @autotest.external_id("c1a2b3d4-e5f6-4708-8901-aabbccdd0010")
+    @autotest.external_id("6f531b65-31f8-4783-bff5-ceec98b773b6")
     @autotest.name("get_students_overview: только students, подсказки = intervention")
     async def test_overview_counts_hints_and_excludes_non_students(self):
         with autotest.step("Arrange: сеем учеников, препода и события"):
@@ -160,7 +160,7 @@ class TestInstructorService:
             assert_equal(by_id["stud-2"]["total_hints"], 0, "у stud-2 нет подсказок")
 
     @autotest.num("744")
-    @autotest.external_id("c1a2b3d4-e5f6-4708-8901-aabbccdd0011")
+    @autotest.external_id("d62eb287-869b-4d68-b2c8-5827e4927f92")
     @autotest.name("get_student_detail: разбивка по лабам с названием и подсказками")
     async def test_detail_breaks_down_by_lab(self):
         with autotest.step("Arrange: сеем данные"):
@@ -180,7 +180,7 @@ class TestInstructorService:
             assert_equal(lab["attempts"], 1, "попыток по лабе")
 
     @autotest.num("745")
-    @autotest.external_id("c1a2b3d4-e5f6-4708-8901-aabbccdd0012")
+    @autotest.external_id("fc258598-ea8f-4e9c-8310-cf5d9740cae7")
     @autotest.name("get_student_detail: неизвестный ученик → None")
     async def test_detail_unknown_user_returns_none(self):
         with autotest.step("Act: запрашиваем несуществующего ученика"):
@@ -191,7 +191,7 @@ class TestInstructorService:
             assert_is_none(detail, "detail is None")
 
     @autotest.num("746")
-    @autotest.external_id("c1a2b3d4-e5f6-4708-8901-aabbccdd0013")
+    @autotest.external_id("f148d464-0220-428f-b136-a2dbce7639b3")
     @autotest.name("get_student_detail: sessions с message_count и hint_count")
     async def test_detail_sessions_message_and_hint_counts(self):
         with autotest.step("Arrange: студент с сессией, 2 сообщениями, 1 интервенцией"):

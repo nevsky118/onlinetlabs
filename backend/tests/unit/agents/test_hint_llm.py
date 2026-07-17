@@ -12,9 +12,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.agents]
 
 class TestHintAgentLLM:
     @autotest.num("570")
-    @autotest.external_id("a1b2c3d4-e5f6-4789-abcd-570000000001")
+    @autotest.external_id("be078385-2caa-42bb-859f-db329a9c64c5")
     @autotest.name("HintAgent: run без agent_context бросает ValueError")
-    async def test_a1b2c3d4_run_without_context(self, config_model):
+    async def test_be078385_run_without_context(self, config_model):
         with autotest.step("Создаём агент и вход без контекста"):
             agent = HintAgent(config_model)
             inp = HintInput(
@@ -30,15 +30,16 @@ class TestHintAgentLLM:
                 await agent.run(inp)
 
     @autotest.num("571")
-    @autotest.external_id("b2c3d4e5-f6a7-4890-bcde-571000000002")
+    @autotest.external_id("558d9d41-3c35-46d2-b520-f7c53ce35002")
     @autotest.name("HintAgent: run с agent_context — реальный Agent.run даёт подсказку из output")
-    async def test_b2c3d4e5_run_with_context(self, config_model, monkeypatch):
+    async def test_558d9d41_run_with_context(self, config_model, monkeypatch):
         with autotest.step("Создаём агент с контекстом, подменяем _build_model на TestModel"):
             agent = HintAgent(config_model)
             context = AgentContextData().context
             mid = config_model.agents.intervention_model
             monkeypatch.setattr(
-                agent, "_build_model",
+                agent,
+                "_build_model",
                 lambda model_id: TestModel(custom_output_text="Проверь маршрут OSPF на R1"),
             )
             inp = HintInput(
@@ -60,18 +61,18 @@ class TestHintAgentLLM:
             assert_equal(result.hint_level, 3, "уровень 3 при 4 попытках")
 
     @autotest.num("572")
-    @autotest.external_id("c3d4e5f6-a7b8-4901-cdef-572000000003")
+    @autotest.external_id("a86a10f4-8efa-47c5-b25f-dee13af75ece")
     @autotest.name("HINT_SYSTEM_PROMPT: содержит все 3 уровня")
-    def test_c3d4e5f6_system_prompt_levels(self):
+    def test_a86a10f4_system_prompt_levels(self):
         with autotest.step("Проверяем содержание промпта"):
             assert_true("Уровень 1" in HINT_SYSTEM_PROMPT, "уровень 1")
             assert_true("Уровень 2" in HINT_SYSTEM_PROMPT, "уровень 2")
             assert_true("Уровень 3" in HINT_SYSTEM_PROMPT, "уровень 3")
 
     @autotest.num("573")
-    @autotest.external_id("d4e5f6a7-b8c9-4012-def0-573000000004")
+    @autotest.external_id("ae0197d6-a05d-421b-8d75-8434a4516713")
     @autotest.name("HintAgent: failing_check попадает в промпт LLM")
-    async def test_d4e5f6a7_failing_check_in_prompt(self, config_model, monkeypatch):
+    async def test_ae0197d6_failing_check_in_prompt(self, config_model, monkeypatch):
         """Регрессия FIX 2: failing_check{expected/actual} виден LLM."""
         from unittest.mock import AsyncMock
 

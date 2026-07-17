@@ -12,9 +12,9 @@ pytestmark = [pytest.mark.unit]
 
 class TestFinalizer:
     @autotest.num("610")
-    @autotest.external_id("c3d4e5f6-a7b8-4901-cdef-610000000003")
+    @autotest.external_id("2cd36978-2dbc-49ec-9a59-b2353e95b973")
     @autotest.name("compute_session_metrics: вычисляет метрики из событий")
-    def test_c3d4e5f6_compute_metrics(self):
+    def test_2cd36978_compute_metrics(self):
         # Arrange
         with autotest.step("Создаём события сессии"):
             now = datetime.now(tz=UTC)
@@ -97,9 +97,9 @@ class TestFinalizer:
             assert_greater(metrics["total_time_seconds"], 0, "время > 0")
 
     @autotest.num("611")
-    @autotest.external_id("d4e5f6a7-b8c9-4012-defa-611000000004")
+    @autotest.external_id("14c8efff-3d1c-489a-bbf5-545596c60d9f")
     @autotest.name("compute_session_metrics: пустая сессия")
-    def test_d4e5f6a7_empty_session(self):
+    def test_14c8efff_empty_session(self):
         # Arrange
         with autotest.step("Готовим границы пустой сессии"):
             now = datetime.now(tz=UTC)

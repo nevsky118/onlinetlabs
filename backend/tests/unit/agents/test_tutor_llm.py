@@ -14,9 +14,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.agents]
 
 class TestTutorAgentLLM:
     @autotest.num("560")
-    @autotest.external_id("a1b2c3d4-e5f6-4789-abcd-560000000001")
+    @autotest.external_id("77ad961e-74be-494c-9f9f-81712382decd")
     @autotest.name("TutorAgent: LLM failure re-raise, шаблонного ответа нет")
-    async def test_a1b2c3d4_run_llm_failure_raises(self, config_model, monkeypatch):
+    async def test_77ad961e_run_llm_failure_raises(self, config_model, monkeypatch):
         with autotest.step("Мок LLM выбрасывает"):
             agent = TutorAgent(config_model, mcp_client=None)
             monkeypatch.setattr(
@@ -34,9 +34,9 @@ class TestTutorAgentLLM:
             await agent.run(inp)
 
     @autotest.num("561")
-    @autotest.external_id("b2c3d4e5-f6a7-4890-bcde-561000000002")
+    @autotest.external_id("65e37fbf-3605-4faa-a9d1-65a2ebe1d8b7")
     @autotest.name("TutorAgent: run с agent_context — реальный Agent.run даёт ответ из output")
-    async def test_b2c3d4e5_run_with_context(self, config_model, monkeypatch):
+    async def test_65e37fbf_run_with_context(self, config_model, monkeypatch):
         with autotest.step("Создаём агент с контекстом, подменяем _build_model на TestModel"):
             agent = TutorAgent(config_model, mcp_client=None)
             context = AgentContextData().context

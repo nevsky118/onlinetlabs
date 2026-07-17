@@ -84,9 +84,9 @@ class TestAdminLabsEndpoints:
             assert_equal(resp.status_code, 403, "status 403")
 
     @autotest.num("1933")
-    @autotest.external_id("c1d2e3f4-a5b6-4c7d-9e8f-0a1b2c3d4e5f")
+    @autotest.external_id("bad07024-113b-45b1-a684-cc2661c29478")
     @autotest.name("GET /admin/labs: возвращает вставленные лабы с корректным template_ready")
-    async def test_c1d2e3f4_list_labs_template_ready(self):
+    async def test_bad07024_list_labs_template_ready(self):
         await self._seed(
             [
                 Lab(
@@ -133,9 +133,9 @@ class TestAdminLabsEndpoints:
             assert_true(gns3_no["template_ready"] is False, "gns3 no tpl → template_ready False")
 
     @autotest.num("1934")
-    @autotest.external_id("d2e3f4a5-b6c7-4d8e-af9f-1b2c3d4e5f6a")
+    @autotest.external_id("3b6d23c5-699f-4f4c-a5dc-c29735a7ca1a")
     @autotest.name("PATCH /admin/labs/{slug}: переключает enabled → false")
-    async def test_d2e3f4a5_patch_toggles_enabled(self):
+    async def test_3b6d23c5_patch_toggles_enabled(self):
         await self._seed(
             [
                 Lab(slug="toggle-lab", title="Toggle Lab", environment_type="none", enabled=True),
@@ -156,9 +156,9 @@ class TestAdminLabsEndpoints:
                 assert_true(lab.enabled is False, "enabled=false в БД")
 
     @autotest.num("1935")
-    @autotest.external_id("e3f4a5b6-c7d8-4e9f-b0a1-2c3d4e5f6a7b")
+    @autotest.external_id("92947fab-1ea1-4561-a968-40b654db46eb")
     @autotest.name("PATCH /admin/labs/{slug}: устанавливает gns3_template_project_id")
-    async def test_e3f4a5b6_patch_sets_template_id(self):
+    async def test_92947fab_patch_sets_template_id(self):
         await self._seed(
             [
                 Lab(slug="tpl-lab", title="Template Lab", environment_type="gns3", enabled=True),
@@ -179,9 +179,9 @@ class TestAdminLabsEndpoints:
             assert_true(body["template_ready"] is True, "template_ready True после установки id")
 
     @autotest.num("1936")
-    @autotest.external_id("f4a5b6c7-d8e9-4f0a-c1b2-3d4e5f6a7b8c")
+    @autotest.external_id("aedd410a-2dc4-4cf4-9a43-4dd0aa62cdd4")
     @autotest.name("PATCH /admin/labs/{slug}: неизвестный slug → 404")
-    async def test_f4a5b6c7_patch_unknown_slug_404(self):
+    async def test_aedd410a_patch_unknown_slug_404(self):
         with autotest.step("Act: PATCH несуществующего slug"):
             async with self._client() as client:
                 resp = await client.patch("/admin/labs/does-not-exist", json={"enabled": False})
@@ -190,9 +190,9 @@ class TestAdminLabsEndpoints:
             assert_equal(resp.status_code, 404, "status 404")
 
     @autotest.num("1937")
-    @autotest.external_id("a5b6c7d8-e9f0-4a1b-d2c3-4e5f6a7b8c9d")
+    @autotest.external_id("b98bcad9-3ffb-47b2-8594-97eb2057a492")
     @autotest.name("GET /admin/labs: template_status по умолчанию 'unknown' при meta=null")
-    async def test_a5b6c7d8_template_status_default_unknown(self):
+    async def test_b98bcad9_template_status_default_unknown(self):
         await self._seed(
             [
                 Lab(
@@ -269,9 +269,9 @@ class TestRebuildTemplate:
             await db.commit()
 
     @autotest.num("1938")
-    @autotest.external_id("b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e")
+    @autotest.external_id("3db4cf7c-fbd1-4ca5-b233-d4f0f9856072")
     @autotest.name("POST rebuild-template: не-admin → 403")
-    async def test_b1c2d3e4_rebuild_non_admin_403(self):
+    async def test_3db4cf7c_rebuild_non_admin_403(self):
         await self._seed(
             [
                 Lab(slug="gns3-lab", title="GNS3", environment_type="gns3", enabled=True),
@@ -284,9 +284,9 @@ class TestRebuildTemplate:
             assert_equal(resp.status_code, 403, "403 для не-admin")
 
     @autotest.num("1939")
-    @autotest.external_id("c2d3e4f5-a6b7-4c8d-9e0f-1a2b3c4d5e6f")
+    @autotest.external_id("a08e847c-bc24-4d4c-8464-d7957fb91449")
     @autotest.name("POST rebuild-template: неизвестный slug → 404")
-    async def test_c2d3e4f5_rebuild_unknown_slug_404(self):
+    async def test_a08e847c_rebuild_unknown_slug_404(self):
         with autotest.step("Act"):
             async with self._client() as client:
                 resp = await client.post("/admin/labs/no-such-lab/rebuild-template")
@@ -294,9 +294,9 @@ class TestRebuildTemplate:
             assert_equal(resp.status_code, 404, "404 для неизвестного slug")
 
     @autotest.num("1940")
-    @autotest.external_id("d3e4f5a6-b7c8-4d9e-af0f-2b3c4d5e6f7a")
+    @autotest.external_id("10a02c2f-c54b-42f0-b9f3-30f65ef9e777")
     @autotest.name("POST rebuild-template: не-gns3 лаба → 400")
-    async def test_d3e4f5a6_rebuild_non_gns3_400(self):
+    async def test_10a02c2f_rebuild_non_gns3_400(self):
         await self._seed(
             [
                 Lab(slug="none-lab", title="None", environment_type="none", enabled=True),
@@ -309,9 +309,9 @@ class TestRebuildTemplate:
             assert_equal(resp.status_code, 400, "400 для не-gns3")
 
     @autotest.num("1941")
-    @autotest.external_id("e4f5a6b7-c8d9-4e0f-b1a2-3c4d5e6f7a8b")
+    @autotest.external_id("0fb8df28-9c53-406b-9156-f7ad9fbdb142")
     @autotest.name("POST rebuild-template: gns3 лаба → 202, building в ответе")
-    async def test_e4f5a6b7_rebuild_gns3_202_meta_building(self):
+    async def test_0fb8df28_rebuild_gns3_202_meta_building(self):
         # stub raises so worker sets "error" — lets us assert the endpoint
         # committed "building" synchronously (confirmed by 202 response) without
         # racing against the background task overwriting the DB state.
@@ -340,9 +340,9 @@ class TestRebuildTemplate:
                 )
 
     @autotest.num("1942")
-    @autotest.external_id("f5a6b7c8-d9e0-4f1a-c2b3-4d5e6f7a8b9c")
+    @autotest.external_id("b03fa068-bbc3-469c-9625-33eb5af3c628")
     @autotest.name("POST rebuild-template: idempotent — не запускает второй билд")
-    async def test_f5a6b7c8_rebuild_idempotent(self):
+    async def test_b03fa068_rebuild_idempotent(self):
         await self._seed(
             [
                 Lab(
@@ -364,9 +364,9 @@ class TestRebuildTemplate:
             assert_equal(self.stub_client.build_template.call_count, 0, "build_template не вызван")
 
     @autotest.num("1943")
-    @autotest.external_id("a6b7c8d9-e0f1-4a2b-d3c4-5e6f7a8b9c0d")
+    @autotest.external_id("a836dbf5-a71f-4fc3-88bd-c02ac9636810")
     @autotest.name("Worker: успех — записывает template_id и status=ready")
-    async def test_a6b7c8d9_worker_success(self):
+    async def test_a836dbf5_worker_success(self):
         await self._seed(
             [
                 Lab(slug="worker-ok", title="Worker OK", environment_type="gns3", enabled=True),
@@ -388,9 +388,9 @@ class TestRebuildTemplate:
                 assert_equal(lab.meta["template_status"], "ready", "status=ready")
 
     @autotest.num("1944")
-    @autotest.external_id("b7c8d9e0-f1a2-4b3c-e4d5-6f7a8b9c0d1e")
+    @autotest.external_id("3daf90a1-d803-4fc9-af45-04d178cb7d8e")
     @autotest.name("Worker: ошибка build_template → status=error")
-    async def test_b7c8d9e0_worker_error(self):
+    async def test_3daf90a1_worker_error(self):
         await self._seed(
             [
                 Lab(slug="worker-err", title="Worker Err", environment_type="gns3", enabled=True),

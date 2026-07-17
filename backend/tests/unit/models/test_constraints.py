@@ -46,10 +46,10 @@ class TestModelConstraints:
         await engine.dispose()
 
     @autotest.num("750")
-    @autotest.external_id("c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f")
+    @autotest.external_id("15fb7122-b250-4e00-b806-558c9290761f")
     @autotest.name("User.email UNIQUE: дубликат email вызывает IntegrityError")
     @pytest.mark.asyncio
-    async def test_c1d2e3f4_user_email_unique(self, session: AsyncSession):
+    async def test_15fb7122_user_email_unique(self, session: AsyncSession):
         with autotest.step("Добавляем первого пользователя"):
             session.add(User(id="u1", email="dup@example.com"))
             await session.commit()
@@ -61,10 +61,10 @@ class TestModelConstraints:
             await session.rollback()
 
     @autotest.num("751")
-    @autotest.external_id("d2e3f4a5-b6c7-4d8e-9f0a-1b2c3d4e5f60")
+    @autotest.external_id("4cad75ea-2c64-40d1-896c-a22e62fc8d55")
     @autotest.name("Account.user_id FK CASCADE: удаление User удаляет его Account-ы")
     @pytest.mark.asyncio
-    async def test_d2e3f4a5_account_cascade_on_user_delete(self, session: AsyncSession):
+    async def test_4cad75ea_account_cascade_on_user_delete(self, session: AsyncSession):
         with autotest.step("Создаём User + два Account"):
             user = User(id="u-cascade", email="cascade@example.com")
             session.add(user)
@@ -97,10 +97,10 @@ class TestModelConstraints:
             assert_equal(len(rows), 0, "no accounts after user delete")
 
     @autotest.num("752")
-    @autotest.external_id("e3f4a5b6-c7d8-4e9f-a0b1-2c3d4e5f6071")
+    @autotest.external_id("939fbc74-61db-45ec-b93c-3fb053c9c285")
     @autotest.name("User.role: дефолт = 'student'")
     @pytest.mark.asyncio
-    async def test_e3f4a5b6_user_role_default_student(self, session: AsyncSession):
+    async def test_939fbc74_user_role_default_student(self, session: AsyncSession):
         with autotest.step("Создаём User без явной роли"):
             user = User(id="u-role", email="role@example.com")
             session.add(user)
@@ -112,10 +112,10 @@ class TestModelConstraints:
             assert_equal(user.role, UserRole.STUDENT.value, "role == UserRole.STUDENT.value")
 
     @autotest.num("753")
-    @autotest.external_id("f4a5b6c7-d8e9-4f0a-b1c2-3d4e5f607182")
+    @autotest.external_id("a7a2ff3d-9868-4bc1-988b-076191fd4a59")
     @autotest.name("LearningSession.status дефолт = 'active' и FK к user работает CASCADE")
     @pytest.mark.asyncio
-    async def test_f4a5b6c7_learning_session_defaults_and_cascade(self, session: AsyncSession):
+    async def test_a7a2ff3d_learning_session_defaults_and_cascade(self, session: AsyncSession):
         with autotest.step("Создаём User и Lab"):
             user = User(id="u-ls", email="ls@example.com")
             lab = Lab(slug="lab-1", title="Lab 1")
@@ -141,10 +141,10 @@ class TestModelConstraints:
             assert_equal(len(rows), 0, "no learning_sessions after user delete")
 
     @autotest.num("754")
-    @autotest.external_id("a5b6c7d8-e9f0-4a1b-c2d3-4e5f60718293")
+    @autotest.external_id("b774dcda-915e-4548-b743-b1a822a85fce")
     @autotest.name("User.id auto-генерируется UUID при отсутствии явного значения")
     @pytest.mark.asyncio
-    async def test_a5b6c7d8_user_id_auto_uuid(self, session: AsyncSession):
+    async def test_b774dcda_user_id_auto_uuid(self, session: AsyncSession):
         with autotest.step("Создаём User без id"):
             user = User(email="autoid@example.com")
             session.add(user)

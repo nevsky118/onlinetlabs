@@ -31,9 +31,9 @@ async def endpoint_db():
 
 class TestConsentEndpointLogic:
     @autotest.num("1780")
-    @autotest.external_id("f1a2b3c4-d5e6-4f78-9012-3a4b5c6d7e8f")
+    @autotest.external_id("0838160b-40df-437c-8531-f46d16f52ab8")
     @autotest.name("consent POST: grant возвращает Consent, поля корректны")
-    async def test_f1a2b3c4_grant_returns_consent(self, endpoint_db):
+    async def test_0838160b_grant_returns_consent(self, endpoint_db):
         with autotest.step("Arrange: запрос study-согласия"):
             req = ConsentGrantRequest(scope="study", observe=True, act=True)
         with autotest.step("Act: вызвать handler-логику grant"):

@@ -10,9 +10,9 @@ pytestmark = [pytest.mark.unit]
 
 class TestAnalysis:
     @autotest.num("620")
-    @autotest.external_id("e5f6a7b8-c9d0-4123-efab-620000000005")
+    @autotest.external_id("e7fc78f1-1cec-4410-b468-c32073420c28")
     @autotest.name("compute_experiment_analysis: значимая разница")
-    def test_e5f6a7b8_significant_difference(self):
+    def test_e7fc78f1_significant_difference(self):
         # Arrange
         with autotest.step("Создаём данные с явной разницей"):
             group_a = [ExperimentMetricsData("group_a", 2400, 10, 8) for _ in range(20)]
@@ -42,9 +42,9 @@ class TestAnalysis:
             assert_true(result["h1_time_to_completion"]["significant"], "разница значима")
 
     @autotest.num("621")
-    @autotest.external_id("f6a7b8c9-d0e1-4234-fabc-621000000006")
+    @autotest.external_id("3963811d-ba05-4fc7-8b84-17f6b29e922e")
     @autotest.name("compute_experiment_analysis: малая выборка")
-    def test_f6a7b8c9_small_sample(self):
+    def test_3963811d_small_sample(self):
         # Arrange
         with autotest.step("Создаём данные с 1 участником в группе"):
             all_metrics = [

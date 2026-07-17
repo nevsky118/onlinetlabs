@@ -24,9 +24,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.auth]
 
 class TestBackendTokenRoundTrip:
     @autotest.num("700")
-    @autotest.external_id("a1b2c3d4-e5f6-4708-8901-234567890abc")
+    @autotest.external_id("ea058cb9-7fd4-49ee-b60b-15ed534b1659")
     @autotest.name("create_backend_token + decode_backend_token: успешный round-trip")
-    def test_a1b2c3d4_encode_decode_returns_sub_and_role(self):
+    def test_ea058cb9_encode_decode_returns_sub_and_role(self):
         with autotest.step("Arrange: формируем user_id и role"):
             user_id = "user-700"
             role = "student"
@@ -41,9 +41,9 @@ class TestBackendTokenRoundTrip:
             assert_in("exp", payload, "exp claim присутствует")
 
     @autotest.num("701")
-    @autotest.external_id("b2c3d4e5-f607-4809-8a01-34567890abcd")
+    @autotest.external_id("1b8a1618-2d54-4664-b10d-925546ba3c69")
     @autotest.name("decode_backend_token: неверный секрет → JWTError")
-    def test_b2c3d4e5_wrong_secret_raises_jwterror(self):
+    def test_1b8a1618_wrong_secret_raises_jwterror(self):
         with autotest.step("Arrange: выпускаем токен реальным секретом"):
             token = create_backend_token("user-701", "student")
 
@@ -52,9 +52,9 @@ class TestBackendTokenRoundTrip:
                 decode_backend_token(token, "wrong-secret")
 
     @autotest.num("702")
-    @autotest.external_id("c3d4e5f6-0708-490a-8b12-4567890abcde")
+    @autotest.external_id("b1750eef-43fb-4a71-9227-a8f1e8642e3b")
     @autotest.name("decode_backend_token: истёкший токен → JWTError")
-    def test_c3d4e5f6_expired_token_raises_jwterror(self):
+    def test_b1750eef_expired_token_raises_jwterror(self):
         with autotest.step("Arrange: вручную выпускаем токен с exp в прошлом"):
             past = datetime.now(UTC) - timedelta(minutes=10)
             payload = {"sub": "user-702", "role": "student", "exp": past}
@@ -67,9 +67,9 @@ class TestBackendTokenRoundTrip:
 
 class TestVerifyJwtForWs:
     @autotest.num("703")
-    @autotest.external_id("d4e5f607-0809-4a0b-8c23-567890abcdef")
+    @autotest.external_id("38733e56-6409-4501-93ec-083612d3e79e")
     @autotest.name("verify_jwt_for_ws: None → None")
-    async def test_d4e5f607_none_returns_none(self):
+    async def test_38733e56_none_returns_none(self):
         with autotest.step("Act: вызываем без токена"):
             result = await verify_jwt_for_ws(None)
 
@@ -77,9 +77,9 @@ class TestVerifyJwtForWs:
             assert_is_none(result, "result is None")
 
     @autotest.num("704")
-    @autotest.external_id("e5f60708-090a-4b0c-8d34-67890abcdef0")
+    @autotest.external_id("6e9070aa-94f4-4c1b-911d-b41229f98708")
     @autotest.name("verify_jwt_for_ws: валидный токен → dict с id и role")
-    async def test_e5f60708_valid_token_returns_user_dict(self):
+    async def test_6e9070aa_valid_token_returns_user_dict(self):
         with autotest.step("Arrange: выпускаем валидный токен"):
             token = create_backend_token("user-704", "admin")
 
@@ -92,9 +92,9 @@ class TestVerifyJwtForWs:
             assert_equal(result["role"], "admin", "role claim")
 
     @autotest.num("705")
-    @autotest.external_id("f6070809-0a0b-4c0d-8e45-7890abcdef01")
+    @autotest.external_id("87ace33f-5246-4ca8-8de2-31390950a020")
     @autotest.name("verify_jwt_for_ws: мусорная строка → None")
-    async def test_f6070809_garbage_returns_none(self):
+    async def test_87ace33f_garbage_returns_none(self):
         with autotest.step("Act: пытаемся верифицировать мусор"):
             result = await verify_jwt_for_ws("not-a-real-jwt")
 

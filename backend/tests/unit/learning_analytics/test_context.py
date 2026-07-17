@@ -30,9 +30,9 @@ class FakeContextMCPClient:
 
 class TestAgentContext:
     @autotest.num("550")
-    @autotest.external_id("a1b2c3d4-e5f6-4789-abcd-550000000001")
+    @autotest.external_id("44f74056-027a-4293-b00c-0e500dee5d38")
     @autotest.name("AgentContext.to_prompt: форматирует контекст")
-    def test_a1b2c3d4_to_prompt(self):
+    def test_44f74056_to_prompt(self):
         with autotest.step("Создаём AgentContext"):
             ctx = AgentContext(
                 topology_summary="2 ноды (R1 running, R2 stopped), 1 линк",
@@ -50,9 +50,9 @@ class TestAgentContext:
             assert_true("repeating_errors" in prompt, "содержит тип struggle")
 
     @autotest.num("551")
-    @autotest.external_id("b2c3d4e5-f6a7-4890-bcde-551000000002")
+    @autotest.external_id("468c37ba-9575-4399-aef8-423e249b9902")
     @autotest.name("AgentContext.to_prompt: пустой контекст не падает")
-    def test_b2c3d4e5_to_prompt_empty(self):
+    def test_468c37ba_to_prompt_empty(self):
         with autotest.step("Создаём пустой AgentContext"):
             ctx = AgentContext(
                 topology_summary="",
@@ -70,9 +70,9 @@ class TestAgentContext:
 
 class TestMCPContextBuilder:
     @autotest.num("552")
-    @autotest.external_id("c3d4e5f6-a7b8-4901-cdef-552000000003")
+    @autotest.external_id("c362feb3-de89-49b5-b627-cc4daec9ee89")
     @autotest.name("MCPContextBuilder.build: собирает контекст из MCP")
-    async def test_c3d4e5f6_build(self):
+    async def test_c362feb3_build(self):
         now = datetime.now(tz=UTC)
         with autotest.step("Создаём фейк MCP с данными"):
             mcp = FakeContextMCPClient(
@@ -109,9 +109,9 @@ class TestMCPContextBuilder:
             assert_equal(ctx.struggle_type, "repeating_errors", "тип struggle")
 
     @autotest.num("553")
-    @autotest.external_id("d4e5f6a7-b8c9-4012-defa-553000000004")
+    @autotest.external_id("be858141-1e28-43dc-809b-062c505903e0")
     @autotest.name("MCPContextBuilder.build: MCP недоступен → пустой контекст")
-    async def test_d4e5f6a7_build_mcp_down(self):
+    async def test_be858141_build_mcp_down(self):
         with autotest.step("Создаём MCP который бросает исключения"):
 
             class FailingMCP:

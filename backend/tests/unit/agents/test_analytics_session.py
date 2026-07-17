@@ -17,9 +17,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.agents]
 
 class TestAnalyticsAgentSession:
     @autotest.num("504")
-    @autotest.external_id("e4f5a6b7-c8d9-4e0f-8a1b-2c3d4e5f6a7b")
+    @autotest.external_id("ef420353-275f-4f24-afea-b6b5e442c6f9")
     @autotest.name("AnalyticsAgent.analyze_session: нет проблем в нормальной сессии")
-    def test_e4f5a6b7_no_struggle_normal_session(self, config_model):
+    def test_ef420353_no_struggle_normal_session(self, config_model):
         with autotest.step("Создаём нормальные фичи"):
             features = SessionFeatures(**SessionFeaturesData().data)
 
@@ -34,16 +34,14 @@ class TestAnalyticsAgentSession:
             )
 
     @autotest.num("505")
-    @autotest.external_id("f5a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b8c")
+    @autotest.external_id("2384dce9-bf9e-4ad0-af03-0cc0a0089508")
     @autotest.name("AnalyticsAgent.analyze_session: обнаруживает повторяющиеся ошибки")
-    def test_f5a6b7c8_detects_repeating_errors(self, config_model):
+    def test_2384dce9_detects_repeating_errors(self, config_model):
         with autotest.step("Создаём фичи с error_repeat_count=4"):
             features = SessionFeatures(**SessionFeaturesData(error_repeat_count=4).data)
 
         with autotest.step("Вызываем identify_regime"):
-            result = identify_regime(
-                features, LearningAnalyticsConfig(error_repeat_threshold=3)
-            )
+            result = identify_regime(features, LearningAnalyticsConfig(error_repeat_threshold=3))
 
         with autotest.step("Проверяем обнаружение struggle"):
             assert_true(result.struggle_detected, "struggle обнаружен")
@@ -55,9 +53,9 @@ class TestAnalyticsAgentSession:
             )
 
     @autotest.num("506")
-    @autotest.external_id("a6b7c8d9-e0f1-4a2b-8c3d-4e5f6a7b8c9d")
+    @autotest.external_id("91e35d8d-16d1-416b-b70e-3ed64b5c36f1")
     @autotest.name("AnalyticsAgent.analyze_session: обнаруживает idle")
-    def test_a6b7c8d9_detects_idle(self, config_model):
+    def test_91e35d8d_detects_idle(self, config_model):
         with autotest.step("Создаём фичи с idle_periods=4 и отрицательным slope"):
             features = SessionFeatures(
                 **SessionFeaturesData(idle_periods=4, action_rate_slope=-0.8).data
@@ -71,9 +69,9 @@ class TestAnalyticsAgentSession:
             assert_equal(result.struggle_type, StruggleType.IDLE, "тип: idle")
 
     @autotest.num("507")
-    @autotest.external_id("b7c8d9e0-f1a2-4b3c-9d4e-5f6a7b8c9d0e")
+    @autotest.external_id("1eb12451-0e0c-47ac-9f6b-dc13be55afb6")
     @autotest.name("AnalyticsAgent.analyze_session: обнаруживает trial-and-error")
-    def test_b7c8d9e0_detects_trial_and_error(self, config_model):
+    def test_1eb12451_detects_trial_and_error(self, config_model):
         with autotest.step("Создаём фичи с высокой энтропией и частотой ошибок"):
             features = SessionFeatures(
                 **SessionFeaturesData(action_sequence_entropy=0.95, error_frequency=3.0).data

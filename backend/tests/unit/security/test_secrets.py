@@ -18,9 +18,9 @@ class TestSecrets:
         _cipher.cache_clear()
 
     @autotest.num("740")
-    @autotest.external_id("a1b2c3d4-7407-4001-aabb-ccddeeff0001")
+    @autotest.external_id("390a784d-d6be-4f32-99fc-3f0224648829")
     @autotest.name("Secrets: encrypt → decrypt round-trip")
-    def test_a1b2c3d4_encrypt_decrypt_round_trip(self):
+    def test_390a784d_encrypt_decrypt_round_trip(self):
         with autotest.step("Шифруем известный plaintext"):
             plaintext = "super-secret-password-123"
             token = encrypt_secret(plaintext)
@@ -29,9 +29,9 @@ class TestSecrets:
             assert_equal(decrypt_secret(token), plaintext, "round-trip совпадает")
 
     @autotest.num("741")
-    @autotest.external_id("b2c3d4e5-7407-4002-aabb-ccddeeff0002")
+    @autotest.external_id("01ebaa5c-008a-4abf-acf5-1e5802fceb72")
     @autotest.name("Secrets: испорченный токен → InvalidToken")
-    def test_b2c3d4e5_corrupted_token_raises(self):
+    def test_01ebaa5c_corrupted_token_raises(self):
         with autotest.step("Шифруем и портим середину токена"):
             token = encrypt_secret("plain")
             corrupted = token[:5] + "XXXXX" + token[10:]
@@ -41,9 +41,9 @@ class TestSecrets:
                 decrypt_secret(corrupted)
 
     @autotest.num("742")
-    @autotest.external_id("c3d4e5f6-7407-4003-aabb-ccddeeff0003")
+    @autotest.external_id("8d4d5f16-a427-4b9f-82eb-2e6d7e36a12c")
     @autotest.name("Secrets: расшифровка чужим ключом → InvalidToken")
-    def test_c3d4e5f6_wrong_key_raises(self):
+    def test_8d4d5f16_wrong_key_raises(self):
         with autotest.step("Шифруем под одним ключом"):
             other_key = Fernet.generate_key().decode()
             other_cipher = Fernet(other_key.encode())

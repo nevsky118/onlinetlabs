@@ -13,10 +13,10 @@ pytestmark = [pytest.mark.unit, pytest.mark.agents]
 
 
 class TestProgressRules:
-    @autotest.num("1760")
-    @autotest.external_id("c8d9e0f1-a2b3-4c5d-8e6f-7a8b9c0d1e2f")
+    @autotest.num("2604")
+    @autotest.external_id("5e39ad8c-79b6-46ed-a2e0-d7f0971281ed")
     @autotest.name("distinct_failing_actuals > threshold → TRIAL_AND_ERROR")
-    def test_c8d9e0f1_distinct_actuals_triggers_trial_and_error(self, config_model):
+    def test_5e39ad8c_distinct_actuals_triggers_trial_and_error(self, config_model):
         with autotest.step("Фичи с 3 уникальными неверными ответами (threshold=2)"):
             features = SessionFeatures(**SessionFeaturesData(distinct_failing_actuals=3).data)
             cfg = LearningAnalyticsConfig(distinct_actuals_threshold=2)
@@ -32,9 +32,9 @@ class TestProgressRules:
             )
 
     @autotest.num("1761")
-    @autotest.external_id("d9e0f1a2-b3c4-4d5e-9f6a-8b9c0d1e2f3a")
+    @autotest.external_id("1aca0987-e7bf-439d-9c36-8a43bc54093b")
     @autotest.name("cycles_failing_unchanged >= threshold → STUCK_ON_STEP")
-    def test_d9e0f1a2_cycles_unchanged_triggers_stuck(self, config_model):
+    def test_1aca0987_cycles_unchanged_triggers_stuck(self, config_model):
         with autotest.step("Фичи с 3 циклами без изменений (threshold=3)"):
             features = SessionFeatures(**SessionFeaturesData(cycles_failing_unchanged=3).data)
             cfg = LearningAnalyticsConfig(unchanged_cycles_threshold=3)

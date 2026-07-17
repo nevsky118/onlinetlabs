@@ -13,9 +13,9 @@ pytestmark = [pytest.mark.unit]
 
 class TestDataRegistry:
     @autotest.num("1920")
-    @autotest.external_id("c1a2b3d4-e5f6-4789-abcd-ef0123456789")
+    @autotest.external_id("69a602c7-e43d-4de4-8fa3-134b17a045b6")
     @autotest.name("ADMIN_TABLES содержит ожидаемые слаги")
-    def test_c1a2b3d4_admin_tables_contains_expected_slugs(self):
+    def test_69a602c7_admin_tables_contains_expected_slugs(self):
         with autotest.step("Assert: ключевые слаги присутствуют"):
             assert_in("mcp_audit", ADMIN_TABLES, "mcp_audit")
             assert_in("consents", ADMIN_TABLES, "consents")

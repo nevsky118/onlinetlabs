@@ -19,9 +19,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.agents]
 
 class TestAnalyticsTools:
     @autotest.num("430")
-    @autotest.external_id("f1a2b3c4-d5e6-4f78-9abc-def012340001")
+    @autotest.external_id("6d074df2-864f-4449-aba9-cdff6d56cb82")
     @autotest.name("AnalyticsTools.compute_metrics: вычисляет метрики")
-    def test_f1a2b3c4_compute_metrics(self):
+    def test_6d074df2_compute_metrics(self):
         now = datetime.now(tz=UTC)
         with autotest.step("Создаём 3 попытки: 2 pass, 1 fail"):
             attempts = [
@@ -76,9 +76,9 @@ class TestAnalyticsTools:
             assert_equal(metrics.struggling_steps, [], "нет проблемных шагов")
 
     @autotest.num("432")
-    @autotest.external_id("f3a4b5c6-d7e8-4f90-9abc-def012340003")
+    @autotest.external_id("d0d3c8c7-2659-48a3-858b-c5868080cdee")
     @autotest.name("AnalyticsTools.compute_metrics: определяет struggling шаги")
-    def test_f3a4b5c6_compute_metrics_struggling(self):
+    def test_d0d3c8c7_compute_metrics_struggling(self):
         now = datetime.now(tz=UTC)
         with autotest.step("Создаём 3 неудачи подряд на step-1"):
             attempts = [
@@ -101,9 +101,9 @@ class TestAnalyticsTools:
             assert_true("step-1" in metrics.struggling_steps, "step-1 должен быть проблемным")
 
     @autotest.num("433")
-    @autotest.external_id("f4a5b6c7-d8e9-4fa1-9abc-def012340004")
+    @autotest.external_id("d6e64c33-fa82-4571-a71a-cd49b3bc1d22")
     @autotest.name("AnalyticsTools.detect_error_patterns: повторяющиеся ошибки")
-    def test_f4a5b6c7_detect_error_patterns(self):
+    def test_d6e64c33_detect_error_patterns(self):
         with autotest.step("Создаём попытки с повторяющимися ошибками"):
             attempts = [
                 AttemptData(id="a1", result="fail", error_details="timeout on ping"),
@@ -119,9 +119,9 @@ class TestAnalyticsTools:
             assert_true("timeout on ping" in patterns, "timeout on ping должен быть в паттернах")
 
     @autotest.num("434")
-    @autotest.external_id("f5a6b7c8-d9ea-4fb2-9abc-def012340005")
+    @autotest.external_id("6b9b93c2-2235-4683-8bdc-293ee2b723aa")
     @autotest.name("AnalyticsTools.detect_error_patterns: нет повторов")
-    def test_f5a6b7c8_detect_error_patterns_no_repeats(self):
+    def test_6b9b93c2_detect_error_patterns_no_repeats(self):
         with autotest.step("Создаём попытки с уникальными ошибками"):
             attempts = [
                 AttemptData(id="a1", result="fail", error_details="error A"),
@@ -136,9 +136,9 @@ class TestAnalyticsTools:
             assert_equal(patterns, [], "не должно быть паттернов")
 
     @autotest.num("435")
-    @autotest.external_id("f6a7b8c9-daeb-4fc3-9abc-def012340006")
+    @autotest.external_id("99de55ca-74e9-4f2f-80d0-921c49dbf5bf")
     @autotest.name("AnalyticsTools.detect_error_patterns: все успешные")
-    def test_f6a7b8c9_detect_error_patterns_all_pass(self):
+    def test_99de55ca_detect_error_patterns_all_pass(self):
         with autotest.step("Создаём только успешные попытки"):
             attempts = [
                 AttemptData(id="a1", result="pass"),

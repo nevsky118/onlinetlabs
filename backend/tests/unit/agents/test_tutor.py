@@ -21,9 +21,9 @@ def _make_tutor_input(**overrides):
 
 class TestTutorTools:
     @autotest.num("440")
-    @autotest.external_id("a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c4d5")
+    @autotest.external_id("012b1947-1e8b-4ac8-98db-7721fa40fa92")
     @autotest.name("TutorTools.get_lab_context: возвращает контекст лабы")
-    async def test_a1b2c3d4_get_lab_context(self):
+    async def test_012b1947_get_lab_context(self):
         with autotest.step("Запрашиваем контекст лабы"):
             tools = TutorTools()
             result = await tools.get_lab_context("lab-ospf")
@@ -33,9 +33,9 @@ class TestTutorTools:
             assert_true("lab-ospf" in result, "должен содержать slug")
 
     @autotest.num("441")
-    @autotest.external_id("b2c3d4e5-f6a7-4b8c-9d0e-f1a2b3c4d5e6")
+    @autotest.external_id("80f97c81-061f-464a-aa54-50d4ea21dfb0")
     @autotest.name("TutorTools.get_lab_context: пустой slug")
-    async def test_b2c3d4e5_get_lab_context_empty(self):
+    async def test_80f97c81_get_lab_context_empty(self):
         with autotest.step("Запрашиваем контекст без slug"):
             tools = TutorTools()
             result = await tools.get_lab_context("")
@@ -44,9 +44,9 @@ class TestTutorTools:
             assert_equal(result, "", "пустая строка")
 
     @autotest.num("442")
-    @autotest.external_id("c3d4e5f6-a7b8-4c9d-0e1f-a2b3c4d5e6f7")
+    @autotest.external_id("e2c4f0bb-e610-4560-8a4e-3d813613d72b")
     @autotest.name("TutorTools.get_step_context: возвращает контекст шага")
-    async def test_c3d4e5f6_get_step_context(self):
+    async def test_e2c4f0bb_get_step_context(self):
         with autotest.step("Запрашиваем контекст шага"):
             tools = TutorTools()
             result = await tools.get_step_context("lab-ospf", "step-1")
@@ -61,9 +61,9 @@ class TestTutorTools:
 
 class TestTutorAgent:
     @autotest.num("443")
-    @autotest.external_id("d4e5f6a7-b8c9-4d0e-1f2a-b3c4d5e6f7a8")
+    @autotest.external_id("f12b5351-9f03-49bc-a545-b2d0adfd5a9f")
     @autotest.name("TutorAgent: инициализация")
-    def test_d4e5f6a7_init(self, config_model):
+    def test_f12b5351_init(self, config_model):
         with autotest.step("Создаём TutorAgent"):
             agent = TutorAgent(config_model)
 
@@ -71,9 +71,9 @@ class TestTutorAgent:
             assert_true(agent.tools is not None, "tools не None")
 
     @autotest.num("444")
-    @autotest.external_id("e5f6a7b8-c9d0-4e1f-2a3b-c4d5e6f7a8b9")
+    @autotest.external_id("3303e166-09ff-47f4-b165-1acb1b2c2de5")
     @autotest.name("TutorAgent: system_prompt содержит роль наставника")
-    def test_e5f6a7b8_system_prompt(self, config_model):
+    def test_3303e166_system_prompt(self, config_model):
         with autotest.step("Получаем system_prompt"):
             agent = TutorAgent(config_model)
             prompt = agent.system_prompt()
@@ -82,9 +82,9 @@ class TestTutorAgent:
             assert_true(len(prompt) > 10, "prompt содержательный")
 
     @autotest.num("445")
-    @autotest.external_id("f6a7b8c9-d0e1-4f2a-3b4c-d5e6f7a8b9c0")
+    @autotest.external_id("281a56d4-44d9-454f-a974-451001477483")
     @autotest.name("TutorAgent: run возвращает TutorResponse при успешном LLM")
-    async def test_f6a7b8c9_run_basic(self, config_model, monkeypatch):
+    async def test_281a56d4_run_basic(self, config_model, monkeypatch):
         with autotest.step("Мок LLM и запрос"):
             agent = TutorAgent(config_model)
             fake_result = AsyncMock()

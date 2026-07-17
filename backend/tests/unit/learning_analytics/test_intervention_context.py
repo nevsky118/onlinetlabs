@@ -88,9 +88,9 @@ def _make_monitor(observer, config_model) -> SessionMonitor:
 
 class TestInterventionContextFromObserver:
     @autotest.num("590")
-    @autotest.external_id("a0b1c2d3-e4f5-4060-b1c2-d3e4f5a6b7c8")
+    @autotest.external_id("43761398-95bd-4fb0-89c0-0cb55fd04297")
     @autotest.name("SessionMonitor: context содержит step_slug из observer")
-    async def test_a0b1c2d3_step_slug_from_observer(self, config_model):
+    async def test_43761398_step_slug_from_observer(self, config_model):
         # Arrange
         with autotest.step("Создаём монитор с observer-стабом"):
             observer = _make_observer_stub()
@@ -111,9 +111,9 @@ class TestInterventionContextFromObserver:
             )
 
     @autotest.num("591")
-    @autotest.external_id("b1c2d3e4-f5a6-4171-c2d3-e4f5a6b7c8d9")
+    @autotest.external_id("6ee4410b-7b96-4701-9873-124eb1a6cbe3")
     @autotest.name("SessionMonitor: context содержит failing_check из observer")
-    async def test_b1c2d3e4_failing_check_from_observer(self, config_model):
+    async def test_6ee4410b_failing_check_from_observer(self, config_model):
         # Arrange
         with autotest.step("Создаём монитор с observer-стабом"):
             observer = _make_observer_stub()
@@ -133,9 +133,9 @@ class TestInterventionContextFromObserver:
             assert fc["kind"] == "vpcs.ping", f"ожидали 'vpcs.ping', получили {fc['kind']!r}"
 
     @autotest.num("592")
-    @autotest.external_id("c2d3e4f5-a6b7-4282-d3e4-f5a6b7c8d9ea")
+    @autotest.external_id("628fdb85-06ee-4dd6-9256-14fdfa57837b")
     @autotest.name("SessionMonitor: без observer step_slug='current', failing_check=None")
-    async def test_c2d3e4f5_no_observer_fallback(self, config_model):
+    async def test_628fdb85_no_observer_fallback(self, config_model):
         # Arrange
         with autotest.step("Создаём монитор без observer"):
             monitor = _make_monitor(None, config_model)

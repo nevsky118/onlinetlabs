@@ -17,9 +17,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.agents]
 
 class TestAnalyticsModels:
     @autotest.num("501")
-    @autotest.external_id("b1c2d3e4-f5a6-4b7c-9d8e-f0a1b2c3d4e5")
+    @autotest.external_id("9b4885ec-a76d-4fc9-bfd3-3892d52af032")
     @autotest.name("StruggleType: значения enum")
-    def test_b1c2d3e4_struggle_type_enum(self):
+    def test_9b4885ec_struggle_type_enum(self):
         with autotest.step("Проверяем значения"):
             assert_equal(StruggleType.STUCK_ON_STEP, "stuck_on_step", "stuck_on_step")
             assert_equal(StruggleType.REPEATING_ERRORS, "repeating_errors", "repeating_errors")
@@ -27,18 +27,18 @@ class TestAnalyticsModels:
             assert_equal(StruggleType.TRIAL_AND_ERROR, "trial_and_error", "trial_and_error")
 
     @autotest.num("502")
-    @autotest.external_id("c2d3e4f5-a6b7-4c8d-ae9f-0a1b2c3d4e5f")
+    @autotest.external_id("c8035b51-488a-43e4-924b-bfcb8272bcd9")
     @autotest.name("SuggestedIntervention: значения enum")
-    def test_c2d3e4f5_suggested_intervention_enum(self):
+    def test_c8035b51_suggested_intervention_enum(self):
         with autotest.step("Проверяем значения"):
             assert_equal(SuggestedIntervention.HINT, "hint", "hint")
             assert_equal(SuggestedIntervention.TUTOR, "tutor", "tutor")
             assert_equal(SuggestedIntervention.NONE, "none", "none")
 
     @autotest.num("503")
-    @autotest.external_id("d3e4f5a6-b7c8-4d9e-bf0a-1b2c3d4e5f6a")
+    @autotest.external_id("df481cf6-81b5-4a4e-b29c-2cc53240b432")
     @autotest.name("AnalyticsResult: создание с вложенными моделями")
-    def test_d3e4f5a6_analytics_result(self):
+    def test_df481cf6_analytics_result(self):
         with autotest.step("Создаём SessionFeatures и DifficultyRecommendation"):
             features = SessionFeatures(**SessionFeaturesData().data)
             metrics = StudentMetrics(

@@ -88,7 +88,7 @@ class TestBuildSessionTimeline:
             await db.commit()
 
     @autotest.num("1880")
-    @autotest.external_id("c1a2b3d4-e5f6-4708-8901-aabbccdd0020")
+    @autotest.external_id("13b91764-bfeb-4fa5-a37b-598df801e959")
     @autotest.name("build_session_timeline: student → intervention → tutor по времени")
     async def test_timeline_merges_in_time_order(self):
         with autotest.step("Arrange: сеем сессию с msg-evt-msg"):
@@ -108,7 +108,7 @@ class TestBuildSessionTimeline:
             assert_equal(items[0]["parts"], [{"type": "text", "text": "Вопрос"}], "parts студента")
 
     @autotest.num("1881")
-    @autotest.external_id("c1a2b3d4-e5f6-4708-8901-aabbccdd0021")
+    @autotest.external_id("81f3a141-9d73-4ecb-8e43-c9edf7e8c812")
     @autotest.name("build_session_timeline: пустая сессия → []")
     async def test_timeline_empty_session(self):
         with autotest.step("Act: несуществующая сессия"):
@@ -119,7 +119,7 @@ class TestBuildSessionTimeline:
             assert_equal(items, [], "пустой таймлайн")
 
     @autotest.num("1882")
-    @autotest.external_id("c1a2b3d4-e5f6-4708-8901-aabbccdd0022")
+    @autotest.external_id("dd4af488-c9e2-4be7-a115-c3b627e008f4")
     @autotest.name("build_session_timeline: не-intervention события игнорируются")
     async def test_timeline_ignores_non_intervention_events(self):
         with autotest.step("Arrange: сессия с command-событием"):
@@ -157,7 +157,7 @@ class TestBuildSessionTimeline:
             assert_equal(items, [], "command не включается в таймлайн")
 
     @autotest.num("1883")
-    @autotest.external_id("c1a2b3d4-e5f6-4708-8901-aabbccdd0023")
+    @autotest.external_id("dd624b8a-68d0-4a93-a633-c33971e7fb4e")
     @autotest.name("student_session_timeline endpoint: чужая сессия → 404")
     async def test_endpoint_foreign_session_returns_404(self):
         with autotest.step("Arrange: сессия принадлежит другому пользователю"):
@@ -192,7 +192,7 @@ class TestBuildSessionTimeline:
             assert_equal(exc_info.value.detail, "Session not found", "detail")
 
     @autotest.num("1884")
-    @autotest.external_id("c1a2b3d4-e5f6-4708-8901-aabbccdd0024")
+    @autotest.external_id("e0835e16-0ece-4ffa-8ea5-108d4e90e8ce")
     @autotest.name("student_session_timeline endpoint: несуществующая сессия → 404")
     async def test_endpoint_missing_session_returns_404(self):
         with autotest.step("Act + Assert: session_id не существует → 404"):

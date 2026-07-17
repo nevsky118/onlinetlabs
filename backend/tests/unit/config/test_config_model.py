@@ -100,9 +100,9 @@ class TestAgentsConfig:
             _agents(chat_model="does-not-exist")
 
     @autotest.num("102")
-    @autotest.external_id("c3d4e5f6-b7c8-4d9e-0f1a-2b3c4d5e6f7a")
+    @autotest.external_id("2fbf3e89-ed62-4467-9c66-45c4fe34b6f6")
     @autotest.name("AgentsConfig: ModelEntry с неизвестным provider_ref отклоняется")
-    def test_c3d4e5f6_rejects_model_with_unknown_provider_ref(self):
+    def test_2fbf3e89_rejects_model_with_unknown_provider_ref(self):
         with autotest.step("Передаём ModelEntry с отсутствующим provider_ref"):
             with pytest.raises(ValueError):
                 _agents(
@@ -203,9 +203,9 @@ class TestConfigModel:
 
 class TestLearningAnalyticsConfig:
     @autotest.num("108")
-    @autotest.external_id("c8d9e0f1-a2b3-4c4d-9e5f-a6b7c8d9e0f1")
+    @autotest.external_id("7196861d-5ca3-439a-b0ab-baff1ab1b27b")
     @autotest.name("LearningAnalyticsConfig: значения по умолчанию")
-    def test_c8d9e0f1_defaults(self):
+    def test_7196861d_defaults(self):
         with autotest.step("Создаём LearningAnalyticsConfig без параметров"):
             cfg = LearningAnalyticsConfig()
 
@@ -217,9 +217,9 @@ class TestLearningAnalyticsConfig:
             assert_equal(cfg.error_repeat_threshold, 3, "error_repeat_threshold = 3")
 
     @autotest.num("109")
-    @autotest.external_id("d9e0f1a2-b3c4-4d5e-af6b-c7d8e9f0a1b2")
+    @autotest.external_id("31da00e8-cfb5-4352-9265-eabc5108cf0c")
     @autotest.name("ConfigModel: содержит поле learning_analytics")
-    def test_d9e0f1a2_config_model_has_learning_analytics(self):
+    def test_31da00e8_config_model_has_learning_analytics(self):
         with autotest.step("Создаём ConfigModel без явного learning_analytics"):
             config = _make_full_config()
 

@@ -7,7 +7,7 @@ from config.llm_catalog import default_catalog
 pytestmark = [pytest.mark.unit]
 
 
-@autotest.num("1730")
+@autotest.num("2602")
 @autotest.external_id("7646757f-c563-4116-879c-ea34b32144e4")
 @autotest.name("default_catalog: содержит yandex и openrouter модели")
 def test_7646757f_has_yandex_and_openrouter():
@@ -20,7 +20,7 @@ def test_7646757f_has_yandex_and_openrouter():
         assert all(isinstance(m, ModelEntry) for m in cat)
 
 
-@autotest.num("1731")
+@autotest.num("2603")
 @autotest.external_id("a31f27c3-2c8a-4f4e-b7d6-1388440f0c93")
 @autotest.name("default_catalog: все provider_ref из разрешённого набора")
 def test_a31f27c3_provider_refs():

@@ -10,9 +10,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.auth]
 
 class TestRequireInstructor:
     @autotest.num("1850")
-    @autotest.external_id("c1a2b3d4-e5f6-4708-8901-aabbccdd0001")
+    @autotest.external_id("1ba6a68a-589d-4c91-9994-b353b2b4e3e6")
     @autotest.name("require_instructor: instructor проходит")
-    def test_c1a2b3d4_instructor_passes(self):
+    def test_1ba6a68a_instructor_passes(self):
         with autotest.step("Arrange: dict с role=instructor"):
             user = {"id": "user-740", "role": "instructor"}
 
@@ -23,9 +23,9 @@ class TestRequireInstructor:
             assert_equal(result, user, "returns the same user dict")
 
     @autotest.num("1851")
-    @autotest.external_id("c1a2b3d4-e5f6-4708-8901-aabbccdd0002")
+    @autotest.external_id("7068fd11-a4ac-4158-b290-57dcdf56015f")
     @autotest.name("require_instructor: admin проходит")
-    def test_c1a2b3d4_admin_passes(self):
+    def test_7068fd11_admin_passes(self):
         with autotest.step("Arrange: dict с role=admin"):
             user = {"id": "user-741", "role": "admin"}
 
@@ -36,9 +36,9 @@ class TestRequireInstructor:
             assert_equal(result, user, "returns the same user dict")
 
     @autotest.num("1852")
-    @autotest.external_id("c1a2b3d4-e5f6-4708-8901-aabbccdd0003")
+    @autotest.external_id("959e2247-30a7-4a32-b57f-fd03e1d7ad93")
     @autotest.name("require_instructor: student → HTTPException 403")
-    def test_c1a2b3d4_student_raises_403(self):
+    def test_959e2247_student_raises_403(self):
         with autotest.step("Arrange: dict с role=student"):
             user = {"id": "user-742", "role": "student"}
 

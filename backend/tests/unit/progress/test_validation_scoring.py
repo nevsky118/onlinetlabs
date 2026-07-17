@@ -27,7 +27,7 @@ def _steps(*step_specs: list[bool]) -> list[dict]:
 
 class TestScoreFromSteps:
     @autotest.num("760")
-    @autotest.external_id("d1a2b3c4-e5f6-4708-8901-bbccddee0001")
+    @autotest.external_id("92bd3bb2-4981-481f-b3b0-3e8272a45bca")
     @autotest.name("score_from_steps: доля пройденных проверок, полное прохождение")
     def test_all_checks_passed(self):
         with autotest.step("Act: 2 шага по 2 успешных проверки"):
@@ -37,7 +37,7 @@ class TestScoreFromSteps:
             assert_true(all_passed, "all_passed")
 
     @autotest.num("761")
-    @autotest.external_id("d1a2b3c4-e5f6-4708-8901-bbccddee0002")
+    @autotest.external_id("7b9c375d-4d9b-4d28-8d17-116c1d5be5e8")
     @autotest.name("score_from_steps: частичное — 3 из 4 проверок = 75")
     def test_partial_checks(self):
         with autotest.step("Act: 3 из 4 проверок пройдены"):
@@ -47,7 +47,7 @@ class TestScoreFromSteps:
             assert_true(not all_passed, "not all_passed")
 
     @autotest.num("762")
-    @autotest.external_id("d1a2b3c4-e5f6-4708-8901-bbccddee0003")
+    @autotest.external_id("9fb96f02-f65a-4ca2-bcdf-d03970b35531")
     @autotest.name("score_from_steps: нет шагов → 0 и не пройдено")
     def test_no_steps(self):
         with autotest.step("Act: пустой список"):
@@ -83,7 +83,7 @@ class TestRecordLabValidation:
             return r.scalar_one()
 
     @autotest.num("763")
-    @autotest.external_id("d1a2b3c4-e5f6-4708-8901-bbccddee0010")
+    @autotest.external_id("fe763752-c2c6-4d9b-97b6-3d77f68ae4c8")
     @autotest.name("record_lab_validation: полное прохождение → completed, score 100")
     async def test_full_pass_marks_completed(self):
         with autotest.step("Act: записываем полный успех"):
@@ -96,7 +96,7 @@ class TestRecordLabValidation:
             assert_true(lp.completed_at is not None, "completed_at установлен")
 
     @autotest.num("764")
-    @autotest.external_id("d1a2b3c4-e5f6-4708-8901-bbccddee0011")
+    @autotest.external_id("e8eaa45a-e613-426b-860e-482672b24429")
     @autotest.name("record_lab_validation: частично → in_progress, дробная оценка")
     async def test_partial_stays_in_progress(self):
         with autotest.step("Act: 1 из 2 проверок"):
@@ -109,7 +109,7 @@ class TestRecordLabValidation:
             assert_true(lp.completed_at is None, "completed_at пуст")
 
     @autotest.num("765")
-    @autotest.external_id("d1a2b3c4-e5f6-4708-8901-bbccddee0012")
+    @autotest.external_id("8a2b206e-9389-4562-94fb-a8a8d03b90e7")
     @autotest.name("record_lab_validation: лучшая оценка сохраняется, completed не сбрасывается")
     async def test_best_score_kept_and_completed_sticky(self):
         with autotest.step("Arrange: сначала полный успех"):
