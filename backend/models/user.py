@@ -42,10 +42,10 @@ class User(Base):
     )
 
     accounts: Mapped[list["Account"]] = relationship(
-        back_populates="user", cascade="all, delete-orphan"
+        back_populates="user", cascade="all, delete-orphan", lazy="raise"
     )
     sessions: Mapped[list["Session"]] = relationship(
-        back_populates="user", cascade="all, delete-orphan"
+        back_populates="user", cascade="all, delete-orphan", lazy="raise"
     )
 
 
@@ -68,7 +68,7 @@ class Account(Base):
     id_token: Mapped[str | None] = mapped_column(Text)
     session_state: Mapped[str | None] = mapped_column(String(255))
 
-    user: Mapped["User"] = relationship(back_populates="accounts")
+    user: Mapped["User"] = relationship(back_populates="accounts", lazy="raise")
 
 
 class Session(Base):
@@ -82,7 +82,7 @@ class Session(Base):
     user_id: Mapped[str] = mapped_column(String(255), ForeignKey("users.id", ondelete="CASCADE"))
     expires: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
-    user: Mapped["User"] = relationship(back_populates="sessions")
+    user: Mapped["User"] = relationship(back_populates="sessions", lazy="raise")
 
 
 class VerificationToken(Base):

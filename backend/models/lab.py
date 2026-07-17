@@ -44,11 +44,12 @@ class Lab(Base):
         onupdate=lambda: datetime.now(UTC),
     )
 
-    course: Mapped[Course | None] = relationship(back_populates="labs")
+    course: Mapped[Course | None] = relationship(back_populates="labs", lazy="raise")
     steps: Mapped[list[LabStep]] = relationship(
         back_populates="lab",
         cascade="all, delete-orphan",
         order_by="LabStep.step_order",
+        lazy="raise",
     )
 
 
@@ -64,4 +65,4 @@ class LabStep(Base):
     title: Mapped[str] = mapped_column(String(500))
     validation_type: Mapped[str | None] = mapped_column(String(100))
 
-    lab: Mapped[Lab] = relationship(back_populates="steps")
+    lab: Mapped[Lab] = relationship(back_populates="steps", lazy="raise")

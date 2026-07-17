@@ -34,4 +34,4 @@ class Course(Base):
         onupdate=lambda: datetime.now(UTC),
     )
 
-    labs: Mapped[list[Lab]] = relationship(back_populates="course")
+    labs: Mapped[list[Lab]] = relationship(back_populates="course", lazy="raise")
