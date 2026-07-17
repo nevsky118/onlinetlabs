@@ -16,7 +16,7 @@ from sessions.context import build_session_context
 from sessions.monitor_registry import SessionMonitorRegistry
 from sessions.queue import QUEUE_AVG_PROVISION_SEC, SessionQueueService, get_queue_service
 from sessions.schemas import LaunchResponse, LearningSessionCreate
-from sessions.service import launch_session
+from sessions.service import get_active_session, launch_session
 
 logger = logging.getLogger(__name__)
 
@@ -45,33 +45,41 @@ async def launch_endpoint(
     structlog.contextvars.bind_contextvars(
         user_id=current_user["id"], lab_slug=body.lab_slug
     )
-    acquired = await queue.try_acquire(current_user["id"], body.lab_slug)
-    if not acquired:
-        pos = await queue.enqueue(current_user["id"], body.lab_slug)
-        depth = await queue.queue_depth(body.lab_slug)
-        eta_sec = depth * QUEUE_AVG_PROVISION_SEC
-        return JSONResponse(
-            status_code=status.HTTP_202_ACCEPTED,
-            content={
-                "status": "queued",
-                "queue_position": pos,
-                "queue_depth": depth,
-                "eta_sec": eta_sec,
-                "lab_slug": body.lab_slug,
-            },
-        )
+    # Релонч уже активной сессии не должен брать слот очереди и задваивать
+    # счётчики: слот/мониторинг/gauge трогаем только для нового запуска.
+    existing = await get_active_session(db, current_user["id"], body.lab_slug)
+    is_new_launch = existing is None
+
+    if is_new_launch:
+        acquired = await queue.try_acquire(current_user["id"], body.lab_slug)
+        if not acquired:
+            pos = await queue.enqueue(current_user["id"], body.lab_slug)
+            depth = await queue.queue_depth(body.lab_slug)
+            eta_sec = depth * QUEUE_AVG_PROVISION_SEC
+            return JSONResponse(
+                status_code=status.HTTP_202_ACCEPTED,
+                content={
+                    "status": "queued",
+                    "queue_position": pos,
+                    "queue_depth": depth,
+                    "eta_sec": eta_sec,
+                    "lab_slug": body.lab_slug,
+                },
+            )
     try:
         session, creds = await launch_session(
             db, current_user["id"], body.lab_slug, gns3_client, db_factory=db_factory
         )
     except ValueError as exc:
-        await queue.release(body.lab_slug)
+        if is_new_launch:
+            await queue.release(body.lab_slug)
         raise HTTPException(status_code=400, detail=str(exc))
     except Exception:
-        await queue.release(body.lab_slug)
+        if is_new_launch:
+            await queue.release(body.lab_slug)
         raise HTTPException(status_code=502, detail="GNS3 provisioning failed")
     structlog.contextvars.bind_contextvars(session_id=session.id)
-    if session.status == "active":
+    if is_new_launch and session.status == "active":
         ctx = build_session_context(session)
         await monitor_registry.start(session.id, session.user_id, session.lab_slug, ctx)
         from observability.metrics import active_sessions_gauge
