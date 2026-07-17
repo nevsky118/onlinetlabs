@@ -96,5 +96,5 @@ async def update_session_endpoint(
         status=session.status,
         started_at=session.started_at,
         ended_at=session.ended_at,
-        meta=session.meta,
+        meta=None,  # зашифрованные креды не отдаём наружу
     )
