@@ -22,9 +22,7 @@ class StateProvider(Protocol):
     """Чтение состояния целевой системы. Обязательный протокол."""
 
     async def list_components(self, ctx: SessionContext) -> list[Component]: ...
-    async def get_component(
-        self, ctx: SessionContext, component_id: str
-    ) -> ComponentDetail: ...
+    async def get_component(self, ctx: SessionContext, component_id: str) -> ComponentDetail: ...
     async def get_system_overview(self, ctx: SessionContext) -> SystemOverview: ...
 
 
@@ -44,9 +42,7 @@ class LogProvider(Protocol):
 class HistoryProvider(Protocol):
     """История действий пользователя в целевой системе."""
 
-    async def list_user_actions(
-        self, ctx: SessionContext, limit: int = 50
-    ) -> list[UserAction]: ...
+    async def list_user_actions(self, ctx: SessionContext, limit: int = 50) -> list[UserAction]: ...
 
 
 @runtime_checkable

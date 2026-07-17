@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Callable
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import ValidationError
@@ -90,12 +91,8 @@ class OnlinetlabsMCPServer:
 
         self._tool_names.append("list_components")
 
-        @self._mcp.tool(
-            description="Get detailed information about a specific component"
-        )
-        async def get_component(
-            ctx: dict[str, Any], component_id: str
-        ) -> dict[str, Any]:
+        @self._mcp.tool(description="Get detailed information about a specific component")
+        async def get_component(ctx: dict[str, Any], component_id: str) -> dict[str, Any]:
             try:
                 session = SessionContext(**ctx)
                 result = await impl.get_component(session, component_id)
@@ -201,18 +198,14 @@ class OnlinetlabsMCPServer:
     def _register_action_tools(self) -> None:
         impl = self._impl
 
-        @self._mcp.tool(
-            description="List available actions, optionally filtered by component"
-        )
+        @self._mcp.tool(description="List available actions, optionally filtered by component")
         async def list_available_actions(
             ctx: dict[str, Any],
             component_id: str | None = None,
         ) -> list[dict[str, Any]]:
             try:
                 session = SessionContext(**ctx)
-                result = await impl.list_available_actions(
-                    session, component_id=component_id
-                )
+                result = await impl.list_available_actions(session, component_id=component_id)
                 return [a.model_dump(mode="json") for a in result]
             except ValidationError as e:
                 raise SessionContextError(f"Invalid session context: {e}") from e
@@ -251,9 +244,7 @@ class OnlinetlabsMCPServer:
         domain_tools = self._domain_tool_names
         name = self._name
 
-        @self._mcp.tool(
-            description="Get server capabilities and available tool categories"
-        )
+        @self._mcp.tool(description="Get server capabilities and available tool categories")
         async def get_capabilities() -> dict[str, Any]:
             return ServerCapabilities(
                 system_name=name,

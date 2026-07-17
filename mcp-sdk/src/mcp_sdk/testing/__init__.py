@@ -17,7 +17,6 @@ from mcp_sdk.testing.custom_assertions import (
 )
 
 __all__ = [
-    "autotest",
     "assert_equal",
     "assert_false",
     "assert_greater",
@@ -30,4 +29,5 @@ __all__ = [
     "assert_less_equal",
     "assert_not_equal",
     "assert_true",
+    "autotest",
 ]

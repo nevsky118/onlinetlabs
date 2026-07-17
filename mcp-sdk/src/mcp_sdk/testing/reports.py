@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from contextlib import contextmanager
 from collections.abc import Callable, Generator
+from contextlib import contextmanager
 
 
 def name(display_name: str) -> Callable:
