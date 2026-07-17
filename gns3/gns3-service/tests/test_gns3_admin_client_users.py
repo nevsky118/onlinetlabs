@@ -78,10 +78,13 @@ class TestGns3AdminClientUsers:
     @respx.mock
     async def test_find_user_by_name_returns_match(self, admin_client, gns3_user):
         respx.get("http://gns3-server:3080/v3/access/users").mock(
-            return_value=Response(200, json=[
-                gns3_user(user_id="u1", username="student-1"),
-                gns3_user(user_id="u2", username="student-2"),
-            ]),
+            return_value=Response(
+                200,
+                json=[
+                    gns3_user(user_id="u1", username="student-1"),
+                    gns3_user(user_id="u2", username="student-2"),
+                ],
+            ),
         )
         result = await admin_client.find_user_by_name("student-2")
         assert result is not None

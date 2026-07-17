@@ -16,7 +16,7 @@ os.environ.setdefault("DB_NAME", "test")
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
 os.environ.setdefault("INTERNAL_API_TOKEN", "test-internal-token")
 
-import pytest  # noqa: E402
+import pytest
 
 
 def build_gns3_node(**overrides) -> dict:

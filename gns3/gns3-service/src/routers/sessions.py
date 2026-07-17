@@ -54,10 +54,13 @@ async def create_session(body: SessionCreate, service=Depends(get_service), db=D
     },
 )
 async def get_session(
-    session_id: str = Path(description="UUID сессии", examples=["f47ac10b-58cc-4372-a567-0e02b2c3d479"]),
+    session_id: str = Path(
+        description="UUID сессии", examples=["f47ac10b-58cc-4372-a567-0e02b2c3d479"]
+    ),
     db=Depends(get_db),
 ):
     from src.db.models import Session
+
     session = await db.get(Session, uuid.UUID(session_id))
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")

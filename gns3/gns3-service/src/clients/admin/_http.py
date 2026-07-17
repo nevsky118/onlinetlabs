@@ -14,7 +14,9 @@ logger = logging.getLogger(__name__)
 
 
 def _is_transient(exc: BaseException) -> bool:
-    if isinstance(exc, (httpx.ConnectError, httpx.ReadTimeout, httpx.WriteTimeout, httpx.RemoteProtocolError)):
+    if isinstance(
+        exc, (httpx.ConnectError, httpx.ReadTimeout, httpx.WriteTimeout, httpx.RemoteProtocolError)
+    ):
         return True
     if isinstance(exc, httpx.HTTPStatusError) and 500 <= exc.response.status_code < 600:
         return True

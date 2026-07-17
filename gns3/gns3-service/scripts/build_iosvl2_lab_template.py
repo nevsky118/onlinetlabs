@@ -38,8 +38,7 @@ import httpx
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from lib import topology_builder as tb  # noqa: E402
-
+from lib import topology_builder as tb
 
 GNS3_URL = os.environ.get("GNS3_URL", "http://localhost:3080")
 GNS3_USER = os.environ.get("GNS3_ADMIN_USER", "admin")
@@ -83,11 +82,19 @@ def build_template(force: bool) -> str:
 
         project_id = tb.create_project(client, PROJECT_NAME)
 
-        r1 = tb.add_node_from_template(client, project_id, iosv_template_id, x=-200, y=-100, rename="R1")
-        r2 = tb.add_node_from_template(client, project_id, iosv_template_id, x=200, y=-100, rename="R2")
+        r1 = tb.add_node_from_template(
+            client, project_id, iosv_template_id, x=-200, y=-100, rename="R1"
+        )
+        r2 = tb.add_node_from_template(
+            client, project_id, iosv_template_id, x=200, y=-100, rename="R2"
+        )
 
-        sw1 = tb.add_node_from_template(client, project_id, iosvl2_template_id, x=-200, y=100, rename="SW1")
-        sw2 = tb.add_node_from_template(client, project_id, iosvl2_template_id, x=200, y=100, rename="SW2")
+        sw1 = tb.add_node_from_template(
+            client, project_id, iosvl2_template_id, x=-200, y=100, rename="SW1"
+        )
+        sw2 = tb.add_node_from_template(
+            client, project_id, iosvl2_template_id, x=200, y=100, rename="SW2"
+        )
 
         pc1 = tb.add_vpcs_node(client, project_id, name="PC1", x=-300, y=300)
         pc2 = tb.add_vpcs_node(client, project_id, name="PC2", x=-100, y=300)
@@ -113,24 +120,80 @@ def build_template(force: bool) -> str:
         pc4_e0 = tb.resolve_port(client, project_id, pc4, "Ethernet0")
 
         # Backbone: R1.Gi0/1 <-> R2.Gi0/1.
-        tb.link(client, project_id, r1, r1_gi01[1], r2, r2_gi01[1],
-                a_adapter=r1_gi01[0], b_adapter=r2_gi01[0])
+        tb.link(
+            client,
+            project_id,
+            r1,
+            r1_gi01[1],
+            r2,
+            r2_gi01[1],
+            a_adapter=r1_gi01[0],
+            b_adapter=r2_gi01[0],
+        )
 
         # Router-to-switch trunks: R1.Gi0/0 <-> SW1.Gi0/2, R2.Gi0/0 <-> SW2.Gi0/2.
-        tb.link(client, project_id, r1, r1_gi00[1], sw1, sw1_gi02[1],
-                a_adapter=r1_gi00[0], b_adapter=sw1_gi02[0])
-        tb.link(client, project_id, r2, r2_gi00[1], sw2, sw2_gi02[1],
-                a_adapter=r2_gi00[0], b_adapter=sw2_gi02[0])
+        tb.link(
+            client,
+            project_id,
+            r1,
+            r1_gi00[1],
+            sw1,
+            sw1_gi02[1],
+            a_adapter=r1_gi00[0],
+            b_adapter=sw1_gi02[0],
+        )
+        tb.link(
+            client,
+            project_id,
+            r2,
+            r2_gi00[1],
+            sw2,
+            sw2_gi02[1],
+            a_adapter=r2_gi00[0],
+            b_adapter=sw2_gi02[0],
+        )
 
         # PC access ports.
-        tb.link(client, project_id, sw1, sw1_gi00[1], pc1, pc1_e0[1],
-                a_adapter=sw1_gi00[0], b_adapter=pc1_e0[0])
-        tb.link(client, project_id, sw1, sw1_gi01[1], pc2, pc2_e0[1],
-                a_adapter=sw1_gi01[0], b_adapter=pc2_e0[0])
-        tb.link(client, project_id, sw2, sw2_gi00[1], pc3, pc3_e0[1],
-                a_adapter=sw2_gi00[0], b_adapter=pc3_e0[0])
-        tb.link(client, project_id, sw2, sw2_gi01[1], pc4, pc4_e0[1],
-                a_adapter=sw2_gi01[0], b_adapter=pc4_e0[0])
+        tb.link(
+            client,
+            project_id,
+            sw1,
+            sw1_gi00[1],
+            pc1,
+            pc1_e0[1],
+            a_adapter=sw1_gi00[0],
+            b_adapter=pc1_e0[0],
+        )
+        tb.link(
+            client,
+            project_id,
+            sw1,
+            sw1_gi01[1],
+            pc2,
+            pc2_e0[1],
+            a_adapter=sw1_gi01[0],
+            b_adapter=pc2_e0[0],
+        )
+        tb.link(
+            client,
+            project_id,
+            sw2,
+            sw2_gi00[1],
+            pc3,
+            pc3_e0[1],
+            a_adapter=sw2_gi00[0],
+            b_adapter=pc3_e0[0],
+        )
+        tb.link(
+            client,
+            project_id,
+            sw2,
+            sw2_gi01[1],
+            pc4,
+            pc4_e0[1],
+            a_adapter=sw2_gi01[0],
+            b_adapter=pc4_e0[0],
+        )
 
         return project_id
     finally:

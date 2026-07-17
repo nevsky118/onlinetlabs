@@ -40,9 +40,7 @@ class UsersMixin:
         gns3-service (in-memory teardown теряется, и следующий launch иначе
         упадёт с 400 'already registered').
         """
-        response = await self._client.get(
-            "/v3/access/users", headers=self._auth_headers()
-        )
+        response = await self._client.get("/v3/access/users", headers=self._auth_headers())
         response.raise_for_status()
         for user in response.json():
             if user.get("username") == username:

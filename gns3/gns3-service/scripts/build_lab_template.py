@@ -33,7 +33,7 @@ import httpx
 # Позволяет запускать как `python scripts/build_lab_template.py` без -m.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from lib import topology_builder as tb  # noqa: E402
+from lib import topology_builder as tb
 
 GNS3_URL = os.environ.get("GNS3_URL", "http://localhost:3080")
 GNS3_USER = os.environ.get("GNS3_ADMIN_USER", "admin")
@@ -65,18 +65,30 @@ def build_template(force: bool) -> str:
 
         project_id = tb.create_project(client, TEMPLATE_NAME)
 
-        r1 = tb.add_node_from_template(client, project_id, c3745_template_id, x=-200, y=-100, rename="R1")
-        r2 = tb.add_node_from_template(client, project_id, c3745_template_id, x=200, y=-100, rename="R2")
+        r1 = tb.add_node_from_template(
+            client, project_id, c3745_template_id, x=-200, y=-100, rename="R1"
+        )
+        r2 = tb.add_node_from_template(
+            client, project_id, c3745_template_id, x=200, y=-100, rename="R2"
+        )
 
         sw1 = tb.add_raw_node(
-            client, project_id,
-            name="SW1", node_type="ethernet_switch",
-            x=-200, y=100, symbol=":/symbols/ethernet_switch.svg",
+            client,
+            project_id,
+            name="SW1",
+            node_type="ethernet_switch",
+            x=-200,
+            y=100,
+            symbol=":/symbols/ethernet_switch.svg",
         )
         sw2 = tb.add_raw_node(
-            client, project_id,
-            name="SW2", node_type="ethernet_switch",
-            x=200, y=100, symbol=":/symbols/ethernet_switch.svg",
+            client,
+            project_id,
+            name="SW2",
+            node_type="ethernet_switch",
+            x=200,
+            y=100,
+            symbol=":/symbols/ethernet_switch.svg",
         )
 
         tb.configure_switch_vlans(client, project_id, sw1)

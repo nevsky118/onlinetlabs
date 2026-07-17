@@ -35,9 +35,7 @@ def _build_app() -> FastAPI:
 @pytest.fixture(autouse=True)
 def _seed_internal_token(monkeypatch):
     """Гарантируем известный токен для verify_internal_token."""
-    monkeypatch.setattr(
-        settings.security, "internal_api_token", _VALID_TOKEN, raising=False
-    )
+    monkeypatch.setattr(settings.security, "internal_api_token", _VALID_TOKEN, raising=False)
 
 
 @pytest.fixture
@@ -78,9 +76,7 @@ class TestExecAuth:
 class TestExecNodeTypeGuard:
     async def test_returns_400_when_node_is_not_docker(self, app, client):
         admin = app.state.session_service._admin
-        admin.request.return_value = _stub_response(
-            200, {"node_type": "qemu", "properties": {}}
-        )
+        admin.request.return_value = _stub_response(200, {"node_type": "qemu", "properties": {}})
 
         response = await client.post(
             "/v1/exec/vtysh",

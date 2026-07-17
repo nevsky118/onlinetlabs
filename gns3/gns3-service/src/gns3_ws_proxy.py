@@ -12,8 +12,9 @@ import asyncio
 import json
 import logging
 import uuid as uuid_module
-from datetime import datetime, timezone
-from typing import TYPE_CHECKING, AsyncIterator
+from collections.abc import AsyncIterator
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 import redis.asyncio as aioredis
 import websockets
@@ -46,9 +47,9 @@ class Gns3WsProxy:
         self,
         broker: EventBroker,
         gns3_url: str,
-        admin_client: "GNS3AdminClient",
+        admin_client: GNS3AdminClient,
         redis_url: str | None = None,
-        db_factory: "async_sessionmaker[AsyncSession] | None" = None,
+        db_factory: async_sessionmaker[AsyncSession] | None = None,
     ) -> None:
         self._broker = broker
         self._gns3_url = gns3_url
@@ -66,7 +67,7 @@ class Gns3WsProxy:
         """1s -> 2s -> 4s -> 8s -> 16s -> max 30s."""
         if attempt == 0:
             return 1
-        return min(30, 2 ** attempt)
+        return min(30, 2**attempt)
 
     async def start_project(self, project_id: str, session_id: str) -> None:
         """Запускает форвардер для project_id, публикуя в канал session_id.
@@ -94,14 +95,14 @@ class Gns3WsProxy:
                     project_id,
                 )
                 return
-        logger.info("ws_proxy: starting forwarder for project=%s session=%s", project_id, session_id)
+        logger.info(
+            "ws_proxy: starting forwarder for project=%s session=%s", project_id, session_id
+        )
         self._tasks[project_id] = asyncio.create_task(
             self._supervised_forward(project_id, session_id)
         )
         if self._redis is not None:
-            self._heartbeat_tasks[project_id] = asyncio.create_task(
-                self._heartbeat(project_id)
-            )
+            self._heartbeat_tasks[project_id] = asyncio.create_task(self._heartbeat(project_id))
 
     async def _heartbeat(self, project_id: str) -> None:
         while True:
@@ -209,26 +210,29 @@ class Gns3WsProxy:
             return
         try:
             from src.db.models import HistoryEvent
+
             component_id = gns_event.get("node_id") or gns_event.get("link_id")
             entry = HistoryEvent(
                 session_id=uuid_module.UUID(session_id),
                 event_type=action,
                 component_id=component_id,
                 data=gns_event,
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
             )
             async with self._db_factory() as db:
                 db.add(entry)
                 await db.commit()
         except Exception:
-            logger.exception("Failed to persist history event %s for session %s", action, session_id)
+            logger.exception(
+                "Failed to persist history event %s for session %s", action, session_id
+            )
 
     def _translate(self, action: str, gns_event: dict) -> dict | None:
         """Translate GNS3 v3 notification to broker event envelope.
 
         Returns None for unrecognized events.
         """
-        ts = datetime.now(timezone.utc).isoformat()
+        ts = datetime.now(UTC).isoformat()
 
         if action == "node.updated":
             return {
@@ -256,7 +260,7 @@ class Gns3WsProxy:
             session_id,
             {
                 "type": event_type,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "payload": payload,
             },
         )

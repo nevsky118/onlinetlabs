@@ -41,10 +41,13 @@ class TestGns3AdminClientProjects:
     @respx.mock
     async def test_list_projects_returns_list(self, admin_client, gns3_project):
         respx.get("http://gns3-server:3080/v3/projects").mock(
-            return_value=Response(200, json=[
-                gns3_project(project_id="p1", name="lab-1"),
-                gns3_project(project_id="p2", name="lab-2"),
-            ]),
+            return_value=Response(
+                200,
+                json=[
+                    gns3_project(project_id="p1", name="lab-1"),
+                    gns3_project(project_id="p2", name="lab-2"),
+                ],
+            ),
         )
         result = await admin_client.list_projects()
         assert len(result) == 2

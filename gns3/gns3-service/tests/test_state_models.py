@@ -1,6 +1,6 @@
 """Unit-тесты Pydantic-моделей state."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from src.models import (
     LinkEndpoint,
@@ -36,7 +36,7 @@ class TestSessionStateResponse:
             session_id="abc",
             project_id="proj1",
             status="active",
-            started_at=datetime.now(timezone.utc),
+            started_at=datetime.now(UTC),
             nodes=[
                 NodeState(
                     id="n1",

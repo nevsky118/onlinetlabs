@@ -14,8 +14,7 @@ import httpx
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from lib import topology_builder as tb  # noqa: E402
-
+from lib import topology_builder as tb
 
 GNS3_URL = os.environ.get("GNS3_URL", "http://localhost:3080")
 GNS3_USER = os.environ.get("GNS3_ADMIN_USER", "admin")
@@ -56,14 +55,24 @@ def build_template(force: bool) -> str:
         project_id = tb.create_project(client, PROJECT_NAME)
 
         sw1 = tb.add_raw_node(
-            client, project_id,
-            name="SW1", node_type="ethernet_switch", x=0, y=0, symbol=SWITCH_SYMBOL,
+            client,
+            project_id,
+            name="SW1",
+            node_type="ethernet_switch",
+            x=0,
+            y=0,
+            symbol=SWITCH_SYMBOL,
         )
         pc1 = tb.add_vpcs_node(client, project_id, name="PC1", x=-200, y=-150)
         pc2 = tb.add_vpcs_node(client, project_id, name="PC2", x=200, y=-150)
 
         dhcp = tb.add_node_from_template(
-            client, project_id, dhcp_template_id, x=0, y=200, rename="DHCP",
+            client,
+            project_id,
+            dhcp_template_id,
+            x=0,
+            y=200,
+            rename="DHCP",
         )
         tb.append_docker_env(client, project_id, dhcp, "DHCP_SUBNET=192.168.10.0/24")
         tb.append_docker_env(client, project_id, dhcp, "DHCP_RANGE=192.168.10.100,192.168.10.200")
@@ -82,8 +91,9 @@ def build_template(force: bool) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build the dhcp lab template in GNS3.")
-    parser.add_argument("--force", action="store_true",
-                        help="Delete the existing template project and rebuild.")
+    parser.add_argument(
+        "--force", action="store_true", help="Delete the existing template project and rebuild."
+    )
     args = parser.parse_args()
     try:
         project_id = build_template(force=args.force)

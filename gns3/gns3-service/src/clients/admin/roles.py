@@ -9,9 +9,7 @@ class RolesMixin:
         """Найти встроенную роль по имени (User, Administrator, Auditor и т.д.)."""
         if name in self._builtin_role_cache:
             return self._builtin_role_cache[name]
-        response = await self._client.get(
-            "/v3/access/roles", headers=self._auth_headers()
-        )
+        response = await self._client.get("/v3/access/roles", headers=self._auth_headers())
         response.raise_for_status()
         for role in response.json():
             if role.get("is_builtin") and role.get("name") == name:

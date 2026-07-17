@@ -8,7 +8,7 @@
 import asyncio
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
@@ -48,6 +48,7 @@ async def ws_session_events(
         return
 
     from src.db.models import Session
+
     async with db_factory() as db:
         session = await db.get(Session, session_uuid)
     if session is None:
@@ -64,11 +65,13 @@ async def ws_session_events(
     try:
         async with db_factory() as db:
             state = await svc.get_state(db=db, session_id=session_id)
-        await websocket.send_json({
-            "type": "snapshot",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "payload": state.model_dump(mode="json"),
-        })
+        await websocket.send_json(
+            {
+                "type": "snapshot",
+                "timestamp": datetime.now(UTC).isoformat(),
+                "payload": state.model_dump(mode="json"),
+            }
+        )
     except Exception:
         logger.exception("snapshot failed for %s", session_id)
 
@@ -76,11 +79,13 @@ async def ws_session_events(
         try:
             while True:
                 await asyncio.sleep(20)
-                await websocket.send_json({
-                    "type": "ping",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "payload": {},
-                })
+                await websocket.send_json(
+                    {
+                        "type": "ping",
+                        "timestamp": datetime.now(UTC).isoformat(),
+                        "payload": {},
+                    }
+                )
         except Exception:
             return
 

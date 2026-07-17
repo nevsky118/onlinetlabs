@@ -53,8 +53,7 @@ class TestSubscribe:
             side_effect=[
                 [("sessions:sess-1:events", [("1-0", {"payload": json.dumps(event)})])],
             ]
-            + [Exception("stop loop")]
-            * 5
+            + [Exception("stop loop")] * 5
         )
 
         agen = b.subscribe("sess-1")

@@ -9,7 +9,12 @@ from .users import UsersMixin
 
 
 class GNS3AdminClient(
-    UsersMixin, ProjectsMixin, TopologyMixin, AclMixin, RolesMixin, HttpMixin,
+    UsersMixin,
+    ProjectsMixin,
+    TopologyMixin,
+    AclMixin,
+    RolesMixin,
+    HttpMixin,
 ):
     """Клиент GNS3 v3. Пользователи, проекты, ACL, узлы и линки."""
 

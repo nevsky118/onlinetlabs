@@ -1,6 +1,6 @@
 """Unit-тесты SessionService.get_state — агрегация и кэш."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -14,7 +14,7 @@ def _make_active_session(uptime_seconds: int = 0):
     session.id = "11111111-1111-1111-1111-111111111111"
     session.gns3_project_id = "proj1"
     session.status = SessionStatus.ACTIVE
-    session.created_at = datetime.now(timezone.utc) - timedelta(seconds=uptime_seconds)
+    session.created_at = datetime.now(UTC) - timedelta(seconds=uptime_seconds)
     return session
 
 
@@ -25,16 +25,31 @@ class TestSessionServiceGetState:
     async def test_get_state_aggregates_nodes_and_links(self, gns3_node, gns3_link):
         admin = AsyncMock()
         admin.get_nodes.return_value = [
-            gns3_node(node_id="n1", name="R1", node_type="dynamips", status="started",
-                      console=5000, symbol=":/symbols/router.svg"),
-            gns3_node(node_id="n2", name="R2", node_type="dynamips", status="stopped",
-                      console=5001, symbol=":/symbols/router.svg"),
+            gns3_node(
+                node_id="n1",
+                name="R1",
+                node_type="dynamips",
+                status="started",
+                console=5000,
+                symbol=":/symbols/router.svg",
+            ),
+            gns3_node(
+                node_id="n2",
+                name="R2",
+                node_type="dynamips",
+                status="stopped",
+                console=5001,
+                symbol=":/symbols/router.svg",
+            ),
         ]
         admin.get_links.return_value = [
-            gns3_link(link_id="l1", nodes=[
-                {"node_id": "n1", "adapter_number": 0, "port_number": 0},
-                {"node_id": "n2", "adapter_number": 0, "port_number": 0},
-            ]),
+            gns3_link(
+                link_id="l1",
+                nodes=[
+                    {"node_id": "n1", "adapter_number": 0, "port_number": 0},
+                    {"node_id": "n2", "adapter_number": 0, "port_number": 0},
+                ],
+            ),
         ]
         service = SessionService(admin_client=admin, gns3_url="http://gns3:3080")
 

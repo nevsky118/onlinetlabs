@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import uuid as uuid_module
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -68,7 +68,7 @@ async def fetch_state(
         for link in links_raw
     ]
     nodes_started = sum(1 for n in nodes if n.status == "started")
-    uptime = int((datetime.now(timezone.utc) - session.created_at).total_seconds())
+    uptime = int((datetime.now(UTC) - session.created_at).total_seconds())
 
     state = SessionStateResponse(
         session_id=str(session.id),

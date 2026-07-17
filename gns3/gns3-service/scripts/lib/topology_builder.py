@@ -107,12 +107,21 @@ def add_raw_node(
 
 
 def add_vpcs_node(
-    client: httpx.Client, project_id: str, *, name: str, x: int, y: int,
+    client: httpx.Client,
+    project_id: str,
+    *,
+    name: str,
+    x: int,
+    y: int,
 ) -> str:
     """Обёртка для VPCS с дефолтным символом GNS3 (affinity blue client) — как у нативного VPCS."""
     return add_raw_node(
-        client, project_id,
-        name=name, node_type="vpcs", x=x, y=y,
+        client,
+        project_id,
+        name=name,
+        node_type="vpcs",
+        x=x,
+        y=y,
         symbol=":/symbols/affinity/square/blue/client.svg",
     )
 
@@ -223,7 +232,10 @@ def configure_switch_vlans(
 
 
 def set_console_type(
-    client: httpx.Client, project_id: str, node_id: str, console_type: str,
+    client: httpx.Client,
+    project_id: str,
+    node_id: str,
+    console_type: str,
 ) -> None:
     """Выставить console_type узла (например none для docker-узлов).
 
@@ -239,7 +251,10 @@ def set_console_type(
 
 
 def append_docker_env(
-    client: httpx.Client, project_id: str, node_id: str, extra_env: str,
+    client: httpx.Client,
+    project_id: str,
+    node_id: str,
+    extra_env: str,
 ) -> None:
     """Дописать env-переменные в properties.environment docker-узла.
 

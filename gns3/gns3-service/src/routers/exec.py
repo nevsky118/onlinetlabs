@@ -54,10 +54,13 @@ _EXEC_TIMEOUT = 10.0
 async def _fetch_container_id(admin_client, project_id: str, node_id: str) -> str:
     """Узнать docker container_id узла через GNS3 admin API."""
     response = await admin_client.request(
-        "GET", f"/v3/projects/{project_id}/nodes/{node_id}",
+        "GET",
+        f"/v3/projects/{project_id}/nodes/{node_id}",
     )
     if response.status_code == 404:
-        raise HTTPException(status_code=404, detail=f"node {node_id} not found in project {project_id}")
+        raise HTTPException(
+            status_code=404, detail=f"node {node_id} not found in project {project_id}"
+        )
     response.raise_for_status()
     payload = response.json()
     if payload.get("node_type") != "docker":
@@ -79,7 +82,7 @@ async def _fetch_container_id(admin_client, project_id: str, node_id: str) -> st
     response_model=VtyshResponse,
     summary="Выполнить vtysh-команду на FRR-узле",
     description=(
-        "Запускает `vtysh -c \"<command>\"` внутри docker-контейнера узла GNS3 "
+        'Запускает `vtysh -c "<command>"` внутри docker-контейнера узла GNS3 '
         "и возвращает stdout/stderr/exit_code. Используется backend'ом для "
         "проверки OSPF-соседей, маршрутов и прочей FRR-конфигурации."
     ),
@@ -94,12 +97,17 @@ async def exec_vtysh(req: VtyshRequest, request: Request) -> VtyshResponse:
     try:
         async with asyncio.timeout(_EXEC_TIMEOUT):
             proc = await asyncio.create_subprocess_exec(
-                "docker", "exec", container_id, "vtysh", "-c", req.command,
+                "docker",
+                "exec",
+                container_id,
+                "vtysh",
+                "-c",
+                req.command,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
             stdout, stderr = await proc.communicate()
-    except (asyncio.TimeoutError, TimeoutError):
+    except TimeoutError:
         raise HTTPException(status_code=504, detail=f"vtysh exec timed out after {_EXEC_TIMEOUT}s")
     except FileNotFoundError:
         raise HTTPException(status_code=500, detail="docker CLI not available inside gns3-service")

@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from src.gns3_admin_client import GNS3AdminClient
 
 
-async def _load_active_session(db: "AsyncSession", session_id: str) -> Session:
+async def _load_active_session(db: AsyncSession, session_id: str) -> Session:
     session = await db.get(Session, uuid_module.UUID(session_id))
     if session is None:
         raise SessionNotFound(f"Session {session_id} not found")
@@ -24,8 +24,8 @@ async def _load_active_session(db: "AsyncSession", session_id: str) -> Session:
 
 
 async def run_node_action(
-    admin: "GNS3AdminClient",
-    db: "AsyncSession",
+    admin: GNS3AdminClient,
+    db: AsyncSession,
     session_id: str,
     node_id: str,
     action: str,
@@ -36,8 +36,8 @@ async def run_node_action(
 
 
 async def run_bulk_node_action(
-    admin: "GNS3AdminClient",
-    db: "AsyncSession",
+    admin: GNS3AdminClient,
+    db: AsyncSession,
     session_id: str,
     action: str,
 ) -> None:

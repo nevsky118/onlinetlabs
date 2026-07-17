@@ -11,7 +11,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import asyncpg
 
@@ -95,14 +95,17 @@ class HistoryPgListener:
         try:
             data = json.loads(payload)
         except (json.JSONDecodeError, TypeError):
-            logger.debug("Bad NOTIFY payload (not JSON): %r", payload[:100] if isinstance(payload, str) else payload)
+            logger.debug(
+                "Bad NOTIFY payload (not JSON): %r",
+                payload[:100] if isinstance(payload, str) else payload,
+            )
             return
         session_id = data.get("session_id")
         if not session_id:
             return
         event = {
             "type": "history.event",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "payload": {
                 "event_type": data.get("event_type"),
                 "component_id": data.get("component_id"),

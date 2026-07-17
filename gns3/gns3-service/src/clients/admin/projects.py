@@ -21,9 +21,7 @@ class ProjectsMixin:
 
     @_retry_on_401
     async def list_projects(self) -> list[dict]:
-        response = await self._client.get(
-            "/v3/projects", headers=self._auth_headers()
-        )
+        response = await self._client.get("/v3/projects", headers=self._auth_headers())
         response.raise_for_status()
         return response.json()
 

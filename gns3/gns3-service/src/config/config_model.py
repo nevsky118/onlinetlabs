@@ -52,9 +52,7 @@ class ServiceConfig(BaseModel):
 class SecurityConfig(BaseModel):
     """Shared-secret config for server-to-server auth (backend → gns3-service)."""
 
-    internal_api_token: str = Field(
-        description="Shared bearer token required on /v1/exec/vtysh"
-    )
+    internal_api_token: str = Field(description="Shared bearer token required on /v1/exec/vtysh")
 
 
 class GNS3ServiceConfigModel(BaseModel):

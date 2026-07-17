@@ -34,7 +34,9 @@ async def get_history_actions(
     db=Depends(get_db),
 ):
     from sqlalchemy import select
+
     from src.db.models import HistoryEvent as HistoryEventDB
+
     stmt = (
         select(HistoryEventDB)
         .where(HistoryEventDB.session_id == uuid.UUID(session_id))
@@ -68,10 +70,13 @@ async def get_history_actions(
 async def get_session_activity(
     session_id: str = Path(description="UUID сессии"),
     limit: int = Query(default=50, ge=1, le=200, description="Сколько событий вернуть (1-200)"),
-    cursor: str | None = Query(default=None, description="ISO timestamp последнего события для пагинации"),
+    cursor: str | None = Query(
+        default=None, description="ISO timestamp последнего события для пагинации"
+    ),
     db=Depends(get_db),
 ):
     from sqlalchemy import select
+
     from src.db.models import HistoryEvent as HistoryEventDB
 
     stmt = select(HistoryEventDB).where(
@@ -81,7 +86,9 @@ async def get_session_activity(
         try:
             cursor_dt = datetime.fromisoformat(cursor)
         except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid cursor format; expected ISO 8601 timestamp")
+            raise HTTPException(
+                status_code=400, detail="Invalid cursor format; expected ISO 8601 timestamp"
+            )
         stmt = stmt.where(HistoryEventDB.timestamp < cursor_dt)
     stmt = stmt.order_by(HistoryEventDB.timestamp.desc()).limit(limit + 1)
     result = await db.execute(stmt)

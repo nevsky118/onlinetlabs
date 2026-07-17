@@ -31,9 +31,7 @@ _BUILD_SCRIPTS: dict[str, str] = {
 }
 
 _BUILD_TIMEOUT = 600.0
-_UUID_RE = re.compile(
-    r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", re.I
-)
+_UUID_RE = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", re.I)
 
 
 class BuildTemplateResponse(BaseModel):
@@ -47,12 +45,13 @@ async def _run_build(script_path: Path) -> str:
     """
     try:
         proc = await asyncio.create_subprocess_exec(
-            sys.executable, str(script_path),
+            sys.executable,
+            str(script_path),
             stdout=PIPE,
             stderr=STDOUT,
         )
         out, _ = await asyncio.wait_for(proc.communicate(), timeout=_BUILD_TIMEOUT)
-    except (asyncio.TimeoutError, TimeoutError):
+    except TimeoutError:
         try:
             proc.kill()
         except Exception:

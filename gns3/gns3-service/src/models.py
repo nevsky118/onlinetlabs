@@ -154,10 +154,10 @@ class NodeState(BaseModel):
 
     id: str = Field(description="UUID узла GNS3")
     name: str = Field(description="Имя узла, видимое студенту")
-    node_type: str = Field(description="Тип узла GNS3 (dynamips, qemu, ethernet_switch, vpcs и т.д.)")
-    status: Literal["started", "stopped", "suspended"] = Field(
-        description="Текущий статус узла"
+    node_type: str = Field(
+        description="Тип узла GNS3 (dynamips, qemu, ethernet_switch, vpcs и т.д.)"
     )
+    status: Literal["started", "stopped", "suspended"] = Field(description="Текущий статус узла")
     console: int | None = Field(description="TCP-порт консоли (telnet/vnc/spice)")
     console_type: str | None = Field(description="Тип консоли: telnet, vnc, spice")
     console_host: str = Field(description="Hostname для подключения к консоли")

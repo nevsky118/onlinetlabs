@@ -10,8 +10,11 @@ class AclMixin:
         response = await self._client.post(
             "/v3/access/acl",
             json={
-                "path": path, "role_id": role_id, "user_id": user_id,
-                "ace_type": "user", "allowed": allowed,
+                "path": path,
+                "role_id": role_id,
+                "user_id": user_id,
+                "ace_type": "user",
+                "allowed": allowed,
             },
             headers=self._auth_headers(),
         )

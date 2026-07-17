@@ -89,9 +89,7 @@ class TestStartProjectIdempotency:
         assert "project-1" not in proxy._heartbeat_tasks
 
     @pytest.mark.asyncio
-    async def test_start_project_idempotent_does_not_touch_redis(
-        self, broker, admin_client
-    ):
+    async def test_start_project_idempotent_does_not_touch_redis(self, broker, admin_client):
         redis_mock = AsyncMock()
         proxy = Gns3WsProxy(
             broker=broker,

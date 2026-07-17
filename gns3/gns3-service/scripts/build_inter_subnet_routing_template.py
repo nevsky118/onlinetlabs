@@ -15,8 +15,7 @@ import httpx
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from lib import topology_builder as tb  # noqa: E402
-
+from lib import topology_builder as tb
 
 GNS3_URL = os.environ.get("GNS3_URL", "http://localhost:3080")
 GNS3_USER = os.environ.get("GNS3_ADMIN_USER", "admin")
@@ -72,9 +71,12 @@ def build_template(force: bool) -> str:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Build the inter-subnet-routing FRR lab template in GNS3.")
-    parser.add_argument("--force", action="store_true",
-                        help="Delete the existing template project and rebuild.")
+    parser = argparse.ArgumentParser(
+        description="Build the inter-subnet-routing FRR lab template in GNS3."
+    )
+    parser.add_argument(
+        "--force", action="store_true", help="Delete the existing template project and rebuild."
+    )
     args = parser.parse_args()
     try:
         project_id = build_template(force=args.force)

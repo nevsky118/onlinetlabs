@@ -64,9 +64,7 @@ def main() -> None:
     )
     args = parser.parse_args()
     if not args.password:
-        print(
-            "Error: provide --password or set CONFIG_PASSWORD env var", file=sys.stderr
-        )
+        print("Error: provide --password or set CONFIG_PASSWORD env var", file=sys.stderr)
         sys.exit(1)
     if args.action == "encrypt":
         result = encrypt_file(args.file, args.password)

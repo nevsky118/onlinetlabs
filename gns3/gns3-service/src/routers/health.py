@@ -7,9 +7,9 @@ router = APIRouter()
 
 @router.get("/health", tags=["health"], summary="Health check")
 async def health(request: Request):
+    import httpx
     from fastapi.responses import JSONResponse
     from sqlalchemy import text
-    import httpx
 
     checks: dict[str, str] = {}
     overall_ok = True
@@ -27,6 +27,7 @@ async def health(request: Request):
     # GNS3 admin server
     try:
         from src.config import settings
+
         async with httpx.AsyncClient(timeout=2.0) as c:
             r = await c.get(f"{settings.gns3.url}/v3/version")
             r.raise_for_status()

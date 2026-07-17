@@ -2,15 +2,16 @@ import asyncio
 import uuid
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from alembic import context
 from src.config import settings
 from src.db.models import Base
 
 
 def _unique_prepared_statement_name() -> str:
     return f"__asyncpg_{uuid.uuid4()}__"
+
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.database.async_url)

@@ -21,9 +21,7 @@ def _build_app() -> FastAPI:
 
 @pytest.fixture(autouse=True)
 def _seed_internal_token(monkeypatch):
-    monkeypatch.setattr(
-        settings.security, "internal_api_token", _VALID_TOKEN, raising=False
-    )
+    monkeypatch.setattr(settings.security, "internal_api_token", _VALID_TOKEN, raising=False)
 
 
 @pytest.fixture
