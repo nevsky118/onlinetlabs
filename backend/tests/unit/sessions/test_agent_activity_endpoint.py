@@ -50,7 +50,7 @@ class _FakeActivityLog:
 @autotest.name("get_agent_activity: возвращает события при наличии прав")
 @pytest.mark.asyncio
 async def test_get_agent_activity_entitled():
-    from sessions.routers.agent_activity import get_agent_activity
+    from sessions.routers.queries import get_agent_activity
 
     events = [SimpleNamespace(id="e1"), SimpleNamespace(id="e2")]
     activity = _FakeActivityLog(events)
@@ -78,7 +78,7 @@ async def test_get_agent_activity_entitled():
 async def test_get_agent_activity_forbidden():
     from fastapi import HTTPException
 
-    from sessions.routers.agent_activity import get_agent_activity
+    from sessions.routers.queries import get_agent_activity
 
     activity = _FakeActivityLog([])
     session = SimpleNamespace(user_id="other_user")
@@ -105,7 +105,7 @@ async def test_get_agent_activity_forbidden():
 async def test_get_agent_activity_not_found():
     from fastapi import HTTPException
 
-    from sessions.routers.agent_activity import get_agent_activity
+    from sessions.routers.queries import get_agent_activity
 
     activity = _FakeActivityLog([])
     user = {"id": "u1", "role": "instructor", "can_view_logs": True}

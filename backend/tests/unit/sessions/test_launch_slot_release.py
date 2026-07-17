@@ -7,7 +7,7 @@ import pytest
 from mcp_sdk.testing import autotest
 
 from rate_limit import limiter
-from sessions.routers import launch as launch_mod
+from sessions.routers import commands as launch_mod
 
 pytestmark = [pytest.mark.unit]
 

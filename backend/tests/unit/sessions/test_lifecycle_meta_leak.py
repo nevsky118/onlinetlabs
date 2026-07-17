@@ -18,7 +18,7 @@ from models.lab import Lab, LabStep
 from models.progress import LabProgress
 from models.session import LearningSession
 from models.user import User
-from sessions.routers.lifecycle import router as lifecycle_router
+from sessions.routers.commands import router as commands_router
 
 pytestmark = [pytest.mark.unit]
 
@@ -73,7 +73,7 @@ class TestLifecycleMetaLeak:
             await db.commit()
 
         app = FastAPI()
-        app.include_router(lifecycle_router, prefix="/sessions")
+        app.include_router(commands_router, prefix="/sessions")
 
         async def _override_db():
             async with self.session_factory() as db:

@@ -42,7 +42,7 @@ from sessions.idle_reclaim import idle_reclaim_loop
 from sessions.monitor_registry import SessionMonitorRegistry
 from sessions.queue import SessionQueueService
 from sessions.router import router as sessions_router
-from sessions.routers.agent_activity import router as agent_activity_router
+from sessions.routers.queries import agent_activity_router
 from sessions.services.proxy import _BULK_GNS3_SEMAPHORE
 from sessions.state_cache import StateCache
 from sessions.ws import WebSocketGateway, close_all_connections
