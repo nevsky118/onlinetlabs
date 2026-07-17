@@ -1,10 +1,12 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class CourseProgressResponse(BaseModel):
     """Прогресс пользователя по курсу."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: str
     course_slug: str
@@ -16,6 +18,8 @@ class CourseProgressResponse(BaseModel):
 
 class LabProgressResponse(BaseModel):
     """Прогресс пользователя по лабораторной."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: str
     lab_slug: str
@@ -36,6 +40,8 @@ class StepAttemptCreate(BaseModel):
 
 class StepAttemptResponse(BaseModel):
     """Попытка прохождения шага лабораторной."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: str
     step_slug: str

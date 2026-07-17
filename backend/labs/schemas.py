@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class SetLabTemplateRequest(BaseModel):
@@ -12,6 +12,8 @@ class SetLabTemplateRequest(BaseModel):
 
 class LabTemplateResponse(BaseModel):
     """Поля лабы, относящиеся к GNS3-шаблонам."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     slug: str
     gns3_template_project_id: str | None
@@ -33,6 +35,8 @@ class LabCreate(BaseModel):
 class LabStepResponse(BaseModel):
     """Шаг лабораторной работы."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     slug: str
     title: str
     step_order: int
@@ -41,6 +45,8 @@ class LabStepResponse(BaseModel):
 
 class LabResponse(BaseModel):
     """Лабораторная работа без вложенных шагов."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     slug: str
     title: str

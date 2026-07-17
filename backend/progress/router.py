@@ -5,7 +5,6 @@ from auth.dependencies import get_current_user
 from db.session import get_db
 from progress.schemas import (
     AllProgressResponse,
-    CourseProgressResponse,
     LabProgressDetailResponse,
     LabProgressResponse,
     StepAttemptCreate,
@@ -28,31 +27,7 @@ async def get_progress(
 ):
     """Возвращает весь прогресс пользователя по курсам и лабораторным."""
     result = await get_all_progress(db, current_user["id"])
-    return AllProgressResponse(
-        courses=[
-            CourseProgressResponse(
-                id=cp.id,
-                course_slug=cp.course_slug,
-                status=cp.status,
-                score=cp.score,
-                started_at=cp.started_at,
-                completed_at=cp.completed_at,
-            )
-            for cp in result["courses"]
-        ],
-        labs=[
-            LabProgressResponse(
-                id=lp.id,
-                lab_slug=lp.lab_slug,
-                status=lp.status,
-                score=lp.score,
-                current_step=lp.current_step,
-                started_at=lp.started_at,
-                completed_at=lp.completed_at,
-            )
-            for lp in result["labs"]
-        ],
-    )
+    return AllProgressResponse(courses=result["courses"], labs=result["labs"])
 
 
 @router.get("/labs/{lab_slug}", response_model=LabProgressDetailResponse)
@@ -69,27 +44,8 @@ async def get_lab_progress(
     if detail is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No progress found")
     lp = detail["progress"]
-    return LabProgressDetailResponse(
-        id=lp.id,
-        lab_slug=lp.lab_slug,
-        status=lp.status,
-        score=lp.score,
-        current_step=lp.current_step,
-        started_at=lp.started_at,
-        completed_at=lp.completed_at,
-        attempts=[
-            StepAttemptResponse(
-                id=a.id,
-                step_slug=a.step_slug,
-                attempt_number=a.attempt_number,
-                result=a.result,
-                score=a.score,
-                started_at=a.started_at,
-                ended_at=a.ended_at,
-            )
-            for a in detail["attempts"]
-        ],
-    )
+    lp.attempts = detail["attempts"]
+    return lp
 
 
 @router.post("/labs/{lab_slug}/start", response_model=LabProgressResponse)
@@ -99,16 +55,7 @@ async def start_lab_endpoint(
     db: AsyncSession = Depends(get_db),
 ):
     """Начинает лабораторную для пользователя и возвращает её прогресс."""
-    lp = await start_lab(db, current_user["id"], lab_slug)
-    return LabProgressResponse(
-        id=lp.id,
-        lab_slug=lp.lab_slug,
-        status=lp.status,
-        score=lp.score,
-        current_step=lp.current_step,
-        started_at=lp.started_at,
-        completed_at=lp.completed_at,
-    )
+    return await start_lab(db, current_user["id"], lab_slug)
 
 
 @router.post(
@@ -123,7 +70,7 @@ async def record_attempt_endpoint(
     db: AsyncSession = Depends(get_db),
 ):
     """Записывает попытку прохождения шага лабораторной."""
-    attempt = await record_step_attempt(
+    return await record_step_attempt(
         db,
         current_user["id"],
         lab_slug,
@@ -131,13 +78,4 @@ async def record_attempt_endpoint(
         result=body.result,
         score=body.score,
         error_details=body.error_details,
-    )
-    return StepAttemptResponse(
-        id=attempt.id,
-        step_slug=attempt.step_slug,
-        attempt_number=attempt.attempt_number,
-        result=attempt.result,
-        score=attempt.score,
-        started_at=attempt.started_at,
-        ended_at=attempt.ended_at,
     )
