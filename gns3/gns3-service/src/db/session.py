@@ -28,23 +28,3 @@ def create_session_factory(
         },
     )
     return async_sessionmaker(engine, expire_on_commit=False)
-
-
-async def create_tables(database_url: str) -> None:
-    """Test-only DDL escape hatch. Production startup MUST use Alembic.
-    Bypasses migration history, so calling this in production diverges
-    schema from `alembic_version`. Used by autotests / dev bootstrap only.
-    """
-    from src.db.models import Base
-
-    engine = create_async_engine(
-        database_url,
-        connect_args={
-            "statement_cache_size": 0,
-            "prepared_statement_cache_size": 0,
-            "prepared_statement_name_func": _unique_prepared_statement_name,
-        },
-    )
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    await engine.dispose()
