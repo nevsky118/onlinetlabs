@@ -1,7 +1,6 @@
-import dataclasses
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class MCPAuditRow(BaseModel):
@@ -108,6 +107,8 @@ class TimelineItem(BaseModel):
 class TimeToCompetenceSchema(BaseModel):
     """Зеркало dataclass TimeToCompetence."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     median_calendar_seconds: float | None
     median_active_seconds: float | None
     reach_rate: float
@@ -120,6 +121,8 @@ class TimeToCompetenceSchema(BaseModel):
 class AutonomySchema(BaseModel):
     """Зеркало dataclass AutonomyMetrics."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     mean_l1_interventions: float
     mean_l2_interventions: float | None
     mean_sessions_to_l2: float | None
@@ -127,6 +130,8 @@ class AutonomySchema(BaseModel):
 
 class OrgEffectSchema(BaseModel):
     """Зеркало dataclass OrgEffectTrend; note-строка передаётся как есть."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     l1_escalations_mean: float
     l2_escalations_mean: float | None
@@ -137,6 +142,8 @@ class OrgEffectSchema(BaseModel):
 
 class CohortCellSchema(BaseModel):
     """Зеркало dataclass CohortCell."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     skill: str | None
     arm: str | None
@@ -157,15 +164,7 @@ class CohortMetricsResponse(BaseModel):
 
 def _cell_schema(cell) -> CohortCellSchema:
     """Конвертирует CohortCell dataclass → CohortCellSchema."""
-    d = dataclasses.asdict(cell)
-    return CohortCellSchema(
-        skill=d["skill"],
-        arm=d["arm"],
-        n=d["n"],
-        time_to_competence=TimeToCompetenceSchema(**d["time_to_competence"]),
-        autonomy=AutonomySchema(**d["autonomy"]),
-        org_effect=OrgEffectSchema(**d["org_effect"]),
-    )
+    return CohortCellSchema.model_validate(cell)
 
 
 def cohort_response_from_result(out: dict) -> CohortMetricsResponse:
