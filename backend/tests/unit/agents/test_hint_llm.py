@@ -1,6 +1,7 @@
 import pytest
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
+from pydantic_ai.models.test import TestModel
 
 from agents.hint.agent import HINT_SYSTEM_PROMPT, HintAgent
 from agents.hint.models import HintInput
@@ -30,18 +31,13 @@ class TestHintAgentLLM:
 
     @autotest.num("571")
     @autotest.external_id("b2c3d4e5-f6a7-4890-bcde-571000000002")
-    @autotest.name("HintAgent: run с agent_context — подсказка не пустая")
-    async def test_b2c3d4e5_run_with_context(self, config_model, monkeypatch):
-        with autotest.step("Создаём агент с контекстом"):
-            from unittest.mock import AsyncMock
-
+    @autotest.name("HintAgent: run с agent_context — реальный Agent.run даёт подсказку из output")
+    async def test_b2c3d4e5_run_with_context(self, config_model):
+        with autotest.step("Создаём агент с контекстом, берём реальный pydantic-ai Agent"):
             agent = HintAgent(config_model)
             context = AgentContextData().context
-            fake_result = AsyncMock()
-            fake_result.output = "Проверь маршрут OSPF на R1"
-            monkeypatch.setattr(
-                agent, "_agent_for", lambda mid: AsyncMock(run=AsyncMock(return_value=fake_result))
-            )
+            mid = config_model.agents.intervention_model
+            pyd_agent = agent._agent_for(mid)
             inp = HintInput(
                 session_id="s1",
                 user_id="u1",
@@ -52,11 +48,15 @@ class TestHintAgentLLM:
                 agent_context=context,
             )
 
-        with autotest.step("Вызываем run"):
-            result = await agent.run(inp)
+        with autotest.step("Вызываем run с моделью, подменённой на TestModel (без сети)"):
+            with pyd_agent.override(
+                model=TestModel(custom_output_text="Проверь маршрут OSPF на R1")
+            ):
+                result = await agent.run(inp, model_id=mid)
 
-        with autotest.step("Подсказка не пустая"):
+        with autotest.step("Подсказка собрана из result.output реального прогона"):
             assert_true(len(result.hint) > 0, "подсказка не пустая")
+            assert_equal(result.hint, "Проверь маршрут OSPF на R1", "hint == canned output")
             assert_equal(result.hint_level, 3, "уровень 3 при 4 попытках")
 
     @autotest.num("572")

@@ -2,7 +2,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_true
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
+from pydantic_ai.models.test import TestModel
 
 from agents.tutor.agent import TutorAgent
 from agents.tutor.models import TutorInput, TutorResponse
@@ -34,16 +35,13 @@ class TestTutorAgentLLM:
 
     @autotest.num("561")
     @autotest.external_id("b2c3d4e5-f6a7-4890-bcde-561000000002")
-    @autotest.name("TutorAgent: run с agent_context — ответ не пустой")
-    async def test_b2c3d4e5_run_with_context(self, config_model, monkeypatch):
-        with autotest.step("Создаём агент с контекстом"):
+    @autotest.name("TutorAgent: run с agent_context — реальный Agent.run даёт ответ из output")
+    async def test_b2c3d4e5_run_with_context(self, config_model):
+        with autotest.step("Создаём агент с контекстом, берём реальный pydantic-ai Agent"):
             agent = TutorAgent(config_model, mcp_client=None)
             context = AgentContextData().context
-            fake_result = AsyncMock()
-            fake_result.output = "OSPF сессия не поднимается из-за неверной маски"
-            monkeypatch.setattr(
-                agent, "_agent_for", lambda mid: AsyncMock(run=AsyncMock(return_value=fake_result))
-            )
+            mid = config_model.agents.intervention_model
+            pyd_agent = agent._agent_for(mid)
             inp = TutorInput(
                 session_id="s1",
                 user_id="u1",
@@ -51,9 +49,11 @@ class TestTutorAgentLLM:
                 agent_context=context,
             )
 
-        with autotest.step("Вызываем run"):
-            result = await agent.run(inp)
+        with autotest.step("Вызываем run с моделью, подменённой на TestModel (без сети)"):
+            canned = "OSPF сессия не поднимается из-за неверной маски"
+            with pyd_agent.override(model=TestModel(custom_output_text=canned)):
+                result = await agent.run(inp, model_id=mid)
 
-        with autotest.step("Ответ не пустой"):
+        with autotest.step("Ответ собран из result.output реального прогона"):
             assert_true(isinstance(result, TutorResponse), f"тип: {type(result)}")
-            assert_true(len(result.answer) > 0, "ответ не пустой")
+            assert_equal(result.answer, canned, "answer == canned output")
