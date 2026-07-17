@@ -30,9 +30,15 @@ async_session = async_sessionmaker(engine, expire_on_commit=False)
 
 
 async def get_db():
-    """FastAPI-зависимость, отдающая сессию БД и закрывающая её по завершении запроса."""
+    """FastAPI-зависимость: сессия БД + commit на границе запроса, rollback при исключении."""
     async with async_session() as session:
-        yield session
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
+        else:
+            await session.commit()
 
 
 def get_db_factory():

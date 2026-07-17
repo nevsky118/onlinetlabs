@@ -71,7 +71,6 @@ async def delete_user(db: AsyncSession, user_id: str) -> bool:
     if user is None:
         return False
     await db.delete(user)
-    await db.commit()
     return True
 
 
@@ -119,6 +118,6 @@ async def upsert_github_user(
     if image:
         user.image = image
 
-    await db.commit()
+    await db.flush()
     await db.refresh(user, ["accounts"])
     return user

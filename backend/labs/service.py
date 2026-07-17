@@ -34,7 +34,7 @@ async def create_lab(
         gns3_template_project_id=gns3_template_project_id,
     )
     db.add(lab)
-    await db.commit()
+    await db.flush()
     await db.refresh(lab)
     return lab
 
@@ -45,7 +45,6 @@ async def delete_lab(db: AsyncSession, slug: str) -> bool:
     if lab is None:
         return False
     await db.delete(lab)
-    await db.commit()
     return True
 
 
@@ -98,6 +97,6 @@ async def set_lab_template(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lab not found")
     column = _VARIANT_COLUMN[variant]
     setattr(lab, column, template_project_id)
-    await db.commit()
+    await db.flush()
     await db.refresh(lab)
     return lab

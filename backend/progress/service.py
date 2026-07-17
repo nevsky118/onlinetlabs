@@ -76,7 +76,7 @@ async def start_lab(db: AsyncSession, user_id: str, lab_slug: str) -> LabProgres
         started_at=datetime.now(UTC),
     )
     db.add(lp)
-    await db.commit()
+    await db.flush()
     await db.refresh(lp)
     return lp
 
@@ -109,7 +109,7 @@ async def record_step_attempt(
         error_details=error_details,
     )
     db.add(attempt)
-    await db.commit()
+    await db.flush()
     await db.refresh(attempt)
     return attempt
 
