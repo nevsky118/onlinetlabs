@@ -16,6 +16,20 @@ jobs:
       fail-fast: false
       matrix:
         package: [backend, gns3/gns3-mcp, gns3/gns3-service, mcp-sdk]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: onlinetlabs
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     defaults:
       run:
         working-directory: ${{ matrix.package }}
@@ -36,6 +50,33 @@ jobs:
       - name: Ruff lint
         continue-on-error: true
         run: poetry run ruff check .
+      - name: Alembic migrate + drift check
+        if: matrix.package == 'backend'
+        env:
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: onlinetlabs
+          REDIS_URL: redis://localhost:6379/0
+          ENVIRONMENT: test
+          JWT_SECRET: test-jwt-secret
+          LOG_LEVEL: INFO
+          CRED_ENCRYPTION_KEY: r1juy4ePJMqjrYbqXaCw7kDPq8Gwudckyv0wiIBIwfU=
+          INTERNAL_API_TOKEN: test-internal-token
+          YANDEX_API_KEY: sk-test
+          YANDEX_FOLDER: test-folder
+          AGENTS_CHAT_MODEL: yandex-gpt-5.1
+          AGENTS_INTERVENTION_MODEL: yandex-gpt-5.1
+          FRONTEND_URL: http://localhost:3000
+          GNS3_SERVICE_URL: http://localhost:8101
+          GNS3_PUBLIC_URL: http://localhost:3080
+          GNS3_INTERNAL_URL: http://localhost:3080
+          MCP_SERVER_URL: http://localhost:8100
+        run: |
+          poetry run alembic upgrade head
+          test "$(poetry run alembic heads | wc -l)" -eq 1
+          poetry run alembic check
       - name: Tests
         run: |
           if [ -d tests ]; then

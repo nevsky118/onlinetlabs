@@ -15,6 +15,7 @@ class LearningSession(Base):
     __table_args__ = (
         Index("ix_learning_sessions_user_status", "user_id", "status"),
         Index("ix_learning_sessions_user_started", "user_id", "started_at"),
+        Index("ix_learning_sessions_user_lab_status", "user_id", "lab_slug", "status"),
     )
 
     id: Mapped[str] = mapped_column(String(255), primary_key=True, default=lambda: str(uuid4()))
