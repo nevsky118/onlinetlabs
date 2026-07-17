@@ -11,7 +11,7 @@ from agents.orchestrator.models import (
 from agents.orchestrator.router import resolve_agent
 from agents.registry import AGENT_REGISTRY
 from config.config_model import ConfigModel
-from llm.client import resolve_model
+from core.llm.client import resolve_model
 
 logger = logging.getLogger(__name__)
 
@@ -67,24 +67,29 @@ class Orchestrator:
         if resolved is None:
             logger.warning("No agent route for intervention: %s", agent_name)
             return OrchestratorResponse(
-                agent_used=agent_name, success=False,
+                agent_used=agent_name,
+                success=False,
                 error=f"No route for intervention: {agent_name}",
             )
 
         agent = self._get_agent(resolved)
         if agent is None:
             return OrchestratorResponse(
-                agent_used=resolved, success=False,
+                agent_used=resolved,
+                success=False,
                 error=f"Agent not available for intervention: {resolved}",
             )
 
         try:
-            agent_input = self._build_agent_input(resolved, OrchestratorInput(
-                session_id=input_data.session_id,
-                user_id=input_data.user_id,
-                intent=agent_name,
-                payload=input_data.context,
-            ))
+            agent_input = self._build_agent_input(
+                resolved,
+                OrchestratorInput(
+                    session_id=input_data.session_id,
+                    user_id=input_data.user_id,
+                    intent=agent_name,
+                    payload=input_data.context,
+                ),
+            )
             if resolved in self._LLM_AGENTS:
                 model_id = self._resolve_intervention_model(input_data.context)
                 result = await agent.run(agent_input, model_id)
@@ -94,19 +99,23 @@ class Orchestrator:
                 except Exception:
                     llm_meta = {"model": model_id}
                 return OrchestratorResponse(
-                    agent_used=resolved, success=True,
+                    agent_used=resolved,
+                    success=True,
                     data=result.model_dump(),
                     metadata=llm_meta,
                 )
             else:
                 result = await agent.run(agent_input)
             return OrchestratorResponse(
-                agent_used=resolved, success=True,
+                agent_used=resolved,
+                success=True,
                 data=result.model_dump(),
             )
         except Exception as e:
             return OrchestratorResponse(
-                agent_used=resolved, success=False, error=str(e),
+                agent_used=resolved,
+                success=False,
+                error=str(e),
             )
 
     def _build_agent_input(self, agent_name: str, input_data: OrchestratorInput):

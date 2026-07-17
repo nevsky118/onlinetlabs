@@ -6,7 +6,7 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 from config.config_model import ConfigModel, LlmProvider
-from llm.client import build_client, model_uri, resolve_model
+from core.llm.client import build_client, model_uri, resolve_model
 
 
 class BaseAgent:

@@ -29,6 +29,7 @@ from analytics.router import router as analytics_router
 from auth.router import router as auth_router
 from chat.router import router as chat_router
 from control_interface.router import router as consent_router
+from core.middleware.request_id import RequestIDMiddleware
 from courses.router import router as courses_router
 from db.session import async_session
 from escalation.router import router as escalation_router
@@ -38,7 +39,6 @@ from instructor.router import router as instructor_router
 from labs.router import internal_router as labs_internal_router
 from labs.router import router as labs_router
 from mcp_client.client import MCPClient
-from middleware.request_id import RequestIDMiddleware
 from observability.activity import AgentActivityLog
 from progress.router import router as progress_router
 from rate_limit import limiter

@@ -29,11 +29,11 @@ from chat.stream_protocol import (
 )
 from chat.tools import TOOL_DEFINITIONS, _run_vpcs_show_ip, execute_tool
 from config import settings
+from core.llm.client import build_client, model_supports_tools, model_uri
+from core.llm.prompts import LANGUAGE_REMINDER, TUTOR_SYSTEM_PROMPT
 from db.session import get_db
 from deps import get_mcp_client
 from labs.spec import expected_vpcs_config, load_lab_spec
-from llm.client import build_client, model_supports_tools, model_uri
-from llm.prompts import LANGUAGE_REMINDER, TUTOR_SYSTEM_PROMPT
 from models.lab import Lab
 from observability.models import (
     event_fallback,

@@ -10,6 +10,7 @@ bundle. To remove: `rm -rf backend/simulation` + `DELETE FROM users WHERE is_sim
 
 Run: `ENV_FILE=../deployment/local/backend.env poetry run python -m simulation.run --n 3 --concurrency 2`
 """
+
 import argparse
 import asyncio
 from datetime import UTC
@@ -32,6 +33,7 @@ _CONSOLE_WARMUP_SEC = 6.0
 def _build_deps():
     """Live app dependencies (1:1 with main.py lifespan)."""
     from config import settings
+
     # MRT-track instruments are off by default (gated-off). The sim exists to
     # exercise them: enable decision-log/evidence/latency on the live loop.
     settings.learning_analytics.mrt_enabled = True
@@ -64,8 +66,12 @@ def _build_deps():
     )
     activity_log = AgentActivityLog(async_session, settings.observability.retention_per_session)
     monitor_registry = SessionMonitorRegistry(
-        config=settings, mcp_client=mcp_client, db_factory=async_session,
-        orchestrator=orchestrator, gateway=gateway, activity_log=activity_log,
+        config=settings,
+        mcp_client=mcp_client,
+        db_factory=async_session,
+        orchestrator=orchestrator,
+        gateway=gateway,
+        activity_log=activity_log,
         gns3_client=gns3_client,
     )
     return settings, gns3_client, monitor_registry
@@ -140,13 +146,19 @@ def _make_provision(settings, gns3_client, monitor_registry, lab_slug, tutor_rep
 
         help_gen = HelpTextGen(
             llm_enabled=settings.learning_analytics.sim_llm_help_enabled,
-            budget_rub=_BUDGET_RUB, price_per_1k_rub=_PRICE_PER_1K_RUB,
+            budget_rub=_BUDGET_RUB,
+            price_per_1k_rub=_PRICE_PER_1K_RUB,
         )
         actor = GNS3Actor(
-            node_tasks=node_tasks, consoles=consoles,
-            db_factory=async_session, backend_session_id=str(session.id),
-            help_gen=help_gen, profile=profile, save_user_message=save_user_message,
-            save_assistant_message=save_assistant_message, tutor_reply=tutor_reply,
+            node_tasks=node_tasks,
+            consoles=consoles,
+            db_factory=async_session,
+            backend_session_id=str(session.id),
+            help_gen=help_gen,
+            profile=profile,
+            save_user_message=save_user_message,
+            save_assistant_message=save_assistant_message,
+            tutor_reply=tutor_reply,
         )
         return str(session.id), actor
 
@@ -185,17 +197,24 @@ def _make_finalize(lab_slug, l2_lab, gns3_client, monitor_registry, settle_sec: 
         """We write LabProgress BEFORE finalization: metrics read steps_completed from it."""
         completed = steps >= total
         async with async_session() as db:
-            db.add(LabProgress(
-                id=str(uuid4()), user_id=user_id, lab_slug=lab, current_step=steps,
-                status="completed" if completed else "in_progress",
-                score=round(steps / total * 100.0, 1) if total else 0.0,
-                started_at=started, completed_at=completed_at if completed else None,
-            ))
+            db.add(
+                LabProgress(
+                    id=str(uuid4()),
+                    user_id=user_id,
+                    lab_slug=lab,
+                    current_step=steps,
+                    status="completed" if completed else "in_progress",
+                    score=round(steps / total * 100.0, 1) if total else 0.0,
+                    started_at=started,
+                    completed_at=completed_at if completed else None,
+                )
+            )
             await db.commit()
         return completed
 
     async def finalize(session_id, user_id, profile, state):
         from datetime import timedelta
+
         now = datetime.now(UTC)
         # Timestamps: L1 before L2, positive duration within the cohort's horizon.
         l1_start, l1_end = now - timedelta(minutes=14), now - timedelta(minutes=9)
@@ -203,8 +222,7 @@ def _make_finalize(lab_slug, l2_lab, gns3_client, monitor_registry, settle_sec: 
 
         # L1 (assisted by the live monitor): almost everyone completes.
         l1_steps = total1 if profile.skill > 0.2 else max(0, total1 - 1)
-        l1_done = await _write_progress(
-            user_id, lab_slug, l1_steps, total1, l1_start, l1_end)
+        l1_done = await _write_progress(user_id, lab_slug, l1_steps, total1, l1_start, l1_end)
 
         # A live student doesn't close the lab the same millisecond they stop
         # acting: the monitor has time to pick up trailing events (poll_interval=5s)
@@ -222,7 +240,10 @@ def _make_finalize(lab_slug, l2_lab, gns3_client, monitor_registry, settle_sec: 
         l2_steps = total2 if profile.skill > 0.5 else max(0, total2 - 1)
         async with async_session() as db:
             l2 = LearningSession(
-                id=str(uuid4()), user_id=user_id, lab_slug=l2_lab, status="active",
+                id=str(uuid4()),
+                user_id=user_id,
+                lab_slug=l2_lab,
+                status="active",
                 started_at=l2_start,
             )
             db.add(l2)
@@ -245,7 +266,7 @@ def _make_tutor_reply(settings, lab_slug):
     """
     import asyncio as _asyncio
 
-    from llm.client import build_client, model_uri
+    from core.llm.client import build_client, model_uri
 
     model = settings.agents.chat_model
 
@@ -279,21 +300,33 @@ def _make_tutor_reply(settings, lab_slug):
         try:
             # max_retries=0: yandex may be unreachable → instant fallback to the template.
             client = build_client(model).with_options(max_retries=0, timeout=6)
-            resp = await _asyncio.wait_for(client.chat.completions.create(
-                model=model_uri(model), stream=False, max_tokens=180, temperature=0.6,
-                messages=[
-                    {"role": "system", "content": (
-                        "Ты — тьютор по компьютерным сетям в лабе GNS3. Отвечай кратко "
-                        "(2-3 предложения), по-русски. Веди студента по нарастающей: "
-                        "сначала уточняй и наводи, конкретный ответ давай только если "
-                        "он уже несколько раз ошибся. Не повторяй прошлые формулировки."
-                    )},
-                    {"role": "user", "content": (
-                        f"Лаба: {lab_slug}. Узел: {node}.{tried_part} "
-                        f"Это {attempt + 1}-е обращение студента. Вопрос: {question}"
-                    )},
-                ],
-            ), timeout=8)
+            resp = await _asyncio.wait_for(
+                client.chat.completions.create(
+                    model=model_uri(model),
+                    stream=False,
+                    max_tokens=180,
+                    temperature=0.6,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": (
+                                "Ты — тьютор по компьютерным сетям в лабе GNS3. Отвечай кратко "
+                                "(2-3 предложения), по-русски. Веди студента по нарастающей: "
+                                "сначала уточняй и наводи, конкретный ответ давай только если "
+                                "он уже несколько раз ошибся. Не повторяй прошлые формулировки."
+                            ),
+                        },
+                        {
+                            "role": "user",
+                            "content": (
+                                f"Лаба: {lab_slug}. Узел: {node}.{tried_part} "
+                                f"Это {attempt + 1}-е обращение студента. Вопрос: {question}"
+                            ),
+                        },
+                    ],
+                ),
+                timeout=8,
+            )
             txt = (resp.choices[0].message.content or "").strip()
             if txt:
                 return txt
@@ -310,6 +343,7 @@ async def _find_l2_pair(lab_slug):
 
     from db.session import async_session
     from models.lab import Lab
+
     async with async_session() as db:
         l1 = await db.get(Lab, lab_slug)
         skill = (l1.meta or {}).get("skill") if l1 else None
@@ -346,9 +380,14 @@ async def _run(args) -> None:
 
     try:
         report = await run_cohort(
-            n=args.n, concurrency=args.concurrency, base_seed=args.seed,
-            db_factory=db_factory, provision=provision, record_truth=_record,
-            max_steps=args.max_steps, finalize=finalize,
+            n=args.n,
+            concurrency=args.concurrency,
+            base_seed=args.seed,
+            db_factory=db_factory,
+            provision=provision,
+            record_truth=_record,
+            max_steps=args.max_steps,
+            finalize=finalize,
         )
         print(
             f"completed={report.completed} peak_concurrency={report.peak_concurrency} "
@@ -373,10 +412,18 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--lab", default="lan-static-ip")
     ap.add_argument("--max-steps", type=int, default=60)
-    ap.add_argument("--drain-sec", type=float, default=10.0,
-                    help="хвостовое ожидание, чтобы мониторы добрали события")
-    ap.add_argument("--settle-sec", type=float, default=12.0,
-                    help="пауза перед завершением лабы: монитор добирает хвост и может вмешаться")
+    ap.add_argument(
+        "--drain-sec",
+        type=float,
+        default=10.0,
+        help="хвостовое ожидание, чтобы мониторы добрали события",
+    )
+    ap.add_argument(
+        "--settle-sec",
+        type=float,
+        default=12.0,
+        help="пауза перед завершением лабы: монитор добирает хвост и может вмешаться",
+    )
     args = ap.parse_args()
     asyncio.run(_run(args))
 

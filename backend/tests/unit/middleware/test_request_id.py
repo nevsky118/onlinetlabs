@@ -5,7 +5,7 @@ import structlog
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from middleware.request_id import RequestIDMiddleware
+from core.middleware.request_id import RequestIDMiddleware
 
 pytestmark = [pytest.mark.unit]
 

@@ -30,7 +30,7 @@ class TestTutorReplyFallback:
             context = {"node": "PC1", "tried": "ip 192.168.2.11/24"}
             # build_client gets bound when the closure is created → patch it BEFORE that happens,
             # otherwise the unit test would hit the real YandexGPT.
-            patcher = patch("llm.client.build_client", side_effect=RuntimeError("llm down"))
+            patcher = patch("core.llm.client.build_client", side_effect=RuntimeError("llm down"))
 
         with autotest.step("Act: студент обращается 4 раза подряд"):
             with patcher:
