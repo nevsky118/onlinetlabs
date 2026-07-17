@@ -27,17 +27,6 @@ class AnalyticsTools:
         result = await self._db.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_lab_progress(self, user_id: str, lab_slug: str):
-        """Получить LabProgress."""
-        from sqlalchemy import select
-        from models.progress import LabProgress
-
-        stmt = select(LabProgress).where(
-            LabProgress.user_id == user_id, LabProgress.lab_slug == lab_slug
-        )
-        result = await self._db.execute(stmt)
-        return result.scalar_one_or_none()
-
     def compute_metrics(self, attempts: list) -> StudentMetrics:
         """Вычислить метрики из списка StepAttempt."""
         if not attempts:

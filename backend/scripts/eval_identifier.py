@@ -74,20 +74,6 @@ def _per_type_recall(pairs, curve_t_k, config) -> dict[ProcessRegime, float]:
     return {r: type_tp.get(r, 0) / n for r, n in type_n.items()}
 
 
-async def _try_harvest_real(scns: list) -> int:
-    """Добавить реальные сценарии если БД доступна. Возвращает labeled-real-N."""
-    try:
-        from db.session import async_session
-        from evaluation.real_loader import harvest_open_arm_sessions, labeled_real_count
-
-        async with async_session() as db:
-            session_ids = await harvest_open_arm_sessions(db)
-        # Без слепых меток labeled-real-N остается 0
-        return 0
-    except Exception:
-        return 0
-
-
 async def main():
     # Конфиг и стоимости
     try:
@@ -102,8 +88,8 @@ async def main():
     # Синтетический датасет (всегда)
     scns = _build_synthetic()
 
-    # Попытка добавить реальные данные (не роняет скрипт при отсутствии БД)
-    labeled_real_n = await _try_harvest_real(scns)
+    # Без реального харвестинга (не подключён к БД в этом режиме) labeled-real-N остаётся 0
+    labeled_real_n = 0
 
     n_synth = sum(1 for s in scns if s.source == "synthetic")
     n_real = sum(1 for s in scns if s.source == "real")
