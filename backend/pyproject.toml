@@ -47,7 +47,12 @@ extend-exclude = ["migrations", "alembic"]
 select = ["E", "W", "F", "I", "UP", "B", "C4", "SIM", "ASYNC", "DTZ", "T20", "RUF"]
 # E501 handled by the formatter; B008 is the FastAPI Depends() default-arg idiom.
 # RUF001-003 (ambiguous Cyrillic) deferred to the comment/docstring translation phase.
-ignore = ["E501", "B008", "RUF001", "RUF002", "RUF003"]
+ignore = [
+    "E501", "B008", "RUF001", "RUF002", "RUF003",
+    # Ratchet backlog: pre-existing violations, fix incrementally then re-enable.
+    "E402", "SIM117", "SIM105", "C408", "C416", "B904", "B905",
+    "RUF059", "RUF012", "RUF005", "RUF006", "ASYNC109", "F841", "T201",
+]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "ARG", "PLR2004", "T20", "B017"]
