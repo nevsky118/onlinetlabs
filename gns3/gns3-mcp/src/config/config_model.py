@@ -13,7 +13,20 @@ class MCPConfig(BaseModel):
 
 
 class PoolConfig(BaseModel):
-    max_size: int = Field(default=50)
+    """Пул per-(environment_url, user_id) соединений к GNS3.
+
+    max_size — потолок ОДНОВРЕМЕННО живых соединений (не всех обслуженных юзеров):
+    простаивающие закрываются по idle_ttl, при нехватке места вытесняется LRU.
+    """
+
+    max_size: int = Field(default=200, description="Потолок одновременных соединений")
+    idle_ttl: float = Field(default=600.0, description="Закрывать соединение после N сек простоя")
+    health_check_interval: float = Field(
+        default=60.0, description="Не чаще N сек проверять живость соединения из кеша"
+    )
+    min_evict_idle: float = Field(
+        default=30.0, description="Вытеснять LRU, только если оно простаивало N сек"
+    )
 
 
 class LogBufferConfig(BaseModel):

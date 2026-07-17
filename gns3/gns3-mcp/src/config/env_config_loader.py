@@ -28,12 +28,15 @@ class EnvConfigLoader:
             host=values.get("MCP_HOST", "127.0.0.1"),
             port=int(values.get("MCP_PORT", "8100")),
         )
-        pool = PoolConfig(max_size=int(values.get("POOL_MAX_SIZE", "50")))
+        pool = PoolConfig(
+            max_size=int(values.get("POOL_MAX_SIZE", "200")),
+            idle_ttl=float(values.get("POOL_IDLE_TTL", "600.0")),
+            health_check_interval=float(values.get("POOL_HEALTH_CHECK_INTERVAL", "60.0")),
+            min_evict_idle=float(values.get("POOL_MIN_EVICT_IDLE", "30.0")),
+        )
         log_buffer = LogBufferConfig(
             max_entries=int(values.get("LOG_BUFFER_MAX_ENTRIES", "500")),
-            inactivity_timeout=float(
-                values.get("LOG_BUFFER_INACTIVITY_TIMEOUT", "300.0")
-            ),
+            inactivity_timeout=float(values.get("LOG_BUFFER_INACTIVITY_TIMEOUT", "300.0")),
         )
         return GNS3MCPConfigModel(
             mcp=mcp,

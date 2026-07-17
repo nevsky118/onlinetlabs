@@ -16,10 +16,10 @@ from src.observability.sentry import configure_sentry
 configure_logging("gns3-service", level=getattr(getattr(settings, "service", None), "log_level", "INFO"))
 configure_sentry("gns3-service", environment=os.getenv("ENVIRONMENT", "dev"))
 
+from src.clients.admin import GNS3AdminClient
 from src.db.session import create_session_factory
 from src.events_broker import EventBroker
 from src.exceptions import SessionClosed, SessionNotFound
-from src.gns3_admin_client import GNS3AdminClient
 from src.gns3_ws_proxy import Gns3WsProxy
 from src.history_listener_pg import HistoryPgListener
 from src.middleware.request_id import RequestIDMiddleware
@@ -33,7 +33,7 @@ from src.routers import (
     templates_router,
     ws_router,
 )
-from src.service import SessionService
+from src.services.session_lifecycle import SessionService
 from src.templates_bootstrap import ensure_lab_templates
 
 logger = logging.getLogger(__name__)
@@ -64,17 +64,23 @@ async def lifespan(app: FastAPI):
     pg_dsn = settings.database.async_url.replace("+asyncpg", "")
     pg_listener = HistoryPgListener(pg_dsn, broker)
 
+    from src.rbac_gate import RbacGate
+
     service = SessionService(
         admin_client=admin,
         gns3_url=settings.gns3.url,
         gns3_public_url=settings.gns3.public_url,
         ws_proxy=ws_proxy,
+        # Redis-лок сериализует RBAC-записи и между репликами gns3-service.
+        rbac_gate=RbacGate(redis_url=settings.redis.url),
     )
 
     # Перепривязать ws_proxy-форвардер ко всем активным сессиям после рестарта:
     # proxy state живёт в памяти, иначе события перестанут литься.
     from sqlalchemy import select
-    from src.db.models import Session as SessionModel, SessionStatus
+
+    from src.db.models import Session as SessionModel
+    from src.db.models import SessionStatus
     async with db_factory() as db:
         active = await db.execute(
             select(SessionModel).where(SessionModel.status == SessionStatus.ACTIVE)

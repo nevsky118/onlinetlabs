@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import httpx
 from sqlalchemy import select
@@ -70,11 +70,13 @@ async def get_session_state(
             # Платформенная сессия осиротела — помечаем завершённой, чтобы
             # пользователь не застрял и следующий запуск поднял свежую среду.
             session.status = "ended"
-            session.ended_at = datetime.now(timezone.utc)
+            session.ended_at = datetime.now(UTC)
             await db.commit()
             return None
         raise
     lab = await db.get(Lab, session.lab_slug)
+    from experiment.assignment import is_l2_session
+    no_assist = await is_l2_session(db, user_id, session.lab_slug)
     enriched = {
         "session_id": str(session.id),
         "status": session.status,
@@ -83,6 +85,7 @@ async def get_session_state(
         "nodes": raw.get("nodes", []),
         "links": raw.get("links", []),
         "metrics": raw.get("metrics", {}),
+        "no_assist": no_assist,
     }
     await state_cache.set(session_id, enriched)
     return enriched

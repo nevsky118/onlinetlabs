@@ -3,12 +3,12 @@
 Порядок гейтов: classify(default-deny) → consent → isolation(owner-guard) →
 open-suppress(плечо, только act) → rate-backstop(cooldown, только act) → audit → вызов.
 """
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from control_interface.audit import record
 from control_interface.consent import has_consent
 from control_interface.registry import ToolKind, classify
-from experiment.control_arm import ControlArm
+from experiment.assignment import ControlArm
 from sessions.services.query import get_owned_session
 
 
@@ -47,7 +47,9 @@ class ControlInterface:
             if not await has_consent(db, user_id, ToolKind.OBSERVE):
                 await self._audit(user_id, session_id, tool, "observe", False, "consent", lab_slug)
                 raise InterfaceDenied("consent")
-        result = await self._mcp._call_tool(tool, arguments)
+        # Типизированная обёртка mcp_client инъектит ctx и сериализует аргументы
+        # (как act() → execute_action). Прямой _call_tool ронял ctx → MCP-ошибка.
+        result = await getattr(self._mcp, tool)(ctx, **arguments)
         await self._audit(user_id, session_id, tool, "observe", True, None, lab_slug)
         return result
 
@@ -70,7 +72,7 @@ class ControlInterface:
             await self._audit(user_id, session_id, tool, "act", False, "open_arm", lab_slug)
             raise InterfaceDenied("open_arm")
         # гейт 5: rate-backstop (cooldown_period из конфига)
-        now = datetime.now(timezone.utc).timestamp()
+        now = datetime.now(UTC).timestamp()
         last = self._last_act_ts.get(session_id)
         if last is not None and now - last < self._cfg.cooldown_period:
             await self._audit(user_id, session_id, tool, "act", False, "rate", lab_slug)

@@ -14,7 +14,13 @@ from src.server import GNS3Server
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-pool = ConnectionPool(manager=GNS3ConnectionManager(), max_size=settings.pool.max_size)
+pool = ConnectionPool(
+    manager=GNS3ConnectionManager(),
+    max_size=settings.pool.max_size,
+    idle_ttl=settings.pool.idle_ttl,
+    health_check_interval=settings.pool.health_check_interval,
+    min_evict_idle=settings.pool.min_evict_idle,
+)
 log_buffer = LogBuffer(
     max_entries=settings.log_buffer.max_entries,
     inactivity_timeout=settings.log_buffer.inactivity_timeout,
@@ -37,7 +43,7 @@ def _get_project_id(ctx):
     return impl._project_id(ctx)
 
 
-register_domain_tools(server, _get_client, _get_project_id)
+register_domain_tools(server, _get_client, _get_project_id, service_url=settings.gns3_service_url)
 
 
 def main() -> None:

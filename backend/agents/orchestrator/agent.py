@@ -2,7 +2,6 @@
 
 import logging
 
-from agents.analytics.agent import AnalyticsAgent
 from agents.hint.agent import HintAgent
 from agents.orchestrator.models import (
     InterventionInput,
@@ -40,8 +39,6 @@ class Orchestrator:
         # Конструкторы агентов отличаются зависимостями, разводим явно.
         if agent_cls is HintAgent:
             agent = agent_cls(self.config)
-        elif agent_cls is AnalyticsAgent:
-            agent = agent_cls(self.config, self._db)
         else:
             agent = agent_cls(self.config, self._mcp_client)
 
@@ -59,46 +56,12 @@ class Orchestrator:
             return sid
         return cfg.intervention_model
 
-    async def run(self, input_data: OrchestratorInput) -> OrchestratorResponse:
-        """Маршрутизировать запрос к нужному агенту."""
-        agent_name = resolve_agent(input_data.intent)
-
-        if agent_name is None:
-            return OrchestratorResponse(
-                agent_used="none",
-                success=False,
-                error=f"Unknown intent: {input_data.intent}",
-            )
-
-        agent = self._get_agent(agent_name)
-        if agent is None:
-            return OrchestratorResponse(
-                agent_used=agent_name,
-                success=False,
-                error=f"Agent not available: {agent_name}",
-            )
-
-        try:
-            agent_input = self._build_agent_input(agent_name, input_data)
-            if agent_name in self._LLM_AGENTS:
-                result = await agent.run(agent_input, self._resolve_intervention_model(input_data.payload))
-            else:
-                result = await agent.run(agent_input)
-            return OrchestratorResponse(
-                agent_used=agent_name,
-                success=True,
-                data=result.model_dump(),
-            )
-        except Exception as e:
-            return OrchestratorResponse(
-                agent_used=agent_name,
-                success=False,
-                error=str(e),
-            )
-
     async def intervene(self, input_data: InterventionInput) -> OrchestratorResponse:
         """Проактивная интервенция от SessionMonitor."""
         agent_name = f"intervene_{input_data.intervention_type}"
+        # Ablation: single-agent mode форсит один generalist вместо специализации по типу
+        if self.config.learning_analytics.single_agent_mode:
+            agent_name = "intervene_tutor"
         resolved = resolve_agent(agent_name)
 
         if resolved is None:

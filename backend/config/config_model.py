@@ -162,6 +162,46 @@ class LearningAnalyticsConfig(BaseModel):
         default=True, description="Включить интервенции (False для контрольной группы)"
     )
 
+    # MRT (micro-randomized trial): рандомизация точки решения intervene/withhold
+    mrt_enabled: bool = Field(
+        default=False,
+        description="Включить MRT-рандомизацию точек решения (иначе OPEN/CLOSED по плечу)",
+    )
+    mrt_hold_probability: float = Field(
+        default=0.5, description="P(withhold) в eligible-точке при MRT"
+    )
+    mrt_t_k_jitter_frac: float = Field(
+        default=0.5, description="Доля джиттера T_k на spell: T_k*U[1-f, 1+f]"
+    )
+
+    # Захват сырых свидетельств для слепой разметки (disjoint от признаков)
+    evidence_capture_enabled: bool = Field(
+        default=False,
+        description="Персистить сырые MCP-наблюдения в session_evidence_snapshots (для разметки)",
+    )
+
+    # Инструментовка латентности стадий цикла (p50/p95/p99)
+    latency_capture_enabled: bool = Field(
+        default=False, description="Персистить латентность стадий в cycle_latency_samples"
+    )
+
+    # Ablation заземления: генерировать помощь с MCP-контекстом и без (для эксперта)
+    grounding_ablation_enabled: bool = Field(
+        default=False,
+        description="Генерировать пару grounded/ungrounded помощи в grounding_comparisons",
+    )
+
+    # Single-vs-multi-agent ablation: форсить один generalist-агент
+    single_agent_mode: bool = Field(
+        default=False,
+        description="Все интервенции через один generalist-агент (ablation мультиагентности)",
+    )
+
+    # Симуляция студентов: LLM для текста просьб о помощи (иначе шаблоны)
+    sim_llm_help_enabled: bool = Field(
+        default=False, description="Сим-студенты: LLM генерит текст просьб о помощи (gated, бюджет)"
+    )
+
     # Пороги struggle-детекции
     error_repeat_threshold: int = Field(
         default=3, description="Повторов одной ошибки для срабатывания"

@@ -4,7 +4,7 @@ import asyncio
 import hashlib
 import logging
 from collections import OrderedDict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from mcp_sdk.models import ErrorEntry, LogEntry, LogLevel, UserAction
@@ -71,17 +71,30 @@ class BehavioralCollector:
             await asyncio.sleep(self._cfg.poll_interval)
 
     async def _poll_cycle(self) -> None:
-        """Один цикл: actions + logs + errors → persist."""
+        """Один цикл: actions + logs + errors → (evidence-снимок) → persist."""
         events: list[dict] = []
         events.extend(await self._fetch_actions())
         events.extend(await self._fetch_logs())
         events.extend(await self._fetch_errors())
         if events:
+            if self._cfg.evidence_capture_enabled:
+                await self._capture_evidence(events)
             await self._persist(events)
+
+    async def _capture_evidence(self, events: list[dict]) -> None:
+        """Сырой снимок MCP-наблюдений цикла для разметки (best-effort, disjoint от признаков)."""
+        from learning_analytics.evidence import capture_snapshot
+        try:
+            async with self._db_factory() as db:
+                await capture_snapshot(
+                    db, self._session_id, self._user_id, self._lab_slug,
+                    kind="mcp_events", payload={"events": events},
+                )
+        except Exception:
+            logger.warning("Не удалось записать evidence-снимок", exc_info=True)
 
     async def _call_observe(self, tool: str, arguments: dict):
         """Наблюдение через шов или напрямую (fallback)."""
-        from control_interface.interface import InterfaceDenied
         if self._control_interface is not None:
             return await self._control_interface.observe(
                 tool, self._ctx, arguments,
@@ -150,7 +163,7 @@ class BehavioralCollector:
             errors = await self._call_observe(
                 "list_errors", {"since": self._last_error_poll}
             )
-            self._last_error_poll = datetime.now(tz=timezone.utc)
+            self._last_error_poll = datetime.now(tz=UTC)
             for err in errors:
                 result.append(self.normalize_error_entry(
                     err, self._session_id, self._user_id, self._lab_slug,

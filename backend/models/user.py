@@ -36,6 +36,8 @@ class User(Base):
     control_arm: Mapped[str | None] = mapped_column(String(20), default=None)
     can_select_model: Mapped[bool | None] = mapped_column(default=None)
     can_view_agent_logs: Mapped[bool | None] = mapped_column(default=None)
+    # Firewall: симулированный студент; исключается из «реальных результатов»
+    is_simulated: Mapped[bool] = mapped_column(default=False)
     default_model_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true", default=False)
 

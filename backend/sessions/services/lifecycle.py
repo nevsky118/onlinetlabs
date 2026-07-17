@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from sqlalchemy import select
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 async def _finalize_experiment_metrics(db: AsyncSession, session: LearningSession) -> None:
     """Вычисляет и сохраняет ExperimentMetrics по итогам сессии (best-effort)."""
     from config import settings
-    from experiment.arm_resolver import effective_arm, is_l2_session
+    from experiment.assignment import effective_arm, is_l2_session
     from experiment.finalizer import compute_session_metrics
     from models.behavioral_event import BehavioralEvent
     from models.experiment import ExperimentMetrics
@@ -63,7 +63,7 @@ async def _finalize_experiment_metrics(db: AsyncSession, session: LearningSessio
     metrics_dict = compute_session_metrics(
         events=events,
         started_at=session.started_at,
-        ended_at=session.ended_at or datetime.now(timezone.utc),
+        ended_at=session.ended_at or datetime.now(UTC),
         steps_completed=steps_completed,
         total_steps=total_steps,
         experiment_group=experiment_group,
@@ -84,6 +84,37 @@ async def _finalize_experiment_metrics(db: AsyncSession, session: LearningSessio
     await db.commit()
 
 
+async def _mark_ended_and_finalize(
+    db: AsyncSession, session: LearningSession, status: str
+) -> LearningSession:
+    """Помечает сессию завершённой и снимает измерения: ExperimentMetrics + MRT-цензура.
+
+    Единая точка финализации для ВСЕХ путей завершения (`end_session`, `end_lab`) —
+    иначе слой измерений эксперимента (A/B, когорта) остаётся пустым.
+    Вызывать ПОСЛЕ остановки монитора: иначе поздние события/интервенции не попадут
+    в снапшот ExperimentMetrics.
+    """
+    session.status = status
+    session.ended_at = datetime.now(UTC)
+    await db.commit()
+    await db.refresh(session)
+
+    # best-effort: ошибка финализации не ломает завершение сессии
+    try:
+        await _finalize_experiment_metrics(db, session)
+    except Exception:
+        logger.exception("Финализация метрик эксперимента упала для сессии %s", session.id)
+
+    # best-effort: MRT-точки с незакрытым spell — правоцензурированы концом сессии
+    try:
+        from learning_analytics.mrt import censor_open_decisions
+        await censor_open_decisions(db, session.id)
+    except Exception:
+        logger.exception("Censoring MRT-точек упал для сессии %s", session.id)
+
+    return session
+
+
 async def end_session(
     db: AsyncSession, session_id: str, user_id: str, status: str
 ) -> LearningSession | None:
@@ -97,18 +128,7 @@ async def end_session(
     session = result.scalar_one_or_none()
     if session is None:
         return None
-    session.status = status
-    session.ended_at = datetime.now(timezone.utc)
-    await db.commit()
-    await db.refresh(session)
-
-    # best-effort: ошибка финализации не ломает завершение сессии
-    try:
-        await _finalize_experiment_metrics(db, session)
-    except Exception:
-        logger.exception("Финализация метрик эксперимента упала для сессии %s", session_id)
-
-    return session
+    return await _mark_ended_and_finalize(db, session, status)
 
 
 async def stop_lab(db, session_id: str, user_id: str, mcp_client) -> bool:
@@ -151,25 +171,29 @@ async def reset_lab(db, session_id: str, user_id: str, gns3_client) -> bool:
 
 
 async def end_lab(db, session_id: str, user_id: str, gns3_client, monitor_registry) -> bool:
-    """Завершает лабораторную.
+    """Завершает лабораторную — путь, которым сессию закрывает сам студент.
 
-    Удаляет сессию gns3-service, останавливает монитор, помечает сессию ended,
-    освобождает место в очереди и уменьшает счётчик активных сессий.
+    Порядок шагов существенен:
+    1. Гасим монитор — после этого поток поведенческих событий и интервенций закрыт,
+       поэтому снапшот метрик будет полным (иначе поздние интервенции теряются).
+    2. Финализируем измерения (ExperimentMetrics + цензура открытых MRT-точек) —
+       ДО teardown'а GNS3, чтобы сбой внешней системы не терял данные эксперимента.
+    3. Сносим сессию gns3-service (best-effort), освобождаем очередь и счётчик.
     """
     session = await get_owned_session(db, session_id, user_id)
     if session is None:
         return False
+    lab_slug = session.lab_slug
+
+    await monitor_registry.stop(session_id)
+    await _mark_ended_and_finalize(db, session, status="ended")
+
     meta = session.meta or {}
     if meta.get("gns3_service_session_id"):
         try:
             await gns3_client.delete_session(meta["gns3_service_session_id"])
         except Exception:
             logger.exception("Teardown gns3-service упал для %s", session_id)
-    await monitor_registry.stop(session_id)
-    lab_slug = session.lab_slug
-    session.status = "ended"
-    session.ended_at = datetime.now(timezone.utc)
-    await db.commit()
     from sessions.queue import _get_or_create_singleton
     queue = _get_or_create_singleton()
     await queue.release(lab_slug)

@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from src.db.models import Session, SessionStatus
-from src.service import SessionService
+from src.services.session_lifecycle import SessionService
 
 
 class TestSessionServiceNodeAction:
@@ -94,21 +94,30 @@ class TestSessionServiceCreateSession:
         student_id = "abcdef12-3456-7890-abcd-ef1234567890"
         response = await service.create_session(db, student_id, "tmpl-1")
 
+        # Имя GNS3-юзера — хеш ПОЛНОГО user_id (префикс id не уникален и приводил
+        # к удалению чужого GNS3-пользователя при orphan-cleanup).
+        from src.gns3_identity import gns3_username_for
+        expected_username = gns3_username_for(student_id)
+
         admin.create_user.assert_awaited_once()
         username_arg, _password_arg = admin.create_user.await_args.args
-        assert username_arg == "student-abcdef12"
+        assert username_arg == expected_username
         admin.duplicate_project.assert_awaited_once_with(
-            "tmpl-1", name="session-student-abcdef12"
+            "tmpl-1", name=f"session-{expected_username}"
         )
         admin.open_project.assert_awaited_once_with("proj-99")
-        admin.create_acl.assert_awaited_once_with(
-            "/projects/proj-99", "role-user", "u-42"
-        )
+        # Два ACL: на сам проект (роль User) и на список проектов (роль Auditor) —
+        # оба через RBAC-гейт и последовательно, GNS3 500-тит на параллельных записях.
+        acl_calls = [c.args for c in admin.create_acl.await_args_list]
+        assert acl_calls == [
+            ("/projects/proj-99", "role-user", "u-42"),
+            ("/projects", "role-user", "u-42"),
+        ], f"ожидались ACL на проект и на /projects, получили {acl_calls}"
         db.commit.assert_awaited_once()
         db.refresh.assert_awaited_once()
         assert response.project_id == "proj-99"
         assert response.gns3_user_id == "u-42"
-        assert response.gns3_username == "student-abcdef12"
+        assert response.gns3_username == expected_username
         assert response.gns3_jwt == "jwt-token-xyz"
         assert response.gns3_url == "http://gns3:3080"
         assert "proj-99" in response.gns3_deep_url

@@ -1,5 +1,4 @@
 """Тесты ControlInterface: 5 ветвей отказа + 2 happy path."""
-import time
 from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -8,7 +7,7 @@ from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 
 from control_interface.interface import ControlInterface, InterfaceDenied
-from experiment.control_arm import ControlArm
+from experiment.assignment import ControlArm
 
 pytestmark = [pytest.mark.unit]
 
@@ -22,6 +21,8 @@ def _make_mcp():
     mcp = MagicMock()
     mcp._call_tool = AsyncMock(return_value={"data": "ok"})
     mcp.execute_action = AsyncMock(return_value={"done": True})
+    # observe диспатчит через типизированную обёртку (инъекция ctx + сериализация).
+    mcp.list_user_actions = AsyncMock(return_value={"data": "ok"})
     return mcp
 
 
@@ -59,8 +60,8 @@ class TestControlInterface:
             result = await iface.observe(_TOOL_OBS, ctx=None, arguments={},
                                          user_id=_USER, session_id=_SESSION)
 
-        with autotest.step("Assert: _call_tool вызван"):
-            mcp._call_tool.assert_awaited_once_with(_TOOL_OBS, {})
+        with autotest.step("Assert: типизированная обёртка вызвана с ctx"):
+            mcp.list_user_actions.assert_awaited_once_with(None)
         with autotest.step("Assert: audit записан с success=True"):
             assert_true(mock_record.called, "record вызван")
             call_kwargs = mock_record.call_args.kwargs

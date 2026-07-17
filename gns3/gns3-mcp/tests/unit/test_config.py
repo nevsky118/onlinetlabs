@@ -1,9 +1,9 @@
 import pytest
+from mcp_sdk.testing import autotest
 from pydantic import ValidationError
 
-from src.config.config_model import GNS3MCPConfigModel, MCPConfig, PoolConfig, LogBufferConfig
+from src.config.config_model import GNS3MCPConfigModel, MCPConfig
 from src.config.env_config_loader import EnvConfigLoader
-from mcp_sdk.testing import autotest
 
 pytestmark = [pytest.mark.unit, pytest.mark.config]
 
@@ -21,7 +21,10 @@ class TestConfigModel:
             assert cfg.mcp.transport == "streamable-http"
             assert cfg.mcp.host == "127.0.0.1"
             assert cfg.mcp.port == 8100
-            assert cfg.pool.max_size == 50
+            assert cfg.pool.max_size == 200
+            assert cfg.pool.idle_ttl == 600.0
+            assert cfg.pool.health_check_interval == 60.0
+            assert cfg.pool.min_evict_idle == 30.0
             assert cfg.log_buffer.max_entries == 500
             assert cfg.log_buffer.inactivity_timeout == 300.0
             assert cfg.gns3_service_url == "http://localhost:8101"
@@ -46,20 +49,22 @@ class TestEnvConfigLoader:
         with autotest.step("Проверяем дефолты"):
             assert cfg.mcp.server_name == "gns3"
             assert cfg.mcp.port == 8100
-            assert cfg.pool.max_size == 50
+            assert cfg.pool.max_size == 200
 
     @autotest.num("323")
     @autotest.external_id("gns3-config-loader-overrides")
     @autotest.name("EnvConfigLoader: переопределение через env vars")
     def test_build_overrides(self):
         with autotest.step("Строим с кастомными значениями"):
-            cfg = EnvConfigLoader._build({
-                "MCP_SERVER_NAME": "custom",
-                "MCP_PORT": "9000",
-                "POOL_MAX_SIZE": "10",
-                "LOG_BUFFER_MAX_ENTRIES": "100",
-                "GNS3_SERVICE_URL": "http://gns3:8101",
-            })
+            cfg = EnvConfigLoader._build(
+                {
+                    "MCP_SERVER_NAME": "custom",
+                    "MCP_PORT": "9000",
+                    "POOL_MAX_SIZE": "10",
+                    "LOG_BUFFER_MAX_ENTRIES": "100",
+                    "GNS3_SERVICE_URL": "http://gns3:8101",
+                }
+            )
 
         with autotest.step("Проверяем переопределения"):
             assert cfg.mcp.server_name == "custom"

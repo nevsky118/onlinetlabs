@@ -54,21 +54,86 @@ def _get_history_client(base_url: str) -> httpx.AsyncClient:
 ACTIONS: list[dict] = [
     {"name": "start_all_nodes", "description": "Запуск всех нод", "params": {}, "types": []},
     {"name": "stop_all_nodes", "description": "Остановка всех нод", "params": {}, "types": []},
-    {"name": "start_node", "description": "Запуск ноды", "params": {"node_id": {"type": "string"}}, "types": ["vpcs", "qemu", "dynamips", "docker"]},
-    {"name": "stop_node", "description": "Остановка ноды", "params": {"node_id": {"type": "string"}}, "types": ["vpcs", "qemu", "dynamips", "docker"]},
-    {"name": "reload_node", "description": "Перезагрузка ноды", "params": {"node_id": {"type": "string"}}, "types": ["vpcs", "qemu", "dynamips", "docker"]},
-    {"name": "suspend_node", "description": "Приостановка ноды", "params": {"node_id": {"type": "string"}}, "types": ["vpcs", "qemu", "dynamips", "docker"]},
-    {"name": "isolate_node", "description": "Отключить все линки ноды", "params": {"node_id": {"type": "string"}}, "types": ["vpcs", "qemu", "dynamips", "docker"]},
-    {"name": "unisolate_node", "description": "Восстановить линки ноды", "params": {"node_id": {"type": "string"}}, "types": ["vpcs", "qemu", "dynamips", "docker"]},
-    {"name": "create_link", "description": "Создать соединение", "params": {"nodes": {"type": "array"}}, "types": ["link"]},
-    {"name": "delete_link", "description": "Удалить соединение", "params": {"link_id": {"type": "string"}}, "types": ["link"]},
-    {"name": "start_capture", "description": "Начать захват пакетов", "params": {"link_id": {"type": "string"}}, "types": ["link"]},
-    {"name": "stop_capture", "description": "Остановить захват", "params": {"link_id": {"type": "string"}}, "types": ["link"]},
-    {"name": "set_link_filter", "description": "Установить фильтры", "params": {"link_id": {"type": "string"}, "filters": {"type": "object"}}, "types": ["link"]},
+    {
+        "name": "start_node",
+        "description": "Запуск ноды",
+        "params": {"node_id": {"type": "string"}},
+        "types": ["vpcs", "qemu", "dynamips", "docker"],
+    },
+    {
+        "name": "stop_node",
+        "description": "Остановка ноды",
+        "params": {"node_id": {"type": "string"}},
+        "types": ["vpcs", "qemu", "dynamips", "docker"],
+    },
+    {
+        "name": "reload_node",
+        "description": "Перезагрузка ноды",
+        "params": {"node_id": {"type": "string"}},
+        "types": ["vpcs", "qemu", "dynamips", "docker"],
+    },
+    {
+        "name": "suspend_node",
+        "description": "Приостановка ноды",
+        "params": {"node_id": {"type": "string"}},
+        "types": ["vpcs", "qemu", "dynamips", "docker"],
+    },
+    {
+        "name": "isolate_node",
+        "description": "Отключить все линки ноды",
+        "params": {"node_id": {"type": "string"}},
+        "types": ["vpcs", "qemu", "dynamips", "docker"],
+    },
+    {
+        "name": "unisolate_node",
+        "description": "Восстановить линки ноды",
+        "params": {"node_id": {"type": "string"}},
+        "types": ["vpcs", "qemu", "dynamips", "docker"],
+    },
+    {
+        "name": "create_link",
+        "description": "Создать соединение",
+        "params": {"nodes": {"type": "array"}},
+        "types": ["link"],
+    },
+    {
+        "name": "delete_link",
+        "description": "Удалить соединение",
+        "params": {"link_id": {"type": "string"}},
+        "types": ["link"],
+    },
+    {
+        "name": "start_capture",
+        "description": "Начать захват пакетов",
+        "params": {"link_id": {"type": "string"}},
+        "types": ["link"],
+    },
+    {
+        "name": "stop_capture",
+        "description": "Остановить захват",
+        "params": {"link_id": {"type": "string"}},
+        "types": ["link"],
+    },
+    {
+        "name": "set_link_filter",
+        "description": "Установить фильтры",
+        "params": {"link_id": {"type": "string"}, "filters": {"type": "object"}},
+        "types": ["link"],
+    },
     {"name": "open_project", "description": "Открыть проект", "params": {}, "types": []},
     {"name": "close_project", "description": "Закрыть проект", "params": {}, "types": []},
-    {"name": "create_snapshot", "description": "Сохранить состояние", "params": {"name": {"type": "string"}}, "types": []},
-    {"name": "restore_snapshot", "description": "Восстановить состояние", "params": {"snapshot_id": {"type": "string"}}, "types": []},
+    {
+        "name": "create_snapshot",
+        "description": "Сохранить состояние",
+        "params": {"name": {"type": "string"}},
+        "types": [],
+    },
+    {
+        "name": "restore_snapshot",
+        "description": "Восстановить состояние",
+        "params": {"snapshot_id": {"type": "string"}},
+        "types": [],
+    },
 ]
 
 
@@ -82,9 +147,9 @@ class GNS3Server:
     def __init__(
         self,
         api_client: GNS3ApiClient | None = None,
-        log_buffer: "LogBuffer | None" = None,
+        log_buffer: LogBuffer | None = None,
         history_url: str | None = None,
-        pool: "ConnectionPool | None" = None,
+        pool: ConnectionPool | None = None,
     ) -> None:
         self._api = api_client
         self._pool = pool
@@ -98,6 +163,7 @@ class GNS3Server:
         if self._pool is not None:
             return await self._pool.get_connection(ctx)
         from mcp_sdk.errors import SessionContextError
+
         raise SessionContextError("No api_client or pool configured")
 
     def _project_id(self, ctx: SessionContext) -> str:
@@ -125,9 +191,7 @@ class GNS3Server:
             components.append(link_to_component(link, node_names))
         return components
 
-    async def get_component(
-        self, ctx: SessionContext, component_id: str
-    ) -> ComponentDetail:
+    async def get_component(self, ctx: SessionContext, component_id: str) -> ComponentDetail:
         pid = self._project_id(ctx)
 
         api = await self._resolve_api(ctx)
@@ -140,9 +204,7 @@ class GNS3Server:
             for link in links:
                 link_node_ids = [node["node_id"] for node in link["nodes"]]
                 if component_id in link_node_ids:
-                    peer_ids.extend(
-                        nid for nid in link_node_ids if nid != component_id
-                    )
+                    peer_ids.extend(nid for nid in link_node_ids if nid != component_id)
             return node_to_component_detail(node, peer_ids)
         except TargetSystemAPIError:
             pass
@@ -168,12 +230,16 @@ class GNS3Server:
 
     # -- LogProvider --
 
-    async def list_errors(self, ctx: SessionContext, since: datetime | None = None) -> list[ErrorEntry]:
+    async def list_errors(
+        self, ctx: SessionContext, since: datetime | None = None
+    ) -> list[ErrorEntry]:
         """Ошибки из ring buffer."""
         await self._ensure_log_buffer(ctx)
         return self._log_buffer.get_errors(since=since)
 
-    async def get_logs(self, ctx: SessionContext, level: LogLevel = LogLevel.ALL, limit: int = 100) -> list[LogEntry]:
+    async def get_logs(
+        self, ctx: SessionContext, level: LogLevel = LogLevel.ALL, limit: int = 100
+    ) -> list[LogEntry]:
         """Логи из ring buffer с фильтрацией."""
         await self._ensure_log_buffer(ctx)
         return self._log_buffer.get_logs(level=level, limit=limit)
@@ -182,19 +248,25 @@ class GNS3Server:
         """Ленивая инициализация LogBuffer + WS подключение."""
         if self._log_buffer is None:
             from src.log_buffer import LogBuffer
+
             self._log_buffer = LogBuffer()
 
         from urllib.parse import urlparse, urlunparse
+
         parsed = urlparse(ctx.environment_url.rstrip("/"))
         ws_scheme = "wss" if parsed.scheme == "https" else "ws"
         pid = self._project_id(ctx)
-        ws_url = urlunparse((ws_scheme, parsed.netloc, f"/v3/projects/{pid}/notifications/ws", "", "", ""))
+        ws_url = urlunparse(
+            (ws_scheme, parsed.netloc, f"/v3/projects/{pid}/notifications/ws", "", "", "")
+        )
         jwt = ctx.metadata.get("gns3_jwt") if ctx.metadata else None
         await self._log_buffer.ensure_connected(ws_url, jwt)
 
     # -- ActionProvider --
 
-    async def list_available_actions(self, ctx: SessionContext, component_id: str | None = None) -> list[ActionSpec]:
+    async def list_available_actions(
+        self, ctx: SessionContext, component_id: str | None = None
+    ) -> list[ActionSpec]:
         if component_id:
             # Определяем тип компонента
             try:
@@ -203,16 +275,28 @@ class GNS3Server:
             except Exception:
                 comp_type = None
             return [
-                ActionSpec(name=action["name"], description=action["description"], parameters=action["params"], component_types=action["types"])
+                ActionSpec(
+                    name=action["name"],
+                    description=action["description"],
+                    parameters=action["params"],
+                    component_types=action["types"],
+                )
                 for action in ACTIONS
                 if not action["types"] or (comp_type and comp_type in action["types"])
             ]
         return [
-            ActionSpec(name=action["name"], description=action["description"], parameters=action["params"], component_types=action["types"])
+            ActionSpec(
+                name=action["name"],
+                description=action["description"],
+                parameters=action["params"],
+                component_types=action["types"],
+            )
             for action in ACTIONS
         ]
 
-    async def execute_action(self, ctx: SessionContext, action_name: str, params: dict) -> ActionResult:
+    async def execute_action(
+        self, ctx: SessionContext, action_name: str, params: dict
+    ) -> ActionResult:
         pid = self._project_id(ctx)
         api = await self._resolve_api(ctx)
         try:
@@ -253,7 +337,9 @@ class GNS3Server:
                     await api.restore_snapshot(pid, params["snapshot_id"])
                 case _:
                     raise ActionExecutionError(action_name, f"Unknown action: {action_name}")
-            return ActionResult(success=True, message=f"Action '{action_name}' executed successfully")
+            return ActionResult(
+                success=True, message=f"Action '{action_name}' executed successfully"
+            )
         except ActionExecutionError:
             raise
         except KeyError as exc:
@@ -267,9 +353,13 @@ class GNS3Server:
         """Запрашивает историю из gns3-service."""
         if not self._history_url:
             return []
+        # История в gns3-service ключуется gns3-service session id, а ctx.session_id —
+        # backend LearningSession id. Реальный ключ приходит в metadata; fallback для
+        # обратной совместимости (напр. тесты без metadata).
+        history_session_id = (ctx.metadata or {}).get("gns3_session_id") or ctx.session_id
         client = _get_history_client(self._history_url)
         response = await client.get(
-            f"/history/{ctx.session_id}/actions",
+            f"/history/{history_session_id}/actions",
             params={"limit": limit},
         )
         if response.status_code != 200:

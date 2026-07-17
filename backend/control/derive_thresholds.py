@@ -2,17 +2,15 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from control.criterion import Costs, _to_sec, compute_J
+from control.criterion import Costs, _to_sec, compute_J, is_bad_regime
 
-# Плохие режимы (синхронизировать с criterion.py)
-_BAD_REGIMES = {"stuck_on_step", "repeating_errors", "idle", "trial_and_error"}
-
-
-def _is_bad(regime: str) -> bool:
-    return regime in _BAD_REGIMES
+# Counterfactual: (samples, interventions) -> сэмплы для расчёта bad_duration.
+# Стипуляция (truncation) vs измеренный hazard (P4) — ось ablation де-циркуляризации.
+Counterfactual = Callable[[list[dict], list[dict]], list[dict]]
 
 
 def simulate_interventions(
@@ -31,7 +29,7 @@ def simulate_interventions(
 
     for s in samples:
         regime = s["regime"]
-        if not _is_bad(regime):
+        if not is_bad_regime(regime):
             continue  # продуктивный — пропуск
 
         threshold = dwell_thresholds.get(regime)
@@ -68,11 +66,21 @@ def _truncate_at_interventions(
     for s in samples:
         s_ts = _to_sec(s["ts"])
         # если этот сэмпл в плохом режиме и после хотя бы одной интервенции — обнуляем
-        if _is_bad(s["regime"]) and any(iv_t <= s_ts for iv_t in iv_ts_sorted):
+        if is_bad_regime(s["regime"]) and any(iv_t <= s_ts for iv_t in iv_ts_sorted):
             result.append({**s, "regime": "productive", "dwell": 0.0})
         else:
             result.append(s)
     return result
+
+
+def no_effect_counterfactual(samples: list[dict], interventions: list[dict]) -> list[dict]:
+    """Counterfactual «вмешательство НЕ влияет на исход»: bad_duration не зависит от T_k.
+
+    Ablation-альтернатива стипуляции _truncate_at_interventions: показывает, что
+    оптимум T_k — свойство ДОПУЩЕНИЯ об эффекте, а не только данных. На реальных
+    логах место этого — counterfactual из ИЗМЕРЕННОГО hazard (P4), не из допущения.
+    """
+    return samples
 
 
 def total_J(
@@ -80,20 +88,22 @@ def total_J(
     costs: Costs,
     dwell_thresholds: dict[str, float],
     cooldown_seconds: float = 0.0,
+    counterfactual: Counterfactual = _truncate_at_interventions,
 ) -> float:
     """Суммарный критерий J по всем сессиям с симулированными вмешательствами.
 
-    bad_duration считается по усечённым сэмплам (интервенция завершает спелл),
+    bad_duration считается по counterfactual-сэмплам (эффект вмешательства),
     n_false — по оригинальным (нужны clean-выходы для сравнения медиан).
-    Без усечения T_k=∞ тривиально побеждает (bad_duration не зависит от T_k).
+    counterfactual по умолчанию — стипуляция (интервенция завершает спелл); без
+    зависимости от T_k (no_effect_counterfactual) T_k=∞ тривиально побеждает.
     """
     total = 0.0
     for s in sessions:
         ivs = simulate_interventions(s["samples"], dwell_thresholds, cooldown_seconds)
-        # усечённые сэмплы: после интервенции плохой режим → продуктивный
-        truncated = _truncate_at_interventions(s["samples"], ivs)
+        # bad_duration по counterfactual: эффект вмешательства на исход
+        truncated = counterfactual(s["samples"], ivs)
         total += compute_J(
-            s["samples"], ivs, costs, dwell_thresholds,
+            s["samples"], ivs, costs,
             bad_duration_samples=truncated,
         ).J
     return total
@@ -104,6 +114,7 @@ def derive_T_k(
     costs: Costs,
     grid: dict[str, list[float]],
     cooldown_seconds: float = 0.0,
+    counterfactual: Counterfactual = _truncate_at_interventions,
 ) -> dict[str, float]:
     """Выбирает лучший T_k для каждого режима независимо по сетке кандидатов."""
     # Инициализируем пороги первыми значениями сетки
@@ -119,7 +130,7 @@ def derive_T_k(
         best_j = float("inf")
         for tk in candidates:
             trial = {**current_thresholds, regime: tk}
-            j = total_J(sessions, costs, trial, cooldown_seconds)
+            j = total_J(sessions, costs, trial, cooldown_seconds, counterfactual)
             if j < best_j:
                 best_j = j
                 best_tk = tk
@@ -137,6 +148,7 @@ def sensitivity_curve(
     c_false: float = 2.0,
     cooldown_seconds: float = 0.0,
     time_unit_seconds: float = 1.0,
+    counterfactual: Counterfactual = _truncate_at_interventions,
 ) -> list[tuple]:
     """Кривая чувствительности T_k по диапазону соотношений стоимостей.
 
@@ -151,8 +163,8 @@ def sensitivity_curve(
             c_intervention=base_c_intervention,
             c_false=c_false,
         )
-        tk = derive_T_k(sessions, costs, grid, cooldown_seconds)
-        j = total_J(sessions, costs, tk, cooldown_seconds)
+        tk = derive_T_k(sessions, costs, grid, cooldown_seconds, counterfactual)
+        j = total_J(sessions, costs, tk, cooldown_seconds, counterfactual)
         curve.append((ratio, tk, j))
     return curve
 

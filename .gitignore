@@ -90,3 +90,8 @@ gns3/runtime/
 
 # === Archived/removed-but-preserved content ===
 .archive/
+
+# === Agent/tooling local state ===
+.agents
+.migration
+skills-lock.json

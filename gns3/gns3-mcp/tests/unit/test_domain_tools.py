@@ -1,7 +1,6 @@
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
-
 from mcp_sdk.context import SessionContext
 from mcp_sdk.testing import autotest
 
@@ -63,21 +62,38 @@ def registered():
 
 EXPECTED_TOOL_NAMES = {
     # node lifecycle
-    "start_node", "stop_node", "reload_node", "suspend_node",
-    "isolate_node", "unisolate_node",
-    "start_all_nodes", "stop_all_nodes",
+    "start_node",
+    "stop_node",
+    "reload_node",
+    "suspend_node",
+    "isolate_node",
+    "unisolate_node",
+    "start_all_nodes",
+    "stop_all_nodes",
     # links
-    "create_link", "delete_link",
-    "start_capture", "stop_capture", "set_link_filter",
+    "create_link",
+    "delete_link",
+    "start_capture",
+    "stop_capture",
+    "set_link_filter",
     # console
-    "get_console_info", "reset_console",
+    "get_console_info",
+    "reset_console",
     # templates
-    "list_templates", "create_node_from_template",
+    "list_templates",
+    "create_node_from_template",
     # project ops
-    "open_project", "close_project",
-    "lock_project", "unlock_project", "duplicate_project",
+    "open_project",
+    "close_project",
+    "lock_project",
+    "unlock_project",
+    "duplicate_project",
     # snapshots
-    "list_snapshots", "create_snapshot", "restore_snapshot",
+    "list_snapshots",
+    "create_snapshot",
+    "restore_snapshot",
+    # console/exec (наблюдение состояния устройства через MCP)
+    "exec_vtysh",
 }
 
 
@@ -117,7 +133,7 @@ class TestDispatch:
             api.start_node.return_value = {"status": "started"}
 
         with autotest.step("Вызываем start_node"):
-            result = await server.tools["start_node"](_make_ctx_dict(), NODE_ID)
+            result = await server.tools["start_node"](_make_ctx_dict(), node_id=NODE_ID)
 
         with autotest.step("Проверяем диспатч и формат ответа"):
             api.start_node.assert_awaited_once_with(PROJECT_ID, NODE_ID)
@@ -134,7 +150,7 @@ class TestDispatch:
             api.isolate_node.return_value = {"isolated_links": ["l1", "l2"]}
 
         with autotest.step("Вызываем isolate_node"):
-            result = await server.tools["isolate_node"](_make_ctx_dict(), NODE_ID)
+            result = await server.tools["isolate_node"](_make_ctx_dict(), node_id=NODE_ID)
 
         with autotest.step("Проверяем дипатч и payload"):
             api.isolate_node.assert_awaited_once_with(PROJECT_ID, NODE_ID)
@@ -175,7 +191,7 @@ class TestDispatch:
             api.delete_link.return_value = None
 
         with autotest.step("Вызываем delete_link"):
-            result = await server.tools["delete_link"](_make_ctx_dict(), LINK_ID)
+            result = await server.tools["delete_link"](_make_ctx_dict(), link_id=LINK_ID)
 
         with autotest.step("Проверяем"):
             api.delete_link.assert_awaited_once_with(PROJECT_ID, LINK_ID)
@@ -191,10 +207,40 @@ class TestDispatch:
             api.create_snapshot.return_value = {"snapshot_id": "s9"}
 
         with autotest.step("Вызываем create_snapshot"):
-            result = await server.tools["create_snapshot"](_make_ctx_dict(), "backup-1")
+            result = await server.tools["create_snapshot"](_make_ctx_dict(), name="backup-1")
 
         with autotest.step("Проверяем диспатч и сообщение"):
             api.create_snapshot.assert_awaited_once_with(PROJECT_ID, "backup-1")
             assert result["success"] is True
             assert "backup-1" in result["message"]
             assert result["data"] == {"snapshot_id": "s9"}
+
+    @autotest.num("817")
+    @autotest.external_id("gns3-domain-tools-dispatch-start-all-nodes")
+    @autotest.name("start_all_nodes: вызывает api_client.start_all_nodes, ответ без data")
+    async def test_start_all_nodes_dispatch(self, registered):
+        with autotest.step("Готовим api mock"):
+            server, api = registered
+            api.start_all_nodes.return_value = None
+
+        with autotest.step("Вызываем start_all_nodes"):
+            result = await server.tools["start_all_nodes"](_make_ctx_dict())
+
+        with autotest.step("Проверяем диспатч и форму ответа без data"):
+            api.start_all_nodes.assert_awaited_once_with(PROJECT_ID)
+            assert result == {"success": True, "message": "All nodes started"}
+
+    @autotest.num("818")
+    @autotest.external_id("gns3-domain-tools-dispatch-list-templates")
+    @autotest.name("list_templates: возвращает список шаблонов как есть, без обёртки")
+    async def test_list_templates_dispatch(self, registered):
+        with autotest.step("Готовим api mock"):
+            server, api = registered
+            api.list_templates.return_value = [{"template_id": "tpl-1"}]
+
+        with autotest.step("Вызываем list_templates"):
+            result = await server.tools["list_templates"](_make_ctx_dict())
+
+        with autotest.step("Проверяем bare list passthrough"):
+            api.list_templates.assert_awaited_once_with()
+            assert result == [{"template_id": "tpl-1"}]

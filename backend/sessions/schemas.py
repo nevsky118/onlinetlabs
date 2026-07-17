@@ -119,6 +119,8 @@ class FullSessionStateResponse(BaseModel):
     nodes: list[NodeStateSchema]
     links: list[LinkStateSchema]
     metrics: SessionMetricsSchema
+    # L2-холдаут: проактивные подсказки подавлены (unassisted near-transfer)
+    no_assist: bool = Field(default=False, alias="noAssist")
 
     model_config = {"populate_by_name": True}
 

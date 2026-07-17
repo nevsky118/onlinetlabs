@@ -23,15 +23,12 @@ from admin.schemas import (
     UserListResponse,
     UserUpdate,
 )
-from labs.service import get_all_labs, get_lab_by_slug, update_lab
 from auth.dependencies import get_current_user
-from db.session import async_session
-from deps import get_gns3_client, get_session_factory
 from config.config_model import LearningAnalyticsConfig
-from models.user import User, UserRole
 from control.criterion import Costs
 from control.derive_thresholds import sensitivity_curve
-from db.session import get_db
+from db.session import async_session, get_db
+from deps import get_gns3_client, get_session_factory
 from evaluation.metrics import (
     confusion_matrix,
     first_match_diagnostics,
@@ -39,9 +36,11 @@ from evaluation.metrics import (
     operating_curve,
 )
 from evaluation.scenarios import make_normal_scenario, make_struggle_scenario
+from labs.service import get_all_labs, get_lab_by_slug, update_lab
 from learning_analytics.process_state import ProcessRegime
 from models.experiment import ExperimentMetrics
 from models.session import LearningSession
+from models.user import User, UserRole
 
 router = APIRouter()
 
@@ -179,8 +178,8 @@ def build_tk_sensitivity(cfg: LearningAnalyticsConfig | None = None) -> dict:
 
 async def build_overview(db: AsyncSession) -> dict:
     """KPI-агрегат из БД. Числа — из чистых функций."""
-    from experiment.analysis import compute_arm_analysis
     from cohort.service import compute_cohort_metrics
+    from experiment.analysis import compute_arm_analysis
 
     la_cfg = _default_la_config()
 
@@ -194,11 +193,10 @@ async def build_overview(db: AsyncSession) -> dict:
         horizon_seconds=la_cfg.cohort_horizon_days * 86400,
         by_arm=False,
     )
-    # pooled: агрегируем по всем навыкам
-    all_reach = [v.get("reach_rate", 0.0) for v in cohort.values() if isinstance(v, dict)]
-    all_n = [v.get("n", 0) for v in cohort.values() if isinstance(v, dict)]
-    pooled_reach = sum(all_reach) / len(all_reach) if all_reach else 0.0
-    pooled_n = sum(all_n)
+    # pooled: aggregate_cohort отдаёт готовую pooled-ячейку (CohortCell), не dict.
+    pooled_cell = cohort.get("pooled")
+    pooled_reach = pooled_cell.time_to_competence.reach_rate if pooled_cell else 0.0
+    pooled_n = pooled_cell.n if pooled_cell else 0
 
     # Идентификатор (синтетика)
     eval_data = build_identifier_eval(la_cfg)

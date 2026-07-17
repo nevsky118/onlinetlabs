@@ -3,17 +3,16 @@
 import asyncio
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
-from control_interface.audit import record as audit_record
-
-from agents.analytics.agent import AnalyticsAgent
+from agents.analytics.agent import identify_regime
 from agents.analytics.models import AnalyticsResult, SessionFeatures
 from agents.orchestrator.models import InterventionInput
 from config.config_model import LearningAnalyticsConfig
-from experiment.control_arm import ControlArm
+from control_interface.audit import record as audit_record
+from experiment.assignment import ControlArm
 from learning_analytics.collector import BehavioralCollector
 from learning_analytics.context import MCPContextBuilder
 from learning_analytics.features import FeatureExtractor
@@ -88,10 +87,13 @@ class SessionMonitor:
         self._session_id: str | None = None
         self._user_id: str | None = None
         self._lab_slug: str | None = None
-        self._analytics_agent: AnalyticsAgent | None = None
         self._session_model_id: str | None = None
         self._dwell = DwellTracker()
         self._escalated_in_spell: bool = False
+        # MRT: состояние текущего bad-spell (джиттеренный T_k + id точек решения)
+        self._spell_id: str | None = None
+        self._spell_t_k: float | None = None
+        self._open_decision_ids: list[str] = []
 
     async def start_session(
         self,
@@ -99,17 +101,16 @@ class SessionMonitor:
         user_id: str,
         lab_slug: str,
         ctx,
-        analytics_agent: AnalyticsAgent,
     ) -> None:
         """Запуск сбора и анализа для сессии."""
         from sqlalchemy import func, select
+
         from models.behavioral_event import BehavioralEvent
 
         self._session_id = session_id
         self._user_id = user_id
         self._lab_slug = lab_slug
         self._ctx = ctx
-        self._analytics_agent = analytics_agent
         self._running = True
 
         async with self._db_factory() as session:
@@ -166,11 +167,13 @@ class SessionMonitor:
             return
 
         self._last_event_at = events[-1].timestamp
+        import time
+        _t0 = time.perf_counter()
         features = self._feature_extractor.compute(self._session_id, events)
-        analysis = self._analytics_agent.analyze_session(
-            features, self._learning_analytics_config
-        )
-        regime, dwell = await self._log_process_state(analysis, datetime.now(tz=timezone.utc))
+        analysis = identify_regime(features, self._learning_analytics_config)
+        regime, dwell = await self._log_process_state(analysis, datetime.now(tz=UTC))
+        if self._learning_analytics_config.latency_capture_enabled:
+            await self._record_latency("analysis", (time.perf_counter() - _t0) * 1000.0)
 
         # Объективная эскалация — arm-нейтрально, до ветки интервенций
         from learning_analytics.process_state import is_bad
@@ -189,6 +192,13 @@ class SessionMonitor:
         else:
             self._escalated_in_spell = False
 
+        if self._learning_analytics_config.mrt_enabled:
+            await self._mrt_step(
+                analysis, features, regime, dwell,
+                datetime.now(tz=UTC),
+            )
+            return
+
         if not self._dwell_ready(regime.value, dwell):
             return
 
@@ -197,7 +207,7 @@ class SessionMonitor:
             if not self._should_trigger_intervention():
                 return
             await self._log_would_intervene(analysis)
-            self._last_intervention_at = datetime.now(tz=timezone.utc)
+            self._last_intervention_at = datetime.now(tz=UTC)
             return
 
         pending = await self._decide_intervention(analysis, features)
@@ -238,6 +248,7 @@ class SessionMonitor:
         и порождает следующую интервенцию — самоподдерживающийся цикл.
         """
         from sqlalchemy import func, select
+
         from models.behavioral_event import BehavioralEvent
 
         latest_stmt = select(func.max(BehavioralEvent.timestamp)).where(
@@ -264,8 +275,8 @@ class SessionMonitor:
 
     async def _log_process_state(self, analysis, now):
         """Записать выборку состояния процесса (режим + dwell) — каждый цикл."""
-        from models.process_state_sample import ProcessStateSample
         from learning_analytics.process_state import analysis_to_regime
+        from models.process_state_sample import ProcessStateSample
         regime = analysis_to_regime(analysis)
         dwell = self._dwell.observe(regime, now)
         async with self._db_factory() as db:
@@ -293,7 +304,7 @@ class SessionMonitor:
         if not self._should_trigger_intervention():
             # Cooldown ещё не прошёл — пропускаем интервенцию
             elapsed = (
-                (datetime.now(tz=timezone.utc) - self._last_intervention_at).total_seconds()
+                (datetime.now(tz=UTC) - self._last_intervention_at).total_seconds()
                 if self._last_intervention_at else 0
             )
             remaining = max(0.0, self._learning_analytics_config.cooldown_period - elapsed)
@@ -345,7 +356,7 @@ class SessionMonitor:
         else:
             response = await self._orchestrator.intervene(pending.payload)
         pending.response = response
-        self._last_intervention_at = datetime.now(tz=timezone.utc)
+        self._last_intervention_at = datetime.now(tz=UTC)
 
         # Эмит после получения ответа агента
         self._emit(event_agent_invoked(
@@ -391,6 +402,35 @@ class SessionMonitor:
                 },
             )
 
+        await self._maybe_grounding_ablation(pending)
+
+    async def _maybe_grounding_ablation(self, pending: PendingIntervention) -> None:
+        """Gated: сгенерировать ungrounded-вариант (без MCP-контекста) и записать пару.
+
+        Grounded-текст берётся из уже сделанного dispatch; ungrounded — один доп. вызов
+        с очищенным agent_context. Дорого → под флагом, best-effort, после доставки.
+        """
+        if not self._learning_analytics_config.grounding_ablation_enabled:
+            return
+        if not (pending.response and pending.response.success):
+            return
+        from evaluation.grounding import record_grounding_comparison
+        try:
+            grounded_text = (pending.response.data or {}).get("hint", "")
+            ungrounded_payload = pending.payload.model_copy(deep=True)
+            ctx = dict(ungrounded_payload.context or {})
+            ctx["agent_context"] = {}
+            ungrounded_payload.context = ctx
+            orch = self._intervention_router or self._orchestrator
+            ungrounded_resp = await orch.intervene(ungrounded_payload)
+            ungrounded_text = (ungrounded_resp.data or {}).get("hint", "")
+            async with self._db_factory() as db:
+                await record_grounding_comparison(
+                    db, self._session_id, grounded_text, ungrounded_text
+                )
+        except Exception:
+            logger.warning("Grounding-ablation не удалось", exc_info=True)
+
     async def _persist_intervention(self, db, pending: PendingIntervention) -> None:
         """Записать интервенцию в поведенческие события для последующего анализа."""
         if pending.response is None:
@@ -414,7 +454,7 @@ class SessionMonitor:
                     session_id=self._session_id,
                     user_id=self._user_id,
                     lab_slug=self._lab_slug,
-                    timestamp=datetime.now(tz=timezone.utc),
+                    timestamp=datetime.now(tz=UTC),
                     event_type="would_intervene",
                     action=action,
                     success=False,
@@ -440,7 +480,7 @@ class SessionMonitor:
                     session_id=self._session_id,
                     user_id=self._user_id,
                     lab_slug=self._lab_slug,
-                    timestamp=datetime.now(tz=timezone.utc),
+                    timestamp=datetime.now(tz=UTC),
                     event_type="intervention",
                     action=f"intervene_{analysis.suggested_intervention.value}",
                     success=response.success,
@@ -494,6 +534,105 @@ class SessionMonitor:
         if self._last_intervention_at is None:
             return True
         elapsed = (
-            datetime.now(tz=timezone.utc) - self._last_intervention_at
+            datetime.now(tz=UTC) - self._last_intervention_at
         ).total_seconds()
         return elapsed >= self._learning_analytics_config.cooldown_period
+
+    async def _record_latency(self, stage: str, duration_ms: float) -> None:
+        """Записать латентность стадии цикла (best-effort, gated в вызывающем коде)."""
+        from learning_analytics.latency import record_stage_latency
+        try:
+            async with self._db_factory() as db:
+                await record_stage_latency(db, self._session_id, stage, duration_ms)
+        except Exception:
+            logger.warning("Не удалось записать латентность стадии", exc_info=True)
+
+    # ── MRT (micro-randomized trial) ─────────────────────────────
+    async def _mrt_step(self, analysis, features, regime, dwell: float, now) -> None:
+        """Ветка MRT: жизненный цикл spell + рандомизация точки решения.
+
+        Заменяет ветку OPEN/CLOSED, когда mrt_enabled. dwell==0.0 ⇔ режим сменился:
+        закрываем прошлый spell (проставляем exit_ts) и открываем новый на плохом режиме.
+        В eligible-точке (dwell >= джиттеренного T_k, cooldown прошёл) тянем
+        intervene/withhold и пишем точку решения.
+        """
+        import random
+
+        from learning_analytics.process_state import is_bad
+
+        if dwell == 0.0:
+            if self._spell_id is not None:
+                await self._mrt_close_spell(now)
+            if is_bad(regime):
+                self._mrt_open_spell(regime.value)
+
+        if self._spell_id is None or self._spell_t_k is None:
+            return
+        if dwell < self._spell_t_k:
+            return
+        if not self._should_trigger_intervention():
+            return
+
+        withhold = random.random() < self._learning_analytics_config.mrt_hold_probability
+        assignment = "withhold" if withhold else "intervene"
+        await self._mrt_record_decision(regime.value, dwell, self._spell_t_k, assignment, now)
+
+        if withhold:
+            await self._log_would_intervene(analysis)
+            self._last_intervention_at = now
+            return
+
+        pending = await self._decide_intervention(analysis, features)
+        if pending is None:
+            return
+        await self._dispatch_intervention(pending)
+        async with self._db_factory() as db:
+            await self._persist_intervention(db, pending)
+        self._last_intervention_at = now
+
+    def _mrt_open_spell(self, regime_value: str) -> None:
+        """Открыть bad-spell: джиттеренный T_k = base * U[1-f, 1+f], новый spell_id."""
+        import random
+        from uuid import uuid4
+        base = self._learning_analytics_config.dwell_thresholds.get(regime_value, 0.0)
+        j = self._learning_analytics_config.mrt_t_k_jitter_frac
+        self._spell_t_k = base * random.uniform(1.0 - j, 1.0 + j)
+        self._spell_id = str(uuid4())
+        self._open_decision_ids = []
+
+    async def _mrt_record_decision(
+        self, regime_value: str, dwell: float, t_k: float, assignment: str, now
+    ) -> None:
+        """Записать точку решения MRT."""
+        from uuid import uuid4
+
+        from models.intervention_decision import InterventionDecision
+        row = InterventionDecision(
+            id=str(uuid4()), session_id=self._session_id, user_id=self._user_id,
+            lab_slug=self._lab_slug, spell_id=self._spell_id, ts=now,
+            regime=regime_value, dwell_seconds=dwell, t_k_applied=t_k,
+            assignment=assignment,
+        )
+        self._open_decision_ids.append(row.id)
+        async with self._db_factory() as db:
+            db.add(row)
+            await db.commit()
+
+    async def _mrt_close_spell(self, now) -> None:
+        """Закрыть spell: проставить subsequent_exit_ts открытым точкам решения."""
+        from sqlalchemy import update
+
+        from models.intervention_decision import InterventionDecision
+        ids = self._open_decision_ids
+        self._spell_id = None
+        self._spell_t_k = None
+        self._open_decision_ids = []
+        if not ids:
+            return
+        async with self._db_factory() as db:
+            await db.execute(
+                update(InterventionDecision)
+                .where(InterventionDecision.id.in_(ids))
+                .values(subsequent_exit_ts=now)
+            )
+            await db.commit()

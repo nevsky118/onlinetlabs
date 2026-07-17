@@ -3,8 +3,8 @@
 from mcp_sdk.context import SessionContext
 
 from config import settings
-from security.secrets import decrypt_secret
 from models.session import LearningSession
+from security.secrets import decrypt_secret
 
 
 def build_session_context(session: LearningSession) -> SessionContext:
@@ -15,5 +15,9 @@ def build_session_context(session: LearningSession) -> SessionContext:
         session_id=session.id,
         environment_url=settings.gns3.internal_url,
         project_id=meta.get("gns3_project_id"),
-        metadata={"gns3_jwt": decrypt_secret(meta["enc_jwt"])},
+        metadata={
+            "gns3_jwt": decrypt_secret(meta["enc_jwt"]),
+            # gns3-service session id — реальный ключ history (ctx.session_id = backend id).
+            "gns3_session_id": meta.get("gns3_service_session_id"),
+        },
     )

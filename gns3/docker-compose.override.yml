@@ -1,0 +1,5 @@
+# TEMP (удаляемый): снять host-публикацию 5433 — конфликт с openalex-pg другого проекта.
+# gns3-service ходит к postgres по внутреннему DNS, host-порт не нужен.
+services:
+  postgres:
+    ports: !reset []
