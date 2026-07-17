@@ -30,6 +30,7 @@ from .state_cache import StateCache
 if TYPE_CHECKING:
     from src.clients.admin import GNS3AdminClient
     from src.gns3_ws_proxy import Gns3WsProxy
+    from src.rbac_gate import RbacGate
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,7 @@ class SessionService:
         # GNS3 RBAC can't handle concurrent writes (500 on POST /v3/access/acl),
         # so user creation and ACL go through a serializing gate.
         from src.rbac_gate import RbacGate
+
         self._rbac_gate = rbac_gate or RbacGate()
         self._state_cache: StateCache[SessionStateResponse] = StateCache(ttl_seconds=5.0)
 
@@ -58,10 +60,15 @@ class SessionService:
         return self._state_cache
 
     def _build_deep_url(self, project_id: str) -> str:
-        return f"{self._gns3_public_url.rstrip('/')}/static/web-ui/controller/1/project/{project_id}"
+        return (
+            f"{self._gns3_public_url.rstrip('/')}/static/web-ui/controller/1/project/{project_id}"
+        )
 
     async def create_session(
-        self, db: AsyncSession, user_id: str, template_project_id: str,
+        self,
+        db: AsyncSession,
+        user_id: str,
+        template_project_id: str,
     ) -> SessionResponse:
         username = gns3_username_for(user_id)
         password = secrets.token_urlsafe(16)
@@ -82,7 +89,8 @@ class SessionService:
                 if orphan is not None:
                     logger.warning(
                         "Removing orphan GNS3 user %s (user_id=%s) before re-creating",
-                        username, orphan["user_id"],
+                        username,
+                        orphan["user_id"],
                     )
                     try:
                         await self._admin.delete_user(orphan["user_id"])
@@ -104,13 +112,17 @@ class SessionService:
             async with self._rbac_gate():
                 # Access to the specific project: full User set (Node.Console etc.)
                 await self._admin.create_acl(
-                    f"/projects/{created_project_id}", user_role["role_id"], created_user_id,
+                    f"/projects/{created_project_id}",
+                    user_role["role_id"],
+                    created_user_id,
                 )
                 # Access to the global project list: Project.Audit only (Auditor).
                 # GET /v3/projects returns projects only with an ACL on "/projects";
                 # a per-project ACL ("/projects/{id}") doesn't count toward the list (GNS3 3.x RBAC).
                 await self._admin.create_acl(
-                    "/projects", auditor_role["role_id"], created_user_id,
+                    "/projects",
+                    auditor_role["role_id"],
+                    created_user_id,
                 )
 
             jwt = await self._admin.get_user_token(username, password)
@@ -129,9 +141,7 @@ class SessionService:
                 try:
                     await self._ws_proxy.start_project(created_project_id, str(session.id))
                 except Exception:
-                    logger.exception(
-                        "ws_proxy.start_project failed for session %s", session.id
-                    )
+                    logger.exception("ws_proxy.start_project failed for session %s", session.id)
 
             return SessionResponse(
                 session_id=str(session.id),
@@ -184,7 +194,10 @@ class SessionService:
         )
 
     async def reset_project(
-        self, db: AsyncSession, session_id: str, template_project_id: str,
+        self,
+        db: AsyncSession,
+        session_id: str,
+        template_project_id: str,
     ) -> ProjectResetResponse:
         session = await db.get(Session, uuid_module.UUID(session_id))
         if session is None:
@@ -194,14 +207,17 @@ class SessionService:
 
         old_project_id = session.gns3_project_id
         project = await self._admin.duplicate_project(
-            template_project_id, name=f"session-{session.gns3_username}",
+            template_project_id,
+            name=f"session-{session.gns3_username}",
         )
         new_project_id = project["project_id"]
         await self._admin.open_project(new_project_id)
 
         user_role = await self._admin.get_builtin_role("User")
         await self._admin.create_acl(
-            f"/projects/{new_project_id}", user_role["role_id"], session.gns3_user_id,
+            f"/projects/{new_project_id}",
+            user_role["role_id"],
+            session.gns3_user_id,
         )
 
         session.gns3_project_id = new_project_id
@@ -235,23 +251,17 @@ class SessionService:
                 try:
                     await self._ws_proxy.stop_project(session.gns3_project_id)
                 except Exception:
-                    logger.exception(
-                        "ws_proxy.stop_project failed for session %s", session.id
-                    )
+                    logger.exception("ws_proxy.stop_project failed for session %s", session.id)
 
             try:
                 await self._admin.delete_user(session.gns3_user_id)
             except Exception:
-                logger.exception(
-                    "Failed to delete GNS3 user %s", session.gns3_user_id
-                )
+                logger.exception("Failed to delete GNS3 user %s", session.gns3_user_id)
 
             try:
                 await self._admin.delete_project(session.gns3_project_id)
             except Exception:
-                logger.exception(
-                    "Failed to delete GNS3 project %s", session.gns3_project_id
-                )
+                logger.exception("Failed to delete GNS3 project %s", session.gns3_project_id)
         finally:
             # We set the status regardless of cleanup outcome: on retry we don't try
             # to clean up GNS3 resources twice, and the record itself is marked closed.
@@ -261,7 +271,10 @@ class SessionService:
 
     async def get_state(self, db: AsyncSession, session_id: str) -> SessionStateResponse:
         return await state_snapshot.fetch_state(
-            self._admin, self._state_cache, db, session_id,
+            self._admin,
+            self._state_cache,
+            db,
+            session_id,
         )
 
     def invalidate_state_cache(self, session_id: str) -> None:
