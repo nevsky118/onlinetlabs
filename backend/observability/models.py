@@ -141,19 +141,6 @@ def event_response_finished(session_id, user_id, *, model_id, total_tokens, stop
     )
 
 
-def event_analysis_cycle(session_id, user_id, *, cycle_number, events_count):
-    """Событие: цикл анализа интервенций."""
-    return AgentActivityEvent(
-        session_id=session_id,
-        user_id=user_id,
-        source=ActivitySource.INTERVENTION,
-        kind=ActivityKind.ANALYSIS_CYCLE,
-        agent="analytics",
-        summary=f"Цикл анализа #{cycle_number}: {events_count} событий",
-        detail={"cycle_number": cycle_number, "events_count": events_count},
-    )
-
-
 def event_cooldown_skip(session_id, user_id, *, reason, remaining_seconds):
     """Событие: интервенция пропущена из-за cooldown."""
     return AgentActivityEvent(
@@ -181,18 +168,6 @@ def event_agent_invoked(session_id, user_id, *, agent_name, model_id, parameters
             "model_id": model_id,
             "parameters_preview": parameters_preview,
         },
-    )
-
-
-def event_context_built(session_id, user_id, *, context_size, components_included):
-    """Событие: контекст построен."""
-    return AgentActivityEvent(
-        session_id=session_id,
-        user_id=user_id,
-        source=ActivitySource.CHAT,
-        kind=ActivityKind.CONTEXT_BUILT,
-        summary=f"Контекст построен: {context_size} символов, {components_included} компонентов",
-        detail={"context_size": context_size, "components_included": components_included},
     )
 
 
