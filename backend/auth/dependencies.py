@@ -2,9 +2,9 @@ import logging
 import secrets
 from datetime import UTC, datetime, timedelta
 
+import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
 
 from config import settings
 
@@ -82,7 +82,7 @@ async def get_current_user(
             "can_view_logs": bool(payload.get("can_view_logs")),
             "is_active": bool(payload.get("is_active")),
         }
-    except JWTError:
+    except jwt.InvalidTokenError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token"
         )
@@ -107,7 +107,7 @@ async def get_current_user_optional(
             "can_view_logs": bool(payload.get("can_view_logs")),
             "is_active": bool(payload.get("is_active")),
         }
-    except JWTError:
+    except jwt.InvalidTokenError:
         return None
 
 
@@ -170,6 +170,6 @@ async def verify_jwt_for_ws(token: str | None) -> dict | None:
             "can_view_logs": bool(payload.get("can_view_logs")),
             "is_active": bool(payload.get("is_active")),
         }
-    except JWTError as exc:
+    except jwt.InvalidTokenError as exc:
         logger.warning("ws jwt verify failed", extra={"error": str(exc)})
         return None

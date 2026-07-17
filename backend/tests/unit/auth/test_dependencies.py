@@ -1,8 +1,8 @@
 from datetime import UTC, datetime, timedelta
 
+import jwt
 import pytest
 from fastapi import HTTPException
-from jose import JWTError, jwt
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import (
     assert_equal,
@@ -48,7 +48,7 @@ class TestBackendTokenRoundTrip:
             token = create_backend_token("user-701", "student")
 
         with autotest.step("Act + Assert: decode чужим секретом падает с JWTError"):
-            with pytest.raises(JWTError):
+            with pytest.raises(jwt.InvalidTokenError):
                 decode_backend_token(token, "wrong-secret")
 
     @autotest.num("702")
@@ -61,7 +61,7 @@ class TestBackendTokenRoundTrip:
             expired_token = jwt.encode(payload, settings.api.jwt_secret, algorithm="HS256")
 
         with autotest.step("Act + Assert: decode падает с JWTError"):
-            with pytest.raises(JWTError):
+            with pytest.raises(jwt.InvalidTokenError):
                 decode_backend_token(expired_token, settings.api.jwt_secret)
 
 
