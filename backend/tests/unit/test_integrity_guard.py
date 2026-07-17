@@ -1,4 +1,4 @@
-"""Integrity-guard: production-код не зависит от seeded/.e2e артефактов (tripwire)."""
+"""Integrity guard: production code does not depend on seeded/.e2e artifacts (tripwire)."""
 
 import re
 from pathlib import Path
@@ -9,13 +9,21 @@ from mcp_sdk.testing.custom_assertions import assert_equal
 
 pytestmark = [pytest.mark.unit]
 
-# Production-каталоги backend'а (без tests/, .e2e/, migrations/, scripts/).
+# Production directories of the backend (excluding tests/, .e2e/, migrations/, scripts/).
 _PROD_DIRS = [
-    "learning_analytics", "control", "agents", "experiment", "sessions",
-    "evaluation", "cohort", "admin", "escalation", "control_interface",
+    "learning_analytics",
+    "control",
+    "agents",
+    "experiment",
+    "sessions",
+    "evaluation",
+    "cohort",
+    "admin",
+    "escalation",
+    "control_interface",
 ]
-# Засеянный A/B живёт только в .e2e/ab_run.py (l2_pass). Ни один анализ/production
-# путь не должен его тянуть — иначе seeded-данные утекают в сабмит-артефакты.
+# The seeded A/B lives only in .e2e/ab_run.py (l2_pass). No analysis/production
+# path should pull it in — otherwise seeded data leaks into submission artifacts.
 _BANNED = re.compile(r"(\.e2e\b|\bab_run\b|\bl2_pass\b)")
 
 

@@ -1,4 +1,4 @@
-"""Grounding-ablation: врезка _maybe_grounding_ablation в dispatch (gated)."""
+"""Grounding ablation: hook for _maybe_grounding_ablation into dispatch (gated)."""
 
 from unittest.mock import AsyncMock, MagicMock
 
@@ -14,17 +14,31 @@ pytestmark = [pytest.mark.unit]
 
 
 class _Cap:
-    def __init__(self): self.added = []
-    async def __aenter__(self): return self
-    async def __aexit__(self, *a): return False
-    def add(self, obj): self.added.append(obj)
-    async def commit(self): pass
+    def __init__(self):
+        self.added = []
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *a):
+        return False
+
+    def add(self, obj):
+        self.added.append(obj)
+
+    async def commit(self):
+        pass
 
 
 def _resp(hint: str) -> OrchestratorResponse:
     return OrchestratorResponse(
-        success=True, agent_used="tutor", agent_backend="openrouter",
-        data={"hint": hint, "hint_level": 1}, metadata={"model": "m"}, error=None, latency_ms=10,
+        success=True,
+        agent_used="tutor",
+        agent_backend="openrouter",
+        data={"hint": hint, "hint_level": 1},
+        metadata={"model": "m"},
+        error=None,
+        latency_ms=10,
     )
 
 
@@ -34,8 +48,11 @@ def _monitor(cap, *, ablation_enabled, ungrounded_hint="U"):
     orch = MagicMock()
     orch.intervene = AsyncMock(return_value=_resp(ungrounded_hint))
     m = SessionMonitor(
-        mcp_client=MagicMock(), db_factory=lambda: cap, orchestrator=orch,
-        learning_analytics_config=cfg, gateway=MagicMock(),
+        mcp_client=MagicMock(),
+        db_factory=lambda: cap,
+        orchestrator=orch,
+        learning_analytics_config=cfg,
+        gateway=MagicMock(),
     )
     m._session_id = "s1"
     m._user_id = "u1"
@@ -45,11 +62,15 @@ def _monitor(cap, *, ablation_enabled, ungrounded_hint="U"):
 
 def _pending(grounded_hint="G") -> PendingIntervention:
     payload = InterventionInput(
-        session_id="s1", user_id="u1", intervention_type="hint",
+        session_id="s1",
+        user_id="u1",
+        intervention_type="hint",
         context={"agent_context": {"topology": "1 router"}},
     )
     return PendingIntervention(
-        analysis=MagicMock(), features=MagicMock(), payload=payload,
+        analysis=MagicMock(),
+        features=MagicMock(),
+        payload=payload,
         response=_resp(grounded_hint),
     )
 

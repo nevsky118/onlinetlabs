@@ -1,4 +1,4 @@
-# Генераторы тестовых данных для analytics и learning_analytics.
+# Test data generators for analytics and learning_analytics.
 
 from datetime import UTC, datetime, timedelta
 
@@ -6,7 +6,7 @@ from learning_analytics.context import AgentContext
 
 
 class AttemptData:
-    """Генерирует duck-typed StepAttempt."""
+    """Generates a duck-typed StepAttempt."""
 
     def __init__(self, **overrides):
         now = datetime.now(tz=UTC)
@@ -25,7 +25,7 @@ class AttemptData:
 
 
 class EventData:
-    """Генерирует duck-typed BehavioralEvent."""
+    """Generates a duck-typed BehavioralEvent."""
 
     def __init__(self, **overrides):
         now = datetime.now(tz=UTC)
@@ -50,7 +50,7 @@ class EventData:
 
 
 class EventSequenceData:
-    """Генерирует последовательность событий с заданным интервалом."""
+    """Generates a sequence of events with a given interval."""
 
     def __init__(self, count: int, interval_seconds: float = 10.0, **overrides):
         now = datetime.now(tz=UTC)
@@ -65,7 +65,7 @@ class EventSequenceData:
 
 
 class AgentContextData:
-    """Генерирует AgentContext для тестов LLM-агентов."""
+    """Generates AgentContext for LLM agent tests."""
 
     def __init__(self, **overrides):
         defaults = dict(
@@ -80,7 +80,7 @@ class AgentContextData:
 
 
 class SessionFeaturesData:
-    """Генерирует дефолтные SessionFeatures kwargs."""
+    """Generates default SessionFeatures kwargs."""
 
     def __init__(self, **overrides):
         defaults = dict(

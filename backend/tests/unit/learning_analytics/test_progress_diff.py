@@ -1,4 +1,4 @@
-"""Тесты diff_snapshots."""
+"""Tests for diff_snapshots."""
 
 import pytest
 

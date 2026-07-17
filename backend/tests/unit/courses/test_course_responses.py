@@ -1,4 +1,4 @@
-"""Characterization: GET /courses и GET /courses/{slug} — точный JSON ответа."""
+"""Characterization: GET /courses and GET /courses/{slug} — exact JSON response."""
 
 import pytest
 from fastapi import FastAPI

@@ -1,4 +1,5 @@
-"""GroundTruthStore: истинный латентный режим сим-студента (реюз RegimeAnnotation как gold)."""
+"""GroundTruthStore: true latent regime of the simulated student (reuses RegimeAnnotation as gold)."""
+
 import pytest
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
@@ -24,6 +25,7 @@ class TestRecordTruth:
     async def test_942a657b_record_truth_writes_sim_gold_annotation(self):
         with autotest.step("Arrange: чистая БД с таблицей аннотаций"):
             from simulation.ground_truth import record_truth
+
             factory = await _session_factory()
 
         with autotest.step("Act: фиксируем истинный режим окна"):

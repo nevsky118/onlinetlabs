@@ -1,4 +1,4 @@
-"""percentile: единая конвенция Hyndman-Fan Type 7 — характеризация на hand-computed фикстурах."""
+"""percentile: unified Hyndman-Fan Type 7 convention — characterization on hand-computed fixtures."""
 
 import pytest
 from mcp_sdk.testing import autotest

@@ -1,8 +1,9 @@
-"""GenerativePolicy: латентный режим ПРАВИТ действиями (а не выводится из порогов детектора).
+"""GenerativePolicy: the latent regime DRIVES actions (not derived from detector thresholds).
 
-Так истинный режим порождён независимо от признаков, которыми детектор пользуется →
-observer-ROC остаётся честной, а не тавтологичной.
+So the true regime is generated independently of the features the detector uses →
+observer-ROC stays honest, not tautological.
 """
+
 import random
 
 import pytest
@@ -14,6 +15,7 @@ pytestmark = [pytest.mark.unit]
 
 def _run(profile, seed: int = 0, max_iters: int = 400):
     from simulation.policy import StudentState, next_step
+
     rng = random.Random(seed)
     state = StudentState(total_steps=5)
     actions, regimes = [], []
@@ -28,16 +30,14 @@ def _run(profile, seed: int = 0, max_iters: int = 400):
 
 def _low_skill_profile():
     from simulation.profiles import StudentProfile
-    return StudentProfile(
-        skill=0.1, persistence=0.2, strategy=0.15, pace=0.5, help_propensity=0.5
-    )
+
+    return StudentProfile(skill=0.1, persistence=0.2, strategy=0.15, pace=0.5, help_propensity=0.5)
 
 
 def _high_skill_profile():
     from simulation.profiles import StudentProfile
-    return StudentProfile(
-        skill=0.95, persistence=0.9, strategy=0.9, pace=0.7, help_propensity=0.2
-    )
+
+    return StudentProfile(skill=0.95, persistence=0.9, strategy=0.9, pace=0.7, help_propensity=0.2)
 
 
 class TestGenerativePolicy:
@@ -47,6 +47,7 @@ class TestGenerativePolicy:
     async def test_04793759_low_skill_struggles_more_than_high(self):
         with autotest.step("Arrange: слабый и сильный профили"):
             from simulation.policy import TrueRegime
+
             low, high = _low_skill_profile(), _high_skill_profile()
 
         with autotest.step("Act: прогоняем обоих на одном seed"):
@@ -54,12 +55,10 @@ class TestGenerativePolicy:
             _, high_regimes = _run(high, seed=1)
 
         with autotest.step("Assert: доля непродуктивных режимов выше у слабого"):
-            low_share = sum(
-                1 for r in low_regimes if r != TrueRegime.PRODUCTIVE
-            ) / len(low_regimes)
-            high_share = sum(
-                1 for r in high_regimes if r != TrueRegime.PRODUCTIVE
-            ) / len(high_regimes)
+            low_share = sum(1 for r in low_regimes if r != TrueRegime.PRODUCTIVE) / len(low_regimes)
+            high_share = sum(1 for r in high_regimes if r != TrueRegime.PRODUCTIVE) / len(
+                high_regimes
+            )
             assert_true(low_share > high_share, "слабый буксует чаще сильного")
 
     @autotest.num("2034")
@@ -68,6 +67,7 @@ class TestGenerativePolicy:
     async def test_412b5a3e_high_skill_reaches_submit(self):
         with autotest.step("Arrange: сильный профиль"):
             from simulation.policy import Action
+
             profile = _high_skill_profile()
 
         with autotest.step("Act: прогоняем траекторию"):
@@ -82,6 +82,7 @@ class TestGenerativePolicy:
     async def test_34544677_deterministic_by_rng_seed(self):
         with autotest.step("Arrange: один профиль и один seed"):
             from simulation.profiles import sample_profile
+
             profile = sample_profile(9)
 
         with autotest.step("Act: прогоняем дважды"):
@@ -98,6 +99,7 @@ class TestGenerativePolicy:
     async def test_e68a9ba1_regime_is_latent_mode_diverse(self):
         with autotest.step("Arrange: слабый профиль (режимы должны переключаться)"):
             from simulation.policy import TrueRegime
+
             profile = _low_skill_profile()
 
         with autotest.step("Act: прогоняем траекторию"):

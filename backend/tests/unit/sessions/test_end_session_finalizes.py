@@ -1,4 +1,4 @@
-"""end_session: финализация ExperimentMetrics при завершении сессии."""
+"""end_session: ExperimentMetrics finalization when a session ends."""
 
 from datetime import UTC, datetime, timedelta
 
@@ -30,7 +30,7 @@ async def db_factory():
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
 
     async with engine.begin() as conn:
-        # отключаем FK в SQLite — таблицы создаются независимо
+        # disable FK in SQLite — tables are created independently
         await conn.execute(text("PRAGMA foreign_keys = OFF"))
         await conn.run_sync(User.__table__.create)
         await conn.run_sync(Lab.__table__.create)
@@ -40,7 +40,7 @@ async def db_factory():
         await conn.run_sync(BehavioralEvent.__table__.create)
         await conn.run_sync(ExperimentMetrics.__table__.create)
 
-    # фикстурные данные
+    # fixture data
     async with session_factory() as db:
         db.add(
             User(id="u1", email="u1@test.local", control_arm="closed", experiment_group="group_b")
@@ -62,7 +62,7 @@ async def db_factory():
                 id="lp1", user_id="u1", lab_slug="lab-a", status="in_progress", current_step=1
             )
         )
-        # 1 интервенция, 1 ошибка
+        # 1 intervention, 1 error
         db.add(
             BehavioralEvent(
                 id="ev1",
@@ -125,14 +125,14 @@ class TestEndSessionFinalizes:
             assert_equal(m.user_id, "u1", "user_id")
             assert_equal(m.lab_slug, "lab-a", "lab_slug")
             assert_equal(m.experiment_group, "group_b", "experiment_group")
-            # control_arm = effective arm сессии (L1 → совпадает с training arm)
+            # control_arm = effective arm of the session (L1 → matches training arm)
             assert_equal(m.control_arm, "closed", "control_arm = closed")
-            # base_arm = постоянный training-arm пользователя (User.control_arm)
+            # base_arm = the user's persistent training arm (User.control_arm)
             assert_equal(m.base_arm, "closed", "base_arm = closed")
             assert_equal(m.interventions_received, 1, "1 интервенция")
             assert_equal(m.total_errors, 1, "1 ошибка")
             assert_true(m.total_time_seconds > 0, "total_time_seconds > 0")
-            # current_step=1 из 2 (LabStep fallback, спека отсутствует) → не завершено
+            # current_step=1 of 2 (LabStep fallback, no spec) → not completed
             assert_false(m.completed, "не завершено")
 
     @autotest.num("1303")

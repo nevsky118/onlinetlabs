@@ -1,4 +1,5 @@
-"""Оркестратор когорты: пул+очередь, is_simulated-юзеры, прогон policy → actor → ground-truth."""
+"""Cohort orchestrator: pool+queue, is_simulated users, policy → actor → ground-truth run."""
+
 from unittest.mock import AsyncMock
 
 import pytest
@@ -40,7 +41,7 @@ class TestRunCohort:
                 peak["current"] += 1
                 peak["max"] = max(peak["max"], peak["current"])
                 try:
-                    await asyncio.sleep(0)  # уступаем — конкуренция проявится
+                    await asyncio.sleep(0)  # yield — lets concurrency show up
                 finally:
                     peak["current"] -= 1
                 return f"sess-{user_id}", actor
@@ -51,8 +52,13 @@ class TestRunCohort:
 
         with autotest.step("Act: прогоняем 6 студентов при лимите 2 одновременно"):
             report = await run_cohort(
-                n=6, concurrency=2, base_seed=0, db_factory=factory,
-                provision=provision, record_truth=record, max_steps=50,
+                n=6,
+                concurrency=2,
+                base_seed=0,
+                db_factory=factory,
+                provision=provision,
+                record_truth=record,
+                max_steps=50,
             )
 
         with autotest.step("Assert: все завершены, лимит соблюдён, актор работал"):

@@ -1,4 +1,4 @@
-"""Task 2: тесты чистых сборщиков admin-роутера (без подъёма FastAPI)."""
+"""Task 2: tests for the admin router's pure builders (without spinning up FastAPI)."""
 
 import datetime
 import uuid
@@ -147,7 +147,7 @@ _STUDENT_USER = {"id": "student-001", "role": "student"}
 
 
 class TestAdminUsersEndpoints:
-    """HTTP-тесты GET /admin/users и PATCH /admin/users/{id}."""
+    """HTTP tests for GET /admin/users and PATCH /admin/users/{id}."""
 
     @pytest.fixture(autouse=True)
     async def setup(self):
@@ -177,7 +177,7 @@ class TestAdminUsersEndpoints:
         self.student_app.dependency_overrides[get_db] = _override_db
         self.student_app.dependency_overrides[get_current_user] = _override_student
 
-        # Сеять тестовых пользователей.
+        # Seed test users.
         async with self.session_factory() as db:
             db.add_all(
                 [
@@ -314,7 +314,7 @@ class TestAdminUsersEndpoints:
 
 
 class TestAdminDataEndpoints:
-    """HTTP-тесты GET /admin/data/{table}."""
+    """HTTP tests for GET /admin/data/{table}."""
 
     @pytest.fixture(autouse=True)
     async def setup(self):

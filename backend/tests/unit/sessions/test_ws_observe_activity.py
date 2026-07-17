@@ -1,16 +1,16 @@
-"""WS-эндпоинт наблюдателя (/ws/observe/{session_id}): permission-check + форвард событий.
+"""WS observer endpoint (/ws/observe/{session_id}): permission check + event forwarding.
 
-Проверяет can_view_session_activity (закрытие 4403 без права can_view_logs) и то,
-что реальный AgentActivityLog.emit доходит до подписанного наблюдателя как
-{"type": "agent_activity", ...}. Идёт через настоящий ASGI-стек (httpx-ws +
-ASGIWebSocketTransport), а не через прямой вызов хендлера — так же, как ходил бы
-браузер (JWT в query, реальный accept/close).
+Verifies can_view_session_activity (closes 4403 without the can_view_logs right) and
+that a real AgentActivityLog.emit reaches the subscribed observer as
+{"type": "agent_activity", ...}. Goes through the real ASGI stack (httpx-ws +
+ASGIWebSocketTransport) rather than a direct handler call — the same way a
+browser would (JWT in query, real accept/close).
 
-Хендлер (sessions/routers/ws.py:session_activity_observe_ws) гонит _pump (очередь
-activity) против _watch_disconnect (websocket.receive), так что клиентский
-disconnect замечается даже на пустой очереди и подписка снимается (см. тест
-disconnect_cleans_up_subscription). asyncio.timeout в тестах — страховка от
-регресса этой утечки, а не ожидаемый путь.
+The handler (sessions/routers/ws.py:session_activity_observe_ws) races _pump
+(activity queue) against _watch_disconnect (websocket.receive), so a client
+disconnect is noticed even with an empty queue and the subscription is removed
+(see the disconnect_cleans_up_subscription test). asyncio.timeout in the tests is
+a safeguard against a regression of this leak, not the expected path.
 """
 
 import asyncio
@@ -125,8 +125,8 @@ class TestSessionActivityObserveWs:
                             self.app.state.activity_log.emit(event)
                             received = await ws.receive_json()
             except TimeoutError:
-                # Ожидаемый способ разорвать зависшую серверную задачу (см. docstring
-                # модуля) — assert ниже уже отработал бы к этому моменту.
+                # Expected way to break out of a hung server task (see the module
+                # docstring) — the assert below would already have run by this point.
                 pass
 
         with autotest.step("Assert: событие форвардится как agent_activity с полями исходного"):
@@ -146,8 +146,8 @@ class TestSessionActivityObserveWs:
         transport = ASGIWebSocketTransport(app=self.app)
 
         with autotest.step("Act: наблюдатель подключается, дожидается подписки, затем отключается"):
-            # asyncio.timeout — страховка: до фикса хендлер завис бы на q.get() и
-            # unsubscribe не вызвался бы никогда, тест упал бы по таймауту.
+            # asyncio.timeout — safeguard: before the fix, the handler would hang on
+            # q.get() and unsubscribe would never be called, so the test would time out.
             async with asyncio.timeout(5):
                 async with AsyncClient(transport=transport, base_url="http://testserver") as client:
                     async with aconnect_ws(f"/ws/observe/{_SESSION_ID}?token={token}", client):
@@ -157,8 +157,8 @@ class TestSessionActivityObserveWs:
                             await asyncio.sleep(0)
                         else:
                             pytest.fail("хендлер не подписался вовремя")
-                    # вышли из aconnect_ws → клиент отключился; хендлер должен
-                    # заметить disconnect и снять подписку.
+                    # exited aconnect_ws → client disconnected; the handler should
+                    # notice the disconnect and remove the subscription.
                     for _ in range(500):
                         if _SESSION_ID not in activity._subs:
                             break

@@ -1,4 +1,4 @@
-"""Reproducibility-bundle: анонимизированный экспорт реальных MRT-данных для ре-анализа."""
+"""Reproducibility bundle: anonymized export of real MRT data for re-analysis."""
 
 import json
 from datetime import UTC
@@ -15,9 +15,10 @@ pytestmark = [pytest.mark.unit]
 
 
 async def _sqlite_factory():
-    # firewall bundle джойнит users/learning_sessions (исключение is_simulated)
+    # firewall bundle joins users/learning_sessions (excludes is_simulated)
     from models.session import LearningSession
     from models.user import User
+
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
     async with engine.begin() as conn:
         await conn.run_sync(User.__table__.create)
@@ -36,18 +37,34 @@ class TestReproducibility:
             from datetime import datetime
 
             from evaluation.reproducibility import build_reproducibility_bundle
+
             sf = await _sqlite_factory()
             now = datetime(2026, 6, 21, 12, 0, tzinfo=UTC)
             async with sf() as db:
-                db.add(InterventionDecision(
-                    id="d1", session_id="s1", user_id="u1", lab_slug="lab", spell_id="sp1",
-                    ts=now, regime="idle", dwell_seconds=10.0, t_k_applied=0.0,
-                    assignment="intervene",
-                ))
-                db.add(RegimeAnnotation(
-                    id="a1", session_id="s1", coder_id="gold", window_index=0,
-                    regime_label="idle", is_gold=True,
-                ))
+                db.add(
+                    InterventionDecision(
+                        id="d1",
+                        session_id="s1",
+                        user_id="u1",
+                        lab_slug="lab",
+                        spell_id="sp1",
+                        ts=now,
+                        regime="idle",
+                        dwell_seconds=10.0,
+                        t_k_applied=0.0,
+                        assignment="intervene",
+                    )
+                )
+                db.add(
+                    RegimeAnnotation(
+                        id="a1",
+                        session_id="s1",
+                        coder_id="gold",
+                        window_index=0,
+                        regime_label="idle",
+                        is_gold=True,
+                    )
+                )
                 await db.commit()
 
         with autotest.step("Act: собрать bundle"):

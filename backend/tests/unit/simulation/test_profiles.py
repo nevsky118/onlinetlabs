@@ -1,4 +1,5 @@
-"""StudentProfile: латентные черты студента, детерминизм по seed, разнообразие когорты."""
+"""StudentProfile: latent student traits, seed determinism, cohort diversity."""
+
 import statistics
 
 import pytest
@@ -15,6 +16,7 @@ class TestStudentProfile:
     async def test_5bbf908d_profile_deterministic_by_seed(self):
         with autotest.step("Arrange: один и тот же seed"):
             from simulation.profiles import sample_profile
+
             seed = 42
 
         with autotest.step("Act: сэмплируем профиль дважды"):
@@ -35,8 +37,11 @@ class TestStudentProfile:
 
         with autotest.step("Assert: каждая черта в единичном диапазоне"):
             traits = (
-                profile.skill, profile.persistence, profile.strategy,
-                profile.pace, profile.help_propensity,
+                profile.skill,
+                profile.persistence,
+                profile.strategy,
+                profile.pace,
+                profile.help_propensity,
             )
             for value in traits:
                 assert_true(0.0 <= value <= 1.0, f"черта {value} вне [0,1]")

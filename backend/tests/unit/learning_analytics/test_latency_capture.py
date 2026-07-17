@@ -1,4 +1,4 @@
-"""Latency-capture: модель, config-флаг, запись стадий и перцентили из БД."""
+"""Latency capture: model, config flag, stage recording, and percentiles from the DB."""
 
 import pytest
 from mcp_sdk.testing import autotest
@@ -36,7 +36,9 @@ class TestLatencyCapture:
     @autotest.name("Config: latency_capture_enabled по умолчанию False")
     def test_947a4af6_config_default(self):
         with autotest.step("Act+Assert: дефолт выключен"):
-            assert_equal(LearningAnalyticsConfig().latency_capture_enabled, False, "по умолчанию False")
+            assert_equal(
+                LearningAnalyticsConfig().latency_capture_enabled, False, "по умолчанию False"
+            )
 
     @autotest.num("1992")
     @autotest.external_id("6356775e-2bcf-49e5-998a-b10bbb964b45")
@@ -44,6 +46,7 @@ class TestLatencyCapture:
     async def test_6356775e_record_and_aggregate(self):
         with autotest.step("Arrange: записать 10 длительностей стадии analysis"):
             from learning_analytics.latency import record_stage_latency, stage_percentiles
+
             sf = await _sqlite_factory()
             async with sf() as db:
                 for ms in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
@@ -61,6 +64,7 @@ class TestLatencyCapture:
     async def test_aa995048_stages_isolated(self):
         with autotest.step("Arrange: analysis=[100,100], intervention=[10]"):
             from learning_analytics.latency import record_stage_latency, stage_percentiles
+
             sf = await _sqlite_factory()
             async with sf() as db:
                 await record_stage_latency(db, "s1", "analysis", 100.0)

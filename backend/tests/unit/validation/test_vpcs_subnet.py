@@ -1,4 +1,4 @@
-"""Unit-тесты на subnet-membership и парсинг `show ip` для vpcs.ip_in_subnet."""
+"""Unit tests for subnet membership and `show ip` parsing for vpcs.ip_in_subnet."""
 
 from pathlib import Path
 

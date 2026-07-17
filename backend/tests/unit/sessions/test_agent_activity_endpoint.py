@@ -1,4 +1,4 @@
-"""Тесты эндпоинта истории активности агентов и резолвера прав."""
+"""Tests for the agent activity history endpoint and the permission resolver."""
 
 from types import SimpleNamespace
 
@@ -10,22 +10,22 @@ from auth.dependencies import can_view_session_activity
 pytestmark = [pytest.mark.unit]
 
 
-# ── Матрица can_view_session_activity ─────────────────────────────────────────
+# ── can_view_session_activity matrix ─────────────────────────────────────────
 
 
 @autotest.name("can_view_session_activity: матрица прав на просмотр активности сессии")
 @pytest.mark.parametrize(
     "user,expected",
     [
-        # владелец со флагом → True
+        # owner with flag → True
         ({"id": "owner", "role": "student", "can_view_logs": True}, True),
-        # препод со флагом → True (не владелец)
+        # instructor with flag → True (not the owner)
         ({"id": "x", "role": "instructor", "can_view_logs": True}, True),
-        # студент-не-владелец со флагом → False
+        # non-owner student with flag → False
         ({"id": "x", "role": "student", "can_view_logs": True}, False),
-        # владелец без флага → False
+        # owner without flag → False
         ({"id": "owner", "role": "student", "can_view_logs": False}, False),
-        # флаг отсутствует вовсе → False
+        # flag missing entirely → False
         ({"id": "owner", "role": "instructor"}, False),
     ],
 )
@@ -34,11 +34,11 @@ def test_can_view_session_activity_matrix(user, expected):
     assert can_view_session_activity(user, sess) is expected
 
 
-# ── HTTP-тест через прямой вызов функции ──────────────────────────────────────
+# ── HTTP test via direct function call ──────────────────────────────────────
 
 
 class _FakeActivityLog:
-    """Stub-лог активности с фиксированным историческим ответом."""
+    """Stub activity log with a fixed historical response."""
 
     def __init__(self, events):
         self._events = events
@@ -57,7 +57,7 @@ async def test_get_agent_activity_entitled():
     session = SimpleNamespace(user_id="u1")
     user = {"id": "u1", "role": "student", "can_view_logs": True}
 
-    # db.get возвращает фейковую сессию — патчим через DI-аргументы напрямую
+    # db.get returns a fake session — patched directly via DI arguments
     class _FakeDB:
         async def get(self, model_cls, pk):
             return session

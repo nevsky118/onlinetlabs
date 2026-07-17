@@ -17,8 +17,8 @@ class TestAssignExperimentGroupIfNeeded:
     async def setup(self):
         self.engine = create_async_engine("sqlite+aiosqlite:///:memory:")
         self.session_factory = async_sessionmaker(self.engine, expire_on_commit=False)
-        # Создаём только нужные для теста таблицы. Полная metadata содержит
-        # JSONB-колонки с server_default '::jsonb', которые SQLite не понимает.
+        # Create only the tables the test needs. Full metadata has
+        # JSONB columns with server_default '::jsonb', which SQLite doesn't understand.
         async with self.engine.begin() as conn:
             await conn.run_sync(User.__table__.create)
             await conn.run_sync(Lab.__table__.create)

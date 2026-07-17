@@ -1,11 +1,11 @@
-"""WebSocketGateway.disconnect: не должен вытеснять новый сокет по обрыву старого.
+"""WebSocketGateway.disconnect: must not evict the new socket when the old one drops.
 
-Регрессия: disconnect(session_id) удалял запись из _connections по одному только
-session_id, без проверки, какой именно сокет там лежит. На reconnect (page refresh)
-connect() перезаписывает _connections[session_id] новым сокетом, но старый сокет
-может прислать отложенный WebSocketDisconnect уже ПОСЛЕ переподключения — его
-disconnect(session_id) выбивал новый (живой) сокет, и интервенции студенту молча
-переставали доходить.
+Regression: disconnect(session_id) removed the _connections entry keyed only by
+session_id, without checking which socket was actually stored there. On reconnect
+(page refresh), connect() overwrites _connections[session_id] with the new socket,
+but the old socket can send a delayed WebSocketDisconnect AFTER the reconnect — its
+disconnect(session_id) would evict the new (live) socket, and interventions would
+silently stop reaching the student.
 """
 
 from unittest.mock import AsyncMock
@@ -20,7 +20,7 @@ pytestmark = [pytest.mark.unit]
 
 
 class _FakeWebSocket:
-    """Минимальный WebSocket-стаб: gateway.connect нужен только async accept()."""
+    """Minimal WebSocket stub: gateway.connect only needs async accept()."""
 
     def __init__(self):
         self.accept = AsyncMock()

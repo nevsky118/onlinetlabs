@@ -1,4 +1,4 @@
-"""Тесты derive_current_step."""
+"""Tests for derive_current_step."""
 
 import pytest
 from mcp_sdk.testing import autotest
@@ -44,7 +44,7 @@ def test_derive_current_step_first_failing():
 def test_derive_current_step_all_passed():
     snap = [{"id": "s1", "title": "A", "ok": True, "checks": []}]
     st = derive_current_step(snap)
-    assert st.current_step_id is None  # завершено
+    assert st.current_step_id is None  # completed
     assert st.current_step_title == ""
     assert st.failing_checks == []
 

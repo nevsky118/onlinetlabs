@@ -1,4 +1,4 @@
-"""RequestIDMiddleware: request_id уходит в structlog contextvars и в заголовок ответа."""
+"""RequestIDMiddleware: request_id flows into structlog contextvars and into the response header."""
 
 import pytest
 import structlog

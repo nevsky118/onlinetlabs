@@ -1,4 +1,4 @@
-"""Тесты verify_password_async: bcrypt-проверка пароля в отдельном потоке."""
+"""Tests for verify_password_async: bcrypt password check on a separate thread."""
 
 import pytest
 from mcp_sdk.testing import autotest

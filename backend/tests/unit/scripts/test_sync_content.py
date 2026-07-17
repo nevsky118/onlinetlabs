@@ -1,4 +1,4 @@
-"""Task 1: тесты sync_content — environment_type, CONTENT_DIR, idempotent upsert."""
+"""Task 1: sync_content tests — environment_type, CONTENT_DIR, idempotent upsert."""
 
 import importlib.util
 import textwrap
@@ -13,7 +13,7 @@ from models.lab import Lab
 
 pytestmark = [pytest.mark.unit]
 
-# Прямой импорт из repo root/scripts/sync_content.py минуя backend/scripts/
+# Direct import from repo root/scripts/sync_content.py, bypassing backend/scripts/
 _SYNC_CONTENT_PATH = Path(__file__).resolve().parents[4] / "scripts" / "sync_content.py"
 _spec = importlib.util.spec_from_file_location("sync_content_top", _SYNC_CONTENT_PATH)
 sc = importlib.util.module_from_spec(_spec)

@@ -1,10 +1,11 @@
-"""end_lab: завершение лабы студентом обязано снимать измерения эксперимента.
+"""end_lab: a student finishing a lab must capture experiment measurements.
 
-Регрессия: `POST /sessions/{id}/end` → `end_lab` сносил GNS3 и гасил монитор, но
-НЕ финализировал ExperimentMetrics и не цензурировал MRT-точки — слой A/B и когорты
-не наполнялся ни для одного реального студента. Плюс монитор гасился после teardown'а,
-из-за чего поздние интервенции не попадали в снапшот метрик.
+Regression: `POST /sessions/{id}/end` → `end_lab` tore down GNS3 and stopped the
+monitor, but did NOT finalize ExperimentMetrics or censor MRT points — the A/B
+and cohort layer never got populated for a single real student. Plus the monitor
+was stopped after teardown, so late interventions never made it into the metrics snapshot.
 """
+
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -28,7 +29,7 @@ def _fake_session():
 
 
 def _patch_queue():
-    """Очередь-синглтон: release() ожидается await'ом."""
+    """Queue singleton: release() is expected to be awaited."""
     queue = MagicMock()
     queue.release = AsyncMock()
     return patch("sessions.queue._get_or_create_singleton", new=MagicMock(return_value=queue))
@@ -43,11 +44,16 @@ class TestEndLabFinalization:
             db, monitor_registry, gns3_client = AsyncMock(), AsyncMock(), AsyncMock()
 
         with autotest.step("Act: студент завершает лабу"):
-            with patch("sessions.services.lifecycle.get_owned_session",
-                       new=AsyncMock(return_value=_fake_session())), \
-                 patch("sessions.services.lifecycle._mark_ended_and_finalize",
-                       new=AsyncMock()) as finalize, \
-                 _patch_queue():
+            with (
+                patch(
+                    "sessions.services.lifecycle.get_owned_session",
+                    new=AsyncMock(return_value=_fake_session()),
+                ),
+                patch(
+                    "sessions.services.lifecycle._mark_ended_and_finalize", new=AsyncMock()
+                ) as finalize,
+                _patch_queue(),
+            ):
                 ok = await end_lab(db, _SESSION_ID, _USER_ID, gns3_client, monitor_registry)
 
         with autotest.step("Assert: финализация вызвана со статусом ended"):
@@ -69,11 +75,17 @@ class TestEndLabFinalization:
                 calls.append("finalize")
 
         with autotest.step("Act: завершаем лабу"):
-            with patch("sessions.services.lifecycle.get_owned_session",
-                       new=AsyncMock(return_value=_fake_session())), \
-                 patch("sessions.services.lifecycle._mark_ended_and_finalize",
-                       new=AsyncMock(side_effect=_finalize)), \
-                 _patch_queue():
+            with (
+                patch(
+                    "sessions.services.lifecycle.get_owned_session",
+                    new=AsyncMock(return_value=_fake_session()),
+                ),
+                patch(
+                    "sessions.services.lifecycle._mark_ended_and_finalize",
+                    new=AsyncMock(side_effect=_finalize),
+                ),
+                _patch_queue(),
+            ):
                 await end_lab(db, _SESSION_ID, _USER_ID, gns3_client, monitor_registry)
 
         with autotest.step("Assert: сначала стоп монитора, затем финализация"):
@@ -93,11 +105,17 @@ class TestEndLabFinalization:
                 calls.append("finalize")
 
         with autotest.step("Act: завершаем лабу"):
-            with patch("sessions.services.lifecycle.get_owned_session",
-                       new=AsyncMock(return_value=_fake_session())), \
-                 patch("sessions.services.lifecycle._mark_ended_and_finalize",
-                       new=AsyncMock(side_effect=_finalize)), \
-                 _patch_queue():
+            with (
+                patch(
+                    "sessions.services.lifecycle.get_owned_session",
+                    new=AsyncMock(return_value=_fake_session()),
+                ),
+                patch(
+                    "sessions.services.lifecycle._mark_ended_and_finalize",
+                    new=AsyncMock(side_effect=_finalize),
+                ),
+                _patch_queue(),
+            ):
                 await end_lab(db, _SESSION_ID, _USER_ID, gns3_client, monitor_registry)
 
         with autotest.step("Assert: метрики сняты раньше сноса GNS3"):
@@ -113,11 +131,16 @@ class TestEndLabFinalization:
             gns3_client.delete_session = AsyncMock(side_effect=RuntimeError("gns3 down"))
 
         with autotest.step("Act: завершаем лабу"):
-            with patch("sessions.services.lifecycle.get_owned_session",
-                       new=AsyncMock(return_value=_fake_session())), \
-                 patch("sessions.services.lifecycle._mark_ended_and_finalize",
-                       new=AsyncMock()) as finalize, \
-                 _patch_queue():
+            with (
+                patch(
+                    "sessions.services.lifecycle.get_owned_session",
+                    new=AsyncMock(return_value=_fake_session()),
+                ),
+                patch(
+                    "sessions.services.lifecycle._mark_ended_and_finalize", new=AsyncMock()
+                ) as finalize,
+                _patch_queue(),
+            ):
                 ok = await end_lab(db, _SESSION_ID, _USER_ID, gns3_client, monitor_registry)
 
         with autotest.step("Assert: лаба завершена, измерения записаны несмотря на сбой"):

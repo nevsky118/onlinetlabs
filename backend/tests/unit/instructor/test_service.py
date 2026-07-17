@@ -25,8 +25,8 @@ class TestInstructorService:
     async def setup(self):
         self.engine = create_async_engine("sqlite+aiosqlite:///:memory:")
         self.session_factory = async_sessionmaker(self.engine, expire_on_commit=False)
-        # Только нужные таблицы: полная metadata содержит JSONB server_default,
-        # который SQLite не понимает.
+        # Only the needed tables: full metadata contains a JSONB server_default,
+        # which SQLite doesn't understand.
         async with self.engine.begin() as conn:
             await conn.run_sync(User.__table__.create)
             await conn.run_sync(Lab.__table__.create)
@@ -39,7 +39,7 @@ class TestInstructorService:
         await self.engine.dispose()
 
     async def _seed_with_chat(self):
-        """Студент с 1 сессией, 2 сообщениями и 1 интервенцией."""
+        """Student with 1 session, 2 messages, and 1 intervention."""
         async with self.session_factory() as db:
             db.add_all(
                 [
@@ -100,7 +100,7 @@ class TestInstructorService:
                         status="completed",
                         started_at=_now(),
                     ),
-                    # Две подсказки и одно нерелевантное событие для stud-1
+                    # Two hints and one irrelevant event for stud-1
                     BehavioralEvent(
                         session_id="sess-1",
                         user_id="stud-1",

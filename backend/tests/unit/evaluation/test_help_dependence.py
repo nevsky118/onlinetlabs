@@ -1,4 +1,4 @@
-"""#8 backend: help-dependence — динамика learner-инициированных запросов помощи."""
+"""#8 backend: help-dependence — dynamics of learner-initiated help requests."""
 
 import pytest
 from mcp_sdk.testing import autotest
@@ -29,6 +29,7 @@ class TestHelpDependence:
     async def test_f4515f44_count_user_only(self):
         with autotest.step("Arrange: 2 user + 1 assistant в s1, 1 user в s2"):
             from evaluation.help_dependence import help_dependence_count
+
             sf = await _sqlite_factory()
             async with sf() as db:
                 await _add(db, "s1", "user")
@@ -47,6 +48,7 @@ class TestHelpDependence:
     async def test_3c98e905_trajectory(self):
         with autotest.step("Arrange: s1=3 user, s2=2 user, s3=1 user"):
             from evaluation.help_dependence import help_dependence_trajectory
+
             sf = await _sqlite_factory()
             async with sf() as db:
                 for _ in range(3):
@@ -66,6 +68,7 @@ class TestHelpDependence:
     def test_0b4ddbc5_is_declining(self):
         with autotest.step("Act+Assert: чистая функция на трёх случаях"):
             from evaluation.help_dependence import is_declining
+
             assert_true(is_declining([3, 2, 1]), "снижается → True")
             assert_equal(is_declining([1, 2, 3]), False, "растёт → False")
             assert_equal(is_declining([2]), False, "одна точка → False")

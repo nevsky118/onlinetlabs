@@ -9,7 +9,7 @@ pytestmark = [pytest.mark.unit]
 
 
 def _session(spell_len, regime="stuck_on_step"):
-    # один плохой спелл длиной spell_len (шаг 15с), затем продуктивный
+    # one bad spell of length spell_len (15s step), then productive
     samples, t = [], 0
     dwell = 0.0
     while t <= spell_len:

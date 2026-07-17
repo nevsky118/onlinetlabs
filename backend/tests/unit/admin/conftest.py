@@ -1,4 +1,4 @@
-"""Фикстуры in-memory SQLite для admin-тестов."""
+"""In-memory SQLite fixtures for admin tests."""
 
 import pytest
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
@@ -13,7 +13,7 @@ from models.user import User
 async def _make_engine_and_tables():
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
     async with engine.begin() as conn:
-        # SQLite не форсит FK — создаём нужные таблицы
+        # SQLite doesn't enforce FKs — create the needed tables
         await conn.run_sync(User.__table__.create)
         await conn.run_sync(Lab.__table__.create)
         await conn.run_sync(LabProgress.__table__.create)

@@ -1,4 +1,4 @@
-"""Тесты новых признаков FeatureExtractor: distinct_failing_actuals, cycles_failing_unchanged."""
+"""Tests for new FeatureExtractor features: distinct_failing_actuals, cycles_failing_unchanged."""
 
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
@@ -11,7 +11,7 @@ pytestmark = [pytest.mark.unit]
 
 
 def _e(action, cid, actual, t):
-    """Вспомогательная фабрика события."""
+    """Helper event factory."""
     return SimpleNamespace(
         timestamp=t,
         event_type=("action" if action == "check_passed" else "error"),
@@ -33,7 +33,7 @@ def test_distinct_actuals_and_unchanged_run():
     ]
     f = FeatureExtractor().compute("s1", evs)
     assert f.distinct_failing_actuals >= 2  # a,b
-    assert f.cycles_failing_unchanged == 2  # хвост check_failing
+    assert f.cycles_failing_unchanged == 2  # tail of check_failing
 
 
 def test_empty_events_returns_zero():
@@ -62,7 +62,7 @@ def test_no_check_actions_returns_zero():
 
 
 def test_cycles_broken_by_different_component():
-    """Хвост обрывается при смене component_id."""
+    """Tail breaks on component_id change."""
     base = datetime(2026, 1, 1, tzinfo=UTC)
     evs = [
         _e("check_failing", "R1", {"ip": "x"}, base),
@@ -70,12 +70,12 @@ def test_cycles_broken_by_different_component():
         _e("check_failing", "PC1", {"ip": "y"}, base + timedelta(seconds=50)),
     ]
     f = FeatureExtractor().compute("s1", evs)
-    # хвост — только PC1 (2 события); R1 обрывает счётчик
+    # tail is only PC1 (2 events); R1 breaks the counter
     assert f.cycles_failing_unchanged == 2
 
 
 def test_cycles_broken_by_check_passed():
-    """check_passed прерывает хвост."""
+    """check_passed breaks the tail."""
     base = datetime(2026, 1, 1, tzinfo=UTC)
     evs = [
         _e("check_failing", "PC1", {"ip": "y"}, base),
@@ -86,11 +86,11 @@ def test_cycles_broken_by_check_passed():
     assert f.cycles_failing_unchanged == 0
 
 
-# Регрессионные тесты FIX 1: _current_error_run сбрасывается по check_passed
+# Regression tests FIX 1: _current_error_run resets on check_passed
 
 
 def test_error_run_reset_by_check_passed():
-    """check_passed обрывает серию → error_repeat_count == 0."""
+    """check_passed breaks the run → error_repeat_count == 0."""
     base = datetime(2026, 1, 1, tzinfo=UTC)
     evs = [
         _e("check_failing", "PC1", {"ip": "x"}, base),
@@ -102,7 +102,7 @@ def test_error_run_reset_by_check_passed():
 
 
 def test_error_run_accumulates_without_check_passed():
-    """Без check_passed серия не обрывается → error_repeat_count >= 2."""
+    """Without check_passed the run doesn't break → error_repeat_count >= 2."""
     base = datetime(2026, 1, 1, tzinfo=UTC)
     evs = [
         _e("check_failing", "PC1", {"ip": "x"}, base),

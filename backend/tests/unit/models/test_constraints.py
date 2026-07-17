@@ -1,4 +1,4 @@
-"""Проверка SQLAlchemy constraints и значений по умолчанию на ключевых таблицах."""
+"""Verify SQLAlchemy constraints and default values on key tables."""
 
 from datetime import datetime
 
@@ -20,11 +20,11 @@ pytestmark = [pytest.mark.unit]
 
 
 class TestModelConstraints:
-    """Constraints, дефолты и каскадные удаления."""
+    """Constraints, defaults, and cascading deletes."""
 
     @pytest_asyncio.fixture
     async def session(self):
-        """In-memory SQLite + только нужные таблицы + PRAGMA foreign_keys=ON."""
+        """In-memory SQLite + only the needed tables + PRAGMA foreign_keys=ON."""
         engine = create_async_engine("sqlite+aiosqlite:///:memory:")
 
         @event.listens_for(engine.sync_engine, "connect")

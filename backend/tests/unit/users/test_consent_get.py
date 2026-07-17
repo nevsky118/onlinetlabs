@@ -1,4 +1,4 @@
-"""Тесты GET /users/me/consent."""
+"""Tests for GET /users/me/consent."""
 
 import pytest
 from fastapi import FastAPI
@@ -45,7 +45,7 @@ class TestConsentGet:
         app.dependency_overrides[get_current_user] = lambda: _USER
         self.app = app
 
-        # Приложение без аутентификации (dependency_overrides не переопределяет get_current_user)
+        # App without authentication (dependency_overrides does not override get_current_user)
         self.unauth_app = FastAPI()
         self.unauth_app.include_router(consent_router, prefix="/users/me")
         self.unauth_app.dependency_overrides[get_db] = _override_db

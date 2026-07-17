@@ -1,8 +1,9 @@
-"""Ответ тьютора в чат-логе: фолбэк прогрессивный, а не одна замороженная фраза.
+"""Tutor reply in the chat log: fallback is progressive, not one frozen phrase.
 
-Регрессия: шаблон выбирался как `len(question) % N`, а вопрос студента был константным →
-тьютор дословно повторял один и тот же ответ, и диалог в чат-вьюере зацикливался.
+Regression: template was picked as `len(question) % N`, and the student's question was constant →
+the tutor repeated the exact same answer verbatim, and the dialogue in the chat viewer looped.
 """
+
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -27,8 +28,8 @@ class TestTutorReplyFallback:
     async def test_70b076e0_fallback_is_progressive_not_repeated(self):
         with autotest.step("Arrange: LLM недоступен → работает шаблон-фолбэк"):
             context = {"node": "PC1", "tried": "ip 192.168.2.11/24"}
-            # build_client связывается при создании замыкания → патчим ДО его создания,
-            # иначе юнит-тест пойдёт в реальный YandexGPT.
+            # build_client gets bound when the closure is created → patch it BEFORE that happens,
+            # otherwise the unit test would hit the real YandexGPT.
             patcher = patch("llm.client.build_client", side_effect=RuntimeError("llm down"))
 
         with autotest.step("Act: студент обращается 4 раза подряд"):

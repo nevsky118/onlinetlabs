@@ -1,4 +1,4 @@
-"""Тест: closed-arm интервенция пишет act-аудит в mcp_audit."""
+"""Test: closed-arm intervention writes an act-audit to mcp_audit."""
 
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -21,7 +21,7 @@ pytestmark = [pytest.mark.unit]
 
 @pytest.fixture
 async def audit_engine():
-    """Async SQLite с таблицей mcp_audit."""
+    """Async SQLite with an mcp_audit table."""
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
     async with engine.begin() as conn:
         await conn.run_sync(MCPAudit.__table__.create)
@@ -124,7 +124,7 @@ class TestInterventionAudit:
         with autotest.step("Arrange: монитор CLOSED с реальной БД mcp_audit"):
             session_factory = async_sessionmaker(audit_engine, expire_on_commit=False)
 
-            # Фабрика: для поведенческих событий — заглушка, для аудита — реальная
+            # Factory: stub for behavioral events, real session for audit
             class _BehCap:
                 def __init__(self):
                     self.added = []
@@ -162,15 +162,15 @@ class TestInterventionAudit:
 
             beh_cap = _BehCap()
 
-            # Счётчик вызовов: первые 2 вызова (persist + audit) чередуем
+            # Call counter: alternate the first 2 calls (persist + audit)
             call_count = [0]
 
             def db_factory():
                 call_count[0] += 1
                 if call_count[0] <= 1:
-                    # _persist_intervention использует первый вызов
+                    # _persist_intervention uses the first call
                     return beh_cap
-                # act-аудит — реальная сессия
+                # act-audit — real session
                 return session_factory()
 
             m = _make_monitor(db_factory)
@@ -195,10 +195,10 @@ class TestInterventionAudit:
         with autotest.step("Act: decide → dispatch (trigger act-audit)"):
             pending = await m._decide_intervention(analysis, features)
             await m._dispatch_intervention(pending)
-            # Вызываем persist + audit через _run_analysis контекст
+            # Call persist + audit through the _run_analysis context
             async with session_factory() as db:
                 await m._persist_intervention(db, pending)
-            # Вручную вызываем audit (как в _run_analysis после persist)
+            # Manually call audit (as in _run_analysis after persist)
             from control_interface.audit import record as audit_record
 
             async with session_factory() as db:

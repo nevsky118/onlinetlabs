@@ -1,4 +1,4 @@
-"""Unit-тесты для build_session_timeline и эндпоинта /timeline."""
+"""Unit tests for build_session_timeline and the /timeline endpoint."""
 
 from datetime import UTC, datetime, timedelta
 
@@ -20,7 +20,7 @@ pytestmark = [pytest.mark.unit]
 
 
 def _ts(offset_seconds: int = 0) -> datetime:
-    """Опорное время с заданным смещением в секундах."""
+    """Reference time with the given offset in seconds."""
     return datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC) + timedelta(seconds=offset_seconds)
 
 
@@ -41,7 +41,7 @@ class TestBuildSessionTimeline:
         await self.engine.dispose()
 
     async def _seed_timeline(self):
-        """Сессия с user-msg (t0), intervention (t1), assistant-msg (t2)."""
+        """Session with user-msg (t0), intervention (t1), assistant-msg (t2)."""
         async with self.session_factory() as db:
             db.add_all(
                 [
@@ -54,7 +54,7 @@ class TestBuildSessionTimeline:
                         status="in_progress",
                         started_at=_ts(0),
                     ),
-                    # t=0: вопрос студента
+                    # t=0: student question
                     ChatMessage(
                         id="msg-tl-1",
                         session_id="sess-tl",
@@ -62,7 +62,7 @@ class TestBuildSessionTimeline:
                         parts=[{"type": "text", "text": "Вопрос"}],
                         created_at=_ts(0),
                     ),
-                    # t=2: ассистент отвечает
+                    # t=2: assistant replies
                     ChatMessage(
                         id="msg-tl-2",
                         session_id="sess-tl",
@@ -70,7 +70,7 @@ class TestBuildSessionTimeline:
                         parts=[{"type": "text", "text": "Ответ"}],
                         created_at=_ts(2),
                     ),
-                    # t=1: интервенция между ними
+                    # t=1: intervention in between
                     BehavioralEvent(
                         id="evt-tl-1",
                         session_id="sess-tl",

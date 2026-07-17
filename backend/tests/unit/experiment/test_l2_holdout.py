@@ -1,4 +1,4 @@
-"""L2-холдаут: effective_arm форсирует OPEN при near-transfer переносе."""
+"""L2 holdout: effective_arm forces OPEN on near-transfer."""
 
 import pytest
 from mcp_sdk.testing import autotest
@@ -20,23 +20,23 @@ async def db_setup():
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
     async with engine.begin() as conn:
-        # только нужные таблицы
+        # only the needed tables
         await conn.run_sync(User.__table__.create)
         await conn.run_sync(Lab.__table__.create)
         await conn.run_sync(LabProgress.__table__.create)
 
     async with session_factory() as db:
-        # пользователь в CLOSED-плече
+        # user in the CLOSED arm
         db.add(User(id="u1", email="u1@test.local", control_arm="closed"))
-        # L1: другая лаба того же навыка — уже пройдена
+        # L1: another lab of the same skill — already completed
         db.add(Lab(slug="l1", title="L1", meta={"skill": _SKILL}))
-        # L2: текущая лаба того же навыка — не пройдена
+        # L2: current lab of the same skill — not completed
         db.add(Lab(slug="l2", title="L2", meta={"skill": _SKILL}))
-        # лаба без навыка
+        # lab without a skill tag
         db.add(Lab(slug="no-skill", title="No skill", meta={}))
-        # лаба другого навыка
+        # lab of a different skill
         db.add(Lab(slug="other-skill", title="Other", meta={"skill": "routing"}))
-        # прогресс: l1 завершена
+        # progress: l1 completed
         db.add(LabProgress(id="p1", user_id="u1", lab_slug="l1", status="completed"))
         await db.commit()
 

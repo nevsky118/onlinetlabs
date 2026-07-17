@@ -11,8 +11,8 @@ pytestmark = [pytest.mark.unit]
 class TestSecrets:
     @pytest.fixture(autouse=True)
     def clear_cipher_cache(self):
-        # _cipher() lru_cached. Сбрасываем перед каждым тестом, чтобы
-        # подмена ключа в env не игнорировалась.
+        # _cipher() lru_cached. Reset before each test so that
+        # swapping the key in env isn't ignored.
         _cipher.cache_clear()
         yield
         _cipher.cache_clear()

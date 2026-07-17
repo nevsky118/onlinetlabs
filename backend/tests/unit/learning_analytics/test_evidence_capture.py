@@ -1,4 +1,4 @@
-"""D4: захват сырых свидетельств — helper + врезка в poll-цикл коллектора."""
+"""D4: raw evidence capture — helper + hook into the collector's poll cycle."""
 
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -27,7 +27,9 @@ def _collector(sf, *, evidence_enabled):
     cfg = LearningAnalyticsConfig()
     cfg.evidence_capture_enabled = evidence_enabled
     c = BehavioralCollector(
-        mcp_client=MagicMock(), db_factory=sf, learning_analytics_config=cfg,
+        mcp_client=MagicMock(),
+        db_factory=sf,
+        learning_analytics_config=cfg,
     )
     c._session_id = "s1"
     c._user_id = "u1"
@@ -43,13 +45,18 @@ class TestEvidenceCapture:
     async def test_87aa2cb9_capture_snapshot_json_safe(self):
         with autotest.step("Arrange: реальная sqlite"):
             from learning_analytics.evidence import capture_snapshot
+
             sf = await _sqlite_factory()
             ts = datetime(2026, 6, 21, 12, 0, tzinfo=UTC)
 
         with autotest.step("Act: записать снимок с datetime в payload"):
             async with sf() as db:
                 await capture_snapshot(
-                    db, "s1", "u1", "lab", kind="mcp_events",
+                    db,
+                    "s1",
+                    "u1",
+                    "lab",
+                    kind="mcp_events",
                     payload={"events": [{"action": "ping", "timestamp": ts}]},
                 )
 
@@ -72,9 +79,11 @@ class TestEvidenceCapture:
             c._persist = AsyncMock()
 
         with autotest.step("Act: _poll_cycle с одним action"):
-            with patch.object(c, "_fetch_actions", AsyncMock(return_value=[{"action": "ping"}])), \
-                 patch.object(c, "_fetch_logs", AsyncMock(return_value=[])), \
-                 patch.object(c, "_fetch_errors", AsyncMock(return_value=[])):
+            with (
+                patch.object(c, "_fetch_actions", AsyncMock(return_value=[{"action": "ping"}])),
+                patch.object(c, "_fetch_logs", AsyncMock(return_value=[])),
+                patch.object(c, "_fetch_errors", AsyncMock(return_value=[])),
+            ):
                 await c._poll_cycle()
 
         with autotest.step("Assert: ровно 1 evidence-снимок"):
@@ -92,9 +101,11 @@ class TestEvidenceCapture:
             c._persist = AsyncMock()
 
         with autotest.step("Act: _poll_cycle с одним action"):
-            with patch.object(c, "_fetch_actions", AsyncMock(return_value=[{"action": "ping"}])), \
-                 patch.object(c, "_fetch_logs", AsyncMock(return_value=[])), \
-                 patch.object(c, "_fetch_errors", AsyncMock(return_value=[])):
+            with (
+                patch.object(c, "_fetch_actions", AsyncMock(return_value=[{"action": "ping"}])),
+                patch.object(c, "_fetch_logs", AsyncMock(return_value=[])),
+                patch.object(c, "_fetch_errors", AsyncMock(return_value=[])),
+            ):
                 await c._poll_cycle()
 
         with autotest.step("Assert: ноль evidence-снимков"):

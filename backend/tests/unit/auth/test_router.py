@@ -20,15 +20,15 @@ pytestmark = [pytest.mark.unit, pytest.mark.auth]
 class TestAuthRouter:
     @pytest.fixture(autouse=True)
     async def setup(self):
-        # SQLite in-memory: создаём только таблицу users, без полной metadata
-        # (другие модели содержат JSONB и расширения, которые SQLite не понимает).
+        # SQLite in-memory: create only the users table, without full metadata
+        # (other models contain JSONB and extensions SQLite doesn't understand).
         self.engine = create_async_engine("sqlite+aiosqlite:///:memory:")
         self.session_factory = async_sessionmaker(self.engine, expire_on_commit=False)
         async with self.engine.begin() as conn:
             await conn.run_sync(User.__table__.create)
             await conn.run_sync(Account.__table__.create)
 
-        # Минимальное приложение только с auth-роутером.
+        # Minimal app with only the auth router.
         app = FastAPI()
         app.state.limiter = limiter
 
@@ -45,8 +45,8 @@ class TestAuthRouter:
         app.dependency_overrides[get_db] = _override_get_db
         self.app = app
 
-        # Сбрасываем slowapi storage между тестами — общий лимитер хранит
-        # счётчики по ключам, что протекало бы из теста в тест.
+        # Reset slowapi storage between tests — the shared limiter keeps
+        # per-key counters, which would leak from test to test.
         limiter.reset()
 
         yield

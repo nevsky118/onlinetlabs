@@ -1,8 +1,8 @@
-# Генераторы тестовых данных для experiment.
+# Test data generators for experiment.
 
 
 class ExperimentMetricsData:
-    """Генерирует duck-typed ExperimentMetrics."""
+    """Generates a duck-typed ExperimentMetrics."""
 
     def __init__(self, group: str, time: float, errors: int, repeated: int, interventions: int = 0):
         self.experiment_group = group

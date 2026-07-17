@@ -1,4 +1,4 @@
-"""Unit-тесты для chat/persistence.py."""
+"""Unit tests for chat/persistence.py."""
 
 from datetime import UTC, datetime, timedelta
 
@@ -19,7 +19,7 @@ pytestmark = [pytest.mark.unit]
 
 
 class TestToOpenAIMessages:
-    """Чистая (sync) функция конверсии sdk-сообщений в openai-формат."""
+    """Pure (sync) function converting sdk messages to openai format."""
 
     @autotest.num("1910")
     @autotest.external_id("c1f25a02-2f6a-4f70-9ad9-3ab9f4a01a30")
@@ -101,12 +101,12 @@ class TestToOpenAIMessages:
 
 
 class _DBTestBase:
-    """Общий setup in-memory SQLite только под таблицу chat_messages."""
+    """Shared in-memory SQLite setup for just the chat_messages table."""
 
     @pytest.fixture(autouse=True)
     async def setup(self):
-        # FK на learning_sessions нам не нужен — SQLite по умолчанию
-        # FK не enforced, и мы оставляем это так.
+        # We don't need the FK on learning_sessions — SQLite doesn't
+        # enforce FKs by default, and we leave it that way.
         self.engine = create_async_engine("sqlite+aiosqlite:///:memory:")
         self.session_factory = async_sessionmaker(self.engine, expire_on_commit=False)
         async with self.engine.begin() as conn:

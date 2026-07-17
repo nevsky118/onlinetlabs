@@ -73,7 +73,7 @@ class TestHintAgentLLM:
     @autotest.external_id("ae0197d6-a05d-421b-8d75-8434a4516713")
     @autotest.name("HintAgent: failing_check попадает в промпт LLM")
     async def test_ae0197d6_failing_check_in_prompt(self, config_model, monkeypatch):
-        """Регрессия FIX 2: failing_check{expected/actual} виден LLM."""
+        """Regression FIX 2: failing_check{expected/actual} is visible to the LLM."""
         from unittest.mock import AsyncMock
 
         agent = HintAgent(config_model)

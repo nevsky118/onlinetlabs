@@ -1,4 +1,4 @@
-"""Тесты проводки observe-наблюдений П1 через ControlInterface-шов (Task 7)."""
+"""Tests routing P1 observe-observations through the ControlInterface seam (Task 7)."""
 
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock

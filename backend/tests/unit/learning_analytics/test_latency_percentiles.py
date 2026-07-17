@@ -1,4 +1,4 @@
-"""Latency: перцентили p50/p95/p99 (Hyndman-Fan Type 7, numpy/R default) — не среднее."""
+"""Latency: p50/p95/p99 percentiles (Hyndman-Fan Type 7, numpy/R default) — not the mean."""
 
 import pytest
 from mcp_sdk.testing import autotest
@@ -14,6 +14,7 @@ class TestLatencyPercentiles:
     def test_a42fd0a1_type7_interpolation(self):
         with autotest.step("Act: перцентили по 10 значениям 10..100"):
             from learning_analytics.latency import percentiles
+
             vals = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
             out = percentiles(vals, [50, 95, 99])
 
@@ -28,5 +29,6 @@ class TestLatencyPercentiles:
     def test_a5fa3234_empty(self):
         with autotest.step("Act+Assert: пустой список → все перцентили 0.0"):
             from learning_analytics.latency import percentiles
+
             out = percentiles([], [50, 95, 99])
             assert_equal(out, {50: 0.0, 95: 0.0, 99: 0.0}, "пусто → нули")

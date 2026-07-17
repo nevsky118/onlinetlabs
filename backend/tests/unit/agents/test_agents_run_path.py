@@ -1,9 +1,9 @@
-"""Реальный прогон pydantic-ai Agent.run() (2.x) без мока Agent.run.
+"""Real pydantic-ai Agent.run() (2.x) execution without mocking Agent.run.
 
-_build_model подменяется на TestModel — прогон реальный
-(промпт → Agent.run → result.output → Response), сети нет.
-_agent_for больше не кэширует Agent по model_id (pydantic-ai 2.x получает
-модель per-run), поэтому TestModel подставляется через _build_model.
+_build_model is swapped for TestModel — the run is real
+(prompt -> Agent.run -> result.output -> Response), no network involved.
+_agent_for no longer caches the Agent by model_id (pydantic-ai 2.x gets the
+model per-run), so TestModel is substituted via _build_model.
 """
 
 import pytest
@@ -21,7 +21,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.agents]
 
 
 class TestAgentsRunPath:
-    """Реальный pydantic-ai Agent.run() через TestModel — проверка совместимости с 2.x."""
+    """Real pydantic-ai Agent.run() via TestModel — checks compatibility with 2.x."""
 
     @autotest.num("2520")
     @autotest.external_id("9945ed45-b6be-4aa2-9715-2e5f018e041d")
@@ -31,7 +31,8 @@ class TestAgentsRunPath:
             agent = HintAgent(config_model)
             mid = config_model.agents.intervention_model
             monkeypatch.setattr(
-                agent, "_build_model",
+                agent,
+                "_build_model",
                 lambda model_id: TestModel(custom_output_text="Проверь маршрут OSPF на R1"),
             )
 
@@ -67,7 +68,8 @@ class TestAgentsRunPath:
             mid = config_model.agents.intervention_model
             canned = "OSPF сессия не поднимается из-за неверной маски"
             monkeypatch.setattr(
-                agent, "_build_model",
+                agent,
+                "_build_model",
                 lambda model_id: TestModel(custom_output_text=canned),
             )
 

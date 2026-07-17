@@ -1,4 +1,4 @@
-"""Task 7: тест compute_cohort_metrics через in-memory SQLite."""
+"""Task 7: test compute_cohort_metrics via in-memory SQLite."""
 
 from datetime import UTC, datetime, timedelta
 
@@ -30,7 +30,7 @@ async def cohort_db():
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
 
     async with engine.begin() as conn:
-        # создаём только нужные таблицы (SQLite не форсит FK)
+        # create only the needed tables (SQLite doesn't enforce FKs)
         await conn.run_sync(User.__table__.create)
         await conn.run_sync(Lab.__table__.create)
         await conn.run_sync(LabProgress.__table__.create)
@@ -51,7 +51,7 @@ async def cohort_db():
         db.add(Lab(slug="lan-static-ip", title="L1 Static IP", meta={"skill": _SKILL}))
         db.add(Lab(slug="lan-static-ip-b", title="L2 Static IP", meta={"skill": _SKILL}))
 
-        # LabProgress: L1 завершена 10 дней назад, L2 — 2 дня назад
+        # LabProgress: L1 completed 10 days ago, L2 — 2 days ago
         db.add(
             LabProgress(
                 id="lp-l1",
@@ -73,7 +73,7 @@ async def cohort_db():
             )
         )
 
-        # LearningSession: по одной сессии на каждую лабу
+        # LearningSession: one session per lab
         db.add(
             LearningSession(
                 id="sess-l1",
@@ -95,7 +95,7 @@ async def cohort_db():
             )
         )
 
-        # ExperimentMetrics: L1-сессия (без l2_unassisted_pass), L2-сессия (l2_unassisted_pass=True)
+        # ExperimentMetrics: L1 session (no l2_unassisted_pass), L2 session (l2_unassisted_pass=True)
         db.add(
             ExperimentMetrics(
                 id="em-l1",

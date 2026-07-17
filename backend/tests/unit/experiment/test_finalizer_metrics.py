@@ -17,7 +17,7 @@ pytestmark = [pytest.mark.unit]
 
 
 def _base_events(now: datetime) -> list:
-    """2 эскалации, 1 would_intervene, 3 intervention."""
+    """2 escalations, 1 would_intervene, 3 intervention."""
     return [
         EventData(
             id="e1", event_type="escalation", action="manual", timestamp=now - timedelta(minutes=20)

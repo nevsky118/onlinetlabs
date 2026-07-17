@@ -1,4 +1,4 @@
-"""is_l2_session: True при предшествующей завершённой лабе того же навыка."""
+"""is_l2_session: True when a prior lab of the same skill has been completed."""
 
 import pytest
 from mcp_sdk.testing import autotest
@@ -30,7 +30,7 @@ async def db_factory():
         db.add(Lab(slug="l2", title="L2", meta={"skill": _SKILL}))
         db.add(Lab(slug="no-skill", title="No skill", meta={}))
         db.add(Lab(slug="other-skill", title="Other", meta={"skill": "routing"}))
-        # l1 завершена пользователем
+        # l1 completed by the user
         db.add(LabProgress(id="p1", user_id="u1", lab_slug="l1", status="completed"))
         await db.commit()
 

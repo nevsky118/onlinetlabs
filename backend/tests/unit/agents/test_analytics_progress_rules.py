@@ -1,4 +1,4 @@
-"""Тесты правил детекции по прямым сигналам прогресса (Task 5)."""
+"""Tests for detection rules based on direct progress signals (Task 5)."""
 
 import pytest
 from mcp_sdk.testing import autotest

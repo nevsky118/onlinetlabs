@@ -1,4 +1,5 @@
-"""lab_config: консольные команды студента выводятся ИЗ СПЕКИ лабы, а не хардкодятся."""
+"""lab_config: student console commands are derived FROM THE LAB SPEC, not hardcoded."""
+
 import pytest
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
@@ -13,10 +14,16 @@ _STATIC_SPEC = {
         {
             "id": "pc-ips",
             "checks": [
-                {"kind": "vpcs.show_ip", "node": "PC1",
-                 "expect": {"ip": "192.168.1.11/24", "gateway": "0.0.0.0"}},
-                {"kind": "vpcs.show_ip", "node": "PC2",
-                 "expect": {"ip": "192.168.1.12/24", "gateway": "0.0.0.0"}},
+                {
+                    "kind": "vpcs.show_ip",
+                    "node": "PC1",
+                    "expect": {"ip": "192.168.1.11/24", "gateway": "0.0.0.0"},
+                },
+                {
+                    "kind": "vpcs.show_ip",
+                    "node": "PC2",
+                    "expect": {"ip": "192.168.1.12/24", "gateway": "0.0.0.0"},
+                },
             ],
         },
         {"id": "connectivity", "checks": [{"kind": "vpcs.ping", "from": "PC1", "to": "x"}]},
@@ -25,13 +32,18 @@ _STATIC_SPEC = {
 
 _DHCP_SPEC = {
     "slug": "dhcp-basics",
-    "steps": [{
-        "id": "dhcp",
-        "checks": [
-            {"kind": "vpcs.ip_in_subnet", "node": "PC1",
-             "expect": {"subnet": "192.168.10.0/24", "gateway": "192.168.10.1"}},
-        ],
-    }],
+    "steps": [
+        {
+            "id": "dhcp",
+            "checks": [
+                {
+                    "kind": "vpcs.ip_in_subnet",
+                    "node": "PC1",
+                    "expect": {"subnet": "192.168.10.0/24", "gateway": "192.168.10.1"},
+                },
+            ],
+        }
+    ],
 }
 
 
@@ -63,9 +75,7 @@ class TestBuildNodeTasks:
 
         with autotest.step("Assert: ошибка правдоподобна — тот же адрес, другая подсеть"):
             assert_equal(tasks[0].wrong_cmd, "ip 192.168.2.11/24", "ошибочная команда")
-            assert_true(
-                tasks[0].wrong_cmd != tasks[0].correct_cmd, "ошибка отличается от верной"
-            )
+            assert_true(tasks[0].wrong_cmd != tasks[0].correct_cmd, "ошибка отличается от верной")
 
     @autotest.num("2019")
     @autotest.external_id("26ed4bd9-c448-4c7b-baed-5573fe5130b5")
@@ -118,9 +128,5 @@ class TestBuildNodeTasks:
             tasks = build_node_tasks(spec)
 
         with autotest.step("Assert: ошибочная команда — статика вне ожидаемой подсети"):
-            assert_true(
-                tasks[0].wrong_cmd.startswith("ip 192.168.11."), "чужая подсеть"
-            )
-            assert_true(
-                tasks[0].wrong_cmd != tasks[0].correct_cmd, "ошибка отличается от верной"
-            )
+            assert_true(tasks[0].wrong_cmd.startswith("ip 192.168.11."), "чужая подсеть")
+            assert_true(tasks[0].wrong_cmd != tasks[0].correct_cmd, "ошибка отличается от верной")

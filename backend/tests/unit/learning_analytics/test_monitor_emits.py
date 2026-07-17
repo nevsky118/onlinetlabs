@@ -1,4 +1,4 @@
-"""Тест: SessionMonitor эмитит события активности при обнаружении затруднения."""
+"""Test: SessionMonitor emits activity events when struggle is detected."""
 
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
@@ -17,7 +17,7 @@ pytestmark = [pytest.mark.unit]
 
 
 def _make_struggle_features(session_id: str = "s1") -> SessionFeatures:
-    """Фичи с error_repeat_count=4 → срабатывает REPEATING_ERRORS."""
+    """Features with error_repeat_count=4 → triggers REPEATING_ERRORS."""
     return SessionFeatures(
         session_id=session_id,
         computed_at=datetime.now(tz=UTC),
@@ -41,7 +41,7 @@ def _make_struggle_features(session_id: str = "s1") -> SessionFeatures:
 
 
 def _make_monitor(activity_log, config_model) -> SessionMonitor:
-    """Монитор с замоканным context_builder."""
+    """Monitor with a mocked context_builder."""
     monitor = SessionMonitor(
         mcp_client=None,
         db_factory=None,
@@ -54,7 +54,7 @@ def _make_monitor(activity_log, config_model) -> SessionMonitor:
     monitor._user_id = "u1"
     monitor._lab_slug = "lab-gns3"
     monitor._ctx = MagicMock()
-    # Замокаем context_builder.build → AgentContext
+    # Mock context_builder.build → AgentContext
     monitor._context_builder.build = AsyncMock(
         return_value=AgentContext(
             topology_summary="1 router",
@@ -126,6 +126,6 @@ class TestMonitorEmits:
 
         # Act & Assert
         with autotest.step("_decide_intervention не падает без activity_log"):
-            # Не должно бросать исключение
+            # Must not raise an exception
             analysis = identify_regime(features, LearningAnalyticsConfig())
             await monitor._decide_intervention(analysis, features)

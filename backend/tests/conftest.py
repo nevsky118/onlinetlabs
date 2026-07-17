@@ -1,9 +1,9 @@
-"""Корневой conftest для backend/tests.
+"""Root conftest for backend/tests.
 
-Дублирует (идемпотентно, через setdefault) env-bootstrap из tests/unit/conftest.py,
-чтобы тесты вне tests/unit/ тоже получали дефолтные env vars до импорта
-config-зависимых модулей. tests/unit/conftest.py не трогаем — на нём уже
-завязаны существующие unit-тесты, миграция бы увеличивала риск без выгоды.
+Duplicates (idempotently, via setdefault) the env bootstrap from tests/unit/conftest.py,
+so tests outside tests/unit/ also get default env vars before importing
+config-dependent modules. We don't touch tests/unit/conftest.py — existing unit
+tests already depend on it, migrating it would add risk without benefit.
 """
 
 import os
@@ -38,36 +38,36 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-# Kill-switch (см. REFACTOR_ANALYSIS.md §5.8): unit-тесты никогда не должны
-# бить в реальную LLM. Агентные тесты подменяют модель на pydantic_ai.models.test.TestModel,
-# который check_allow_model_requests() не вызывает — их ALLOW_MODEL_REQUESTS=False
-# не касается. Реальные модели (agents/base.py, OpenAI-совместимый клиент, в т.ч.
-# Yandex GPT) вызывают check_allow_model_requests() внутри Model.request/request_stream
-# и упадут RuntimeError, если тест случайно забудет подменить модель.
+# Kill switch (see REFACTOR_ANALYSIS.md §5.8): unit tests must never hit a real
+# LLM. Agent tests swap in pydantic_ai.models.test.TestModel, which doesn't call
+# check_allow_model_requests() — ALLOW_MODEL_REQUESTS=False doesn't affect them.
+# Real models (agents/base.py, the OpenAI-compatible client, incl. Yandex GPT)
+# call check_allow_model_requests() inside Model.request/request_stream and will
+# raise RuntimeError if a test accidentally forgets to swap the model.
 pydantic_ai_models.ALLOW_MODEL_REQUESTS = False
 
 
 @pytest.fixture
 async def sqlite_session_factory():
-    """Фабрика in-memory SQLite сессий для тестов, параметризуемая списком таблиц.
+    """Factory for in-memory SQLite sessions for tests, parameterized by a list of tables.
 
-    Убирает copy-paste engine+create, размазанный по ~36 файлам. Использование:
+    Removes the copy-pasted engine+create boilerplate spread across ~36 files. Usage:
 
         factory = await sqlite_session_factory([User.__table__, Lab.__table__])
         async with factory() as db:
             db.add(User(...))
             await db.commit()
 
-    Можно вызывать несколько раз в одном тесте — каждый вызов создаёт свой
-    независимый engine; все они disposed в конце теста.
+    Can be called multiple times in the same test — each call creates its own
+    independent engine; all of them are disposed at the end of the test.
     """
     engines: list = []
 
     async def _make(tables) -> async_sessionmaker:
         engine = create_async_engine("sqlite+aiosqlite:///:memory:")
         async with engine.begin() as conn:
-            # SQLite не форсит FK по умолчанию, но существующие тесты явно
-            # выключают его — сохраняем то же поведение для новых таблиц с FK.
+            # SQLite doesn't enforce FKs by default, but existing tests
+            # explicitly disable it — keep the same behavior for new tables with FKs.
             await conn.execute(text("PRAGMA foreign_keys = OFF"))
             for table in tables:
                 await conn.run_sync(table.create)

@@ -1,4 +1,4 @@
-"""Unit-тесты для evaluate_spec."""
+"""Unit tests for evaluate_spec."""
 
 import pytest
 
@@ -117,5 +117,5 @@ async def test_evaluate_spec_step_fails_if_any_check_fails(monkeypatch):
         ]
     }
     steps = await evaluate_spec(ctx=object(), spec=spec)
-    # первая проверка ok=True, вторая ok=False → шаг fail
+    # first check ok=True, second ok=False → step fails
     assert steps[0]["ok"] is False

@@ -1,4 +1,4 @@
-"""IRR-пайплайн: сохранение аннотаций коллаборантов + Cohen's kappa + gold-count."""
+"""IRR pipeline: saving collaborator annotations + Cohen's kappa + gold-count."""
 
 import pytest
 from mcp_sdk.testing import autotest
@@ -25,6 +25,7 @@ class TestAnnotationIRR:
     async def test_0fb9b0b5_kappa_matches_aligned(self):
         with autotest.step("Arrange: коллаборанты A и B размечают 4 окна, согласие 3/4"):
             from evaluation.annotation import inter_rater_kappa, save_annotation
+
             sf = await _sqlite_factory()
             a = ["idle", "idle", "productive", "stuck_on_step"]
             b = ["idle", "idle", "productive", "productive"]
@@ -46,6 +47,7 @@ class TestAnnotationIRR:
     async def test_5930bc24_perfect_agreement(self):
         with autotest.step("Arrange: A и B размечают одинаково"):
             from evaluation.annotation import inter_rater_kappa, save_annotation
+
             sf = await _sqlite_factory()
             labels = ["idle", "stuck_on_step", "productive"]
             async with sf() as db:
@@ -64,6 +66,7 @@ class TestAnnotationIRR:
     async def test_446d4d47_gold_count(self):
         with autotest.step("Arrange: 2 gold в s1, 1 обычная в s1, 1 gold в s2"):
             from evaluation.annotation import gold_label_count, save_annotation
+
             sf = await _sqlite_factory()
             async with sf() as db:
                 await save_annotation(db, "s1", "gold", 0, "idle", is_gold=True)

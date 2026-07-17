@@ -1,4 +1,4 @@
-"""Latency: врезка тайминга стадии analysis в _run_analysis (gated флагом)."""
+"""Latency: instrumenting analysis-stage timing in _run_analysis (gated by a flag)."""
 
 from datetime import UTC, datetime
 from types import SimpleNamespace
@@ -15,31 +15,61 @@ pytestmark = [pytest.mark.unit]
 
 
 class _Cap:
-    def __init__(self): self.added = []
-    async def __aenter__(self): return self
-    async def __aexit__(self, *a): return False
-    def add(self, obj): self.added.append(obj)
-    async def commit(self): pass
-    async def execute(self, stmt): return _Res()
-    async def get(self, model, key): return None
+    def __init__(self):
+        self.added = []
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *a):
+        return False
+
+    def add(self, obj):
+        self.added.append(obj)
+
+    async def commit(self):
+        pass
+
+    async def execute(self, stmt):
+        return _Res()
+
+    async def get(self, model, key):
+        return None
 
 
 class _Res:
-    def scalar_one_or_none(self): return None
-    def scalars(self): return self
-    def all(self): return []
+    def scalar_one_or_none(self):
+        return None
+
+    def scalars(self):
+        return self
+
+    def all(self):
+        return []
 
 
 def _features():
     from agents.analytics.models import SessionFeatures
+
     return SessionFeatures(
-        session_id="s1", computed_at=datetime(2026, 6, 21, 12, 0, tzinfo=UTC),
-        avg_inter_action_latency=10.0, action_rate_slope=0.0, idle_periods=1,
-        total_active_time=120.0, time_on_current_step=60.0,
-        error_repeat_count=0, error_repeat_rate=0.0, action_sequence_entropy=0.3,
-        undo_redo_ratio=0.0, error_frequency=0.0, error_frequency_slope=0.0,
-        unique_error_types=0, dominant_error=None, components_touched=1,
-        action_diversity=0.2, events_total=10,
+        session_id="s1",
+        computed_at=datetime(2026, 6, 21, 12, 0, tzinfo=UTC),
+        avg_inter_action_latency=10.0,
+        action_rate_slope=0.0,
+        idle_periods=1,
+        total_active_time=120.0,
+        time_on_current_step=60.0,
+        error_repeat_count=0,
+        error_repeat_rate=0.0,
+        action_sequence_entropy=0.3,
+        undo_redo_ratio=0.0,
+        error_frequency=0.0,
+        error_frequency_slope=0.0,
+        unique_error_types=0,
+        dominant_error=None,
+        components_touched=1,
+        action_diversity=0.2,
+        events_total=10,
     )
 
 
@@ -50,13 +80,19 @@ def _productive_analysis():
         StudentMetrics,
         SuggestedIntervention,
     )
+
     return AnalyticsResult(
-        struggle_detected=False, struggle_type=None, confidence=0.9,
+        struggle_detected=False,
+        struggle_type=None,
+        confidence=0.9,
         suggested_intervention=SuggestedIntervention.HINT,
         difficulty_recommendation=DifficultyRecommendation(
-            current_difficulty="beginner", recommended_difficulty="beginner", reasoning="ok",
-            metrics=StudentMetrics(total_attempts=5, success_rate=0.9,
-                                   avg_time_per_step=30.0, struggling_steps=[]),
+            current_difficulty="beginner",
+            recommended_difficulty="beginner",
+            reasoning="ok",
+            metrics=StudentMetrics(
+                total_attempts=5, success_rate=0.9, avg_time_per_step=30.0, struggling_steps=[]
+            ),
         ),
         features=_features(),
     )
@@ -66,8 +102,11 @@ def _monitor(cap, *, latency_enabled):
     cfg = LearningAnalyticsConfig()
     cfg.latency_capture_enabled = latency_enabled
     m = SessionMonitor(
-        mcp_client=MagicMock(), db_factory=lambda: cap, orchestrator=MagicMock(),
-        learning_analytics_config=cfg, gateway=MagicMock(),
+        mcp_client=MagicMock(),
+        db_factory=lambda: cap,
+        orchestrator=MagicMock(),
+        learning_analytics_config=cfg,
+        gateway=MagicMock(),
     )
     m._session_id = "s1"
     m._user_id = "u1"

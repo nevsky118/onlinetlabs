@@ -1,4 +1,4 @@
-"""Тест: open-loop arm A подавляет проактив, arm B отправляет интервенцию."""
+"""Test: open-loop arm A suppresses proactive intervention, arm B dispatches it."""
 
 from datetime import UTC, datetime
 from types import SimpleNamespace
@@ -18,7 +18,7 @@ pytestmark = [pytest.mark.unit]
 
 
 class _Cap:
-    """Перехватывающая db-сессия."""
+    """Capturing db session."""
 
     def __init__(self):
         self.added = []

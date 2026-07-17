@@ -1,4 +1,4 @@
-"""Тесты handler-логики эндпоинтов согласия и audit-запроса — без подъёма FastAPI."""
+"""Tests for the handler logic of consent and audit-query endpoints — without spinning up FastAPI."""
 
 from datetime import UTC
 

@@ -1,4 +1,4 @@
-"""Firewall: reproducibility-bundle исключает данные is_simulated-юзеров."""
+"""Firewall: reproducibility bundle excludes data from is_simulated users."""
 
 from datetime import UTC, datetime
 
@@ -32,6 +32,7 @@ class TestReproducibilityFirewall:
     async def test_dc7d6b51_bundle_excludes_simulated(self):
         with autotest.step("Arrange: реальный и сим юзер, у каждого сессия/решение/gold"):
             from evaluation.reproducibility import build_reproducibility_bundle
+
             sf = await _sqlite_factory()
             now = datetime(2026, 6, 21, 12, 0, tzinfo=UTC)
             async with sf() as db:
@@ -40,15 +41,30 @@ class TestReproducibilityFirewall:
                 db.add(LearningSession(id="s-real", user_id="u-real", lab_slug="l", started_at=now))
                 db.add(LearningSession(id="s-sim", user_id="u-sim", lab_slug="l", started_at=now))
                 for sid, uid in [("s-real", "u-real"), ("s-sim", "u-sim")]:
-                    db.add(InterventionDecision(
-                        id=f"d-{uid}", session_id=sid, user_id=uid, lab_slug="l",
-                        spell_id="sp", ts=now, regime="idle", dwell_seconds=1.0,
-                        t_k_applied=0.0, assignment="intervene",
-                    ))
-                    db.add(RegimeAnnotation(
-                        id=f"a-{uid}", session_id=sid, coder_id="gold", window_index=0,
-                        regime_label="idle", is_gold=True,
-                    ))
+                    db.add(
+                        InterventionDecision(
+                            id=f"d-{uid}",
+                            session_id=sid,
+                            user_id=uid,
+                            lab_slug="l",
+                            spell_id="sp",
+                            ts=now,
+                            regime="idle",
+                            dwell_seconds=1.0,
+                            t_k_applied=0.0,
+                            assignment="intervene",
+                        )
+                    )
+                    db.add(
+                        RegimeAnnotation(
+                            id=f"a-{uid}",
+                            session_id=sid,
+                            coder_id="gold",
+                            window_index=0,
+                            regime_label="idle",
+                            is_gold=True,
+                        )
+                    )
                 await db.commit()
 
         with autotest.step("Act: собрать bundle"):

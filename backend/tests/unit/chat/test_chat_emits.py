@@ -1,4 +1,4 @@
-"""Unit-тесты точек emit активности в chat/router.py."""
+"""Unit tests for activity emit points in chat/router.py."""
 
 from types import SimpleNamespace
 
@@ -13,7 +13,7 @@ pytestmark = [pytest.mark.unit]
 
 @autotest.name("chat: _activity_emit не падает при отсутствии activity_log")
 def test_activity_emit_safe_without_log():
-    # app_state без activity_log — должен быть no-op, не исключение
+    # app_state without activity_log — should be a no-op, not an exception
     _activity_emit(
         SimpleNamespace(),
         event_model_selected("s1", "u1", model_id="yandex-gpt-5.1", provider="yandex"),

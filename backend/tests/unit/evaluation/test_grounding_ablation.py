@@ -1,4 +1,4 @@
-"""Grounded-vs-ungrounded ablation: пара вариантов помощи для слепой экспертной оценки."""
+"""Grounded-vs-ungrounded ablation: a pair of help variants for blind expert evaluation."""
 
 from unittest.mock import AsyncMock
 
@@ -24,8 +24,13 @@ async def _sqlite_factory():
 
 def _resp(hint: str) -> OrchestratorResponse:
     return OrchestratorResponse(
-        success=True, agent_used="tutor", agent_backend="openrouter",
-        data={"hint": hint, "hint_level": 1}, metadata={"model": "m"}, error=None, latency_ms=10,
+        success=True,
+        agent_used="tutor",
+        agent_backend="openrouter",
+        data={"hint": hint, "hint_level": 1},
+        metadata={"model": "m"},
+        error=None,
+        latency_ms=10,
     )
 
 
@@ -37,7 +42,8 @@ class TestGroundingAblation:
         with autotest.step("Act+Assert: колонки и имя таблицы"):
             cols = set(GroundingComparison.__table__.columns.keys())
             assert_true(
-                {"id", "session_id", "grounded_text", "ungrounded_text", "ts", "created_at"} <= cols,
+                {"id", "session_id", "grounded_text", "ungrounded_text", "ts", "created_at"}
+                <= cols,
                 f"обязательные колонки; есть {cols}",
             )
             assert_equal(GroundingComparison.__tablename__, "grounding_comparisons", "имя таблицы")
@@ -47,7 +53,9 @@ class TestGroundingAblation:
     @autotest.name("Config: grounding_ablation_enabled по умолчанию False")
     def test_a25f1ca9_config_default(self):
         with autotest.step("Act+Assert: дефолт выключен"):
-            assert_equal(LearningAnalyticsConfig().grounding_ablation_enabled, False, "по умолчанию False")
+            assert_equal(
+                LearningAnalyticsConfig().grounding_ablation_enabled, False, "по умолчанию False"
+            )
 
     @autotest.num("1998")
     @autotest.external_id("eb6723d9-36ac-48c3-9a05-5f7b629cf103")
@@ -55,9 +63,12 @@ class TestGroundingAblation:
     async def test_eb6723d9_record_pair(self):
         with autotest.step("Arrange+Act: записать пару grounded/ungrounded"):
             from evaluation.grounding import record_grounding_comparison
+
             sf = await _sqlite_factory()
             async with sf() as db:
-                await record_grounding_comparison(db, "s1", "с контекстом среды", "только текст задачи")
+                await record_grounding_comparison(
+                    db, "s1", "с контекстом среды", "только текст задачи"
+                )
 
         with autotest.step("Assert: 1 строка, оба текста сохранены"):
             async with sf() as db:
@@ -72,6 +83,7 @@ class TestGroundingAblation:
     async def test_39734614_generate_pair(self):
         with autotest.step("Arrange: orchestrator отдаёт grounded 'G', ungrounded 'U'"):
             from evaluation.grounding import generate_grounding_pair
+
             orch = AsyncMock()
             orch.intervene = AsyncMock(side_effect=[_resp("G"), _resp("U")])
             grounded_input = object()

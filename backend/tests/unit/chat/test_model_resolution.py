@@ -1,4 +1,4 @@
-"""Unit-тесты для resolve_chat_model (чистая функция, без HTTP)."""
+"""Unit tests for resolve_chat_model (pure function, no HTTP)."""
 
 import pytest
 from mcp_sdk.testing import autotest

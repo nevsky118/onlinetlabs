@@ -1,4 +1,4 @@
-"""Тест: _decide_intervention строит контекст из observer.current_state()."""
+"""Test: _decide_intervention builds context from observer.current_state()."""
 
 from datetime import UTC, datetime
 from types import SimpleNamespace
@@ -17,7 +17,7 @@ pytestmark = [pytest.mark.unit]
 
 
 def _make_struggle_features(session_id: str = "s1") -> SessionFeatures:
-    """4 повтора одной ошибки → REPEATING_ERRORS."""
+    """4 repeats of the same error → REPEATING_ERRORS."""
     return SessionFeatures(
         session_id=session_id,
         computed_at=datetime.now(tz=UTC),
@@ -41,7 +41,7 @@ def _make_struggle_features(session_id: str = "s1") -> SessionFeatures:
 
 
 def _make_observer_stub() -> MagicMock:
-    """Стаб observer'а с current_state() → ProgressState-like объект."""
+    """Observer stub whose current_state() → a ProgressState-like object."""
     state = SimpleNamespace(
         current_step_id="connectivity",
         current_step_title="Связность",
@@ -60,7 +60,7 @@ def _make_observer_stub() -> MagicMock:
 
 
 def _make_monitor(observer, config_model) -> SessionMonitor:
-    """Монитор с замоканным context_builder и observer'ом."""
+    """Monitor with a mocked context_builder and observer."""
     monitor = SessionMonitor(
         mcp_client=None,
         db_factory=None,

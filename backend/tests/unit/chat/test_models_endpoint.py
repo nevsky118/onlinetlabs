@@ -1,4 +1,4 @@
-"""Unit-тесты для build_models_response (чистая функция, без HTTP)."""
+"""Unit tests for build_models_response (pure function, no HTTP)."""
 
 import pytest
 from mcp_sdk.testing import autotest

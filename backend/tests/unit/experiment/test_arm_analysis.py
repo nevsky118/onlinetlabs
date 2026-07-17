@@ -1,4 +1,4 @@
-"""Тесты compute_arm_analysis: open vs closed arm по A4-5 метрикам."""
+"""Tests for compute_arm_analysis: open vs closed arm on A4-5 metrics."""
 
 from types import SimpleNamespace
 
@@ -13,8 +13,8 @@ pytestmark = [pytest.mark.unit]
 
 def _m(arm: str, esc: int, l2_pass: bool | None, repeated: int) -> SimpleNamespace:
     return SimpleNamespace(
-        base_arm=arm,  # training-arm; analysis.py группирует по base_arm
-        control_arm=arm,  # effective arm (аудит); здесь совпадает с base_arm
+        base_arm=arm,  # training-arm; analysis.py groups by base_arm
+        control_arm=arm,  # effective arm (audit); matches base_arm here
         escalations=esc,
         l2_unassisted_pass=l2_pass,
         repeated_errors=repeated,
@@ -22,10 +22,10 @@ def _m(arm: str, esc: int, l2_pass: bool | None, repeated: int) -> SimpleNamespa
 
 
 def _make_dataset() -> list:
-    # open: много эскалаций, L2 падает чаще, больше repeated_errors
+    # open: many escalations, L2 fails more often, more repeated_errors
     open_metrics = [_m("open", esc=5, l2_pass=False, repeated=8) for _ in range(10)]
     open_metrics += [_m("open", esc=4, l2_pass=True, repeated=6) for _ in range(5)]
-    # closed: меньше эскалаций, L2 проходит чаще, меньше repeated_errors
+    # closed: fewer escalations, L2 passes more often, fewer repeated_errors
     closed_metrics = [_m("closed", esc=1, l2_pass=True, repeated=2) for _ in range(10)]
     closed_metrics += [_m("closed", esc=2, l2_pass=False, repeated=3) for _ in range(5)]
     return open_metrics + closed_metrics

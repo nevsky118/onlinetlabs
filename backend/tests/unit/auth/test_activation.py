@@ -1,4 +1,4 @@
-"""Тесты gate активации аккаунта: require_active_user, JWT round-trip, admin PATCH, /auth/activate."""
+"""Account activation gate tests: require_active_user, JWT round-trip, admin PATCH, /auth/activate."""
 
 import uuid
 
@@ -133,7 +133,7 @@ class TestNewUserActivation:
 
 
 class TestAdminPatchIsActive:
-    """PATCH /admin/users/{id}: is_active меняется через admin-эндпоинт."""
+    """PATCH /admin/users/{id}: is_active changes via the admin endpoint."""
 
     @pytest.fixture(autouse=True)
     async def setup(self):
@@ -199,7 +199,7 @@ class TestAdminPatchIsActive:
 
 
 class TestActivateEndpoint:
-    """HTTP-тесты POST /auth/activate."""
+    """HTTP tests for POST /auth/activate."""
 
     @pytest.fixture(autouse=True)
     async def setup(self):
@@ -226,7 +226,7 @@ class TestActivateEndpoint:
         self.app = app
         limiter.reset()
 
-        # Сеять неактивного пользователя.
+        # Seed an inactive user.
         async with self.session_factory() as db:
             db.add(
                 User(

@@ -1,4 +1,4 @@
-"""Де-циркуляризация derive_thresholds: counterfactual пλагинный, ablation measured vs stipulated."""
+"""De-circularizing derive_thresholds: counterfactual is pluggable, ablation measured vs stipulated."""
 
 import pytest
 from mcp_sdk.testing import autotest
@@ -11,7 +11,7 @@ pytestmark = [pytest.mark.unit]
 
 
 def _stuck_session(length: int = 300, step: int = 15) -> dict:
-    """Один длинный stuck-спелл, затем продуктивный."""
+    """One long stuck spell, then productive."""
     samples = []
     t, dwell = 0, 0.0
     while t <= length:
@@ -38,9 +38,12 @@ class TestCounterfactualAblation:
                 sessions, costs, grid, counterfactual=no_effect_counterfactual
             )
 
-        with autotest.step("Assert: без эффекта вмешательства оптимум = max T_k; со стипуляцией — раньше"):
+        with autotest.step(
+            "Assert: без эффекта вмешательства оптимум = max T_k; со стипуляцией — раньше"
+        ):
             assert_equal(
-                tk_no_effect["stuck_on_step"], 300.0,
+                tk_no_effect["stuck_on_step"],
+                300.0,
                 f"no-effect → максимальный T_k (не вмешиваться); получено {tk_no_effect}",
             )
             assert_true(
@@ -54,6 +57,7 @@ class TestCounterfactualAblation:
     def test_8f458642_default_is_stipulated(self):
         with autotest.step("Arrange: сессии + сетка"):
             from control.derive_thresholds import _truncate_at_interventions
+
             sessions = [_stuck_session(300), _stuck_session(120)]
             costs = Costs(c_stuck=1.0, c_intervention=1.0, c_false=2.0)
             grid = {"stuck_on_step": [0.0, 30.0, 60.0, 120.0, 300.0]}

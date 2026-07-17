@@ -11,7 +11,7 @@ pytestmark = [pytest.mark.unit]
 
 
 class FakeContextMCPClient:
-    """Фейк MCP для тестов контекст-билдера."""
+    """Fake MCP for context-builder tests."""
 
     def __init__(self, components=None, actions=None, errors=None):
         self._components = components or []

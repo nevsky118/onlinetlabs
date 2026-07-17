@@ -9,7 +9,7 @@ pytestmark = [pytest.mark.unit]
 
 
 def _request(subject: str | None, client_ip: str = "10.0.0.1") -> Request:
-    """Минимальный ASGI Request с state и client, для проверки key_func."""
+    """Minimal ASGI Request with state and client, for testing key_func."""
     scope = {
         "type": "http",
         "headers": [],

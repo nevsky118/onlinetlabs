@@ -1,14 +1,14 @@
-"""Характеризация маршрутной таблицы сессионных роутеров.
+"""Characterization of the session routers' route table.
 
-Пинит точный набор (method, path), зарегистрированный под /users/me/sessions
-(через sessions.router) и отдельно под /sessions (agent_activity — регистрируется
-в main.py отдельным include_router с другим префиксом, НЕ через sessions.router).
-Отдельно фиксирует разрешение literal `/queue-status` раньше catch-all
-`/{session_id}` — при неверном порядке регистрации queue-status был бы
-проглочен catch-all'ом query-роутера.
+Pins the exact set of (method, path) registered under /users/me/sessions
+(via sessions.router) and separately under /sessions (agent_activity — registered
+in main.py via a separate include_router with a different prefix, NOT via sessions.router).
+Separately pins that the literal `/queue-status` resolves before the catch-all
+`/{session_id}` — with the wrong registration order, queue-status would be
+swallowed by the query router's catch-all.
 
-Тест должен оставаться зелёным ДО и ПОСЛЕ консолидации 8 файлов роутеров
-в commands.py/queries.py/ws.py — это и есть цель характеризации.
+The test must stay green BEFORE and AFTER consolidating the 8 router files
+into commands.py/queries.py/ws.py — that is exactly the point of this characterization.
 """
 
 from fastapi import FastAPI
@@ -21,7 +21,7 @@ from sessions.routers.queries import agent_activity_router
 
 pytestmark = []
 
-# Точный набор (method, path), собранный с текущего (pre-рефакторинг) кода.
+# Exact set of (method, path), collected from the current (pre-refactor) code.
 _EXPECTED_ROUTES = {
     ("GET", "/sessions/{session_id}/agent-activity"),
     ("GET", "/users/me/sessions"),
@@ -46,7 +46,7 @@ _EXPECTED_ROUTES = {
 
 
 def _build_app() -> FastAPI:
-    """Воспроизводит ровно то, как main.py монтирует сессионные роутеры."""
+    """Reproduces exactly how main.py mounts the session routers."""
     app = FastAPI()
     app.include_router(sessions_router, prefix="/users/me/sessions", tags=["sessions"])
     app.include_router(agent_activity_router, prefix="/sessions", tags=["observability"])

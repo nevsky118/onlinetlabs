@@ -13,7 +13,7 @@ pytestmark = [pytest.mark.unit]
 
 
 def _steps(*step_specs: list[bool]) -> list[dict]:
-    """Строит steps-снимок: каждый аргумент — список ok-флагов проверок шага."""
+    """Builds a steps snapshot: each argument is a list of ok flags for a step's checks."""
     return [
         {
             "id": f"s{i}",

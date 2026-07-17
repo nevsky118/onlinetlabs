@@ -1,4 +1,4 @@
-"""#7 extra: single-vs-multi-agent ablation — тумблер маршрутизации интервенций."""
+"""#7 extra: single-vs-multi-agent ablation — the intervention routing toggle."""
 
 from unittest.mock import MagicMock, patch
 
@@ -21,11 +21,16 @@ class TestSingleAgentAblation:
             config_model.learning_analytics.single_agent_mode = True
             orch = Orchestrator(config_model)
             inp = InterventionInput(
-                session_id="s1", user_id="u1", intervention_type="simplify", context={},
+                session_id="s1",
+                user_id="u1",
+                intervention_type="simplify",
+                context={},
             )
 
         with autotest.step("Act: intervene (resolve_agent замокан → None, ловим имя маршрута)"):
-            with patch("agents.orchestrator.agent.resolve_agent", MagicMock(return_value=None)) as ra:
+            with patch(
+                "agents.orchestrator.agent.resolve_agent", MagicMock(return_value=None)
+            ) as ra:
                 await orch.intervene(inp)
 
         with autotest.step("Assert: маршрут форсирован на intervene_tutor"):
@@ -38,11 +43,16 @@ class TestSingleAgentAblation:
         with autotest.step("Arrange: single_agent_mode=False (дефолт), type=simplify"):
             orch = Orchestrator(config_model)
             inp = InterventionInput(
-                session_id="s1", user_id="u1", intervention_type="simplify", context={},
+                session_id="s1",
+                user_id="u1",
+                intervention_type="simplify",
+                context={},
             )
 
         with autotest.step("Act: intervene"):
-            with patch("agents.orchestrator.agent.resolve_agent", MagicMock(return_value=None)) as ra:
+            with patch(
+                "agents.orchestrator.agent.resolve_agent", MagicMock(return_value=None)
+            ) as ra:
                 await orch.intervene(inp)
 
         with autotest.step("Assert: маршрут по типу intervene_simplify"):

@@ -1,4 +1,4 @@
-"""Тесты ControlInterface: 5 ветвей отказа + 2 happy path."""
+"""Tests for ControlInterface: 5 denial branches + 2 happy paths."""
 
 from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -22,7 +22,7 @@ def _make_mcp():
     mcp = MagicMock()
     mcp._call_tool = AsyncMock(return_value={"data": "ok"})
     mcp.execute_action = AsyncMock(return_value={"done": True})
-    # observe диспатчит через типизированную обёртку (инъекция ctx + сериализация).
+    # observe dispatches through a typed wrapper (ctx injection + serialization).
     mcp.list_user_actions = AsyncMock(return_value={"data": "ok"})
     return mcp
 
@@ -34,7 +34,7 @@ def _make_config(cooldown: float = 60.0):
 
 
 def _make_db_factory(owned=True, consent=True):
-    """Фейковый db_factory: async ctx manager, возвращает фиктивный db."""
+    """Fake db_factory: async ctx manager, returns a stub db."""
     db = MagicMock()
 
     @asynccontextmanager
@@ -94,7 +94,7 @@ class TestControlInterface:
             patch("control_interface.interface.has_consent", new=AsyncMock(return_value=True)),
             patch("control_interface.interface.record", new=AsyncMock()),
         ):
-            # первый вызов — успех
+            # first call — success
             await iface.act(
                 _TOOL_ACT,
                 ctx=None,
@@ -107,7 +107,7 @@ class TestControlInterface:
         with autotest.step("Assert: execute_action вызван первый раз"):
             mcp.execute_action.assert_awaited_once()
 
-        # второй вызов немедленно — должен упасть с rate
+        # second call immediately — should fail with rate
         with (
             patch(
                 "control_interface.interface.get_owned_session",
@@ -129,7 +129,7 @@ class TestControlInterface:
         with autotest.step("Assert: причина rate"):
             assert_equal(exc_info.value.reason, "rate", "reason")
 
-    # ── act в open-плече → open_arm ───────────────────────────────────────
+    # ── act in open arm → open_arm ────────────────────────────────────────
 
     @autotest.num("1772")
     @autotest.external_id("e896a19f-9527-4485-8534-fb6bc2de6ece")
@@ -161,7 +161,7 @@ class TestControlInterface:
             assert_equal(exc_info.value.reason, "open_arm", "reason")
             mcp.execute_action.assert_not_awaited()
 
-    # ── неклассифицированный tool → unclassified ─────────────────────────
+    # ── unclassified tool → unclassified ──────────────────────────────────
 
     @autotest.num("1773")
     @autotest.external_id("3f314b4d-7ba2-4615-9889-24a00f12e5e8")
@@ -180,7 +180,7 @@ class TestControlInterface:
         with autotest.step("Assert: reason=unclassified"):
             assert_equal(exc_info.value.reason, "unclassified", "reason")
 
-    # ── чужая сессия → isolation ──────────────────────────────────────────
+    # ── foreign session → isolation ───────────────────────────────────────
 
     @autotest.num("1774")
     @autotest.external_id("aa9acc55-89a8-4137-9094-2d6ab2c34102")
@@ -204,7 +204,7 @@ class TestControlInterface:
         with autotest.step("Assert: reason=isolation"):
             assert_equal(exc_info.value.reason, "isolation", "reason")
 
-    # ── act: нет согласия → consent ───────────────────────────────────────
+    # ── act: no consent → consent ─────────────────────────────────────────
 
     @autotest.num("1775")
     @autotest.external_id("881af810-b603-4689-b511-e03c76db5616")
@@ -235,7 +235,7 @@ class TestControlInterface:
         with autotest.step("Assert: reason=consent"):
             assert_equal(exc_info.value.reason, "consent", "reason")
 
-    # ── observe: нет согласия → consent ──────────────────────────────────
+    # ── observe: no consent → consent ─────────────────────────────────────
 
     @autotest.num("1776")
     @autotest.external_id("507643b8-80b1-4f98-b42a-a1b346faade5")

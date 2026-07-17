@@ -9,10 +9,10 @@ pytestmark = [pytest.mark.unit, pytest.mark.auth]
 @pytest.mark.parametrize(
     "role,toggle,expected",
     [
-        ("student", None, True),  # пермиссивный дефолт: роль в selectable_roles
-        ("student", False, False),  # точечный дизейбл перебивает роль
+        ("student", None, True),  # permissive default: role is in selectable_roles
+        ("student", False, False),  # targeted disable overrides role
         ("instructor", None, True),
-        ("student", True, True),  # явный тоггл включён — даёт доступ
+        ("student", True, True),  # explicit toggle enabled — grants access
     ],
 )
 @autotest.name("may_select_model: матрица роль/тоггл/selectable_roles")
@@ -23,5 +23,5 @@ def test_may_select_model(role, toggle, expected):
 
 @autotest.name("may_select_model: роль не в selectable_roles и toggle None → False")
 def test_may_select_model_role_not_in_selectable_roles():
-    """Роль НЕ в selectable_roles, toggle None → False."""
+    """Role NOT in selectable_roles, toggle None → False."""
     assert may_select_model("student", None, {"instructor", "admin"}) is False

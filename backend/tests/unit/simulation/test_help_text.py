@@ -1,4 +1,5 @@
-"""HelpTextGen: текст просьбы студента — LLM (gated) с бюджет-гардом и шаблон-фолбэком."""
+"""HelpTextGen: student's help-request text — LLM (gated) with a budget guard and template fallback."""
+
 from unittest.mock import AsyncMock
 
 import pytest
@@ -10,13 +11,13 @@ pytestmark = [pytest.mark.unit]
 
 def _profile():
     from simulation.profiles import StudentProfile
-    return StudentProfile(
-        skill=0.3, persistence=0.4, strategy=0.3, pace=0.5, help_propensity=0.6
-    )
+
+    return StudentProfile(skill=0.3, persistence=0.4, strategy=0.3, pace=0.5, help_propensity=0.6)
 
 
 def _generator(**overrides):
     from simulation.help_text import HelpTextGen
+
     params = dict(llm_enabled=True, budget_rub=100.0, price_per_1k_rub=1.0)
     params.update(overrides)
     return HelpTextGen(**params)
@@ -69,8 +70,8 @@ class TestHelpTextGen:
             )
 
         with autotest.step("Act: генерируем дважды"):
-            await generator.generate(_profile(), {})  # LLM: расход → 2.0
-            await generator.generate(_profile(), {})  # бюджет исчерпан → шаблон
+            await generator.generate(_profile(), {})  # LLM: cost → 2.0
+            await generator.generate(_profile(), {})  # budget exhausted → template
 
         with autotest.step("Assert: модель вызвана ровно один раз"):
             assert_equal(llm.await_count, 1, "число вызовов LLM")
@@ -100,8 +101,13 @@ class TestHelpTextGen:
         with autotest.step("Act: студент просит помощь 4 раза подряд"):
             texts = [
                 await generator.generate(
-                    profile, {"step": "pc-ips", "node": "PC1",
-                              "tried": "ip 192.168.2.11/24", "attempt": attempt}
+                    profile,
+                    {
+                        "step": "pc-ips",
+                        "node": "PC1",
+                        "tried": "ip 192.168.2.11/24",
+                        "attempt": attempt,
+                    },
                 )
                 for attempt in range(4)
             ]
@@ -119,8 +125,7 @@ class TestHelpTextGen:
         with autotest.step("Act: просим помощь со второй попытки (есть что рассказать)"):
             text = await generator.generate(
                 _profile(),
-                {"step": "pc-ips", "node": "PC1", "tried": "ip 192.168.2.11/24",
-                 "attempt": 1},
+                {"step": "pc-ips", "node": "PC1", "tried": "ip 192.168.2.11/24", "attempt": 1},
             )
 
         with autotest.step("Assert: в тексте упомянут узел (диалог не абстрактный)"):

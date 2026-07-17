@@ -1,9 +1,9 @@
-# Общий conftest для unit-тестов.
+# Shared conftest for unit tests.
 
 import os
 
-# Подменяем обязательные env vars до импорта модулей, которые их требуют
-# при загрузке (config.env_config_loader дёргается lazily из db.session и т.д.).
+# Override required env vars before importing modules that need them
+# at load time (config.env_config_loader is triggered lazily from db.session, etc.).
 _TEST_ENV_DEFAULTS = {
     "DB_USER": "test",
     "DB_PASSWORD": "test",
@@ -54,11 +54,11 @@ from config.config_model import (
     SecurityConfig,
 )
 
-# Fake MCP клиенты
+# Fake MCP clients
 
 
 class FakeMCPClient:
-    """Реализация StateProvider + ActionProvider для тестов."""
+    """StateProvider + ActionProvider implementation for tests."""
 
     def __init__(
         self,
@@ -114,14 +114,14 @@ class FakeMCPClient:
 
 
 class FakeFailingMCPClient(FakeMCPClient):
-    """execute_action всегда возвращает success=False."""
+    """execute_action always returns success=False."""
 
     async def execute_action(self, ctx, action_name, params):
         self.calls.append(("execute_action", (ctx, action_name, params), {}))
         return ActionResult(success=False, message=f"Failed: {action_name}")
 
 
-# Фикстуры
+# Fixtures
 
 
 @pytest.fixture()

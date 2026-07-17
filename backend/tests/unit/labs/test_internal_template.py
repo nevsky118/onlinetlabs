@@ -61,7 +61,7 @@ class TestInternalLabTemplate:
         self.app.dependency_overrides[get_db] = _override_db
         self.app.dependency_overrides[require_internal_caller] = _override_token_ok
 
-        # app без override токена — для проверки 401
+        # app without token override — for testing 401
         self.raw_app = FastAPI()
         self.raw_app.include_router(internal_router, prefix="/internal")
         self.raw_app.dependency_overrides[get_db] = _override_db

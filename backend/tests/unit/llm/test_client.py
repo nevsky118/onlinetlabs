@@ -8,7 +8,7 @@ pytestmark = [pytest.mark.unit]
 
 
 class _FakeSettings:
-    """Минимальная заглушка settings с .agents."""
+    """Minimal settings stub with .agents."""
 
     def __init__(self, agents_config: AgentsConfig):
         self.agents = agents_config

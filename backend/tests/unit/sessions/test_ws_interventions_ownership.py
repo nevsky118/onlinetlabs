@@ -1,9 +1,9 @@
-"""WS-эндпоинт интервенций: session_id должен принадлежать пользователю.
+"""WS interventions endpoint: session_id must belong to the user.
 
-Регрессия безопасности: session_interventions_ws декодировал JWT, но не проверял
-владение сессией перед gateway.connect. _connections в WebSocketGateway — single-slot
-dict[str, WebSocket], поэтому подключение к чужому session_id вытесняло реальный
-сокет студента (session hijack / eviction), и интервенции уходили не тому пользователю.
+Security regression: session_interventions_ws decoded the JWT but did not check
+session ownership before gateway.connect. _connections in WebSocketGateway is a
+single-slot dict[str, WebSocket], so connecting to someone else's session_id would
+evict the real student's socket (session hijack / eviction), sending interventions to the wrong user.
 """
 
 from types import SimpleNamespace
@@ -19,13 +19,13 @@ pytestmark = [pytest.mark.unit]
 
 
 class _FakeWebSocket:
-    """Минимальный WebSocket-стаб: close/accept/receive_text + app.state.gateway."""
+    """Minimal WebSocket stub: close/accept/receive_text + app.state.gateway."""
 
     def __init__(self, gateway):
         self.close = AsyncMock()
         self.accept = AsyncMock()
-        # По умолчанию receive_text сразу рвёт соединение, чтобы неисправленный
-        # хендлер (без ownership-проверки) не завис в `while True` при вызове.
+        # By default receive_text immediately drops the connection, so an unfixed
+        # handler (without an ownership check) doesn't hang in `while True` when called.
         self.receive_text = AsyncMock(side_effect=WebSocketDisconnect())
         self.app = SimpleNamespace(state=SimpleNamespace(gateway=gateway))
 

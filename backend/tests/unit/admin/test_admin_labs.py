@@ -1,4 +1,4 @@
-"""P4 task 1 + task 3: тесты /admin/labs (GET, PATCH, rebuild-template)."""
+"""P4 task 1 + task 3: tests for /admin/labs (GET, PATCH, rebuild-template)."""
 
 import uuid
 from unittest.mock import AsyncMock
@@ -24,7 +24,7 @@ _STUDENT_USER = {"id": "student-001", "role": "student"}
 
 
 class TestAdminLabsEndpoints:
-    """HTTP-тесты GET /admin/labs и PATCH /admin/labs/{slug}."""
+    """HTTP tests for GET /admin/labs and PATCH /admin/labs/{slug}."""
 
     @pytest.fixture(autouse=True)
     async def setup(self):
@@ -216,7 +216,7 @@ class TestAdminLabsEndpoints:
 
 
 class TestRebuildTemplate:
-    """HTTP-тесты POST /admin/labs/{slug}/rebuild-template + worker."""
+    """HTTP tests for POST /admin/labs/{slug}/rebuild-template + worker."""
 
     @pytest.fixture(autouse=True)
     async def setup(self):

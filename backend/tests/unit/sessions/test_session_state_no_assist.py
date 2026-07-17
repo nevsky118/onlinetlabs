@@ -1,4 +1,5 @@
-"""no_assist в состоянии сессии: L2-холдаут (проактив подавлен) виден фронту как noAssist."""
+"""no_assist in session state: L2 holdout (proactive suppressed) is visible to the front end as noAssist."""
+
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
@@ -43,16 +44,28 @@ async def db_factory():
         db.add(Lab(slug="l1", title="L1", meta={"skill": _SKILL}))
         db.add(Lab(slug="l2", title="L2", meta={"skill": _SKILL}))
         db.add(LabProgress(id="p1", user_id="u1", lab_slug="l1", status="completed"))
-        # u1 на l2 = L2-холдаут (есть завершённая l1 того же навыка)
-        db.add(LearningSession(
-            id="sess-u1", user_id="u1", lab_slug="l2", status="active",
-            started_at=now, meta={"gns3_service_session_id": "gsid"},
-        ))
-        # u2 на l2 = не L2 (нет завершённых лаб)
-        db.add(LearningSession(
-            id="sess-u2", user_id="u2", lab_slug="l2", status="active",
-            started_at=now, meta={"gns3_service_session_id": "gsid"},
-        ))
+        # u1 on l2 = L2 holdout (has a completed l1 of the same skill)
+        db.add(
+            LearningSession(
+                id="sess-u1",
+                user_id="u1",
+                lab_slug="l2",
+                status="active",
+                started_at=now,
+                meta={"gns3_service_session_id": "gsid"},
+            )
+        )
+        # u2 on l2 = not L2 (no completed labs)
+        db.add(
+            LearningSession(
+                id="sess-u2",
+                user_id="u2",
+                lab_slug="l2",
+                status="active",
+                started_at=now,
+                meta={"gns3_service_session_id": "gsid"},
+            )
+        )
         await db.commit()
     yield sf
     await engine.dispose()

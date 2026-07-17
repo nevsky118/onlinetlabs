@@ -1,7 +1,7 @@
-"""Unit-тесты на tenacity-ретраи в MCPClient._call_tool.
+"""Unit tests for tenacity retries in MCPClient._call_tool.
 
-Стратегия: патчим streamablehttp_client/ClientSession, чтобы контролировать
-исключения и подсчёт попыток без поднятия реального MCP-сервера.
+Strategy: patch streamablehttp_client/ClientSession to control
+exceptions and attempt counts without spinning up a real MCP server.
 """
 
 from contextlib import asynccontextmanager
@@ -19,7 +19,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.mcp]
 
 
 def _fake_client_session_factory(session: AsyncMock):
-    """Возвращает async CM, который отдаёт переданный фейковый ClientSession."""
+    """Returns an async CM that yields the given fake ClientSession."""
 
     @asynccontextmanager
     async def fake_cs(read, write):
@@ -29,7 +29,7 @@ def _fake_client_session_factory(session: AsyncMock):
 
 
 def _build_call_tool_result(payload: str = '{"ok": true}'):
-    """Эмулируем структуру результата session.call_tool."""
+    """Emulate the structure of a session.call_tool result."""
     content_item = MagicMock()
     content_item.text = payload
     result = MagicMock()
@@ -88,7 +88,7 @@ class TestMCPClientRetry:
             nonlocal call_count
             call_count += 1
             raise httpx.RequestError("persistent failure")
-            yield  # pragma: no cover  # делает функцию async-генератором для CM
+            yield  # pragma: no cover  # makes the function an async generator for the CM
 
         with (
             autotest.step("Патчим streamablehttp_client на постоянное падение"),

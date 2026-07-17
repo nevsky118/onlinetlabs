@@ -1,4 +1,4 @@
-"""Проверяет: при сбое LLM агенты re-raise, шаблон не возвращается."""
+"""Checks: on LLM failure, agents re-raise instead of returning a canned template."""
 
 from unittest.mock import AsyncMock
 
@@ -27,7 +27,7 @@ def _hint_context() -> AgentContext:
 
 
 async def test_hint_llm_failure_raises(config_model, monkeypatch):
-    """HintAgent: LLM exception → re-raise, не шаблон."""
+    """HintAgent: LLM exception → re-raise, not a canned template."""
     agent = HintAgent(config_model)
     monkeypatch.setattr(
         agent,
@@ -48,7 +48,7 @@ async def test_hint_llm_failure_raises(config_model, monkeypatch):
 
 
 async def test_hint_no_context_raises(config_model):
-    """HintAgent: без agent_context → ValueError."""
+    """HintAgent: without agent_context → ValueError."""
     agent = HintAgent(config_model)
     inp = HintInput(
         session_id="s",
@@ -62,7 +62,7 @@ async def test_hint_no_context_raises(config_model):
 
 
 async def test_tutor_llm_failure_raises(config_model, monkeypatch):
-    """TutorAgent: LLM exception → re-raise, не шаблон."""
+    """TutorAgent: LLM exception → re-raise, not a canned template."""
     agent = TutorAgent(config_model)
     monkeypatch.setattr(
         agent,
@@ -75,10 +75,10 @@ async def test_tutor_llm_failure_raises(config_model, monkeypatch):
 
 
 async def test_orchestrator_intervene_catches_agent_raise(config_model, monkeypatch):
-    """Orchestrator.intervene: agent.run raise → success=False, не исключение."""
+    """Orchestrator.intervene: agent.run raise → success=False, not an exception."""
     orch = Orchestrator(config_model)
 
-    # Мок агента который бросает
+    # Mock an agent that raises
     fake_agent = AsyncMock()
     fake_agent.run = AsyncMock(side_effect=RuntimeError("llm down"))
     monkeypatch.setattr(orch, "_get_agent", lambda name: fake_agent)

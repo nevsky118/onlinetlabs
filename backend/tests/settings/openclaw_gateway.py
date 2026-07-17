@@ -1,4 +1,4 @@
-"""Локальный HTTP Gateway для тестов OpenClaw."""
+"""Local HTTP gateway for OpenClaw tests."""
 
 import json
 import threading
@@ -6,14 +6,14 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 
 class OpenClawGatewayHandler(BaseHTTPRequestHandler):
-    """Тестовый HTTP Gateway с настоящим TCP-соединением."""
+    """Test HTTP gateway with a real TCP connection."""
 
     protocol_version = "HTTP/1.1"
     responses: list[dict] = []
     requests: list[dict] = []
 
     def do_POST(self):
-        """Обработать OpenAI-совместимый chat completions запрос."""
+        """Handle an OpenAI-compatible chat completions request."""
         length = int(self.headers.get("content-length", "0"))
         payload = self.rfile.read(length)
         self.__class__.requests.append(
@@ -33,11 +33,11 @@ class OpenClawGatewayHandler(BaseHTTPRequestHandler):
         self.wfile.write(encoded)
 
     def log_message(self, *_):
-        """Отключить шумный stderr-лог встроенного HTTP server."""
+        """Disable the noisy stderr log of the built-in HTTP server."""
 
 
 class OpenClawGatewayServer:
-    """Контекстный менеджер тестового Gateway на loopback."""
+    """Context manager for the test gateway on loopback."""
 
     def __init__(self, responses: list[dict]):
         self._responses = responses
@@ -57,18 +57,18 @@ class OpenClawGatewayServer:
 
     @property
     def base_url(self) -> str:
-        """Вернуть базовый URL тестового Gateway."""
+        """Return the base URL of the test gateway."""
         host, port = self._server.server_address
         return f"http://{host}:{port}"
 
     @property
     def requests(self) -> list[dict]:
-        """Вернуть запросы, полученные тестовым Gateway."""
+        """Return the requests received by the test gateway."""
         return OpenClawGatewayHandler.requests
 
 
 def completion_response(content: str, model: str = "openclaw") -> dict:
-    """Собрать валидный chat completions ответ."""
+    """Build a valid chat completions response."""
     return {
         "id": "chatcmpl-test",
         "model": model,

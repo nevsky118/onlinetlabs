@@ -1,4 +1,4 @@
-"""POST /sessions: релонч уже активной сессии не течёт слот очереди и не задваивает gauge."""
+"""POST /sessions: relaunching an already-active session doesn't leak a queue slot or double the gauge."""
 
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -22,7 +22,7 @@ _CREDS = {
 class TestLaunchSlotRelease:
     @pytest.fixture(autouse=True)
     def _disable_limiter(self):
-        # Вызываем хендлер напрямую — глушим slowapi-декоратор на время теста.
+        # Call the handler directly — mute the slowapi decorator for the test.
         prev = limiter.enabled
         limiter.enabled = False
         yield

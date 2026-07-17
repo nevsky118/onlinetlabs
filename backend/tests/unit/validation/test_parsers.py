@@ -1,4 +1,4 @@
-"""Unit-тесты на чистые парсеры check-handlers."""
+"""Unit tests for pure check-handler parsers."""
 
 from pathlib import Path
 
@@ -70,7 +70,7 @@ def test_parse_route_connected():
     stdout = _load("show_ip_route_ospf.txt")
     parsed = _parse_route(stdout, "10.0.12.0/24")
     assert parsed is not None
-    # `O` без `>*` — это конкурирующий маршрут, всё равно матчится.
+    # `O` without `>*` — this is a competing route, still matches.
     assert parsed[0] == "O"
 
 
@@ -177,8 +177,8 @@ def test_parse_cisco_route_missing():
 
 
 def test_parse_cisco_route_skips_codes_header():
-    # "Codes:" line содержит формат `O - OSPF, IA - OSPF inter area` —
-    # парсер не должен принять это за маршрут.
+    # "Codes:" line contains the format `O - OSPF, IA - OSPF inter area` —
+    # the parser must not mistake this for a route.
     stdout = _load("cisco_show_ip_route_ospf.txt")
     assert _parse_cisco_route(stdout, "10.0.0.0/30") is None
 

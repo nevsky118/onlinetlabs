@@ -1,4 +1,4 @@
-"""Тест рабочей кривой по T_k + J-оптимум (Task 7)."""
+"""Operating curve test over T_k + J-optimum (Task 7)."""
 
 import pytest
 from mcp_sdk.testing import autotest

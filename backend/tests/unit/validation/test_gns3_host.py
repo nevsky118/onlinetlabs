@@ -14,12 +14,12 @@ def _settings(node_host="", internal="http://gns3-server:3080", public="http://l
 
 
 def test_derives_host_from_internal_url():
-    # internal_url hostname "gns3-server" пропускается → берём public_url
+    # internal_url hostname "gns3-server" is skipped → fall back to public_url
     assert _gns3_host_from_settings(_settings()) == "localhost"
 
 
 def test_derives_host_from_public_url():
-    # internal пропускается из-за gns3-server, public даёт реальный хост
+    # internal is skipped because of gns3-server, public gives the real host
     s = _settings(internal="http://gns3-server:3080", public="http://192.168.1.10:3080")
     assert _gns3_host_from_settings(s) == "192.168.1.10"
 

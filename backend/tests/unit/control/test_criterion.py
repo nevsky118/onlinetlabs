@@ -52,7 +52,7 @@ class TestCriterion:
     )
     def test_00208a1c_count_false_flags_premature_intervention(self):
         def _spell(start: int, duration: int, with_iv: bool) -> list[dict]:
-            """Возвращает сэмплы одного спелла [start, start+duration]."""
+            """Returns samples for one spell [start, start+duration]."""
             result = []
             t = start
             while t < start + duration:

@@ -1,8 +1,9 @@
-"""GNS3Actor: действие студента → конфиг в консоли устройства / chat / idle.
+"""GNS3Actor: student action → device console config / chat / idle.
 
-Консоль — канал, который читают spec-проверки (`vpcs.show_ip`), а их провалы кормят
-детектор режимов (`check_failing` → error_repeat_count).
+The console is the channel that spec checks read (`vpcs.show_ip`), and their failures feed
+the regime detector (`check_failing` → error_repeat_count).
 """
+
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -21,17 +22,23 @@ _CONSOLES = {"PC1": ("localhost", 5000), "PC2": ("localhost", 5001)}
 
 
 class _FakeDb:
-    async def __aenter__(self): return self
-    async def __aexit__(self, *a): return False
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *a):
+        return False
 
 
 def _make_actor(save_user_message=None):
     from simulation.env.gns3_actor import GNS3Actor
     from simulation.help_text import HelpTextGen
     from simulation.profiles import StudentProfile
+
     return GNS3Actor(
-        node_tasks=_TASKS, consoles=_CONSOLES,
-        db_factory=lambda: _FakeDb(), backend_session_id="s1",
+        node_tasks=_TASKS,
+        consoles=_CONSOLES,
+        db_factory=lambda: _FakeDb(),
+        backend_session_id="s1",
         help_gen=HelpTextGen(llm_enabled=False, budget_rub=0, price_per_1k_rub=0),
         profile=StudentProfile(
             skill=0.3, persistence=0.4, strategy=0.3, pace=0.5, help_propensity=0.6
@@ -64,8 +71,10 @@ class TestGNS3ActorConsole:
 
         with autotest.step("Act: студент выполняет верное действие"):
             from simulation.policy import Action
-            with patch("asyncio.open_connection",
-                       AsyncMock(return_value=(reader, writer))) as open_conn:
+
+            with patch(
+                "asyncio.open_connection", AsyncMock(return_value=(reader, writer))
+            ) as open_conn:
                 await actor.execute(Action.CORRECT_CMD)
 
         with autotest.step("Assert: подключились к консоли PC1 и отправили эталонный IP"):
@@ -82,6 +91,7 @@ class TestGNS3ActorConsole:
 
         with autotest.step("Act: два верных действия подряд"):
             from simulation.policy import Action
+
             with patch("asyncio.open_connection", AsyncMock(return_value=(reader, writer))):
                 await actor.execute(Action.CORRECT_CMD)
                 await actor.execute(Action.CORRECT_CMD)
@@ -101,15 +111,14 @@ class TestGNS3ActorConsole:
 
         with autotest.step("Act: студент дважды повторяет одну ошибку"):
             from simulation.policy import Action
+
             with patch("asyncio.open_connection", AsyncMock(return_value=(reader, writer))):
                 await actor.execute(Action.REPEAT_ERROR)
                 await actor.execute(Action.REPEAT_ERROR)
 
         with autotest.step("Assert: команда идентична — проверка упадёт с тем же actual"):
             sent = [call.args[0] for call in writer.write.call_args_list]
-            assert_equal(
-                sent, [b"ip 192.168.2.11/24\r\n", b"ip 192.168.2.11/24\r\n"], "команды"
-            )
+            assert_equal(sent, [b"ip 192.168.2.11/24\r\n", b"ip 192.168.2.11/24\r\n"], "команды")
 
     @autotest.num("2026")
     @autotest.external_id("c67fa9c0-9a9a-4da7-8521-b5a884e51d39")
@@ -120,6 +129,7 @@ class TestGNS3ActorConsole:
 
         with autotest.step("Act: студент пробует неверную команду"):
             from simulation.policy import Action
+
             with patch("asyncio.open_connection", AsyncMock(side_effect=OSError("refused"))):
                 await actor.execute(Action.WRONG_CMD)
 
@@ -142,6 +152,7 @@ class TestGNS3ActorConsole:
 
         with autotest.step("Act: студент просит помощи"):
             from simulation.policy import Action
+
             await actor.execute(Action.ASK_HELP, help_context={"step": "ip"})
 
         with autotest.step("Assert: в чат-лог легли и вопрос, и ответ тьютора"):
@@ -150,7 +161,8 @@ class TestGNS3ActorConsole:
             assert_equal(save_assistant.await_args.args[1], "s1", "session_id ответа")
             assert_equal(
                 save_assistant.await_args.args[2][0]["text"],
-                "Проверь маску подсети.", "текст ответа",
+                "Проверь маску подсети.",
+                "текст ответа",
             )
 
     @autotest.num("2045")
@@ -171,8 +183,9 @@ class TestGNS3ActorConsole:
 
         with autotest.step("Act: студент настроил PC1, затем попросил помощь"):
             from simulation.policy import Action
+
             with patch("asyncio.open_connection", AsyncMock(return_value=(reader, writer))):
-                await actor.execute(Action.CORRECT_CMD)  # PC1, индекс уехал на PC2
+                await actor.execute(Action.CORRECT_CMD)  # PC1, index moved on to PC2
                 await actor.execute(Action.ASK_HELP)
 
         with autotest.step("Assert: узел и процитированная команда — про PC1"):
@@ -189,6 +202,7 @@ class TestGNS3ActorConsole:
 
         with autotest.step("Act: студент простаивает"):
             from simulation.policy import Action
+
             with patch("asyncio.open_connection", AsyncMock()) as open_conn:
                 with patch("asyncio.sleep", AsyncMock()):
                     await actor.execute(Action.IDLE)

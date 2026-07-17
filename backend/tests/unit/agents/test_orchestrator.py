@@ -10,7 +10,7 @@ from agents.orchestrator.router import INTENT_TO_AGENT, resolve_agent
 
 
 def _mock_hint_agent(orch):
-    """Возвращает HintResponse без LLM-вызова."""
+    """Returns a HintResponse without an LLM call."""
     fake = AsyncMock()
     fake.run = AsyncMock(
         return_value=HintResponse(hint="подсказка", hint_level=2, remaining_hints=1)

@@ -1,4 +1,4 @@
-"""Тесты резолва модели интервенций в оркестраторе."""
+"""Tests for resolving the intervention model in the orchestrator."""
 
 from unittest.mock import patch
 
@@ -92,8 +92,8 @@ class TestInterventionMetadata:
     @autotest.name("intervene tutor/hint: metadata содержит model и provider")
     @pytest.mark.asyncio
     async def test_c12c25db_intervene_llm_metadata(self, config_model):
-        """Полный intervene требует MCP/DB; тест проверяет сборку metadata через
-        resolve_model — ту же ветку, что выполняется в intervene для LLM-агентов."""
+        """Full intervene requires MCP/DB; this test checks the metadata assembly via
+        resolve_model — the same branch executed in intervene for LLM agents."""
         with autotest.step("Резолвим model_id через resolve_model с тестовым конфигом"):
             orch = Orchestrator(config_model)
             model_id = orch._resolve_intervention_model(context={})
@@ -111,7 +111,7 @@ class TestInterventionMetadata:
             with patch(
                 "agents.orchestrator.agent.resolve_model", return_value=(fake_creds, fake_entry)
             ):
-                # Воспроизводим логику ветки LLM в intervene
+                # Reproduce the LLM branch logic from intervene
                 creds, _ = __import__(
                     "agents.orchestrator.agent", fromlist=["resolve_model"]
                 ).resolve_model(model_id)

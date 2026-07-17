@@ -1,4 +1,4 @@
-"""Санити-чек констант chat/router.py."""
+"""Sanity check for chat/router.py constants."""
 
 import pytest
 from mcp_sdk.testing import autotest

@@ -1,4 +1,4 @@
-"""Тесты GET/PATCH /users/me/preferences."""
+"""Tests for GET/PATCH /users/me/preferences."""
 
 import pytest
 from fastapi import FastAPI

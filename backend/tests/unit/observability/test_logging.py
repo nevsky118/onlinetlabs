@@ -1,4 +1,4 @@
-"""configure_logging: рендерер зависит от environment, uvicorn.access не пишет и не пробрасывается."""
+"""configure_logging: renderer depends on environment, uvicorn.access neither logs nor propagates."""
 
 import logging
 

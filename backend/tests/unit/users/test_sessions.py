@@ -1,4 +1,4 @@
-"""Тесты GET/DELETE /users/me/sessions."""
+"""Tests for GET/DELETE /users/me/sessions."""
 
 import uuid
 from datetime import UTC, datetime
@@ -85,7 +85,7 @@ class TestSessionEndpoints:
     async def test_f4ab80d0_list_returns_sessions_and_count(self):
         s1 = _make_session("s1", "user-a", offset_days=1)
         s2 = _make_session("s2", "user-a", offset_days=0)
-        s3 = _make_session("s3", "user-b")  # чужая
+        s3 = _make_session("s3", "user-b")  # belongs to someone else
         await self._seed(s1, s2, s3)
 
         with autotest.step("Act: GET /users/me/sessions от user-a"):
