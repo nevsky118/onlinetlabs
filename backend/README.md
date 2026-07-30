@@ -1,3 +1,3 @@
 # backend
 
-Бэкенд на FastAPI для мультиагентной обучающей платформы onlinetlabs.
+FastAPI backend for the onlinetlabs multiagent learning platform.

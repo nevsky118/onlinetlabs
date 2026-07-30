@@ -1,82 +1,82 @@
-# simulation/ — генеративная когорта сим-студентов
+# simulation/, a generative cohort of sim students
 
-> **УДАЛЯЕМЫЙ модуль.** Снести: `rm -rf backend/simulation backend/tests/unit/simulation` +
-> `DELETE FROM users WHERE is_simulated = true;` (CASCADE снесёт сессии/данные).
+> **DISPOSABLE module.** To tear it down: `rm -rf backend/simulation backend/tests/unit/simulation` +
+> `DELETE FROM users WHERE is_simulated = true;` (CASCADE takes the sessions/data with it).
 
-## Чем это НЕ является (критично)
+## What this is NOT (critical)
 
-Симуляция **НЕ** доказательство эффективности обучения или construct-validity детектора —
-это требует **живых людей**. Выдать «протестировано на 50 симулированных студентах» за
-результат = desk-reject и повтор ловушки засеянного A/B.
+The simulation is **NOT** proof of learning effectiveness or of the detector's construct validity,
+that requires **live humans**. Passing off "tested on 50 simulated students" as a
+result = desk-reject and a repeat of the seeded A/B trap.
 
-**Firewall:** каждый сим-юзер `User.is_simulated=True`; `evaluation/reproducibility.py`
-и любые «реальные результаты» ИСКЛЮЧАЮТ такие данные (guard-тест
+**Firewall:** every sim user carries `User.is_simulated=True`; `evaluation/reproducibility.py`
+and anything claiming "real results" EXCLUDE such data (guard test
 `tests/unit/evaluation/test_reproducibility_firewall.py`).
 
-## Для чего это (законно)
+## What it is for (legitimately)
 
-De-risk ДО реального пилота: приборы (MRT-рандомизатор/decision-log/evidence/latency/IRR)
-пишут корректно; анализ-код гоняется на реалистичных данных; метрики/логи/admin-дашборд
-живьём; баги под конкурентностью; очередь/провижн.
+De-risking BEFORE the real pilot: the instruments (MRT randomizer/decision-log/evidence/latency/IRR)
+write correctly; the analysis code runs over realistic data; metrics/logs/admin dashboard
+live; bugs under concurrency; queue/provisioning.
 
-## Как работает
+## How it works
 
-- `profiles.py` — латентные черты (skill/persistence/strategy/pace/help_propensity), seeded.
-- `policy.py` — **латентный mode правит действиями** (mode = причина, действия = следствие;
-  порождён независимо от порогов детектора → честная observer-ROC).
-- `env/gns3_actor.py` — действие → наблюдаемая GNS3 node-операция (toggle start/stop) / chat / idle.
-  ask_help пишет вопрос студента + **ответ тьютора** (`tutor_reply`: YandexGPT → шаблон-фолбэк)
-  → полный диалог в чат-логе (`/session/<id>/chat`).
-- `help_text.py` — LLM (gated, бюджет ≤500₽ → шаблон-fallback) для текста просьб.
-- `ground_truth.py` — истинный режим как `RegimeAnnotation(coder_id="sim-truth")`.
-- `orchestrator.py` — пул из N + очередь, is_simulated+is_active-юзеры, per-student отлов сбоев.
-- `run.py::_make_finalize` — **полный протокол**: L1 (ассист) → L2 (near-transfer, БЕЗ ассиста,
-  L2-пара по `meta.skill`) + LabProgress + `end_session` → ExperimentMetrics/cohort (дашборд).
-  Мульти-лаб: `_find_l2_pair` находит пару того же навыка (нет пары → только L1).
+- `profiles.py`, latent traits (skill/persistence/strategy/pace/help_propensity), seeded.
+- `policy.py`, **the latent mode drives the actions** (mode = cause, actions = effect;
+  generated independently of the detector thresholds → an honest observer ROC).
+- `env/gns3_actor.py`, action → an observable GNS3 node operation (toggle start/stop) / chat / idle.
+  ask_help writes the student's question + **the tutor's reply** (`tutor_reply`: YandexGPT → template fallback)
+  → the full dialogue in the chat log (`/session/<id>/chat`).
+- `help_text.py`, an LLM (gated, budget ≤500₽ → template fallback) for the text of the requests.
+- `ground_truth.py`, the true regime as `RegimeAnnotation(coder_id="sim-truth")`.
+- `orchestrator.py`, a pool of N + a queue, is_simulated+is_active users, per-student failure trapping.
+- `run.py::_make_finalize`, the **full protocol**: L1 (assisted) → L2 (near-transfer, WITHOUT assistance,
+  the L2 pair taken from `meta.skill`) + LabProgress + `end_session` → ExperimentMetrics/cohort (dashboard).
+  Multi-lab: `_find_l2_pair` finds a pair for the same skill (no pair → L1 only).
 
-## Запуск (нужен живой стек)
+## Running (a live stack is required)
 
 ```bash
-make up-db                    # из корня: db + redis
-cd gns3 && make up            # gns3-стек (~4vCPU/6GB)
+make up-db                    # from the root: db + redis
+cd gns3 && make up            # gns3 stack (~4vCPU/6GB)
 cd backend
 poetry run python -m simulation.run --n 50 --concurrency 3 --seed 0 --lab lan-static-ip
 ```
 
-**E2E-провижн** (launch + монитор + actor из console host/port) собирается на живом стеке
-(deps как в `deps.py`/lifespan). Юнит-ядро (profiles/policy/actor/help/ground-truth/orchestrator)
-покрыто моками и тестами — реальный GNS3 не нужен для тестов.
+**E2E provisioning** (launch + monitor + actor from the console host/port) is assembled on a live stack
+(deps as in `deps.py`/lifespan). The unit core (profiles/policy/actor/help/ground-truth/orchestrator)
+is covered by mocks and tests, so a real GNS3 is not needed for the tests.
 
-## Живой E2E-прогон (2026-07-12): результаты
+## Live E2E run (2026-07-12): results
 
-`_live_provision` подключён и прогнан на реальном GNS3-стеке. Контур замкнулся: все 5
-приборов пишут вживую (312 behavioral_events, 171 ground-truth, 6 evidence, 10 latency,
-1 MRT decision-log). Firewall проверен живьём — reproducibility-бандл исключает сим-данные.
+`_live_provision` is wired in and has been run against a real GNS3 stack. The loop closed, all 5
+instruments write live (312 behavioral_events, 171 ground-truth, 6 evidence, 10 latency,
+1 MRT decision-log). The firewall was checked live, the reproducibility bundle excludes sim data.
 
-### Наблюдаемый сигнал (важно)
+### The observable signal (important)
 
-Платформа наблюдает поведение через **GNS3 project-notifications** (node/link lifecycle +
-серверные `log.*`), НЕ через консольный ввод. Поэтому actor маппит действие студента на
-**node-операцию** (toggle start/stop → `node.updated`), а не telnet-консоль. Консольная
-конфигурация детектору невидима — ограничение платформы, отражённое в дизайне actor'а.
+The platform observes behavior through **GNS3 project notifications** (node/link lifecycle +
+server-side `log.*`), NOT through console input. That is why the actor maps a student action onto a
+**node operation** (toggle start/stop → `node.updated`) rather than onto the telnet console. Console
+configuration is invisible to the detector, a platform limitation reflected in the actor's design.
 
-### 3 бага, пойманных живым прогоном
+### 3 bugs caught by the live run
 
-1. Сим-юзеры без study-consent → шов режет observe (fix: `grant_consent` в `_live_provision`).
-2. **prod**: `control_interface.observe` ронял `ctx` при вызове MCP → ошибка (fix: диспатч
-   через типизированную обёртку, как `act()`; `control_interface/interface.py`).
-3. **prod**: collector читал историю по backend session id, а gns3-service ключует её своим
-   id → `list_user_actions` НИКОГДА не давал событий (fix: gns3-service id в `ctx.metadata`,
+1. Sim users without study consent → the seam cuts off observe (fix: `grant_consent` in `_live_provision`).
+2. **prod**: `control_interface.observe` dropped `ctx` when calling MCP → error (fix: dispatch
+   through a typed wrapper, the way `act()` does it; `control_interface/interface.py`).
+3. **prod**: the collector read history by the backend session id while gns3-service keys it by its own
+   id → `list_user_actions` NEVER produced events (fix: the gns3-service id in `ctx.metadata`,
    `sessions/context.py` + `gns3-mcp/server.py::list_user_actions`).
 
-### Тюнинг под сжатое время
+### Tuning for compressed time
 
-Сим-сессия ~40с против минут у живого студента. `_build_deps` масштабирует детектор idle
-(`idle_gap_seconds`, `idle_threshold`) и включает приборы (`mrt_enabled` и т.д.). Это
-де-риск приборов, НЕ валидация детектора (требует живых людей).
+A sim session lasts ~40s against minutes for a live student. `_build_deps` scales the idle detector
+(`idle_gap_seconds`, `idle_threshold`) and turns the instruments on (`mrt_enabled` and so on). This
+de-risks the instruments, it is NOT detector validation (that requires live humans).
 
-## Осталось (follow-on)
+## What is left (follow-on)
 
-- lab-config: реальные корректные/неверные консольные команды per-lab (по MDX + validation YAML).
-- (опц.) реальный `llm_call` к YandexGPT для help-текста; валидация-на-submit.
-- Baseline `dwell_thresholds` в конфиге = 0.0 для всех режимов — задать реальные T_k.
+- lab-config: real correct/incorrect console commands per lab (from MDX + validation YAML).
+- (optional) a real `llm_call` to YandexGPT for the help text; validation on submit.
+- Baseline `dwell_thresholds` in the config = 0.0 for every regime, the real T_k values still need setting.

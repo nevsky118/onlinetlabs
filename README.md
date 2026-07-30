@@ -1,31 +1,31 @@
-# onlinetlabs (в разработке)
+# onlinetlabs (work in progress)
 
-Мультиагентная платформа поддержки обучения сложным программным системам. Монорепо: Next.js, FastAPI, MCP SDK.
+Multiagent platform for supporting learning of complex software systems. Monorepo: Next.js, FastAPI, MCP SDK.
 
-## Содержание
+## Contents
 
-- [Архитектура](#архитектура)
-- [Технологии](#технологии)
-- [Быстрый старт](#быстрый-старт)
-- [Make-команды](#make-команды)
-- [Структура](#структура)
+- [Architecture](#architecture)
+- [Technologies](#technologies)
+- [Quick start](#quick-start)
+- [Make commands](#make-commands)
+- [Structure](#structure)
 - [API](#api)
 - [MCP SDK](#mcp-sdk)
-- [Автотесты](#автотесты)
-- [Управление окружением](#управление-окружением)
+- [Autotests](#autotests)
+- [Environment management](#environment-management)
 
-## Архитектура
+## Architecture
 
 ```mermaid
 flowchart LR
-    subgraph Client["Клиент"]
-        Browser["Браузер"]
+    subgraph Client["Client"]
+        Browser["Browser"]
     end
 
     subgraph FE["Frontend · Next.js 16"]
-        Pages["Страницы"]
+        Pages["Pages"]
         AuthFE["Better Auth"]
-        MDX["MDX-контент"]
+        MDX["MDX content"]
     end
 
     subgraph BE["Backend · FastAPI"]
@@ -40,7 +40,7 @@ flowchart LR
     end
 
     DB[(PostgreSQL)]
-    Target["Целевая система"]
+    Target["Target system"]
 
     Browser --> Pages
     Pages --> API
@@ -53,13 +53,13 @@ flowchart LR
     style Target stroke-dasharray: 5 5
 ```
 
-> Пунктир — в разработке (WebSocket-сессии, frontend интервенций).
+> Dashed lines mark what is still in development (WebSocket sessions, intervention frontend).
 
-### Learning Analytics: замкнутый цикл реального времени
+### Learning Analytics: a real-time closed loop
 
 ```mermaid
 flowchart LR
-    subgraph Target["Целевая система"]
+    subgraph Target["Target system"]
         GNS3["GNS3 / Docker / ..."]
     end
 
@@ -72,17 +72,17 @@ flowchart LR
     subgraph LA["Learning Analytics"]
         Collector["BehavioralCollector"]
         DB[("behavioral_events")]
-        Features["FeatureExtractor<br/>16 фич"]
-        Analytics["AnalyticsAgent<br/>struggle-детекция"]
+        Features["FeatureExtractor<br/>16 features"]
+        Analytics["AnalyticsAgent<br/>struggle detection"]
     end
 
-    subgraph Agents["Агенты"]
+    subgraph Agents["Agents"]
         Orch["Orchestrator"]
         Hint["HintAgent"]
         Tutor["TutorAgent"]
     end
 
-    WS["WebSocket → студент"]
+    WS["WebSocket → student"]
 
     GNS3 --> Actions & Logs & Errors
     Actions & Logs & Errors --> Collector
@@ -94,20 +94,20 @@ flowchart LR
     Hint & Tutor --> WS
 ```
 
-**Struggle-детекция** (4 типа, все пороги конфигурируемы через `LearningAnalyticsConfig`):
+**Struggle detection** (4 types, all thresholds configurable through `LearningAnalyticsConfig`):
 
-| Тип | Условие | Интервенция |
+| Type | Condition | Intervention |
 |-|-|-|
-| `REPEATING_ERRORS` | N+ одинаковых ошибок подряд | Hint |
-| `TRIAL_AND_ERROR` | Высокая энтропия + частые ошибки | Tutor |
-| `IDLE` | Много idle-периодов + замедление | Tutor |
-| `STUCK_ON_STEP` | Долго на одном компоненте + idle | Hint |
+| `REPEATING_ERRORS` | N+ identical errors in a row | Hint |
+| `TRIAL_AND_ERROR` | High entropy + frequent errors | Tutor |
+| `IDLE` | Many idle periods + slowdown | Tutor |
+| `STUCK_ON_STEP` | Long time on one component + idle | Hint |
 
-**Доменная независимость:** при смене целевой системы меняется только MCP-сервер. Коллектор, фичи, аналитика и агенты работают с любой системой через стандартизованные MCP-модели (`UserAction`, `LogEntry`, `ErrorEntry`).
+**Domain independence:** when the target system changes, only the MCP server changes. The collector, features, analytics and agents work with any system through the standardized MCP models (`UserAction`, `LogEntry`, `ErrorEntry`).
 
-## Технологии
+## Technologies
 
-| Frontend | Backend | MCP SDK | Инфра |
+| Frontend | Backend | MCP SDK | Infra |
 |-|-|-|-|
 | Next.js 16 | Python 3.11+ | Pydantic 2 | PostgreSQL 16 |
 | React 19 | FastAPI | FastMCP | Docker Compose |
@@ -116,37 +116,37 @@ flowchart LR
 | Better Auth | Poetry | | |
 | shadcn/ui | | | |
 
-## Быстрый старт
+## Quick start
 
-Требования: Python 3.11+, Poetry, Node.js 20+, pnpm, Docker.
+Requirements: Python 3.11+, Poetry, Node.js 20+, pnpm, Docker.
 
-> **Windows:** если Poetry не найден после установки через pip — добавьте
-> `%APPDATA%\Python\Python313\Scripts` в PATH. Для корректного вывода ошибок: `chcp 65001`.
+> **Windows:** if Poetry is not found after installing it through pip, add
+> `%APPDATA%\Python\Python313\Scripts` to PATH. For correct error output, run `chcp 65001`.
 
 ```bash
 git clone https://github.com/nevsky118/onlinetlabs.git
 cd onlinetlabs
-pip install poetry   # если ещё не установлен
+pip install poetry   # if not installed yet
 make install
 ```
 
-Настройка окружения — расшифровать конфиги (нужен `CONFIG_PASSWORD`):
+Environment setup, decrypt the configs (`CONFIG_PASSWORD` is required):
 
 ```bash
 export CONFIG_PASSWORD=...
 
-# весь стек — все env лежат в deployment/<tier>/ (local, development, ci)
+# whole stack, all env files live in deployment/<tier>/ (local, development, ci)
 make decrypt
 
-# gns3 — отдельный сервис, шифруется отдельно
+# gns3 is a separate service, encrypted separately
 cd gns3 && make decrypt && cd ..
 ```
 
-Запуск:
+Running:
 
 ```bash
 make up-db    # PostgreSQL
-make migrate  # применить миграции
+make migrate  # apply migrations
 make serve    # Backend API (hot-reload)
 make dev      # Frontend (hot-reload)
 ```
@@ -157,101 +157,101 @@ make dev      # Frontend (hot-reload)
 
 ## Docker
 
-Два независимых стека:
+Two independent stacks:
 
-**Core** (`deployment/local/compose.yaml`) — frontend + backend + DB + Redis + pgAdmin:
+**Core** (`deployment/local/compose.yaml`), frontend + backend + DB + Redis + pgAdmin:
 ```bash
-make up       # всё (с --wait для healthcheck)
-make up-db    # только БД + Redis
-make down     # остановить
+make up       # everything (with --wait for the healthcheck)
+make up-db    # database + Redis only
+make down     # stop
 ```
 
-**GNS3 Plugin** (`gns3/docker-compose.yml`) — gns3-server + postgres + gns3-service + gns3-mcp (изолированный стек, запускается из `gns3/`; pgbouncer — только в prod-overlay):
+**GNS3 Plugin** (`gns3/docker-compose.yml`), gns3-server + postgres + gns3-service + gns3-mcp (an isolated stack, launched from `gns3/`; pgbouncer exists only in the prod overlay):
 ```bash
 cd gns3
-make decrypt  # свои .env.aes
-make up       # весь стек + сборка role-образов (frr-role/dhcp-role)
-make down     # остановить
+make decrypt  # its own .env.aes files
+make up       # whole stack + build of the role images (frr-role/dhcp-role)
+make down     # stop
 ```
 
-## Make-команды
+## Make commands
 
-| Команда | Описание |
+| Command | Description |
 |-|-|
-| `make install` | Зависимости (poetry + pnpm) |
-| `make serve` | Backend (uvicorn, `ENV=local` по умолчанию) |
-| `make serve ENV=development` | Backend с development-конфигом |
+| `make install` | Dependencies (poetry + pnpm) |
+| `make serve` | Backend (uvicorn, `ENV=local` by default) |
+| `make serve ENV=development` | Backend with the development config |
 | `make dev` | Frontend (next dev) |
-| `make up` / `make down` | Docker core-стек |
-| `make up-db` | Только БД + Redis |
-| `make logs` / `make ps` | Логи / статус |
-| `make psql` | Консоль PostgreSQL |
-| `make migrate` | Применить миграции |
-| `make migrate-create msg="..."` | Новая миграция |
-| `make migrate-rollback` | Откат |
-| `make test` | Все тесты (backend + SDK) |
-| `make lint` / `make format` | Линтер / форматирование |
-| `make check` | Все проверки (CI) |
-| `make encrypt` / `make decrypt` | Шифрование / расшифровка всех env в deployment/ |
-| `make sync-content` | MDX → БД |
-| `make clean` | Очистить кэш |
+| `make up` / `make down` | Docker core stack |
+| `make up-db` | Database + Redis only |
+| `make logs` / `make ps` | Logs / status |
+| `make psql` | PostgreSQL console |
+| `make migrate` | Apply migrations |
+| `make migrate-create msg="..."` | New migration |
+| `make migrate-rollback` | Rollback |
+| `make test` | All tests (backend + SDK) |
+| `make lint` / `make format` | Linter / formatting |
+| `make check` | All checks (CI) |
+| `make encrypt` / `make decrypt` | Encrypt / decrypt every env file in deployment/ |
+| `make sync-content` | MDX → DB |
+| `make clean` | Clear the cache |
 
-## Структура
+## Structure
 
 ```
 onlinetlabs/
 ├── frontend/                    # Next.js 16
-│   ├── app/                     # роуты (тонкие шеллы)
+│   ├── app/                     # routes (thin shells)
 │   │   ├── (auth)/              # sign-in, sign-up
 │   │   ├── (app)/               # courses, labs, session
 │   │   └── api/                 # Better Auth + BFF route handlers
-│   ├── modules/                 # фичи (Cal.com-style): auth, session
-│   ├── auth/                    # Better Auth конфиг, guards, session, JWT
+│   ├── modules/                 # features (Cal.com-style): auth, session
+│   ├── auth/                    # Better Auth config, guards, session, JWT
 │   ├── content/                 # MDX (Fumadocs)
 │   ├── shared/                  # ui (shadcn), components, hooks, lib
 │   └── styles/
 │
 ├── backend/                     # FastAPI
-│   ├── auth/                    # JWT, OAuth, регистрация/удаление
-│   ├── config/                  # Settings, загрузка env
+│   ├── auth/                    # JWT, OAuth, registration/deletion
+│   ├── config/                  # Settings, env loading
 │   ├── courses/                 # CRUD
-│   ├── labs/                    # CRUD (+ создание/удаление для тестов)
-│   ├── progress/                # Прогресс студента
-│   ├── sessions/                # Сессии обучения
-│   ├── chat/                    # История диалога тьютора
-│   ├── models/                  # ORM (вкл. behavioral_events, platform_events)
-│   ├── agents/                  # Мультиагентная система
-│   │   ├── orchestrator/        # Маршрутизация + проактивные интервенции
-│   │   ├── tutor/               # Ответы на вопросы
-│   │   ├── hint/                # Прогрессивные подсказки (3 уровня)
-│   │   ├── lab/                 # Взаимодействие с лаб-средой через MCP
-│   │   ├── validator/           # Проверка выполнения задач
-│   │   └── analytics/           # Анализ прогресса + struggle-детекция
-│   ├── learning_analytics/      # Замкнутый LA-цикл реального времени
-│   │   ├── collector.py         # Опрос MCP, дедупликация, нормализация
-│   │   ├── features.py          # 16 поведенческих фич
-│   │   └── monitor.py           # Сбор + анализ + интервенция
-│   ├── db/                      # Async сессия
+│   ├── labs/                    # CRUD (+ create/delete for tests)
+│   ├── progress/                # Student progress
+│   ├── sessions/                # Learning sessions
+│   ├── chat/                    # Tutor dialogue history
+│   ├── models/                  # ORM (incl. behavioral_events, platform_events)
+│   ├── agents/                  # Multiagent system
+│   │   ├── orchestrator/        # Routing + proactive interventions
+│   │   ├── tutor/               # Answers to questions
+│   │   ├── hint/                # Progressive hints (3 levels)
+│   │   ├── lab/                 # Interaction with the lab environment through MCP
+│   │   ├── validator/           # Checking task completion
+│   │   └── analytics/           # Progress analysis + struggle detection
+│   ├── learning_analytics/      # Real-time closed LA loop
+│   │   ├── collector.py         # MCP polling, deduplication, normalization
+│   │   ├── features.py          # 16 behavioral features
+│   │   └── monitor.py           # Collection + analysis + intervention
+│   ├── db/                      # Async session
 │   ├── migrations/              # Alembic
-│   ├── Dockerfile               # Docker-образ
+│   ├── Dockerfile               # Docker image
 │   └── tests/                   # unit/integration/smoke
 │
-├── gns3/                        # GNS3 плагин (отдельный стек)
-│   ├── gns3-service/            # FastAPI — сессии, проекты, история
-│   ├── gns3-mcp/                # MCP-сервер для агентов
-│   ├── docker-compose.yml       # GNS3 + postgres + service + mcp (pgbouncer — prod-overlay)
+├── gns3/                        # GNS3 plugin (separate stack)
+│   ├── gns3-service/            # FastAPI, sessions, projects, history
+│   ├── gns3-mcp/                # MCP server for the agents
+│   ├── docker-compose.yml       # GNS3 + postgres + service + mcp (pgbouncer in the prod overlay)
 │   └── Makefile
 │
 ├── mcp-sdk/                     # MCP SDK
 │
-├── autotests/                   # API-автотесты (httpx + pytest)
-│   ├── conftest.py              # Фикстуры: users, tokens, lab, GNS3 project
+├── autotests/                   # API autotests (httpx + pytest)
+│   ├── conftest.py              # Fixtures: users, tokens, lab, GNS3 project
 │   ├── api/                     # API methods, helpers, data
-│   ├── api_tests/               # smoke / crud / e2e тесты
+│   ├── api_tests/               # smoke / crud / e2e tests
 │   └── Makefile                 # make test / make test ENV=ci
 │
-├── deployment/                  # окружение по тирам (env + compose)
-│   ├── local/                   # compose.yaml (core-стек) + *.env.aes
+├── deployment/                  # environments by tier (env + compose)
+│   ├── local/                   # compose.yaml (core stack) + *.env.aes
 │   ├── development/             # *.env.aes
 │   └── ci/                      # autotests.env.aes
 │
@@ -265,14 +265,14 @@ Swagger UI: http://localhost:8000/docs
 
 ## MCP SDK
 
-Фреймворк для MCP-серверов, подключающих сложные системы к ИИ-агентам.
+A framework for MCP servers that connect complex systems to AI agents.
 
-| Протокол | Назначение |
+| Protocol | Purpose |
 |-|-|
-| **StateProvider** | Состояние системы (компоненты, обзор) |
-| **LogProvider** | Логи и ошибки |
-| **HistoryProvider** | История действий пользователя |
-| **ActionProvider** | Выполнение действий |
+| **StateProvider** | System state (components, overview) |
+| **LogProvider** | Logs and errors |
+| **HistoryProvider** | User action history |
+| **ActionProvider** | Action execution |
 
 ```python
 from mcp_sdk import OnlinetlabsMCPServer
@@ -288,40 +288,40 @@ server = OnlinetlabsMCPServer(
 )
 ```
 
-## Автотесты
+## Autotests
 
-API-тесты (smoke / crud / e2e) на все сервисы. Автоматическая настройка тестовых данных и очистка.
+API tests (smoke / crud / e2e) for every service. Test data setup and cleanup are automatic.
 
 ```bash
 cd autotests
-make test              # все тесты (ENV=local)
-make test ENV=ci       # CI-окружение (Docker-сети)
+make test              # all tests (ENV=local)
+make test ENV=ci       # CI environment (Docker networks)
 ```
 
-Conftest автоматически:
-- Регистрирует тестовых пользователей → генерирует JWT
-- Создаёт тестовую лабораторную (`autotest-lab`)
-- Создаёт шаблонный проект GNS3
-- Удаляет всё после завершения тестов
+Conftest automatically:
+- Registers test users → generates JWT
+- Creates a test lab (`autotest-lab`)
+- Creates a GNS3 template project
+- Deletes everything once the tests finish
 
-## Управление окружением
+## Environment management
 
-Конфиги хранятся зашифрованными (AES-256-CBC). Расшифрованные файлы не коммитятся.
+Configs are kept encrypted (AES-256-CBC). Decrypted files are never committed.
 
-| Файл | Назначение |
+| File | Purpose |
 |-|-|
-| `*.env.aes` | Зашифрованный конфиг (в git) |
-| `*.env` | Расшифрованный (gitignored, не коммитится) |
+| `*.env.aes` | Encrypted config (in git) |
+| `*.env` | Decrypted (gitignored, not committed) |
 
 ```bash
-# Расшифровать все env (deployment/<tier>/*.env)
+# Decrypt every env file (deployment/<tier>/*.env)
 CONFIG_PASSWORD=... make decrypt
 
-# Зашифровать после изменений
+# Encrypt after making changes
 CONFIG_PASSWORD=... make encrypt
 ```
 
-Окружения — тиры в `deployment/<tier>/` (`local`, `development`, `ci`); выбор через `ENV=`:
+Environments are tiers under `deployment/<tier>/` (`local`, `development`, `ci`), selected with `ENV=`:
 ```bash
 make serve                  # ENV=local → deployment/local/backend.env
 make serve ENV=development  # deployment/development/backend.env

@@ -1,12 +1,12 @@
 # gns3
 
-GNS3 интеграция: MCP-сервер для ИИ-агентов + сервис управления сессиями студентов.
+GNS3 integration. An MCP server for AI agents plus a service that manages student sessions.
 
-## Архитектура
+## Architecture
 
 ```mermaid
 flowchart TB
-    Agents["ИИ-агенты (Backend)"]
+    Agents["AI agents (Backend)"]
 
     subgraph MCP["gns3-mcp"]
         ApiClient["GNS3ApiClient (httpx)"]
@@ -32,27 +32,27 @@ flowchart TB
     SVC --> DB
 ```
 
-## Технологии
+## Technologies
 
-| gns3-mcp | gns3-service | Инфра |
+| gns3-mcp | gns3-service | Infra |
 |-|-|-|
 | mcp-sdk | FastAPI | PostgreSQL 16 |
 | httpx | SQLAlchemy 2 (async) | Docker Compose |
 | websockets | Alembic | GNS3 3.0 |
 | Pydantic 2 | asyncpg | |
 
-## Быстрый старт
+## Quick start
 
 ```bash
 make install
 
-# Расшифровать все конфиги gns3 разом (нужен CONFIG_PASSWORD)
+# Decrypt all gns3 configs at once (CONFIG_PASSWORD is required)
 CONFIG_PASSWORD=... make decrypt
 
-# Docker (GNS3 + PostgreSQL + gns3-service + gns3-mcp), role-образы собираются автоматически
+# Docker (GNS3 + PostgreSQL + gns3-service + gns3-mcp), role images are built automatically
 make up
 
-# Локальная разработка (deps в Docker, сервисы на хосте)
+# Local development (deps in Docker, services on the host)
 make up-db && make gns3-up
 make serve         # gns3-service (uvicorn + hot reload)
 make serve-mcp     # gns3-mcp
@@ -60,63 +60,63 @@ make serve-mcp     # gns3-mcp
 
 ## Docker
 
-`docker-compose.yml` в корне `gns3/` — полный стек плагина:
+`docker-compose.yml` in the root of `gns3/` holds the full plugin stack:
 
-| Сервис | Порт | Описание |
+| Service | Port | Description |
 |-|-|-|
-| gns3-server | 3080 | GNS3 сервер |
-| postgres | 5433 | БД для gns3-service |
+| gns3-server | 3080 | GNS3 server |
+| postgres | 5433 | Database for gns3-service |
 | gns3-service | 8101 | FastAPI REST API |
-| gns3-mcp | 8100 | MCP-сервер |
+| gns3-mcp | 8100 | MCP server |
 
 ```bash
-make up       # весь стек + сборка role-образов (frr-role/dhcp-role)
-make gns3-up  # только GNS3 сервер
-make up-db    # только PostgreSQL
-make down     # остановить
+make up       # whole stack + build of the role images (frr-role/dhcp-role)
+make gns3-up  # GNS3 server only
+make up-db    # PostgreSQL only
+make down     # stop
 ```
 
-## Make-команды
+## Make commands
 
-| Команда | Описание |
+| Command | Description |
 |-|-|
-| `make install` | Зависимости (poetry) |
-| `make serve` | gns3-service (`ENV=local` по умолчанию) |
-| `make serve-mcp` | MCP-сервер |
-| `make up` / `make down` | Docker стек |
-| `make gns3-up` | Только GNS3 сервер |
-| `make up-db` | Только PostgreSQL |
-| `make psql` | Консоль PostgreSQL |
-| `make test` | Тесты gns3-mcp |
-| `make lint` | Ruff линтер |
-| `make migrate` | Применить миграции |
-| `make migrate-create msg="..."` | Новая миграция |
-| `make encrypt file=...` | Шифрование env |
-| `make decrypt file=...` | Расшифровка env |
-| `make clean` | Очистить кэш |
+| `make install` | Dependencies (poetry) |
+| `make serve` | gns3-service (`ENV=local` by default) |
+| `make serve-mcp` | MCP server |
+| `make up` / `make down` | Docker stack |
+| `make gns3-up` | GNS3 server only |
+| `make up-db` | PostgreSQL only |
+| `make psql` | PostgreSQL console |
+| `make test` | gns3-mcp tests |
+| `make lint` | Ruff linter |
+| `make migrate` | Apply migrations |
+| `make migrate-create msg="..."` | New migration |
+| `make encrypt file=...` | Encrypt an env file |
+| `make decrypt file=...` | Decrypt an env file |
+| `make clean` | Clear the cache |
 
-## Структура
+## Structure
 
 ```
 gns3/
-├── docker-compose.yml            # Полный стек (GNS3 + PG + service + mcp)
+├── docker-compose.yml            # Full stack (GNS3 + PG + service + mcp)
 ├── Makefile
 │
-├── gns3-mcp/                     # MCP-сервер для GNS3
+├── gns3-mcp/                     # MCP server for GNS3
 │   ├── src/
-│   │   ├── api_client.py         # httpx клиент GNS3 v3 API
+│   │   ├── api_client.py         # httpx client for the GNS3 v3 API
 │   │   ├── server.py             # StateProvider, LogProvider, etc.
 │   │   ├── domain_tools.py       # MCP tools (start/stop, links, console)
 │   │   ├── connection.py         # ConnectionPool + manager
 │   │   ├── log_buffer.py         # WS → ring buffer
-│   │   ├── mappers.py            # GNS3 → SDK модели
+│   │   ├── mappers.py            # GNS3 → SDK models
 │   │   ├── config/               # EnvConfigLoader
 │   │   └── main.py               # Entry point
-│   ├── Dockerfile                # Docker-образ
-│   ├── local.env.aes             # Зашифрованный конфиг
+│   ├── Dockerfile                # Docker image
+│   ├── local.env.aes             # Encrypted config
 │   └── tests/
 │
-├── gns3-service/                  # Сервис сессий студентов
+├── gns3-service/                  # Student session service
 │   ├── src/
 │   │   ├── service.py            # SessionService (lifecycle)
 │   │   ├── gns3_admin_client.py  # Users, roles, ACL, projects
@@ -128,51 +128,51 @@ gns3/
 │   │   └── main.py               # FastAPI app + entry point
 │   ├── Dockerfile                # GNS3 server image (gns3-server 3.0.6)
 │   ├── Dockerfile.service        # FastAPI service image
-│   ├── alembic/                  # Миграции
-│   ├── local.env.aes             # Зашифрованный конфиг
+│   ├── alembic/                  # Migrations
+│   ├── local.env.aes             # Encrypted config
 │   └── tests/
 ```
 
 ## API (gns3-service)
 
-| Метод | Endpoint | Описание |
+| Method | Endpoint | Description |
 |-|-|-|
 | GET | `/health` | Health check |
-| POST | `/sessions` | Создать сессию (user + project + ACL) |
-| GET | `/sessions/{id}` | Статус сессии |
-| POST | `/sessions/{id}/reset-password` | Сброс пароля GNS3 |
-| DELETE | `/sessions/{id}` | Удалить (cleanup user + project) |
-| GET | `/history/{id}/actions` | История событий |
-| POST | `/projects` | Создать проект в GNS3 |
-| GET | `/projects` | Список проектов |
-| DELETE | `/projects/{id}` | Удалить проект |
+| POST | `/sessions` | Create a session (user + project + ACL) |
+| GET | `/sessions/{id}` | Session status |
+| POST | `/sessions/{id}/reset-password` | Reset the GNS3 password |
+| DELETE | `/sessions/{id}` | Delete (cleanup user + project) |
+| GET | `/history/{id}/actions` | Event history |
+| POST | `/projects` | Create a project in GNS3 |
+| GET | `/projects` | List of projects |
+| DELETE | `/projects/{id}` | Delete a project |
 
 ## MCP Tools
 
-| Tool | Описание |
+| Tool | Description |
 |-|-|
-| `start_node` / `stop_node` | Запуск/остановка ноды |
-| `start_all` / `stop_all` | Все ноды проекта |
-| `create_link` / `delete_link` | Связи между нодами |
-| `get_console_info` | Telnet/VNC доступ |
-| `list_templates` | Доступные шаблоны |
-| `create_node_from_template` | Нода из шаблона |
-| `create_snapshot` | Снапшот проекта |
+| `start_node` / `stop_node` | Start/stop a node |
+| `start_all` / `stop_all` | All nodes of the project |
+| `create_link` / `delete_link` | Links between nodes |
+| `get_console_info` | Telnet/VNC access |
+| `list_templates` | Available templates |
+| `create_node_from_template` | A node from a template |
+| `create_snapshot` | Project snapshot |
 
-## Управление окружением
+## Environment management
 
-Конфиги зашифрованы (AES-256-CBC). В git хранятся только `.aes` файлы.
+Configs are encrypted (AES-256-CBC). Only `.aes` files are stored in git.
 
 ```bash
-# Расшифровать
+# Decrypt
 CONFIG_PASSWORD=... make decrypt file=gns3-service/local.env.aes
 
-# Зашифровать после изменений
+# Encrypt after making changes
 CONFIG_PASSWORD=... make encrypt file=gns3-service/local.env
 ```
 
-Все Make-команды поддерживают `ENV=`:
+All Make commands support `ENV=`:
 ```bash
-make serve              # ENV=local (по умолчанию)
-make serve ENV=prod     # prod-окружение
+make serve              # ENV=local (default)
+make serve ENV=prod     # prod environment
 ```

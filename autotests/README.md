@@ -1,114 +1,114 @@
 # Autotests
 
-API-автотесты. Все запросы идут на `config.base_url` / `config.gns3_base_url`.
+API autotests. All requests go to `config.base_url` / `config.gns3_base_url`.
 
-## Структура
+## Structure
 
 ```
 autotests/
-├── conftest.py                          # Фикстуры: users, tokens, lab, GNS3 project, очистка
-├── pytest.ini                           # Маркеры, логи
-├── Makefile                             # Команды запуска
+├── conftest.py                          # Fixtures: users, tokens, lab, GNS3 project, cleanup
+├── pytest.ini                           # Markers, logs
+├── Makefile                             # Run commands
 │
-├── settings/                            # Инфраструктура
+├── settings/                            # Infrastructure
 │   ├── api_client/
-│   │   └── api_client.py               # ApiClient — async REST клиент с JWT
+│   │   └── api_client.py               # ApiClient, an async REST client with JWT
 │   ├── configuration/
 │   │   ├── config_model.py             # ConfigModel, Account (Pydantic)
-│   │   ├── env_config_loader.py        # Загрузка из .env / os.environ
-│   │   ├── .env.aes              # Локальный конфиг (зашифрованный)
-│   │   └── .env.ci.aes                 # CI конфиг (Docker-сети, зашифрованный)
+│   │   ├── env_config_loader.py        # Loading from .env / os.environ
+│   │   ├── .env.aes              # Local config (encrypted)
+│   │   └── .env.ci.aes                 # CI config (Docker networks, encrypted)
 │   ├── constants/
-│   │   └── constants_settings.py       # Константы фреймворка (аккаунты и др.)
+│   │   └── constants_settings.py       # Framework constants (accounts and others)
 │   ├── reports/
 │   │   └── autotest.py                 # step(), num(), name(), external_id()
 │   ├── utils/
-│   │   ├── data_generator_abstraction.py  # Базовый класс генераторов тестовых данных
-│   │   ├── custom_assertions.py        # Кастомные ассерты (equal, true, in, greater, ...)
-│   │   └── utils.py                    # Глобальные вспомогательные методы (рандомизация, проверки, пути)
+│   │   ├── data_generator_abstraction.py  # Base class for test data generators
+│   │   ├── custom_assertions.py        # Custom assertions (equal, true, in, greater, ...)
+│   │   └── utils.py                    # Global helper methods (randomization, checks, paths)
 │   └── delete_entities/
-│       ├── entity_types.py             # Перечисление типов сущностей для автоочистки
-│       ├── entities_registry.py        # Реестр созданных сущностей
-│       └── entities_cleanup.py         # Автоудаление после теста
+│       ├── entity_types.py             # Enumeration of entity types for auto-cleanup
+│       ├── entities_registry.py        # Registry of created entities
+│       └── entities_cleanup.py         # Auto-deletion after a test
 │
-├── api/                                 # Переиспользуемые компоненты (НЕ тесты)
-│   ├── api_methods/                     # Слой 1: HTTP-обёртки
+├── api/                                 # Reusable components (NOT tests)
+│   ├── api_methods/                     # Layer 1: HTTP wrappers
 │   │   ├── onlinetlabs_service/        # auth, courses, labs, progress, sessions
 │   │   └── gns3_service/               # gns3_sessions, gns3_projects
-│   ├── data/                            # Слой 2: Генераторы данных
+│   ├── data/                            # Layer 2: Data generators
 │   │   └── <controller>_data_api.py
-│   └── api_helpers/                     # Слой 3: Вспомогательные методы
+│   └── api_helpers/                     # Layer 3: Helper methods
 │       └── <controller>_helper_api.py
 │
-└── api_tests/                           # Тесты
+└── api_tests/                           # Tests
     ├── onlinetlabs_service/             # auth, courses, labs, progress, sessions
     ├── gns3_service/                    # sessions
-    └── e2e/                             # сквозные тесты (backend → gns3-service → MCP → LLM)
+    └── e2e/                             # end-to-end tests (backend → gns3-service → MCP → LLM)
 ```
 
-### E2E-тесты
+### E2E tests
 
-`api_tests/e2e/` — сквозные тесты, проходящие через несколько сервисов
-(backend → gns3-service → MCP → LLM). Маркер класса — `@pytest.mark.e2e`
-(один маркер, без `api`/`smoke`/`crud`). Остальные правила README
-(декораторы `@autotest.num/external_id/name`, naming `test_<uuid8>_<snake>`,
-AAA с `autotest.step()`, очистка через `EntitiesRegistry`) применяются.
+`api_tests/e2e/` holds end-to-end tests that run through several services
+(backend → gns3-service → MCP → LLM). The class marker is `@pytest.mark.e2e`
+(one marker, without `api`/`smoke`/`crud`). All other rules of this README
+(the `@autotest.num/external_id/name` decorators, the `test_<uuid8>_<snake>` naming,
+AAA with `autotest.step()`, cleanup through `EntitiesRegistry`) still apply.
 
-## Запуск
+## Running
 
 ```bash
-make test              # все тесты (ENV=local по умолчанию)
-make test ENV=ci       # CI-окружение (Docker-сети)
+make test              # all tests (ENV=local by default)
+make test ENV=ci       # CI environment (Docker networks)
 ```
 
-### Кастомный запуск через pytest
+### Custom run through pytest
 
 ```bash
 cd autotests
-PYTHONPATH=.. poetry run pytest --rootdir=. --envFile settings/configuration/.env [опции] .
+PYTHONPATH=.. poetry run pytest --rootdir=. --envFile settings/configuration/.env [options] .
 ```
 
-| Опция | Описание |
+| Option | Description |
 |-|-|
-| `-m smoke` | Только smoke-тесты |
-| `-m crud` | Только crud-тесты |
-| `-k auth` | Тесты, содержащие "auth" в имени |
-| `-k "gns3 and not history"` | Комбинация фильтров |
-| `--lf` | Перезапуск только упавших |
-| `-x` | Остановка на первом фейле |
-| `-v` | Подробный вывод |
+| `-m smoke` | Smoke tests only |
+| `-m crud` | Crud tests only |
+| `-k auth` | Tests whose name contains "auth" |
+| `-k "gns3 and not history"` | A combination of filters |
+| `--lf` | Rerun only the failed ones |
+| `-x` | Stop at the first failure |
+| `-v` | Verbose output |
 
-## Conftest — автоматическая настройка
+## Conftest, automatic setup
 
-Conftest автоматически при старте сессии:
+At session start conftest automatically:
 
-1. **`_ensure_test_users`** — регистрирует `ANON_ACCOUNT` и `REGISTERED_ACCOUNT` через `POST /auth/register`, получает реальные UUID
-2. **`_generate_tokens`** — обменивает `user_id + email` на JWT через `POST /auth/exchange`
-3. **`_ensure_gns3_template_project`** — создаёт шаблонный проект в GNS3 через `POST /projects` (gns3-service)
-4. **`_ensure_test_lab`** — создаёт тестовую лабораторную `autotest-lab` через `POST /labs`
+1. **`_ensure_test_users`** registers `ANON_ACCOUNT` and `REGISTERED_ACCOUNT` through `POST /auth/register` and receives real UUIDs
+2. **`_generate_tokens`** exchanges `user_id + email` for a JWT through `POST /auth/exchange`
+3. **`_ensure_gns3_template_project`** creates a template project in GNS3 through `POST /projects` (gns3-service)
+4. **`_ensure_test_lab`** creates the `autotest-lab` test lab through `POST /labs`
 
-После всех тестов — удаляет всё в обратном порядке (lab → GNS3 project → users).
+After all the tests it deletes everything in reverse order (lab → GNS3 project → users).
 
-Каждый тест также чистит за собой через `EntitiesRegistry` (сессии, пользователи, GNS3-сессии).
+Every test also cleans up after itself through `EntitiesRegistry` (sessions, users, GNS3 sessions).
 
-## Слои архитектуры
+## Architecture layers
 
 ```
 Test → Helper → API Method
             └→ Data
 ```
 
-Каждый слой имеет одну ответственность. Зависимости — только вниз.
+Every layer has a single responsibility. Dependencies point downwards only.
 
 ---
 
-## Гайд: как писать тесты
+## Guide: how to write tests
 
-### 1. Data — генератор данных
+### 1. Data, the data generator
 
-Файл: `api/data/<controller>_data_api.py`
+File: `api/data/<controller>_data_api.py`
 
-Класс наследует `DataAbstractionGenerator`. Генерирует случайные данные в `__init__`, хранит payload в `self.data`, отдельные поля — как атрибуты.
+The class inherits `DataAbstractionGenerator`. It generates random data in `__init__`, keeps the payload in `self.data`, and exposes individual fields as attributes.
 
 ```python
 from autotests.settings.utils.data_generator_abstraction import DataAbstractionGenerator
@@ -122,11 +122,11 @@ class SessionCreateData(DataAbstractionGenerator):
         self.data = {"lab_slug": self.lab_slug}
 ```
 
-### 2. API Method — HTTP-обёртка
+### 2. API Method, the HTTP wrapper
 
-Файл: `api/api_methods/<controller>_api.py`
+File: `api/api_methods/<controller>_api.py`
 
-Тонкая обёртка: один метод = один HTTP-запрос. Возвращает `httpx.Response`.
+A thin wrapper, one method = one HTTP request. Returns `httpx.Response`.
 
 ```python
 class SessionsApi:
@@ -139,23 +139,23 @@ class SessionsApi:
             return await self.api_client.post("", json_data=data)
 ```
 
-### 3. Helper — вспомогательные методы
+### 3. Helper, the helper methods
 
-Файл: `api/api_helpers/<controller>_helper_api.py`
+File: `api/api_helpers/<controller>_helper_api.py`
 
-Композиция: создать данные → вызвать API → проверить статус → зарегистрировать сущность → вернуть результат.
+Composition: build the data → call the API → check the status → register the entity → return the result.
 
-### 4. Test — тестовый файл
+### 4. Test, the test file
 
-Файл: `api_tests/<controller>/<marker>/test_<action>_<marker>_api.py`
+File: `api_tests/<controller>/<marker>/test_<action>_<marker>_api.py`
 
-Паттерн **AAA** (Arrange / Act / Assert). Каждый блок — `autotest.step()`.
+The **AAA** pattern (Arrange / Act / Assert). Every block is an `autotest.step()`.
 
-### Именование тестов
+### Test naming
 
-**Формат метода:** `test_<uuid8>_<snake_case_описание>`
+**Method format:** `test_<uuid8>_<snake_case_description>`
 
-### Декораторы — строгий порядок
+### Decorators, strict order
 
 ```python
 @autotest.num("37")
@@ -164,7 +164,7 @@ class SessionsApi:
 async def test_f0caad1d_register_success(self):
 ```
 
-### Маркеры класса — строгий порядок
+### Class markers, strict order
 
 ```python
 @pytest.mark.api
@@ -175,32 +175,32 @@ class TestAuthRegisterSmokeApi:
 
 ---
 
-## Управление окружением
+## Environment management
 
-В git хранятся только `.aes` файлы. Расшифрованные — gitignored.
+Only `.aes` files are stored in git. Decrypted ones are gitignored.
 
 ```bash
-# Расшифровать
+# Decrypt
 CONFIG_PASSWORD=... make decrypt file=settings/configuration/.env.aes
 
-# Зашифровать после изменений
+# Encrypt after making changes
 CONFIG_PASSWORD=... make encrypt file=settings/configuration/.env
 ```
 
-| Файл | URLs | Назначение |
+| File | URLs | Purpose |
 |-|-|-|
-| `.env.aes` | `localhost:8000`, `localhost:8101` | Локальная разработка + Docker (exposed ports) |
-| `.env.ci.aes` | `backend:8000`, `gns3-service:8101` | CI внутри Docker-сети |
+| `.env.aes` | `localhost:8000`, `localhost:8101` | Local development + Docker (exposed ports) |
+| `.env.ci.aes` | `backend:8000`, `gns3-service:8101` | CI inside the Docker network |
 
-`GNS3_LAB_TEMPLATE_PROJECT_ID` заполняется автоматически conftest-фикстурой.
+`GNS3_LAB_TEMPLATE_PROJECT_ID` is filled in automatically by a conftest fixture.
 
-## Чеклист: новый сервис
+## Checklist: a new service
 
-1. `api/data/<controller>_data_api.py` — Data-классы (наследуют `DataAbstractionGenerator`)
-2. `api/api_methods/<controller>_api.py` — API-класс (конструктор с `controller_path`)
-3. `api/api_helpers/<controller>_helper_api.py` — Helper-класс (композиция API + Data + очистка)
-4. `settings/delete_entities/entity_types.py` — добавить тип в `EntitiesTypes`
-5. `settings/delete_entities/entities_cleanup.py` — реализовать удаление
-6. `api_tests/<controller>/<marker>/` — тестовый класс
-7. Маркеры: `@pytest.mark.api` + `@pytest.mark.<marker>` + `@pytest.mark.asyncio`
-8. Декораторы: `@autotest.num()` → `@autotest.external_id()` → `@autotest.name()`
+1. `api/data/<controller>_data_api.py`, Data classes (inherit `DataAbstractionGenerator`)
+2. `api/api_methods/<controller>_api.py`, API class (constructor with `controller_path`)
+3. `api/api_helpers/<controller>_helper_api.py`, Helper class (composition of API + Data + cleanup)
+4. `settings/delete_entities/entity_types.py`, add the type to `EntitiesTypes`
+5. `settings/delete_entities/entities_cleanup.py`, implement deletion
+6. `api_tests/<controller>/<marker>/`, test class
+7. Markers: `@pytest.mark.api` + `@pytest.mark.<marker>` + `@pytest.mark.asyncio`
+8. Decorators: `@autotest.num()` → `@autotest.external_id()` → `@autotest.name()`
