@@ -1,12 +1,12 @@
 name: Deploy (prod)
 
-# Ручной запуск: Actions → "Deploy (prod)" → Run workflow.
-# CI собирает образы → пушит в ghcr.io → сервер делает pull + up (без исходника на сервере).
+# Manual run: Actions → "Deploy (prod)" → Run workflow.
+# CI builds the images → pushes them to ghcr.io → the server runs pull + up (no sources on the server).
 on:
   workflow_dispatch:
     inputs:
       ref:
-        description: "Git ref для сборки"
+        description: "Git ref to build"
         required: true
         default: main
 
@@ -17,7 +17,8 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_BACKEND: ghcr.io/${{ github.repository }}-backend
-  IMAGE_FRONTEND: ghcr.io/${{ github.repository }}-frontend
+  IMAGE_WEB: ghcr.io/${{ github.repository }}-web
+  IMAGE_DASHBOARD: ghcr.io/${{ github.repository }}-dashboard
 
 jobs:
   build-push:
@@ -29,6 +30,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.ref }}
+
+      - name: Require APP_DOMAIN/DASHBOARD_DOMAIN
+        run: |
+          # Without these, build-args inline "https://" with an empty domain and it ships as :latest.
+          test -n "${{ vars.APP_DOMAIN }}" || { echo "::error::Actions Variable APP_DOMAIN is not set"; exit 1; }
+          test -n "${{ vars.DASHBOARD_DOMAIN }}" || { echo "::error::Actions Variable DASHBOARD_DOMAIN is not set"; exit 1; }
 
       - uses: docker/setup-buildx-action@v3
 
@@ -51,21 +58,42 @@ jobs:
           cache-from: type=gha,scope=backend
           cache-to: type=gha,scope=backend,mode=max
 
-      - name: Build & push frontend
+      - name: Build & push web
         uses: docker/build-push-action@v6
         with:
           context: frontend
-          file: frontend/Dockerfile
+          file: frontend/apps/web/Dockerfile
           push: true
-          # NEXT_PUBLIC_* инлайнятся на build-time. Домен — из Actions Variable (не в репо).
+          # NEXT_PUBLIC_* are inlined at build time. Domains come from Actions Variables, not the repo.
           build-args: |
-            NEXT_PUBLIC_APP_URL=https://${{ vars.APP_DOMAIN }}
-            NEXT_PUBLIC_WS_BASE_URL=wss://${{ vars.APP_DOMAIN }}
+            NEXT_PUBLIC_WEB_URL=https://${{ vars.APP_DOMAIN }}
+            NEXT_PUBLIC_APP_URL=https://${{ vars.DASHBOARD_DOMAIN }}
+            NEXT_PUBLIC_AUTH_URL=https://${{ vars.DASHBOARD_DOMAIN }}
+            NEXT_PUBLIC_WS_BASE_URL=wss://${{ vars.DASHBOARD_DOMAIN }}
+            NEXT_PUBLIC_ANALYTICS_URL=https://${{ vars.DASHBOARD_DOMAIN }}
           tags: |
-            ${{ env.IMAGE_FRONTEND }}:${{ github.sha }}
-            ${{ env.IMAGE_FRONTEND }}:latest
-          cache-from: type=gha,scope=frontend
-          cache-to: type=gha,scope=frontend,mode=max
+            ${{ env.IMAGE_WEB }}:${{ github.sha }}
+            ${{ env.IMAGE_WEB }}:latest
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,scope=web,mode=max
+
+      - name: Build & push dashboard
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          file: frontend/apps/dashboard/Dockerfile
+          push: true
+          # NEXT_PUBLIC_* are inlined at build time. Domains come from Actions Variables, not the repo.
+          build-args: |
+            NEXT_PUBLIC_WEB_URL=https://${{ vars.APP_DOMAIN }}
+            NEXT_PUBLIC_APP_URL=https://${{ vars.DASHBOARD_DOMAIN }}
+            NEXT_PUBLIC_AUTH_URL=https://${{ vars.DASHBOARD_DOMAIN }}
+            NEXT_PUBLIC_WS_BASE_URL=wss://${{ vars.DASHBOARD_DOMAIN }}
+          tags: |
+            ${{ env.IMAGE_DASHBOARD }}:${{ github.sha }}
+            ${{ env.IMAGE_DASHBOARD }}:latest
+          cache-from: type=gha,scope=dashboard
+          cache-to: type=gha,scope=dashboard,mode=max
 
   deploy:
     needs: build-push
@@ -85,8 +113,9 @@ jobs:
       - name: Known hosts
         run: ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Decrypt prod env (.aes → .env) и доставить на сервер
+      - name: Decrypt prod env (.aes → .env) and deliver it to the server
         run: |
+          # web reads no runtime env, NEXT_PUBLIC_* are baked into the image, so it has no encrypted env file.
           for svc in backend frontend; do
             openssl enc -aes-256-cbc -d -salt -pbkdf2 \
               -in "deployment/prod/$svc.env.aes" -out "deployment/prod/$svc.env" \
@@ -104,13 +133,15 @@ jobs:
             echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin
             cd /opt/onlinetlabs/deployment/prod
             export IMAGE_BACKEND=${{ env.IMAGE_BACKEND }}
-            export IMAGE_FRONTEND=${{ env.IMAGE_FRONTEND }}
+            export IMAGE_WEB=${{ env.IMAGE_WEB }}
+            export IMAGE_DASHBOARD=${{ env.IMAGE_DASHBOARD }}
             export IMAGE_TAG=${{ github.sha }}
             export APP_DOMAIN='${{ vars.APP_DOMAIN }}'
+            export DASHBOARD_DOMAIN='${{ vars.DASHBOARD_DOMAIN }}'
             dc='docker compose --env-file backend.env -f compose.yaml'
             \$dc pull
             \$dc up -d
-            # Caddyfile в bind-mount: up -d не пересоздаёт caddy → применяем конфиг явно
+            # Caddyfile sits in a bind-mount and up -d does not recreate caddy → apply the config explicitly
             \$dc exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile 2>/dev/null || \$dc restart caddy
             \$dc run --rm backend alembic upgrade head
             \$dc run --rm backend python -m scripts.sync_content

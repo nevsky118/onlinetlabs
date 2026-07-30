@@ -37,16 +37,16 @@ services:
     env_file:
       - ./backend.env
     environment:
-      # Переопределяем хостовые localhost-адреса из .env на docker-сетевые.
+      # Override the host localhost addresses from .env with docker network ones.
       DB_HOST: db
       DB_PORT: "5432"
       REDIS_URL: redis://redis:6379/0
-      # gns3-стек крутится отдельным compose с портами на хосте, тянемся к нему через host-gateway.
+      # The gns3 stack runs as a separate compose with ports on the host, so we reach it through host-gateway.
       GNS3_SERVICE_URL: http://host.docker.internal:8101
       MCP_SERVER_URL: http://host.docker.internal:8100
-      # Консольные TCP-порты VPCS/нод не публикуются на хост (диапазон 2001-5000).
-      # Подключаемся напрямую к gns3-server по контейнерному DNS-имени через
-      # общую сеть gns3_default (см. networks ниже).
+      # Console TCP ports of VPCS/nodes are not published to the host (range 2001-5000).
+      # We connect directly to gns3-server by its container DNS name through
+      # the shared gns3_default network (see networks below).
       GNS3_NODE_HOST: gns3-server
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -74,22 +74,43 @@ services:
       timeout: 2s
       retries: 5
 
-  frontend:
+  web:
     build:
       context: ../../frontend
-      dockerfile: Dockerfile
+      dockerfile: apps/web/Dockerfile
       args:
-        # NEXT_PUBLIC_* инлайнятся на build-time. Адреса браузерные, браузер открыт на хосте.
+        # NEXT_PUBLIC_* are inlined at build time. Addresses are browser-side, the browser runs on the host.
+        NEXT_PUBLIC_WEB_URL: http://localhost:3001
         NEXT_PUBLIC_APP_URL: http://localhost:3000
+        NEXT_PUBLIC_AUTH_URL: http://localhost:3000
+        NEXT_PUBLIC_WS_BASE_URL: ws://localhost:8000
+        NEXT_PUBLIC_ANALYTICS_URL: http://localhost:3000
+    ports:
+      - "3001:3001"
+    # web reads no runtime env, NEXT_PUBLIC_* are baked into the image, so no env_file
+    environment:
+      NODE_ENV: production
+
+  dashboard:
+    build:
+      context: ../../frontend
+      dockerfile: apps/dashboard/Dockerfile
+      args:
+        # NEXT_PUBLIC_* are inlined at build time. Addresses are browser-side, the browser runs on the host.
+        NEXT_PUBLIC_WEB_URL: http://localhost:3001
+        NEXT_PUBLIC_APP_URL: http://localhost:3000
+        NEXT_PUBLIC_AUTH_URL: http://localhost:3000
         NEXT_PUBLIC_WS_BASE_URL: ws://localhost:8000
     ports:
       - "3000:3000"
     env_file:
       - ./frontend.env
     environment:
-      # Серверные вызовы фронта к бэкенду идут по docker-сети, а не на localhost.
+      # Dashboard server-side calls reach the backend over the docker network, not localhost
       BACKEND_URL: http://backend:8000
       NODE_ENV: production
+      # Empty, browsers reject a cookie Domain on localhost. See packages/auth/betterauth.ts.
+      COOKIE_DOMAIN: ""
     depends_on:
       backend:
         condition: service_healthy

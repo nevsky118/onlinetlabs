@@ -9,8 +9,9 @@
 **/.next-docs
 .git
 frontend
-!frontend/content
-!frontend/content/**
+# Backend needs the lab MDX content. The apps/* glob survives moving content between apps
+!frontend/apps/*/content
+!frontend/apps/*/content/**
 gns3
 !gns3/gns3-service
 !gns3/gns3-mcp

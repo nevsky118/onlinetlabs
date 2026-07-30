@@ -1,26 +1,47 @@
-# Caddy: реверс-прокси + автоматический TLS (Let's Encrypt).
-# Cloudflare-прокси отключён (DNS only) → домен резолвится прямо на сервер,
-# Caddy сам берёт публично-доверенный серт по ACME (порты 80/443 открыты).
-# Домен — из env APP_DOMAIN (в репо не хранится). ACME-email не задаём
-# (необязателен; при желании — через env, чтобы не светить в репо).
+# Reverse proxy with automatic TLS. Cloudflare proxy is off (DNS only), ACME needs 80/443 open.
+# Domains come from env APP_DOMAIN/DASHBOARD_DOMAIN. Both need an A record or Caddy fails to start.
 
-{$APP_DOMAIN}, www.{$APP_DOMAIN} {
-	# Let's Encrypt — автоматически (proxy off, домен указывает на сервер).
-	# Прежний Cloudflare Origin Certificate (для режима proxied / SSL Full strict)
-	# оставлен закомментированным — вернуть при включении прокси Cloudflare:
+# Marketing origin, static pages with no session. Canonical host is bare APP_DOMAIN.
+# www redirects to it, analytics CORS and trustedOrigins accept exactly one origin.
+{$APP_DOMAIN} {
+	# Let's Encrypt issues automatically, proxy is off and the domain points at the server.
+	# Cloudflare Origin Certificate for proxied mode, restore if the proxy is turned back on.
 	# tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin-key.pem
 
-	# WebSocket-эндпоинты сессии → backend (wss://<домен>/ws/...)
+	reverse_proxy web:3001
+	encode gzip zstd
+}
+
+www.{$APP_DOMAIN} {
+	redir https://{$APP_DOMAIN}{uri} permanent
+}
+
+# App origin, session paths (WS, GNS3 Web UI) live here
+{$DASHBOARD_DOMAIN} {
+	# tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin-key.pem
+
+	# Public routes moved to the web origin. Labs are listed individually, not /labs/*, so session
+	# paths like /labs/<slug>/launch stay on the dashboard. {uri} has no locale, web adds it.
+	redir / https://{$APP_DOMAIN}{uri} permanent
+	redir /courses https://{$APP_DOMAIN}{uri} permanent
+	redir /courses/* https://{$APP_DOMAIN}{uri} permanent
+	redir /labs https://{$APP_DOMAIN}{uri} permanent
+	redir /labs/dhcp-basics https://{$APP_DOMAIN}{uri} permanent
+	redir /labs/inter-subnet-routing https://{$APP_DOMAIN}{uri} permanent
+	redir /labs/lan-static-ip https://{$APP_DOMAIN}{uri} permanent
+	redir /labs/lan-static-ip-b https://{$APP_DOMAIN}{uri} permanent
+
+	# Session WebSocket endpoints → backend (wss://<domain>/ws/...)
 	@ws path /ws/*
 	reverse_proxy @ws backend:8000
 
-	# GNS3 Web UI студента: SPA + ассеты (/static/web-ui/*) и API/websockets (/v3/*)
-	# → gns3-server. Без этого ссылка auth-relay упирается в Next.js 404.
+	# Student GNS3 Web UI, the SPA + assets (/static/web-ui/*) and API/websockets (/v3/*)
+	# → gns3-server. Without this the auth-relay link ends up at a Next.js 404.
 	@gns3 path /static/web-ui/* /v3/*
 	reverse_proxy @gns3 gns3-server:3080
 
-	# Всё остальное → Next.js фронт (он сам проксирует /api/* на backend внутри сети)
-	reverse_proxy frontend:3000
+	# Everything else goes to the Next.js dashboard, which proxies /api/* to backend internally
+	reverse_proxy dashboard:3000
 
 	encode gzip zstd
 }

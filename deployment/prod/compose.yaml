@@ -1,5 +1,5 @@
-# PROD: образы тянутся из ghcr.io (собраны в CI). Переменные IMAGE_*/IMAGE_TAG
-# экспортирует workflow при деплое; для ручного запуска на сервере задать их же.
+# PROD: images are pulled from ghcr.io (built in CI). The IMAGE_*/IMAGE_TAG variables
+# are exported by the workflow during deploy; for a manual run on the server, set the same ones.
 services:
   db:
     image: postgres:16-alpine
@@ -10,7 +10,7 @@ services:
       POSTGRES_DB: ${DB_NAME:-onlinetlabs}
     volumes:
       - pgdata:/var/lib/postgresql/data
-    # порт наружу НЕ публикуется
+    # the port is NOT published to the outside
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
       interval: 5s
@@ -20,7 +20,7 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    # порт наружу НЕ публикуется
+    # the port is NOT published to the outside
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 3s
@@ -28,7 +28,7 @@ services:
       retries: 5
     networks:
       - default
-      - shared          # gns3-service берёт redis по имени через общую сеть
+      - shared          # gns3-service reaches redis by name through the shared network
 
   backend:
     image: ${IMAGE_BACKEND:-ghcr.io/nevsky118/onlinetlabs-backend}:${IMAGE_TAG:-latest}
@@ -52,16 +52,25 @@ services:
       retries: 10
     networks:
       - default
-      - shared          # общая сеть с gns3-стеком (gns3-service/server/mcp по имени)
+      - shared          # shared network with the gns3 stack (gns3-service/server/mcp by name)
 
-  frontend:
-    image: ${IMAGE_FRONTEND:-ghcr.io/nevsky118/onlinetlabs-frontend}:${IMAGE_TAG:-latest}
+  web:
+    image: ${IMAGE_WEB:-ghcr.io/nevsky118/onlinetlabs-web}:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    # web reads no runtime env, NEXT_PUBLIC_* are baked into the image, so no env_file
+    environment:
+      NODE_ENV: production
+
+  dashboard:
+    image: ${IMAGE_DASHBOARD:-ghcr.io/nevsky118/onlinetlabs-dashboard}:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file:
       - ./frontend.env
     environment:
       BACKEND_URL: http://backend:8000
       NODE_ENV: production
+      # Domain is deployment config, not a secret, safe in tracked compose. See packages/auth/betterauth.ts.
+      COOKIE_DOMAIN: .sumuinen.com
     depends_on:
       backend:
         condition: service_healthy
@@ -70,7 +79,8 @@ services:
     image: caddy:2-alpine
     restart: unless-stopped
     environment:
-      APP_DOMAIN: ${APP_DOMAIN:?APP_DOMAIN required}   # домен из env, не из репо
+      APP_DOMAIN: ${APP_DOMAIN:?APP_DOMAIN required}   # domain comes from env, not from the repo
+      DASHBOARD_DOMAIN: ${DASHBOARD_DOMAIN:?DASHBOARD_DOMAIN required}
     ports:
       - "80:80"
       - "443:443"
@@ -80,16 +90,17 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      - frontend
+      - web
+      - dashboard
       - backend
     networks:
       - default
-      - shared          # общая сеть с gns3-стеком: проксируем GNS3 Web UI на gns3-server
+      - shared          # shared network with the gns3 stack, we proxy the GNS3 Web UI to gns3-server
 
 networks:
   shared:
     external: true
-    name: onlinetlabs_net      # создаётся один раз: docker network create onlinetlabs_net
+    name: onlinetlabs_net      # created once with: docker network create onlinetlabs_net
 
 volumes:
   pgdata:

@@ -15,7 +15,8 @@ COPY backend backend
 RUN uv sync --frozen --package backend
 
 COPY scripts/sync_content.py /app/backend/scripts/sync_content.py
-COPY frontend/content /app/content
+# Lab MDX content lives in the web app
+COPY frontend/apps/web/content /app/content
 ENV CONTENT_DIR=/app/content
 ENV PATH="/app/.venv/bin:${PATH}"
 WORKDIR /app/backend
