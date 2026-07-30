@@ -1,0 +1,41 @@
+{
+  "name": "web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start -p 3001",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@base-ui/react": "^1.6.0",
+    "@repo/api": "workspace:*",
+    "@repo/auth": "workspace:*",
+    "@repo/design-system": "workspace:*",
+    "@repo/i18n": "workspace:*",
+    "@types/mdx": "^2.0.13",
+    "front-matter": "^4.0.2",
+    "fumadocs-core": "^16.0.5",
+    "fumadocs-mdx": "^13.0.2",
+    "lucide-react": "^0.548.0",
+    "next": "16.2.12",
+    "next-intl": "^4.13.4",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "rehype-pretty-code": "^0.14.1",
+    "shiki": "^3.14.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@repo/next-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  },
+  "packageManager": "pnpm@11.5.1+sha512.93f7b57422ea7068257235b4c16eb60762eb68e1dc23723199cc739043ea9be2c4143274a399d8c6defa2b1176226d9ca1c4b63482d6200c1a8fbaa78c1d1485"
+}
