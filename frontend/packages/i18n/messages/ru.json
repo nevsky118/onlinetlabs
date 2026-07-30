@@ -1,0 +1,915 @@
+{
+  "web": {
+    "nav": {
+      "courses": "Курсы",
+      "labs": "Лабы",
+      "mySessions": "Мои лабы"
+    },
+    "search": {
+      "placeholder": "Найти на платформе...",
+      "placeholderShort": "Найти...",
+      "pagesHeading": "Страницы",
+      "loading": "Ищем...",
+      "noResults": "Результатов не найдено.",
+      "goToPage": "Перейти на страницу",
+      "resultsHeading": "Результаты поиска",
+      "spinnerLabel": "Загрузка"
+    },
+    "mobileNav": {
+      "openMenu": "Открыть меню",
+      "menuLabel": "Меню",
+      "home": "Главная",
+      "sectionsHeading": "Разделы",
+      "start": "Начало",
+      "components": "Компоненты"
+    },
+    "themeSwitcher": {
+      "toggle": "Переключить тему"
+    },
+    "siteConfig": {
+      "toggleLayout": "Переключить макет"
+    },
+    "site": {
+      "name": "Платформа",
+      "description": "Платформа"
+    },
+    "footer": {
+      "sourceCode": "Исходный код доступен на"
+    },
+    "contentCard": {
+      "difficulty": {
+        "easy": "Низкая сложность",
+        "medium": "Средняя сложность",
+        "hard": "Высокая сложность"
+      },
+      "tasksCount": "{count, plural, one {# задача} few {# задачи} many {# задач} other {# задач}}"
+    },
+    "home": {
+      "metaTitle": "Главная",
+      "metaDescription": "Обучение, которое видит вашу лабу. Агенты видят контекст среды и помогают прямо по нему — пока вы учитесь.",
+      "heroTitle": "<line>Обучение,</line><line>которое <highlight>видит</highlight></line><line>вашу лабу</line>",
+      "heroDescription": "Агенты видят контекст вашей среды и помогают прямо по нему — пока вы учитесь.",
+      "ctaCourses": "Курсы",
+      "ctaLabs": "Лабы",
+      "techTags": "gns3 · docker · субд"
+    },
+    "courses": {
+      "title": "Курсы",
+      "description": "Список доступных курсов."
+    },
+    "coursesDoc": {
+      "previous": "Назад",
+      "next": "Вперёд",
+      "docsLink": "Документация"
+    },
+    "labs": {
+      "title": "Лабораторные работы",
+      "description": "Список доступных лабораторных работ."
+    },
+    "labsDoc": {
+      "emptyList": "Список лабораторных работ.",
+      "previous": "Назад",
+      "next": "Вперёд",
+      "docsLink": "Документация"
+    },
+    "launchLink": {
+      "launch": "Запустить",
+      "signInAndLaunch": "Войти и запустить"
+    },
+    "searchTree": {
+      "coursesGroup": "Курсы",
+      "labsGroup": "Лабораторные"
+    },
+    "mdx": {
+      "copy": "Копировать",
+      "copied": "Скопировано",
+      "collapse": "Свернуть",
+      "expand": "Развернуть"
+    }
+  },
+  "dashboard": {
+    "admin": {
+      "nav": {
+        "badge": "Админ",
+        "groups": {
+          "analytics": "Аналитика",
+          "logs": "Логи",
+          "sessions": "Сессии",
+          "progress": "Прогресс",
+          "management": "Управление",
+          "access": "Доступ"
+        },
+        "items": {
+          "overview": "Обзор",
+          "abEffect": "A/B-эффект",
+          "cohort": "Когорта",
+          "identifier": "Идентификатор",
+          "tkLaw": "Закон T_k",
+          "users": "Пользователи",
+          "labs": "Лабы"
+        }
+      },
+      "logTables": {
+        "mcpAudit": "MCP-аудит",
+        "agentActivityEvents": "Активность агентов",
+        "platformEvents": "События платформы",
+        "behavioralEvents": "Поведение",
+        "chatMessages": "Сообщения чата",
+        "learningSessions": "Сессии обучения",
+        "validationRuns": "Прогоны валидации",
+        "processStateSamples": "Состояния процесса",
+        "labProgress": "Прогресс по лабам",
+        "courseProgress": "Прогресс по курсам",
+        "stepAttempts": "Попытки шагов",
+        "experimentMetrics": "Метрики эксперимента",
+        "consents": "Согласия"
+      },
+      "actionsErrors": {
+        "statusError": "Ошибка {status}",
+        "networkError": "Сетевая ошибка"
+      },
+      "dataTable": {
+        "searchPlaceholder": "Поиск...",
+        "error": "Ошибка",
+        "empty": "Нет записей",
+        "boolTrue": "да",
+        "boolFalse": "нет",
+        "total": "Всего: {count}",
+        "pageOf": "стр. {page} из {total}"
+      },
+      "confusionGrid": {
+        "unavailable": "Матрица недоступна",
+        "ariaLabel": "Матрица путаницы: строки — истинный режим, столбцы — определённый",
+        "axisLabel": "↓ истина \\ определ. →",
+        "cellAriaLabel": "истина={truth} определ.={detected}: {count}",
+        "caption": "Строки — истинный режим, столбцы — определённый. Диагональ обведена."
+      },
+      "ab": {
+        "loadingAriaLabel": "Загрузка A/B-эффекта",
+        "emptyMessage": "Нет данных A/B-анализа. Убедитесь, что эксперимент проведён и метрики собраны.",
+        "errorPrefix": "Ошибка:",
+        "tableAriaLabel": "Сравнение плеч A/B",
+        "repeatedErrorsAriaLabel": "Повторные ошибки",
+        "headers": {
+          "metric": "Метрика",
+          "delta": "Δ (closed − open)",
+          "key": "Ключ",
+          "value": "Значение"
+        },
+        "rows": {
+          "l2PassRate": "L2 Pass Rate",
+          "escalationsMean": "Эскалации (ср.)"
+        },
+        "mentorHours": {
+          "label": "Ч. наставника сохранено",
+          "unit": "ч",
+          "note": "контрфактуал A/B — δ = closed − open интерпретируется как экономия"
+        },
+        "honesty": "Дельта плеч <strong>каузальна</strong> (рандомизация) — это раздел, где допустима каузальная интерпретация."
+      },
+      "cohort": {
+        "allSkills": "Все навыки",
+        "errorTitle": "Ошибка загрузки",
+        "chartHeading": "Reach L2 по навыкам (%)",
+        "chartConfigLabel": "Reach L2 (%)",
+        "tableAriaLabel": "Когортные метрики по навыкам",
+        "pooledTableAriaLabel": "Пул всех навыков",
+        "headers": {
+          "skill": "Скилл",
+          "reachL2": "Reach L2",
+          "censored": "Цензур.",
+          "median": "Медиана, дн (или reach@T)",
+          "autonomy": "Автономия L2-холдаут"
+        },
+        "empty": "Нет данных",
+        "chartNote": "Монохром: столбцы различаются опасностью — темнее = выше индекс навыка.",
+        "headlineText": "Headline-плечо: <arm></arm> (closed); open/pooled — контекст; каузальная дельта — раздел A/B",
+        "honesty": {
+          "km": "KM-медиана: survivorship-bias (только записанные). При менее 50% достигших — показывается reach@T/restricted-mean, не пусто и не ∞.",
+          "headline": "Headline = closed. Open/pooled — контекст; каузальная дельта плеч — раздел A/B.",
+          "autonomy": "<strong>Автономия L2-холдаут</strong> = вмешательства на near-transfer холдауте (тот же навык, новый экземпляр, open-loop оба плеча) — НЕ по ходу L1-обучения."
+        }
+      },
+      "identifier": {
+        "recallSolidLabel": "Recall (сплошная)",
+        "falsePerHourLabel": "False/ч (пунктир)",
+        "subtitle": "rate>F1; заменяет внешние PoC",
+        "preliminaryBadge": "ПРЕДВАРИТЕЛЬНО",
+        "errorTitle": "Ошибка загрузки",
+        "sections": {
+          "operatingChart": "Operating-кривая (график)",
+          "operatingTable": "Operating-кривая (таблица)",
+          "confusionMatrix": "Матрица путаницы",
+          "firstMatch": "First-match диагностика",
+          "costs": "Стоимости"
+        },
+        "firstMatchNote": "rate-метрики приоритетнее F1",
+        "chartNote": "Recall — сплошная; False/ч — пунктир. J-оптимум — вертикальная метка.",
+        "emptyCurve": "Нет данных кривой",
+        "headers": {
+          "tk": "T_k",
+          "latencyMedian": "Latency med.",
+          "falsePerHour": "False/ч",
+          "recall": "Recall",
+          "j": "J"
+        },
+        "optimumNote": "J-оптимум (T_k={value}) выделен инверсом",
+        "rows": {
+          "multiMatchRate": "Multi-match rate",
+          "orderSensitiveRate": "Order-sensitive rate",
+          "totalFiringSnapshots": "Всего firing-снапшотов"
+        }
+      },
+      "labs": {
+        "toggleAriaLabel": "Включить лабу",
+        "statusBuilding": "Сборка",
+        "statusReady": "Готов",
+        "statusError": "Ошибка",
+        "statusNone": "Нет",
+        "rebuildButton": "Пересобрать",
+        "rebuilding": "Сборка…",
+        "toastEnabled": "Лаба включена",
+        "toastDisabled": "Лаба отключена",
+        "toastRebuildStarted": "Сборка запущена",
+        "errorTitle": "Ошибка",
+        "empty": "Лаб нет",
+        "headers": {
+          "lab": "Лаба",
+          "environment": "Среда",
+          "templateStatus": "Статус шаблона",
+          "templateId": "Шаблон ID",
+          "enabled": "Включена",
+          "actions": "Действия"
+        }
+      },
+      "overview": {
+        "errorFallback": "Ошибка загрузки",
+        "errorTitle": "Ошибка",
+        "sections": {
+          "ab": "A/B",
+          "cohort": "Когорта",
+          "identifier": "Идентификатор",
+          "ops": "Ops"
+        },
+        "kpis": {
+          "mentorHoursSaved": "Ч. наставника сохранено",
+          "mentorHoursSub": "контрфактуал A/B",
+          "jOptimalTk": "J-оптимальный T_k",
+          "jOptimalSub": "при стоимостях: {costs}",
+          "activeSessions": "Активных сессий",
+          "totalInterventions": "Интервенций всего",
+          "labeledRealN": "Реальная разметка N"
+        },
+        "refreshButton": "Обновить"
+      },
+      "users": {
+        "roles": {
+          "student": "Студент",
+          "instructor": "Инструктор",
+          "admin": "Администратор"
+        },
+        "ariaActive": "Активен",
+        "ariaModelSelect": "Выбор модели",
+        "ariaAgentLogs": "Логи агентов",
+        "cannotChangeOwnRole": "Нельзя менять свою роль",
+        "searchPlaceholder": "Поиск по имени / email",
+        "allRoles": "Все роли",
+        "errorTitle": "Ошибка",
+        "empty": "Пользователи не найдены",
+        "headers": {
+          "user": "Пользователь",
+          "role": "Роль",
+          "active": "Активен",
+          "modelSelect": "Выбор модели",
+          "agentLogs": "Логи агентов"
+        },
+        "toastSaved": "Сохранено",
+        "total": "Всего: {count}",
+        "pageOf": "стр. {page} из {total}"
+      },
+      "tk": {
+        "seriesLabel": "T_k (ступенчатая)",
+        "errorFallback": "Ошибка загрузки",
+        "errorTitle": "Ошибка",
+        "emptyData": "Данных нет.",
+        "chartHeading": "График T_k(ratio)",
+        "ratioAxisLabel": "ratio (c_застр/c_возд)",
+        "chartNote": "Ступенчатая форма отражает дискретность T_k.",
+        "tableCaption": "Кривая чувствительности T_k — кривая, не число.",
+        "honestyNote": "T_k зависит от отношения c_застр/c_возд — изменение стоимостей сдвигает порог.",
+        "costsTitle": "Стоимости",
+        "costsLoading": "Загружаются...",
+        "costsNote": "T_k гнётся со стоимостью застревания — кривая, не одно число."
+      }
+    },
+    "session": {
+      "duration": {
+        "seconds": "{count, plural, one {# секунда} few {# секунды} many {# секунд} other {# секунд}}",
+        "minutes": "{count, plural, one {# минута} few {# минуты} many {# минут} other {# минут}}",
+        "hours": "{count, plural, one {# час} few {# часа} many {# часов} other {# часов}}",
+        "milliseconds": "{count, plural, one {# миллисекунда} few {# миллисекунды} many {# миллисекунд} other {# миллисекунд}}",
+        "lessThanMinute": "меньше минуты",
+        "aboutMinutes": "~{count, plural, one {# минута} few {# минуты} many {# минут} other {# минут}}",
+        "aboutSeconds": "~{count, plural, one {# секунда} few {# секунды} many {# секунд} other {# секунд}}"
+      },
+      "activityCard": {
+        "heading": "Активность",
+        "empty": "Событий нет",
+        "loadMore": "Показать ещё"
+      },
+      "eventLabels": {
+        "nodeStarted": "Узел запущен",
+        "nodeStopped": "Узел остановлен",
+        "nodeSuspended": "Узел приостановлен",
+        "nodeReloaded": "Узел перезагружен",
+        "consoleOpened": "Открыта консоль",
+        "linkCreated": "Создан линк",
+        "linkDeleted": "Удалён линк",
+        "sessionStarted": "Сессия запущена",
+        "sessionEnded": "Сессия завершена"
+      },
+      "sessionsView": {
+        "emptyTitle": "Нет запущенных лаб",
+        "emptyDescription": "Запустите лабораторию из каталога, чтобы начать обучение.",
+        "goToLabs": "К лабам",
+        "activeCount": "{count} / {max} {count, plural, one {активная} few {активные} many {активных} other {активных}}",
+        "activeHeading": "Активные",
+        "recentHeading": "Недавние",
+        "launchAgain": "Запустить снова"
+      },
+      "sessionCard": {
+        "startedAt": "запущена {when}",
+        "endedAt": "завершена {when}",
+        "open": "Открыть",
+        "provisioning": "Готовится…",
+        "end": "Завершить",
+        "endConfirmTitle": "Завершить сессию?",
+        "endConfirmDescription": "Лаборатория «{title}» будет остановлена. Несохранённый прогресс может быть утерян.",
+        "cancel": "Отмена",
+        "launchAgain": "Запустить снова",
+        "toastEnded": "Сессия завершена",
+        "toastEndFailed": "Не удалось завершить сессию"
+      },
+      "sessionHero": {
+        "currentSession": "Текущая сессия",
+        "openGns3": "Открыть GNS3",
+        "stop": "Остановить",
+        "restart": "Перезапустить",
+        "toastNodesStopped": "Узлы остановлены",
+        "toastNodesRestarted": "Узлы перезапущены",
+        "lab": "Лаба",
+        "gns3Access": "Доступ к GNS3",
+        "nodesStarted": "Узлов запущено",
+        "uptime": "Время в работе"
+      },
+      "queueStatus": {
+        "heading": "В очереди",
+        "position": "Место <position></position> из <depth></depth>",
+        "waiting": "Ожидание {eta}. Страница обновится автоматически когда подойдёт ваша очередь."
+      },
+      "queueWaitDialog": {
+        "title": "Лаба в очереди",
+        "description": "Все стенды сейчас заняты. Запустим вашу лабу автоматически, как только подойдёт черёд.",
+        "position": "Ваша позиция: <position></position> из <depth></depth>",
+        "waiting": "Ожидание {eta}",
+        "checkingEvery": "{seconds, plural, one {Проверяем готовность каждую секунду...} few {Проверяем готовность каждые # секунды...} many {Проверяем готовность каждые # секунд...} other {Проверяем готовность каждые # секунд...}}",
+        "cancel": "Отменить"
+      },
+      "streamStatusBanner": {
+        "connecting": "Соединение с live-потоком восстанавливается...",
+        "degraded": "Live-данные временно недоступны, пытаемся восстановить",
+        "polling": "{seconds, plural, one {Live-поток недоступен. Обновляем данные каждую секунду.} few {Live-поток недоступен. Обновляем данные каждые # секунды.} many {Live-поток недоступен. Обновляем данные каждые # секунд.} other {Live-поток недоступен. Обновляем данные каждые # секунд.}}"
+      },
+      "launchLabCard": {
+        "title": "Запустить лабораторию",
+        "signInTitle": "Войдите, чтобы запустить",
+        "description": "Выделенная среда GNS3. Запускается за несколько секунд.",
+        "signInDescription": "Нужен аккаунт — после входа сразу сможешь запустить.",
+        "launch": "Запустить",
+        "signIn": "Войти"
+      },
+      "sessionActions": {
+        "toastReset": "Лаба сброшена",
+        "toastEnded": "Сессия завершена",
+        "instructions": "Инструкция",
+        "actionsMenu": "Меню действий",
+        "reset": "Сбросить",
+        "end": "Завершить",
+        "resetConfirmTitle": "Сбросить лабораторную?",
+        "resetConfirmDescription": "Текущая топология в среде потеряется. Проект пересоздаётся из шаблона.",
+        "cancel": "Отмена",
+        "endConfirmTitle": "Завершить сессию?",
+        "endConfirmDescription": "GNS3-окружение удалится полностью. Действие необратимо."
+      },
+      "labControls": {
+        "toastStopped": "Остановлено",
+        "toastRestarted": "Перезапущено",
+        "toastReset": "Сброшено",
+        "toastEnded": "Сессия завершена",
+        "resetConfirmTitle": "Сбросить лабу?",
+        "resetConfirmDescription": "Проект будет пересоздан из шаблона. Текущий прогресс в топологии потеряется.",
+        "cancel": "Отмена",
+        "reset": "Сбросить",
+        "end": "Завершить",
+        "endConfirmTitle": "Завершить сессию?",
+        "endConfirmDescription": "GNS3-окружение будет удалено. Действие необратимо."
+      },
+      "credentialsCard": {
+        "heading": "Доступ к GNS3",
+        "fields": {
+          "username": "Логин",
+          "password": "Пароль"
+        },
+        "copyUsername": "Скопировать логин",
+        "copyPassword": "Скопировать пароль",
+        "hidePassword": "Скрыть пароль",
+        "showPassword": "Показать пароль",
+        "copiedToast": "{label} скопирован",
+        "openGns3": "Открыть GNS3"
+      },
+      "consentGate": {
+        "title": "Участие в исследовании",
+        "description": "Платформа собирает данные о действиях в лабораторной среде для адаптации обучения. Данные обезличены и используются только для исследовательских целей. Изменить решение можно в <settingsLink>настройках</settingsLink>.",
+        "accept": "Принять",
+        "decline": "Отклонить",
+        "toastAccepted": "Согласие получено",
+        "toastFailed": "Не удалось сохранить согласие"
+      },
+      "nodeDetailDrawer": {
+        "status": {
+          "started": "Запущен",
+          "stopped": "Остановлен",
+          "suspended": "Приостановлен"
+        },
+        "openConsole": "Открыть консоль ({type}:{port})",
+        "stopNode": "Остановить узел",
+        "startNode": "Запустить узел",
+        "reloadNode": "Перезагрузить узел",
+        "toastStopped": "Узел остановлен",
+        "toastStarted": "Узел запущен",
+        "toastReloaded": "Узел перезагружен"
+      },
+      "credentialsDialog": {
+        "title": "Доступ к лаборатории",
+        "description": "Сохраните пароль — он показывается полностью только сейчас.",
+        "fields": {
+          "username": "Логин",
+          "password": "Пароль"
+        },
+        "copiedToast": "{label} скопирован",
+        "openGns3": "Открыть GNS3",
+        "goToLab": "Перейти к лабе"
+      },
+      "pageHeader": {
+        "backToLabs": "Назад к лабам",
+        "labs": "Лабы",
+        "status": {
+          "provisioning": "Создаётся",
+          "active": "Активна",
+          "ended": "Завершена",
+          "error": "Ошибка"
+        },
+        "noAssistTitle": "Проактивные подсказки отключены в этой сессии (near-transfer)",
+        "noAssist": "Без подсказок"
+      },
+      "nodesCard": {
+        "heading": "Узлы · {started} / {total} запущено",
+        "empty": "Узлы не настроены",
+        "toastStopped": "Узел остановлен",
+        "toastStarted": "Узел запущен",
+        "stop": "Остановить",
+        "start": "Запустить"
+      },
+      "launchLabConfirmTrigger": {
+        "title": "Запустить лабораторию?",
+        "description": "Создаём выделенную среду GNS3. После завершения сессии прогресс не сохраняется — можно запустить заново.",
+        "cancel": "Отмена",
+        "preparing": "Готовим окружение...",
+        "launch": "Запустить"
+      },
+      "stickyMobileActionBar": {
+        "toastStopped": "Узлы остановлены",
+        "openGns3": "Открыть GNS3",
+        "stopAriaLabel": "Остановить узлы",
+        "stop": "Стоп"
+      },
+      "statusBadge": {
+        "active": "Активна",
+        "provisioning": "Готовится",
+        "ended": "Завершена",
+        "error": "Ошибка"
+      },
+      "escalateButton": {
+        "toastSent": "Запрос наставнику отправлен",
+        "toastFailed": "Не удалось отправить запрос наставнику",
+        "label": "Нужен наставник"
+      },
+      "topologyPreview": {
+        "empty": "Узлы не настроены",
+        "ariaLabel": "Live-топология сессии"
+      },
+      "launchLabMobileButton": {
+        "signInToLaunch": "Войти, чтобы запустить",
+        "launchLab": "Запустить лабораторию"
+      }
+    },
+    "validation": {
+      "duration": {
+        "seconds": "{count, plural, one {# секунда} few {# секунды} many {# секунд} other {# секунд}}",
+        "minutes": "{count, plural, one {# минута} few {# минуты} many {# минут} other {# минут}}",
+        "hours": "{count, plural, one {# час} few {# часа} many {# часов} other {# часов}}",
+        "milliseconds": "{count, plural, one {# миллисекунда} few {# миллисекунды} many {# миллисекунд} other {# миллисекунд}}"
+      },
+      "pastRunRow": {
+        "checksRatio": "{passed}/{total} проверок"
+      },
+      "checkRow": {
+        "copyCommand": "Копировать команду",
+        "error": "Ошибка: {message}",
+        "expected": "ожидалось:",
+        "actual": "фактически:"
+      },
+      "sheet": {
+        "title": "Проверка лабы",
+        "description": "Запускает проверки в живой среде GNS3",
+        "currentRun": "Текущий прогон",
+        "history": "История",
+        "noRuns": "Прогонов пока нет",
+        "running": "Идёт проверка...",
+        "runAgain": "Запустить заново"
+      },
+      "button": {
+        "check": "Проверить"
+      }
+    },
+    "chat": {
+      "chatPanel": {
+        "archiveHeader": "Архив · {date}",
+        "ariaLabel": "Чат с ИИ-тьютором",
+        "resizeAriaLabel": "Изменить ширину панели",
+        "sessionHistory": "История сессий",
+        "current": "Текущая · {domain} / {name}",
+        "noPastSessions": "Пока нет прошлых сессий",
+        "aiLogs": "Логи ИИ",
+        "openFullPage": "Открыть на всю страницу",
+        "closeChat": "Закрыть чат",
+        "archiveDetail": "Архив · {domain} / {name} · {date}",
+        "backToCurrent": "К текущей"
+      },
+      "chatView": {
+        "archiveHeader": "Архив · {date}",
+        "chat": "Чат",
+        "hideSidebar": "Скрыть список диалогов",
+        "current": "Текущая · {domain} / {name}",
+        "history": "История",
+        "noPastSessions": "Пока нет прошлых сессий",
+        "showSidebar": "Показать список диалогов",
+        "aiLogs": "Логи ИИ",
+        "collapseToPanel": "Свернуть в панель",
+        "closeChat": "Закрыть чат",
+        "archiveDetail": "Архив · {domain} / {name} · {date}",
+        "backToCurrent": "К текущей",
+        "greeting": "Чем займёмся сегодня?"
+      },
+      "suggestions": {
+        "topology": {
+          "title": "Топология лабы",
+          "description": "Объясни, как устроена схема",
+          "prompt": "Объясни топологию этой лабораторной работы."
+        },
+        "gettingStarted": {
+          "title": "С чего начать",
+          "description": "Помоги сделать первый шаг",
+          "prompt": "С чего мне начать выполнение этого задания?"
+        },
+        "nodeSetup": {
+          "title": "Настройка узла",
+          "description": "Разбери команды по шагам",
+          "prompt": "Как настроить интерфейсы на узлах в этой лабе?"
+        },
+        "hint": {
+          "title": "Подсказка",
+          "description": "Подтолкни, не раскрывая ответ",
+          "prompt": "Дай подсказку к текущему заданию, не раскрывая решение целиком."
+        }
+      },
+      "emptyState": {
+        "morning": "Доброе утро.",
+        "afternoon": "Добрый день.",
+        "evening": "Добрый вечер.",
+        "prompt": "Чем займёмся сегодня?"
+      },
+      "messages": {
+        "copyResponse": "Скопировать ответ"
+      },
+      "input": {
+        "placeholderLarge": "Спросите о чём угодно...",
+        "placeholder": "Чем можем помочь?",
+        "stopGeneration": "Остановить генерацию",
+        "send": "Отправить"
+      },
+      "trigger": {
+        "askAi": "Спросить ИИ"
+      },
+      "agentActivityConsole": {
+        "heading": "Активность ИИ",
+        "empty": "Нет событий"
+      },
+      "modelSelector": {
+        "ariaLabel": "Выбор модели",
+        "placeholder": "Модель"
+      }
+    },
+    "instructor": {
+      "statusLabels": {
+        "completed": "Завершена",
+        "inProgress": "В процессе",
+        "notStarted": "Не начата",
+        "active": "Активна",
+        "ended": "Завершена",
+        "error": "Ошибка"
+      },
+      "studentDetailView": {
+        "loading": "Загрузка…",
+        "notFound": "Ученик не найден",
+        "backToList": "К списку",
+        "allStudents": "Все ученики",
+        "labsCompleted": "Завершено лаб",
+        "labsInProgressHint": "{count} в процессе",
+        "avgScore": "Средний балл",
+        "hints": "Подсказок",
+        "allTimeHint": "За всё время",
+        "sessions": "Сессий",
+        "labsProgress": "Прогресс по лабам",
+        "noLabsStarted": "Ученик ещё не приступал к лабам",
+        "headers": {
+          "lab": "Лаба",
+          "status": "Статус",
+          "score": "Балл",
+          "hints": "Подсказки",
+          "attempts": "Попытки",
+          "sessions": "Сессии",
+          "activity": "Активность"
+        },
+        "sessionsHeading": "Сессии",
+        "noSessions": "Сессий пока нет.",
+        "messageCountLine": "{messages} сообщ · {hints} подсказок"
+      },
+      "instructorView": {
+        "noStudents": "Пока нет учеников",
+        "noStudentsHint": "Как только ученики начнут проходить лабы, их прогресс появится здесь.",
+        "students": "Учеников",
+        "totalHints": "Всего подсказок",
+        "totalHintsHint": "Выданных агентом-тьютором",
+        "activeToday": "Активны сегодня",
+        "searchPlaceholder": "Поиск по имени или email…",
+        "headers": {
+          "student": "Ученик",
+          "labs": "Лабы",
+          "avgScore": "Ср. балл",
+          "hints": "Подсказки",
+          "sessions": "Сессии",
+          "activity": "Активность"
+        },
+        "inProgressBadge": "{count} в работе",
+        "notFound": "Ничего не найдено"
+      },
+      "sessionDialogueSheet": {
+        "dialogueTitle": "Диалог · {labTitle}",
+        "dialogueSubtitle": "Чат студента с тьютором и проактивные подсказки",
+        "noDialogue": "Диалога по этой сессии нет."
+      }
+    },
+    "settings": {
+      "account": "Аккаунт",
+      "noName": "Без имени",
+      "roleLabels": {
+        "student": "Студент",
+        "instructor": "Инструктор",
+        "admin": "Администратор"
+      },
+      "appearance": "Внешний вид",
+      "theme": "Тема",
+      "themeHint": "Светлая, тёмная или по настройке системы.",
+      "themes": {
+        "light": "Светлая",
+        "dark": "Тёмная",
+        "system": "Системная"
+      },
+      "research": "Исследование",
+      "consent": {
+        "label": "Участие в исследовании",
+        "hint": "Сбор обезличенных данных о действиях в лабораторной среде для адаптации обучения. Используется только в исследовательских целях.",
+        "enabled": "Включено",
+        "disabled": "Выключено",
+        "ariaLabel": "Участие в исследовании",
+        "toastEnabled": "Согласие включено",
+        "toastRevoked": "Согласие отозвано",
+        "toastFailed": "Не удалось сохранить",
+        "loading": "Загрузка"
+      },
+      "aiModel": "ИИ-модель",
+      "model": {
+        "label": "Модель по умолчанию",
+        "hint": "Подставляется при старте чата. Доступно при наличии права выбора модели.",
+        "unavailable": "Недоступно",
+        "placeholder": "Выбрать модель",
+        "toastSaved": "Модель по умолчанию сохранена",
+        "toastFailed": "Не удалось сохранить",
+        "loading": "Загрузка"
+      },
+      "security": {
+        "title": "Безопасность",
+        "activeSessions": "Активные сессии",
+        "activeSessionsHint": "Число активных входов в аккаунт. Детали устройств не сохраняются.",
+        "signOutEverywhere": "Выйти на всех устройствах",
+        "signOutEverywhereHint": "Завершит все сессии, включая текущую.",
+        "signOutEverywhereButton": "Выйти везде",
+        "currentSession": "Текущая сессия",
+        "currentSessionHint": "Выйти из аккаунта на этом устройстве.",
+        "signOutButton": "Выйти",
+        "toastSignOutFailed": "Не удалось выйти"
+      }
+    },
+    "auth": {
+      "schemas": {
+        "invalidEmail": "Некорректный email",
+        "passwordRequired": "Введите пароль",
+        "passwordMinLength": "Минимум 8 символов"
+      },
+      "loginForm": {
+        "title": "Вход в аккаунт",
+        "description": "Введите email, чтобы войти в аккаунт",
+        "githubSignInError": "Не удалось войти через GitHub. Попробуйте снова.",
+        "invalidCredentials": "Неверный email или пароль.",
+        "password": "Пароль",
+        "submit": "Войти",
+        "orDivider": "или",
+        "githubButton": "Войти через GitHub",
+        "noAccount": "Нет аккаунта? <link>Зарегистрироваться</link>"
+      },
+      "registerForm": {
+        "title": "Создание аккаунта",
+        "description": "Заполните данные, чтобы создать аккаунт",
+        "githubSignInError": "Не удалось войти через GitHub. Попробуйте снова.",
+        "registerFailed": "Не удалось зарегистрироваться.",
+        "name": "Имя",
+        "namePlaceholder": "Иван Иванов",
+        "password": "Пароль",
+        "passwordHint": "Минимум 8 символов",
+        "submit": "Создать аккаунт",
+        "orDivider": "или",
+        "githubButton": "Зарегистрироваться через GitHub",
+        "haveAccount": "Уже есть аккаунт? <link>Войти</link>"
+      }
+    },
+    "progress": {
+      "labProgressBadge": {
+        "completed": "Завершено",
+        "inProgress": "В процессе"
+      }
+    },
+    "app": {
+      "adminAb": {
+        "title": "A/B-эффект",
+        "description": "Сравнение плеч эксперимента: каузальный анализ рандомизированных групп",
+        "unknownError": "Неизвестная ошибка"
+      },
+      "adminCohort": {
+        "title": "Когорта",
+        "description": "KM/reach + автономия на L2-холдауте по навыкам",
+        "loadError": "Ошибка загрузки метрик"
+      },
+      "adminIdentifier": {
+        "title": "Идентификатор режима",
+        "description": "Operating-кривая, матрица путаницы и first-match диагностика идентификатора",
+        "loadError": "Ошибка загрузки"
+      },
+      "adminLabs": {
+        "title": "Лабы",
+        "description": "Управление лабами и GNS3-шаблонами",
+        "loadError": "Ошибка загрузки"
+      },
+      "adminOverview": {
+        "metaTitle": "Обзор — Администратор",
+        "title": "Обзор",
+        "description": "Сводка ключевых метрик контура управления"
+      },
+      "adminTk": {
+        "metaTitle": "Закон T_k — Администратор",
+        "title": "Закон T_k",
+        "description": "Чувствительность порога вмешательства к стоимости застревания"
+      },
+      "adminUsers": {
+        "title": "Пользователи",
+        "description": "Управление ролями и правами",
+        "loadError": "Ошибка загрузки"
+      },
+      "adminLogTable": {
+        "loadError": "Ошибка загрузки"
+      },
+      "instructorHome": {
+        "title": "Кабинет преподавателя",
+        "description": "Прогресс учеников, подсказки и активность"
+      },
+      "instructorCohort": {
+        "title": "Когортные метрики",
+        "description": "Время до компетентности, автономия и орг-эффект по скиллам",
+        "headlineArm": "Плечо:",
+        "headers": {
+          "skill": "Скилл",
+          "medianCalendar": "Медиана кал., дн",
+          "medianActive": "Медиана акт., дн",
+          "interventions": "L1→L2 интерв.",
+          "censored": "Цензурир."
+        },
+        "allSkills": "Все навыки",
+        "honestyNote": "D4-тренд описательный (survivorship); дельта плеч = Задача 4"
+      },
+      "studentDetail": {
+        "title": "Прогресс ученика",
+        "description": "Детальный прогресс ученика по лабам"
+      },
+      "sessions": {
+        "title": "Мои лабы",
+        "description": "Запущенные и недавние учебные сессии"
+      },
+      "launchLab": {
+        "metaTitle": "Запуск лабораторной",
+        "heading": "Запустить лабораторную",
+        "launchButton": "Запустить"
+      },
+      "site": {
+        "name": "Платформа",
+        "description": "Платформа"
+      },
+      "nav": {
+        "navCourses": "Курсы",
+        "navLabs": "Лабы",
+        "navMySessions": "Мои лабы"
+      },
+      "commandMenu": {
+        "pagesHeading": "Страницы",
+        "sectionsHeading": "Разделы",
+        "mySessions": "Мои лабы",
+        "settings": "Настройки",
+        "instructorCabinet": "Кабинет преподавателя",
+        "admin": "Админка",
+        "placeholder": "Найти на платформе...",
+        "placeholderShort": "Найти...",
+        "noResults": "Результатов не найдено.",
+        "goToPage": "Перейти на страницу"
+      },
+      "mobileNav": {
+        "openMenu": "Открыть меню",
+        "menuLabel": "Меню",
+        "home": "Главная",
+        "sectionsHeading": "Разделы",
+        "mySessions": "Мои лабы",
+        "settings": "Настройки",
+        "instructorCabinet": "Кабинет преподавателя",
+        "admin": "Админка"
+      },
+      "siteConfig": {
+        "toggleLayout": "Переключить макет"
+      },
+      "themeSwitcher": {
+        "toggle": "Переключить тему"
+      },
+      "footer": {
+        "sourceCode": "Исходный код доступен на"
+      },
+      "settingsPage": {
+        "metaTitle": "Настройки",
+        "heading": "Настройки",
+        "description": "Аккаунт, тема, данные и безопасность"
+      },
+      "sessionChat": {
+        "metaTitle": "Чат с тьютором"
+      },
+      "forbidden": {
+        "heading": "Доступ запрещён",
+        "description": "У вас нет доступа к этой странице.",
+        "home": "На главную"
+      },
+      "unauthorized": {
+        "heading": "Требуется вход",
+        "description": "Войдите, чтобы открыть эту страницу.",
+        "signIn": "Войти"
+      }
+    }
+  },
+  "shared": {
+    "signInButton": {
+      "label": "Войти"
+    },
+    "userMenu": {
+      "instructor": "Кабинет преподавателя",
+      "settings": "Настройки",
+      "signOut": "Выйти"
+    },
+    "docsToc": {
+      "title": "Содержание"
+    }
+  }
+}

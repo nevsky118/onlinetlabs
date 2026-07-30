@@ -1,0 +1,27 @@
+{
+  "name": "@repo/i18n",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./routing": "./routing.ts",
+    "./request": "./request.ts",
+    "./navigation": "./navigation.ts",
+    "./messages/ru.json": "./messages/ru.json",
+    "./messages/en.json": "./messages/en.json"
+  },
+  "dependencies": {
+    "next-intl": "^4.13.4"
+  },
+  "peerDependencies": {
+    "next": "^16.2.12",
+    "react": "^19.2.0"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^20",
+    "typescript": "^5"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

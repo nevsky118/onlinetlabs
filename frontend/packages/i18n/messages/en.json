@@ -1,0 +1,915 @@
+{
+  "web": {
+    "nav": {
+      "courses": "Courses",
+      "labs": "Labs",
+      "mySessions": "My Labs"
+    },
+    "search": {
+      "placeholder": "Search the platform...",
+      "placeholderShort": "Search...",
+      "pagesHeading": "Pages",
+      "loading": "Searching...",
+      "noResults": "No results found.",
+      "goToPage": "Go to page",
+      "resultsHeading": "Search results",
+      "spinnerLabel": "Loading"
+    },
+    "mobileNav": {
+      "openMenu": "Open menu",
+      "menuLabel": "Menu",
+      "home": "Home",
+      "sectionsHeading": "Sections",
+      "start": "Docs",
+      "components": "Components"
+    },
+    "themeSwitcher": {
+      "toggle": "Toggle theme"
+    },
+    "siteConfig": {
+      "toggleLayout": "Toggle layout"
+    },
+    "site": {
+      "name": "Platform",
+      "description": "Platform"
+    },
+    "footer": {
+      "sourceCode": "Source code available on"
+    },
+    "contentCard": {
+      "difficulty": {
+        "easy": "Easy",
+        "medium": "Medium",
+        "hard": "Hard"
+      },
+      "tasksCount": "{count, plural, one {# task} other {# tasks}}"
+    },
+    "home": {
+      "metaTitle": "Home",
+      "metaDescription": "Learning that sees your lab. Agents see your environment's context and help right there — while you learn.",
+      "heroTitle": "<line>Learning,</line><line>that <highlight>sees</highlight></line><line>your lab</line>",
+      "heroDescription": "Agents see the context of your environment and help right there — while you learn.",
+      "ctaCourses": "Courses",
+      "ctaLabs": "Labs",
+      "techTags": "gns3 · docker · databases"
+    },
+    "courses": {
+      "title": "Courses",
+      "description": "List of available courses."
+    },
+    "coursesDoc": {
+      "previous": "Previous",
+      "next": "Next",
+      "docsLink": "Documentation"
+    },
+    "labs": {
+      "title": "Labs",
+      "description": "List of available labs."
+    },
+    "labsDoc": {
+      "emptyList": "List of labs.",
+      "previous": "Previous",
+      "next": "Next",
+      "docsLink": "Documentation"
+    },
+    "launchLink": {
+      "launch": "Launch",
+      "signInAndLaunch": "Sign in and launch"
+    },
+    "searchTree": {
+      "coursesGroup": "Courses",
+      "labsGroup": "Labs"
+    },
+    "mdx": {
+      "copy": "Copy",
+      "copied": "Copied",
+      "collapse": "Collapse",
+      "expand": "Expand"
+    }
+  },
+  "dashboard": {
+    "admin": {
+      "nav": {
+        "badge": "Admin",
+        "groups": {
+          "analytics": "Analytics",
+          "logs": "Logs",
+          "sessions": "Sessions",
+          "progress": "Progress",
+          "management": "Management",
+          "access": "Access"
+        },
+        "items": {
+          "overview": "Overview",
+          "abEffect": "A/B effect",
+          "cohort": "Cohort",
+          "identifier": "Identifier",
+          "tkLaw": "T_k law",
+          "users": "Users",
+          "labs": "Labs"
+        }
+      },
+      "logTables": {
+        "mcpAudit": "MCP audit",
+        "agentActivityEvents": "Agent activity",
+        "platformEvents": "Platform events",
+        "behavioralEvents": "Behavioral events",
+        "chatMessages": "Chat messages",
+        "learningSessions": "Learning sessions",
+        "validationRuns": "Validation runs",
+        "processStateSamples": "Process state samples",
+        "labProgress": "Lab progress",
+        "courseProgress": "Course progress",
+        "stepAttempts": "Step attempts",
+        "experimentMetrics": "Experiment metrics",
+        "consents": "Consents"
+      },
+      "actionsErrors": {
+        "statusError": "Error {status}",
+        "networkError": "Network error"
+      },
+      "dataTable": {
+        "searchPlaceholder": "Search...",
+        "error": "Error",
+        "empty": "No records",
+        "boolTrue": "yes",
+        "boolFalse": "no",
+        "total": "Total: {count}",
+        "pageOf": "page {page} of {total}"
+      },
+      "confusionGrid": {
+        "unavailable": "Matrix unavailable",
+        "ariaLabel": "Confusion matrix: rows are the true mode, columns the detected one",
+        "axisLabel": "↓ true \\ detected →",
+        "cellAriaLabel": "true={truth} detected={detected}: {count}",
+        "caption": "Rows are the true mode, columns the detected one. The diagonal is outlined."
+      },
+      "ab": {
+        "loadingAriaLabel": "Loading A/B effect",
+        "emptyMessage": "No A/B analysis data. Make sure the experiment has run and metrics were collected.",
+        "errorPrefix": "Error:",
+        "tableAriaLabel": "A/B arm comparison",
+        "repeatedErrorsAriaLabel": "Repeated errors",
+        "headers": {
+          "metric": "Metric",
+          "delta": "Δ (closed − open)",
+          "key": "Key",
+          "value": "Value"
+        },
+        "rows": {
+          "l2PassRate": "L2 Pass Rate",
+          "escalationsMean": "Escalations (mean)"
+        },
+        "mentorHours": {
+          "label": "Mentor hours saved",
+          "unit": "h",
+          "note": "A/B counterfactual — δ = closed − open interpreted as savings"
+        },
+        "honesty": "The arm delta is <strong>causal</strong> (randomization) — this is the section where causal interpretation is warranted."
+      },
+      "cohort": {
+        "allSkills": "All skills",
+        "errorTitle": "Failed to load",
+        "chartHeading": "Reach L2 by skill (%)",
+        "chartConfigLabel": "Reach L2 (%)",
+        "tableAriaLabel": "Cohort metrics by skill",
+        "pooledTableAriaLabel": "Pool of all skills",
+        "headers": {
+          "skill": "Skill",
+          "reachL2": "Reach L2",
+          "censored": "Censored",
+          "median": "Median, days (or reach@T)",
+          "autonomy": "Autonomy, L2 holdout"
+        },
+        "empty": "No data",
+        "chartNote": "Monochrome: bars differ by hazard — darker means a higher skill index.",
+        "headlineText": "Headline arm: <arm></arm> (closed); open/pooled are context; the causal delta is in the A/B section",
+        "honesty": {
+          "km": "KM median: survivorship bias (recorded cases only). Below 50% reaching, reach@T/restricted-mean is shown, not empty or ∞.",
+          "headline": "Headline = closed. Open/pooled are context; the causal arm delta is in the A/B section.",
+          "autonomy": "<strong>Autonomy, L2 holdout</strong> = interventions on the near-transfer holdout (same skill, new instance, open-loop for both arms) — NOT during L1 learning."
+        }
+      },
+      "identifier": {
+        "recallSolidLabel": "Recall (solid)",
+        "falsePerHourLabel": "False/h (dashed)",
+        "subtitle": "rate>F1; replaces external PoC",
+        "preliminaryBadge": "PRELIMINARY",
+        "errorTitle": "Failed to load",
+        "sections": {
+          "operatingChart": "Operating curve (chart)",
+          "operatingTable": "Operating curve (table)",
+          "confusionMatrix": "Confusion matrix",
+          "firstMatch": "First-match diagnostics",
+          "costs": "Costs"
+        },
+        "firstMatchNote": "Rate metrics take priority over F1",
+        "chartNote": "Recall is solid; False/h is dashed. The J-optimum is marked with a vertical tick.",
+        "emptyCurve": "No curve data",
+        "headers": {
+          "tk": "T_k",
+          "latencyMedian": "Latency med.",
+          "falsePerHour": "False/h",
+          "recall": "Recall",
+          "j": "J"
+        },
+        "optimumNote": "J-optimum (T_k={value}) is highlighted in inverse",
+        "rows": {
+          "multiMatchRate": "Multi-match rate",
+          "orderSensitiveRate": "Order-sensitive rate",
+          "totalFiringSnapshots": "Total firing snapshots"
+        }
+      },
+      "labs": {
+        "toggleAriaLabel": "Enable lab",
+        "statusBuilding": "Building",
+        "statusReady": "Ready",
+        "statusError": "Error",
+        "statusNone": "None",
+        "rebuildButton": "Rebuild",
+        "rebuilding": "Building…",
+        "toastEnabled": "Lab enabled",
+        "toastDisabled": "Lab disabled",
+        "toastRebuildStarted": "Build started",
+        "errorTitle": "Error",
+        "empty": "No labs",
+        "headers": {
+          "lab": "Lab",
+          "environment": "Environment",
+          "templateStatus": "Template status",
+          "templateId": "Template ID",
+          "enabled": "Enabled",
+          "actions": "Actions"
+        }
+      },
+      "overview": {
+        "errorFallback": "Failed to load",
+        "errorTitle": "Error",
+        "sections": {
+          "ab": "A/B",
+          "cohort": "Cohort",
+          "identifier": "Identifier",
+          "ops": "Ops"
+        },
+        "kpis": {
+          "mentorHoursSaved": "Mentor hours saved",
+          "mentorHoursSub": "A/B counterfactual",
+          "jOptimalTk": "J-optimal T_k",
+          "jOptimalSub": "at costs: {costs}",
+          "activeSessions": "Active sessions",
+          "totalInterventions": "Total interventions",
+          "labeledRealN": "Real labeled N"
+        },
+        "refreshButton": "Refresh"
+      },
+      "users": {
+        "roles": {
+          "student": "Student",
+          "instructor": "Instructor",
+          "admin": "Administrator"
+        },
+        "ariaActive": "Active",
+        "ariaModelSelect": "Model selection",
+        "ariaAgentLogs": "Agent logs",
+        "cannotChangeOwnRole": "You can't change your own role",
+        "searchPlaceholder": "Search by name / email",
+        "allRoles": "All roles",
+        "errorTitle": "Error",
+        "empty": "No users found",
+        "headers": {
+          "user": "User",
+          "role": "Role",
+          "active": "Active",
+          "modelSelect": "Model selection",
+          "agentLogs": "Agent logs"
+        },
+        "toastSaved": "Saved",
+        "total": "Total: {count}",
+        "pageOf": "page {page} of {total}"
+      },
+      "tk": {
+        "seriesLabel": "T_k (step)",
+        "errorFallback": "Failed to load",
+        "errorTitle": "Error",
+        "emptyData": "No data.",
+        "chartHeading": "T_k(ratio) chart",
+        "ratioAxisLabel": "ratio (c_stuck/c_intervention)",
+        "chartNote": "The step shape reflects the discreteness of T_k.",
+        "tableCaption": "T_k sensitivity curve — a curve, not a number.",
+        "honestyNote": "T_k depends on the c_stuck/c_intervention ratio — changing the costs shifts the threshold.",
+        "costsTitle": "Costs",
+        "costsLoading": "Loading...",
+        "costsNote": "T_k bends with the cost of being stuck — a curve, not a single number."
+      }
+    },
+    "session": {
+      "duration": {
+        "seconds": "{count, plural, one {# second} other {# seconds}}",
+        "minutes": "{count, plural, one {# minute} other {# minutes}}",
+        "hours": "{count, plural, one {# hour} other {# hours}}",
+        "milliseconds": "{count, plural, one {# millisecond} other {# milliseconds}}",
+        "lessThanMinute": "less than a minute",
+        "aboutMinutes": "~{count, plural, one {# minute} other {# minutes}}",
+        "aboutSeconds": "~{count, plural, one {# second} other {# seconds}}"
+      },
+      "activityCard": {
+        "heading": "Activity",
+        "empty": "No events",
+        "loadMore": "Load more"
+      },
+      "eventLabels": {
+        "nodeStarted": "Node started",
+        "nodeStopped": "Node stopped",
+        "nodeSuspended": "Node suspended",
+        "nodeReloaded": "Node reloaded",
+        "consoleOpened": "Console opened",
+        "linkCreated": "Link created",
+        "linkDeleted": "Link deleted",
+        "sessionStarted": "Session started",
+        "sessionEnded": "Session ended"
+      },
+      "sessionsView": {
+        "emptyTitle": "No running labs",
+        "emptyDescription": "Launch a lab from the catalog to start learning.",
+        "goToLabs": "Go to labs",
+        "activeCount": "{count} / {max} active",
+        "activeHeading": "Active",
+        "recentHeading": "Recent",
+        "launchAgain": "Launch again"
+      },
+      "sessionCard": {
+        "startedAt": "started {when}",
+        "endedAt": "ended {when}",
+        "open": "Open",
+        "provisioning": "Provisioning…",
+        "end": "End",
+        "endConfirmTitle": "End session?",
+        "endConfirmDescription": "Lab “{title}” will be stopped. Unsaved progress may be lost.",
+        "cancel": "Cancel",
+        "launchAgain": "Launch again",
+        "toastEnded": "Session ended",
+        "toastEndFailed": "Failed to end session"
+      },
+      "sessionHero": {
+        "currentSession": "Current session",
+        "openGns3": "Open GNS3",
+        "stop": "Stop",
+        "restart": "Restart",
+        "toastNodesStopped": "Nodes stopped",
+        "toastNodesRestarted": "Nodes restarted",
+        "lab": "Lab",
+        "gns3Access": "GNS3 access",
+        "nodesStarted": "Nodes started",
+        "uptime": "Uptime"
+      },
+      "queueStatus": {
+        "heading": "In queue",
+        "position": "Position <position></position> of <depth></depth>",
+        "waiting": "Waiting {eta}. The page will refresh automatically once it's your turn."
+      },
+      "queueWaitDialog": {
+        "title": "Lab queued",
+        "description": "All environments are currently in use. We'll launch your lab automatically as soon as it's your turn.",
+        "position": "Your position: <position></position> of <depth></depth>",
+        "waiting": "Waiting {eta}",
+        "checkingEvery": "{seconds, plural, one {Checking readiness every second...} other {Checking readiness every # seconds...}}",
+        "cancel": "Cancel"
+      },
+      "streamStatusBanner": {
+        "connecting": "Reconnecting to the live stream...",
+        "degraded": "Live data is temporarily unavailable, trying to reconnect",
+        "polling": "{seconds, plural, one {Live stream unavailable. Refreshing data every second.} other {Live stream unavailable. Refreshing data every # seconds.}}"
+      },
+      "launchLabCard": {
+        "title": "Launch lab",
+        "signInTitle": "Sign in to launch",
+        "description": "A dedicated GNS3 environment. Launches within seconds.",
+        "signInDescription": "An account is required — you can launch right after signing in.",
+        "launch": "Launch",
+        "signIn": "Sign in"
+      },
+      "sessionActions": {
+        "toastReset": "Lab reset",
+        "toastEnded": "Session ended",
+        "instructions": "Instructions",
+        "actionsMenu": "Actions menu",
+        "reset": "Reset",
+        "end": "End",
+        "resetConfirmTitle": "Reset lab?",
+        "resetConfirmDescription": "The current topology in the environment will be lost. The project is recreated from the template.",
+        "cancel": "Cancel",
+        "endConfirmTitle": "End session?",
+        "endConfirmDescription": "The GNS3 environment will be fully removed. This action cannot be undone."
+      },
+      "labControls": {
+        "toastStopped": "Stopped",
+        "toastRestarted": "Restarted",
+        "toastReset": "Reset",
+        "toastEnded": "Session ended",
+        "resetConfirmTitle": "Reset lab?",
+        "resetConfirmDescription": "The project will be recreated from the template. Current topology progress will be lost.",
+        "cancel": "Cancel",
+        "reset": "Reset",
+        "end": "End",
+        "endConfirmTitle": "End session?",
+        "endConfirmDescription": "The GNS3 environment will be removed. This action cannot be undone."
+      },
+      "credentialsCard": {
+        "heading": "GNS3 access",
+        "fields": {
+          "username": "Username",
+          "password": "Password"
+        },
+        "copyUsername": "Copy username",
+        "copyPassword": "Copy password",
+        "hidePassword": "Hide password",
+        "showPassword": "Show password",
+        "copiedToast": "{label} copied",
+        "openGns3": "Open GNS3"
+      },
+      "consentGate": {
+        "title": "Research participation",
+        "description": "The platform collects data on actions in the lab environment to adapt learning. Data is anonymized and used for research purposes only. You can change this in <settingsLink>settings</settingsLink>.",
+        "accept": "Accept",
+        "decline": "Decline",
+        "toastAccepted": "Consent recorded",
+        "toastFailed": "Failed to save consent"
+      },
+      "nodeDetailDrawer": {
+        "status": {
+          "started": "Started",
+          "stopped": "Stopped",
+          "suspended": "Suspended"
+        },
+        "openConsole": "Open console ({type}:{port})",
+        "stopNode": "Stop node",
+        "startNode": "Start node",
+        "reloadNode": "Reload node",
+        "toastStopped": "Node stopped",
+        "toastStarted": "Node started",
+        "toastReloaded": "Node reloaded"
+      },
+      "credentialsDialog": {
+        "title": "Lab access",
+        "description": "Save the password — it's only shown in full right now.",
+        "fields": {
+          "username": "Username",
+          "password": "Password"
+        },
+        "copiedToast": "{label} copied",
+        "openGns3": "Open GNS3",
+        "goToLab": "Go to lab"
+      },
+      "pageHeader": {
+        "backToLabs": "Back to labs",
+        "labs": "Labs",
+        "status": {
+          "provisioning": "Provisioning",
+          "active": "Active",
+          "ended": "Ended",
+          "error": "Error"
+        },
+        "noAssistTitle": "Proactive hints are disabled in this session (near-transfer)",
+        "noAssist": "No hints"
+      },
+      "nodesCard": {
+        "heading": "Nodes · {started} / {total} started",
+        "empty": "No nodes configured",
+        "toastStopped": "Node stopped",
+        "toastStarted": "Node started",
+        "stop": "Stop",
+        "start": "Start"
+      },
+      "launchLabConfirmTrigger": {
+        "title": "Launch lab?",
+        "description": "We'll create a dedicated GNS3 environment. Progress isn't saved once the session ends — you can launch again.",
+        "cancel": "Cancel",
+        "preparing": "Preparing environment...",
+        "launch": "Launch"
+      },
+      "stickyMobileActionBar": {
+        "toastStopped": "Nodes stopped",
+        "openGns3": "Open GNS3",
+        "stopAriaLabel": "Stop nodes",
+        "stop": "Stop"
+      },
+      "statusBadge": {
+        "active": "Active",
+        "provisioning": "Provisioning",
+        "ended": "Ended",
+        "error": "Error"
+      },
+      "escalateButton": {
+        "toastSent": "Request sent to mentor",
+        "toastFailed": "Failed to send request to mentor",
+        "label": "Need a mentor"
+      },
+      "topologyPreview": {
+        "empty": "No nodes configured",
+        "ariaLabel": "Live session topology"
+      },
+      "launchLabMobileButton": {
+        "signInToLaunch": "Sign in to launch",
+        "launchLab": "Launch lab"
+      }
+    },
+    "validation": {
+      "duration": {
+        "seconds": "{count, plural, one {# second} other {# seconds}}",
+        "minutes": "{count, plural, one {# minute} other {# minutes}}",
+        "hours": "{count, plural, one {# hour} other {# hours}}",
+        "milliseconds": "{count, plural, one {# millisecond} other {# milliseconds}}"
+      },
+      "pastRunRow": {
+        "checksRatio": "{passed}/{total} checks"
+      },
+      "checkRow": {
+        "copyCommand": "Copy command",
+        "error": "Error: {message}",
+        "expected": "expected:",
+        "actual": "actual:"
+      },
+      "sheet": {
+        "title": "Lab check",
+        "description": "Runs checks in the live GNS3 environment",
+        "currentRun": "Current run",
+        "history": "History",
+        "noRuns": "No runs yet",
+        "running": "Checking...",
+        "runAgain": "Run again"
+      },
+      "button": {
+        "check": "Check"
+      }
+    },
+    "chat": {
+      "chatPanel": {
+        "archiveHeader": "Archive · {date}",
+        "ariaLabel": "Chat with AI tutor",
+        "resizeAriaLabel": "Resize panel",
+        "sessionHistory": "Session history",
+        "current": "Current · {domain} / {name}",
+        "noPastSessions": "No past sessions yet",
+        "aiLogs": "AI logs",
+        "openFullPage": "Open full page",
+        "closeChat": "Close chat",
+        "archiveDetail": "Archive · {domain} / {name} · {date}",
+        "backToCurrent": "Back to current"
+      },
+      "chatView": {
+        "archiveHeader": "Archive · {date}",
+        "chat": "Chat",
+        "hideSidebar": "Hide dialogue list",
+        "current": "Current · {domain} / {name}",
+        "history": "History",
+        "noPastSessions": "No past sessions yet",
+        "showSidebar": "Show dialogue list",
+        "aiLogs": "AI logs",
+        "collapseToPanel": "Collapse to panel",
+        "closeChat": "Close chat",
+        "archiveDetail": "Archive · {domain} / {name} · {date}",
+        "backToCurrent": "Back to current",
+        "greeting": "What shall we work on today?"
+      },
+      "suggestions": {
+        "topology": {
+          "title": "Lab topology",
+          "description": "Explain how the setup works",
+          "prompt": "Explain the topology of this lab."
+        },
+        "gettingStarted": {
+          "title": "Where to start",
+          "description": "Help me take the first step",
+          "prompt": "Where should I start with this task?"
+        },
+        "nodeSetup": {
+          "title": "Node setup",
+          "description": "Walk through the commands step by step",
+          "prompt": "How do I configure interfaces on the nodes in this lab?"
+        },
+        "hint": {
+          "title": "Hint",
+          "description": "Nudge me without giving away the answer",
+          "prompt": "Give me a hint for the current task without revealing the full solution."
+        }
+      },
+      "emptyState": {
+        "morning": "Good morning.",
+        "afternoon": "Good afternoon.",
+        "evening": "Good evening.",
+        "prompt": "What shall we work on today?"
+      },
+      "messages": {
+        "copyResponse": "Copy response"
+      },
+      "input": {
+        "placeholderLarge": "Ask anything...",
+        "placeholder": "How can we help?",
+        "stopGeneration": "Stop generating",
+        "send": "Send"
+      },
+      "trigger": {
+        "askAi": "Ask AI"
+      },
+      "agentActivityConsole": {
+        "heading": "AI activity",
+        "empty": "No events"
+      },
+      "modelSelector": {
+        "ariaLabel": "Model selection",
+        "placeholder": "Model"
+      }
+    },
+    "instructor": {
+      "statusLabels": {
+        "completed": "Completed",
+        "inProgress": "In progress",
+        "notStarted": "Not started",
+        "active": "Active",
+        "ended": "Ended",
+        "error": "Error"
+      },
+      "studentDetailView": {
+        "loading": "Loading…",
+        "notFound": "Student not found",
+        "backToList": "Back to list",
+        "allStudents": "All students",
+        "labsCompleted": "Labs completed",
+        "labsInProgressHint": "{count} in progress",
+        "avgScore": "Average score",
+        "hints": "Hints",
+        "allTimeHint": "All time",
+        "sessions": "Sessions",
+        "labsProgress": "Lab progress",
+        "noLabsStarted": "This student hasn't started any labs yet",
+        "headers": {
+          "lab": "Lab",
+          "status": "Status",
+          "score": "Score",
+          "hints": "Hints",
+          "attempts": "Attempts",
+          "sessions": "Sessions",
+          "activity": "Activity"
+        },
+        "sessionsHeading": "Sessions",
+        "noSessions": "No sessions yet.",
+        "messageCountLine": "{messages} msgs · {hints} hints"
+      },
+      "instructorView": {
+        "noStudents": "No students yet",
+        "noStudentsHint": "Once students start working through labs, their progress will show up here.",
+        "students": "Students",
+        "totalHints": "Total hints",
+        "totalHintsHint": "Given by the tutor agent",
+        "activeToday": "Active today",
+        "searchPlaceholder": "Search by name or email…",
+        "headers": {
+          "student": "Student",
+          "labs": "Labs",
+          "avgScore": "Avg. score",
+          "hints": "Hints",
+          "sessions": "Sessions",
+          "activity": "Activity"
+        },
+        "inProgressBadge": "{count} in progress",
+        "notFound": "Nothing found"
+      },
+      "sessionDialogueSheet": {
+        "dialogueTitle": "Dialogue · {labTitle}",
+        "dialogueSubtitle": "Student's chat with the tutor and proactive hints",
+        "noDialogue": "No dialogue for this session."
+      }
+    },
+    "settings": {
+      "account": "Account",
+      "noName": "No name",
+      "roleLabels": {
+        "student": "Student",
+        "instructor": "Instructor",
+        "admin": "Administrator"
+      },
+      "appearance": "Appearance",
+      "theme": "Theme",
+      "themeHint": "Light, dark, or follow system settings.",
+      "themes": {
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System"
+      },
+      "research": "Research",
+      "consent": {
+        "label": "Research participation",
+        "hint": "Collects anonymized data on actions in the lab environment to adapt learning. Used for research purposes only.",
+        "enabled": "Enabled",
+        "disabled": "Disabled",
+        "ariaLabel": "Research participation",
+        "toastEnabled": "Consent enabled",
+        "toastRevoked": "Consent revoked",
+        "toastFailed": "Failed to save",
+        "loading": "Loading"
+      },
+      "aiModel": "AI model",
+      "model": {
+        "label": "Default model",
+        "hint": "Used when starting a chat. Available if you have model-selection permission.",
+        "unavailable": "Unavailable",
+        "placeholder": "Select model",
+        "toastSaved": "Default model saved",
+        "toastFailed": "Failed to save",
+        "loading": "Loading"
+      },
+      "security": {
+        "title": "Security",
+        "activeSessions": "Active sessions",
+        "activeSessionsHint": "Number of active sign-ins to this account. Device details aren't stored.",
+        "signOutEverywhere": "Sign out everywhere",
+        "signOutEverywhereHint": "Ends all sessions, including this one.",
+        "signOutEverywhereButton": "Sign out everywhere",
+        "currentSession": "Current session",
+        "currentSessionHint": "Sign out of your account on this device.",
+        "signOutButton": "Sign out",
+        "toastSignOutFailed": "Failed to sign out"
+      }
+    },
+    "auth": {
+      "schemas": {
+        "invalidEmail": "Invalid email",
+        "passwordRequired": "Enter a password",
+        "passwordMinLength": "At least 8 characters"
+      },
+      "loginForm": {
+        "title": "Sign in",
+        "description": "Enter your email to sign in",
+        "githubSignInError": "Failed to sign in with GitHub. Try again.",
+        "invalidCredentials": "Invalid email or password.",
+        "password": "Password",
+        "submit": "Sign in",
+        "orDivider": "or",
+        "githubButton": "Sign in with GitHub",
+        "noAccount": "No account? <link>Sign up</link>"
+      },
+      "registerForm": {
+        "title": "Create account",
+        "description": "Fill in your details to create an account",
+        "githubSignInError": "Failed to sign in with GitHub. Try again.",
+        "registerFailed": "Failed to sign up.",
+        "name": "Name",
+        "namePlaceholder": "Jane Doe",
+        "password": "Password",
+        "passwordHint": "At least 8 characters",
+        "submit": "Create account",
+        "orDivider": "or",
+        "githubButton": "Sign up with GitHub",
+        "haveAccount": "Already have an account? <link>Sign in</link>"
+      }
+    },
+    "progress": {
+      "labProgressBadge": {
+        "completed": "Completed",
+        "inProgress": "In progress"
+      }
+    },
+    "app": {
+      "adminAb": {
+        "title": "A/B effect",
+        "description": "Comparing experiment arms: causal analysis of randomized groups",
+        "unknownError": "Unknown error"
+      },
+      "adminCohort": {
+        "title": "Cohort",
+        "description": "KM/reach + autonomy on the L2 holdout, by skill",
+        "loadError": "Failed to load metrics"
+      },
+      "adminIdentifier": {
+        "title": "Mode identifier",
+        "description": "Operating curve, confusion matrix, and first-match diagnostics for the identifier",
+        "loadError": "Failed to load"
+      },
+      "adminLabs": {
+        "title": "Labs",
+        "description": "Manage labs and GNS3 templates",
+        "loadError": "Failed to load"
+      },
+      "adminOverview": {
+        "metaTitle": "Overview — Admin",
+        "title": "Overview",
+        "description": "Summary of key control-loop metrics"
+      },
+      "adminTk": {
+        "metaTitle": "T_k law — Admin",
+        "title": "T_k law",
+        "description": "Sensitivity of the intervention threshold to the cost of being stuck"
+      },
+      "adminUsers": {
+        "title": "Users",
+        "description": "Manage roles and permissions",
+        "loadError": "Failed to load"
+      },
+      "adminLogTable": {
+        "loadError": "Failed to load"
+      },
+      "instructorHome": {
+        "title": "Instructor dashboard",
+        "description": "Student progress, hints, and activity"
+      },
+      "instructorCohort": {
+        "title": "Cohort metrics",
+        "description": "Time to competency, autonomy, and org effect by skill",
+        "headlineArm": "Arm:",
+        "headers": {
+          "skill": "Skill",
+          "medianCalendar": "Median cal., days",
+          "medianActive": "Median act., days",
+          "interventions": "L1→L2 interv.",
+          "censored": "Censored"
+        },
+        "allSkills": "All skills",
+        "honestyNote": "D4 trend is descriptive (survivorship); the arm delta is Task 4"
+      },
+      "studentDetail": {
+        "title": "Student progress",
+        "description": "Detailed student progress by lab"
+      },
+      "sessions": {
+        "title": "My Labs",
+        "description": "Running and recent learning sessions"
+      },
+      "launchLab": {
+        "metaTitle": "Launch lab",
+        "heading": "Launch lab",
+        "launchButton": "Launch"
+      },
+      "site": {
+        "name": "Platform",
+        "description": "Platform"
+      },
+      "nav": {
+        "navCourses": "Courses",
+        "navLabs": "Labs",
+        "navMySessions": "My Labs"
+      },
+      "commandMenu": {
+        "pagesHeading": "Pages",
+        "sectionsHeading": "Sections",
+        "mySessions": "My Labs",
+        "settings": "Settings",
+        "instructorCabinet": "Instructor dashboard",
+        "admin": "Admin",
+        "placeholder": "Search the platform...",
+        "placeholderShort": "Search...",
+        "noResults": "No results found.",
+        "goToPage": "Go to page"
+      },
+      "mobileNav": {
+        "openMenu": "Open menu",
+        "menuLabel": "Menu",
+        "home": "Home",
+        "sectionsHeading": "Sections",
+        "mySessions": "My Labs",
+        "settings": "Settings",
+        "instructorCabinet": "Instructor dashboard",
+        "admin": "Admin"
+      },
+      "siteConfig": {
+        "toggleLayout": "Toggle layout"
+      },
+      "themeSwitcher": {
+        "toggle": "Toggle theme"
+      },
+      "footer": {
+        "sourceCode": "Source code available on"
+      },
+      "settingsPage": {
+        "metaTitle": "Settings",
+        "heading": "Settings",
+        "description": "Account, theme, data, and security"
+      },
+      "sessionChat": {
+        "metaTitle": "Chat with tutor"
+      },
+      "forbidden": {
+        "heading": "Access denied",
+        "description": "You don't have access to this page.",
+        "home": "Go home"
+      },
+      "unauthorized": {
+        "heading": "Sign-in required",
+        "description": "Sign in to open this page.",
+        "signIn": "Sign in"
+      }
+    }
+  },
+  "shared": {
+    "signInButton": {
+      "label": "Sign in"
+    },
+    "userMenu": {
+      "instructor": "Instructor area",
+      "settings": "Settings",
+      "signOut": "Sign out"
+    },
+    "docsToc": {
+      "title": "On this page"
+    }
+  }
+}
