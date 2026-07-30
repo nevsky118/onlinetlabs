@@ -137,7 +137,7 @@ class ConnectionPool:
         try:
             alive = await self._manager.health_check(entry.conn)
         except Exception:
-            logger.warning("health_check упал → считаем соединение мёртвым", exc_info=True)
+            logger.warning("health_check failed, treating the connection as dead", exc_info=True)
             alive = False
         entry.last_checked = now
         return alive
@@ -166,7 +166,7 @@ class ConnectionPool:
                     f"Connection pool exhausted (max_size={self._max_size}): "
                     f"все {size} соединений активны"
                 )
-            logger.info("pool: вытесняю LRU-соединение %s", key)
+            logger.info("pool: evicting LRU connection %s", key)
             await self._close(key)
 
     async def _close(self, key: Key) -> None:
@@ -177,7 +177,7 @@ class ConnectionPool:
         try:
             await self._manager.disconnect(entry.conn)
         except Exception:
-            logger.warning("disconnect упал для %s", key, exc_info=True)
+            logger.warning("disconnect failed for %s", key, exc_info=True)
 
     def _prune_locks(self) -> None:
         """Don't accumulate locks for users whose connections no longer exist."""

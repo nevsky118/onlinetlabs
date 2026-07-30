@@ -61,11 +61,11 @@ class SessionMonitorRegistry:
                     await observer.start(session_id, user_id, lab_slug, gns3_sid)
                     self._observers[session_id] = observer
                     logger.info(
-                        "LabProgressObserver запущен для %s (gns3_sid=%s)", session_id, gns3_sid
+                        "LabProgressObserver started for %s (gns3_sid=%s)", session_id, gns3_sid
                     )
             except Exception:
                 logger.warning(
-                    "Не удалось запустить LabProgressObserver для %s", session_id, exc_info=True
+                    "Failed to start LabProgressObserver for %s", session_id, exc_info=True
                 )
                 observer = None
 
@@ -89,14 +89,14 @@ class SessionMonitorRegistry:
         )
         self._monitors[session_id] = monitor
         await monitor.start_session(session_id, user_id, lab_slug, ctx)
-        logger.info("SessionMonitor запущен для %s", session_id)
+        logger.info("SessionMonitor started for %s", session_id)
 
     async def stop(self, session_id: str) -> None:
         """Stops the session monitor and removes it from the registry."""
         monitor = self._monitors.pop(session_id, None)
         if monitor:
             await monitor.stop_session()
-            logger.info("SessionMonitor остановлен для %s", session_id)
+            logger.info("SessionMonitor stopped for %s", session_id)
         # Stop the observer after the monitor
         observer = self._observers.pop(session_id, None)
         if observer:
@@ -104,7 +104,7 @@ class SessionMonitorRegistry:
                 await observer.stop()
             except Exception:
                 logger.warning(
-                    "Ошибка при остановке LabProgressObserver для %s", session_id, exc_info=True
+                    "Error while stopping LabProgressObserver for %s", session_id, exc_info=True
                 )
 
     async def stop_all(self) -> None:

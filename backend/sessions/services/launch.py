@@ -103,7 +103,7 @@ async def launch_session(
         result = await gns3_client.create_session(user_id, template_pid)
     except Exception:
         await _finalize_session_row(db_factory, str(session.id), "error", None)
-        logger.exception("Провижининг GNS3 упал для сессии %s", session.id)
+        logger.exception("GNS3 provisioning failed for session %s", session.id)
         raise
 
     meta = {

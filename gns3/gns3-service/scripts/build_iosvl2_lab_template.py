@@ -101,7 +101,7 @@ def build_template(force: bool) -> str:
         pc3 = tb.add_vpcs_node(client, project_id, name="PC3", x=100, y=300)
         pc4 = tb.add_vpcs_node(client, project_id, name="PC4", x=300, y=300)
 
-        # Резолвим (adapter, port) tuples динамически: у IOSvL2 свой port_segment_size.
+        # Resolve (adapter, port) tuples dynamically, IOSvL2 has its own port_segment_size.
         r1_gi00 = tb.resolve_port(client, project_id, r1, "GigabitEthernet0/0")
         r1_gi01 = tb.resolve_port(client, project_id, r1, "GigabitEthernet0/1")
         r2_gi00 = tb.resolve_port(client, project_id, r2, "GigabitEthernet0/0")

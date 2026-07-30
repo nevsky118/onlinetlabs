@@ -1,24 +1,24 @@
-# Шаблон словаря сущностей для EntitiesRegistry.
+# Entity dictionary template for EntitiesRegistry.
 
 from autotests.settings.delete_entities.entity_types import EntitiesTypes
 
 
 class EntitiesDictTemplate:
     """
-    Создаёт шаблон структуры словаря сущностей.
+    Creates the template for the entity dictionary structure.
 
-    Ключ — тип сущности, значение — пустой список.
+    The key is the entity type, the value is an empty list.
     """
 
     @staticmethod
     def new_entities_dict() -> dict[str, list]:
         """
-        Возвращает шаблон словаря сущностей.
+        Returns the entity dictionary template.
 
-        :return: Словарь с ключами-сущностями и пустыми списками.
+        :return: A dictionary with entity keys and empty lists.
         """
         return {
-            # Порядок важен: верхние сущности удаляются первыми.
+            # Order matters, the entities listed first are deleted first.
             EntitiesTypes.gns3_project.name: [],
             EntitiesTypes.gns3_session.name: [],
             EntitiesTypes.learning_session.name: [],

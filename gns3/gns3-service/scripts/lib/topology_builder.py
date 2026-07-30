@@ -1,8 +1,8 @@
-# Общие GNS3-операции для build_*_lab_template.py.
+# Shared GNS3 operations for build_*_lab_template.py.
 #
-# Сюда вынесены аутентификация, поиск шаблонов/проектов, добавление узлов
-# и создание линков. Каждый build-скрипт собирает свою топологию поверх этих
-# примитивов, не дублируя HTTP-вызовы.
+# Authentication, template/project lookup, node creation and link creation live
+# here. Every build script assembles its own topology on top of these
+# primitives without duplicating the HTTP calls.
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import httpx
 
 
 def authenticate(client: httpx.Client, username: str, password: str) -> None:
-    """Авторизоваться у GNS3 и подставить Bearer в клиент."""
+    """Authenticate against GNS3 and set the Bearer token on the client."""
     response = client.post(
         "/v3/access/users/authenticate",
         json={"username": username, "password": password},
@@ -62,7 +62,7 @@ def add_node_from_template(
     y: int,
     rename: str | None = None,
 ) -> str:
-    """Развернуть узел из шаблона на координатах x/y, опционально переименовать."""
+    """Deploy a node from a template at coordinates x/y, optionally renaming it."""
     response = client.post(
         f"/v3/projects/{project_id}/templates/{template_id}",
         json={"x": x, "y": y},
@@ -90,7 +90,7 @@ def add_raw_node(
     y: int,
     symbol: str,
 ) -> str:
-    """Создать узел без шаблона (ethernet_switch, vpcs и т.п.)."""
+    """Create a node without a template (ethernet_switch, vpcs, and so on)."""
     response = client.post(
         f"/v3/projects/{project_id}/nodes",
         json={
@@ -114,7 +114,7 @@ def add_vpcs_node(
     x: int,
     y: int,
 ) -> str:
-    """Обёртка для VPCS с дефолтным символом GNS3 (affinity blue client) — как у нативного VPCS."""
+    """Wrapper for VPCS with the default GNS3 symbol (affinity blue client), same as native VPCS."""
     return add_raw_node(
         client,
         project_id,
@@ -138,7 +138,7 @@ def resolve_port(
     node_id: str,
     port_name: str,
 ) -> tuple[int, int]:
-    """Найти (adapter_number, port_number) по имени порта из ports[]."""
+    """Find (adapter_number, port_number) by the port name from ports[]."""
     node = get_node(client, project_id, node_id)
     for port in node.get("ports", []):
         if port.get("name") == port_name:
@@ -161,7 +161,7 @@ def link(
     a_adapter: int = 0,
     b_adapter: int = 0,
 ) -> None:
-    """Соединить два узла по указанным adapter/port."""
+    """Connect two nodes on the given adapter/port."""
     response = client.post(
         f"/v3/projects/{project_id}/links",
         json={
@@ -182,11 +182,11 @@ def configure_switch_vlans(
     access_ports: dict[int, int] | None = None,
     trunk_ports: tuple[int, ...] = (),
 ) -> None:
-    """Настроить ethernet_switch: access-порты и dot1q-транки.
+    """Configure an ethernet_switch, access ports and dot1q trunks.
 
-    access_ports: маппинг port_number -> vlan_id для access-портов.
-    trunk_ports: список port_number, которые надо перевести в dot1q-trunk.
-    По умолчанию (наш OSPF+VLAN таргет): Eth0->vlan10, Eth1->vlan20, Eth2 trunk.
+    access_ports: mapping of port_number -> vlan_id for access ports.
+    trunk_ports: list of port_number values to switch over to a dot1q trunk.
+    Defaults match our OSPF+VLAN target, Eth0->vlan10, Eth1->vlan20, Eth2 trunk.
     """
     if access_ports is None:
         access_ports = {0: 10, 1: 20}
@@ -237,11 +237,12 @@ def set_console_type(
     node_id: str,
     console_type: str,
 ) -> None:
-    """Выставить console_type узла (например none для docker-узлов).
+    """Set the console_type of a node (for example none for docker nodes).
 
-    FRR docker-узлам ставим none: GNS3 не пытается приаттачить telnet-консоль
-    через WS к Docker API, что падает на Docker Desktop macOS (handshake 400) и
-    роняет старт узла. Роутеры авто-настроены, консоль им не нужна.
+    FRR docker nodes get none so that GNS3 does not try to attach a telnet
+    console over WS to the Docker API, which fails on Docker Desktop macOS
+    (handshake 400) and breaks the node start. The routers are auto-configured,
+    they do not need a console.
     """
     response = client.put(
         f"/v3/projects/{project_id}/nodes/{node_id}",
@@ -256,10 +257,10 @@ def append_docker_env(
     node_id: str,
     extra_env: str,
 ) -> None:
-    """Дописать env-переменные в properties.environment docker-узла.
+    """Append env variables to properties.environment of a docker node.
 
-    GNS3 хранит env как newline-separated строку. Сохраняем уже выставленные
-    шаблоном FRR_*, дописываем role-specific (например, FRR_ROLE=R1).
+    GNS3 stores env as a newline-separated string. We keep the FRR_* values the
+    template already set and append role-specific ones (for example FRR_ROLE=R1).
     """
     get_response = client.get(f"/v3/projects/{project_id}/nodes/{node_id}")
     get_response.raise_for_status()

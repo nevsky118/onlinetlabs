@@ -58,11 +58,11 @@ logger = logging.getLogger(__name__)
 
 
 async def _restore_session_monitors(monitor_registry: SessionMonitorRegistry) -> None:
-    """Перезапускает SessionMonitor для активных сессий после рестарта backend.
+    """Restarts the SessionMonitor for active sessions after a backend restart.
 
-    Реестр мониторов живёт в памяти (app.state) и теряется при перезапуске
-    контейнера, поэтому без восстановления активные сессии остаются без
-    проактивных интервенций до повторного launch.
+    The monitor registry lives in memory (app.state) and is lost when the
+    container restarts, so without this restore the active sessions are left
+    without proactive interventions until the next launch.
     """
     from sqlalchemy import select
 
@@ -76,7 +76,7 @@ async def _restore_session_monitors(monitor_registry: SessionMonitorRegistry) ->
             )
             sessions = result.scalars().all()
     except Exception:
-        logger.warning("Не удалось загрузить активные сессии для мониторинга", exc_info=True)
+        logger.warning("Failed to load active sessions for monitoring", exc_info=True)
         return
 
     for session in sessions:
@@ -84,19 +84,17 @@ async def _restore_session_monitors(monitor_registry: SessionMonitorRegistry) ->
             ctx = build_session_context(session)
             await monitor_registry.start(session.id, session.user_id, session.lab_slug, ctx)
         except Exception:
-            logger.warning(
-                "Не удалось восстановить SessionMonitor для %s", session.id, exc_info=True
-            )
+            logger.warning("Failed to restore the SessionMonitor for %s", session.id, exc_info=True)
     if sessions:
-        logger.info("Восстановлено мониторов сессий: %d", len(sessions))
+        logger.info("Session monitors restored: %d", len(sessions))
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Поднимает зависимости приложения, кладёт их в app.state и корректно гасит при остановке.
+    """Brings up app dependencies, puts them in app.state and shuts them down cleanly on stop.
 
-    Создаёт MCP-клиент, шлюз, оркестратор, клиенты и фоновые задачи на старте
-    и закрывает соединения и задачи на выходе.
+    Creates the MCP client, the gateway, the orchestrator, the clients and the
+    background tasks on startup, and closes the connections and tasks on exit.
     """
     mcp_client = MCPClient(settings.mcp.server_url)
     gateway = WebSocketGateway()
@@ -154,7 +152,7 @@ app.state.limiter = limiter
 
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
-    """Возвращает 429 с понятным сообщением при превышении лимита запросов."""
+    """Returns 429 with a clear message when the request rate limit is exceeded."""
     return JSONResponse(
         status_code=429, content={"detail": "Слишком много запросов, попробуй чуть позже"}
     )
@@ -193,22 +191,22 @@ app.include_router(chat_router, tags=["chat"])
 
 @app.get("/")
 def root():
-    """Корневой эндпоинт с приветственным сообщением."""
+    """Root endpoint with a greeting message."""
     return {"message": "Hello World"}
 
 
 @app.get("/health")
 async def health():
-    """Мгновенная проверка живости процесса для k8s liveness. Без внешних вызовов."""
+    """Instant process liveness check for k8s liveness. No external calls."""
     return {"status": "ok"}
 
 
 @app.get("/health/deep")
 async def health_deep():
-    """Глубокая проверка зависимостей для readiness probe и алертов.
+    """Deep dependency check for the readiness probe and alerts.
 
-    Опрашивает БД, Redis и gns3-service. На 503 k8s выводит pod из ротации,
-    но не убивает его, чтобы временная просадка зависимости не каскадила.
+    Polls the DB, Redis and gns3-service. On a 503 k8s takes the pod out of
+    rotation but does not kill it, so a temporary dependency dip does not cascade.
     """
     checks: dict[str, str] = {}
     overall_ok = True

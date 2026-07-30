@@ -1,8 +1,8 @@
 name: Deploy GNS3
 
-# Ручной запуск: Actions → "Deploy GNS3" → Run workflow.
-# gns3-стек собирается НА СЕРВЕРЕ (нужны bind-mounts runtime/images + privileged + KVM).
-# Образы нод (images/) и runtime/ живут на сервере и rsync'ом НЕ перезаписываются.
+# Manual run: Actions → "Deploy GNS3" → Run workflow.
+# The gns3 stack is built ON THE SERVER (it needs the runtime/images bind-mounts + privileged + KVM).
+# Node images (images/) and runtime/ live on the server and are NOT overwritten by rsync.
 on:
   workflow_dispatch:
     inputs:
@@ -36,7 +36,7 @@ jobs:
             -in gns3/.env.prod.aes -out gns3/.env.prod \
             -pass pass:"${{ secrets.CONFIG_PASSWORD }}"
 
-      - name: Sync gns3 + mcp-sdk + workspace manifest + .dockerignore (images/ и runtime/ на сервере — не трогаем)
+      - name: Sync gns3 + mcp-sdk + workspace manifest + .dockerignore (images/ and runtime/ on the server are left untouched)
         run: |
           DST="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
           ssh "$DST" 'mkdir -p /opt/onlinetlabs/gns3'
@@ -45,7 +45,7 @@ jobs:
             --exclude '**/.venv' --exclude '**/node_modules' \
             --exclude 'images/' --exclude 'runtime/' \
             gns3/ "$DST:/opt/onlinetlabs/gns3/"
-          # gns3-service/gns3-mcp собираются с контекстом=корень репо → нужны mcp-sdk/ + .dockerignore
+          # gns3-service/gns3-mcp are built with context=repo root → they need mcp-sdk/ + .dockerignore
           rsync -az --delete --exclude '**/__pycache__' --exclude '**/.pytest_cache' \
             mcp-sdk/ "$DST:/opt/onlinetlabs/mcp-sdk/"
           # uv workspace: root manifest + lock — Dockerfiles resolve `--package
@@ -55,7 +55,7 @@ jobs:
           scp pyproject.toml uv.lock "$DST:/opt/onlinetlabs/"
           scp .dockerignore "$DST:/opt/onlinetlabs/.dockerignore"
 
-      - name: Build + up (layered compose, KVM, общая сеть)
+      - name: Build + up (layered compose, KVM, shared network)
         run: |
           ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" '
             set -e

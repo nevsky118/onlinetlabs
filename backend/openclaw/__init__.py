@@ -1,1 +1,1 @@
-"""Интеграция с OpenClaw."""
+"""OpenClaw integration."""

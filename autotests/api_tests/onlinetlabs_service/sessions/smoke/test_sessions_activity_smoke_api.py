@@ -1,4 +1,4 @@
-# Smoke-тесты GET activity через backend.
+# Smoke tests for GET activity through the backend.
 
 import pytest
 
@@ -15,7 +15,7 @@ from autotests.settings.utils.utils import check_response_status
 @pytest.mark.smoke
 @pytest.mark.asyncio
 class TestSessionsActivitySmokeApi:
-    """Smoke-тесты /users/me/sessions/{id}/activity."""
+    """Smoke tests for /users/me/sessions/{id}/activity."""
 
     @pytest.fixture(autouse=True)
     def setup(self, anon_client, config):
@@ -26,7 +26,7 @@ class TestSessionsActivitySmokeApi:
     @autotest.external_id("73111111-7777-4777-7777-777777777777")
     @autotest.name("Sessions Smoke: GET .../activity — 200")
     async def test_73111111_activity_200(self):
-        """GET activity возвращает 200 и поля events/nextCursor."""
+        """GET activity returns 200 and the events/nextCursor fields."""
         # Arrange
         session_id = await self.sessions_helper.launch_and_wait_active("autotest-lab")
         query = ActivityQueryData(limit=10)

@@ -1,6 +1,6 @@
-"""Заполнение labs.gns3_template_project_id из скриптов сборки шаблонов GNS3.
+"""Populate labs.gns3_template_project_id from the GNS3 template build scripts.
 
-Идемпотентно. Запуск: python -m scripts.seed_lab_templates
+Idempotent. Run with: python -m scripts.seed_lab_templates
 """
 
 import asyncio

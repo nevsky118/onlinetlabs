@@ -1,4 +1,4 @@
-"""Unit-тесты Pydantic-моделей state."""
+"""Unit tests for the state Pydantic models."""
 
 from datetime import UTC, datetime
 
@@ -12,7 +12,7 @@ from src.models import (
 
 
 class TestNodeState:
-    """Конструирование NodeState."""
+    """Constructing a NodeState."""
 
     def test_node_state_parses(self):
         node = NodeState(
@@ -29,7 +29,7 @@ class TestNodeState:
 
 
 class TestSessionStateResponse:
-    """Конструирование агрегированного state-ответа."""
+    """Constructing the aggregated state response."""
 
     def test_session_state_response_constructs(self):
         state = SessionStateResponse(

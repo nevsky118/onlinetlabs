@@ -1,4 +1,4 @@
-"""Отчёт по оценке идентификатора П1: рабочая кривая + матрица путаницы + first-match."""
+"""Report on the evaluation of identifier P1. Operating curve, confusion matrix, first-match."""
 
 import asyncio
 
@@ -16,7 +16,7 @@ from evaluation.scenarios import (
 )
 from learning_analytics.process_state import ProcessRegime
 
-# Порядок режимов для матрицы 5×5
+# Regime order for the 5×5 matrix
 _REGIMES = [
     ProcessRegime.PRODUCTIVE,
     ProcessRegime.REPEATING_ERRORS,
@@ -25,7 +25,7 @@ _REGIMES = [
     ProcessRegime.IDLE,
 ]
 
-# Человекочитаемые метки
+# Human-readable labels
 _LABELS = {
     ProcessRegime.PRODUCTIVE: "PROD",
     ProcessRegime.REPEATING_ERRORS: "REP",
@@ -36,7 +36,7 @@ _LABELS = {
 
 
 def _build_synthetic():
-    """3-5 сценариев на каждый тип + 5 нормальных."""
+    """3-5 scenarios per type plus 5 normal ones."""
     scns = []
     for regime in [
         ProcessRegime.REPEATING_ERRORS,
@@ -52,7 +52,7 @@ def _build_synthetic():
 
 
 def _per_type_recall(pairs, curve_t_k, config) -> dict[ProcessRegime, float]:
-    """Recall по каждому типу при данном T_k."""
+    """Recall for each type at the given T_k."""
     from evaluation.harness import run_identifier
     from evaluation.scenarios import is_normal
 
@@ -76,7 +76,7 @@ def _per_type_recall(pairs, curve_t_k, config) -> dict[ProcessRegime, float]:
 
 
 async def main():
-    # Конфиг и стоимости
+    # Config and costs
     try:
         settings = load_settings()
         cfg = settings.learning_analytics
@@ -87,20 +87,20 @@ async def main():
 
     costs = Costs(c_stuck=1.0, c_intervention=1.0, c_false=5.0)
 
-    # Синтетический датасет (всегда)
+    # Synthetic dataset (always)
     scns = _build_synthetic()
 
-    # Без реального харвестинга (не подключён к БД в этом режиме) labeled-real-N остаётся 0
+    # Without real harvesting (not connected to the DB in this mode) labeled-real-N stays 0
     labeled_real_n = 0
 
     n_synth = sum(1 for s in scns if s.source == "synthetic")
     n_real = sum(1 for s in scns if s.source == "real")
 
-    # Рабочая кривая
+    # Operating curve
     curve = operating_curve(scns, cfg.eval_t_k_grid, cfg, costs)
     best = j_optimal(curve)
 
-    # Матрица и recall на J-оптимальном T_k
+    # Matrix and recall at the J-optimal T_k
     from evaluation.harness import run_identifier
 
     pairs_best = [(scn, run_identifier(scn, best.t_k, cfg)) for scn in scns]
@@ -108,7 +108,7 @@ async def main():
     per_type = _per_type_recall(pairs_best, best.t_k, cfg)
     diag = first_match_diagnostics(scns, cfg)
 
-    # ── (a) Рабочая кривая ───────────────────────────────────────────────────
+    # ── (a) Operating curve ──────────────────────────────────────────────────
     print("# Оценка идентификатора П1 — рабочая кривая\n")
     print("| T_k (с) | latency медиана (с) | ложные/час | recall | J |")
     print("|-|-|-|-|-|")
@@ -121,7 +121,7 @@ async def main():
 
     print(f"\n_* J-оптимум при T_k={best.t_k:.0f}с_\n")
 
-    # ── (b) Матрица путаницы 5×5 ─────────────────────────────────────────────
+    # ── (b) 5×5 confusion matrix ─────────────────────────────────────────────
     print("## Матрица путаницы 5×5 @ J-оптимум\n")
     header_cols = " | ".join(_LABELS[r] for r in _REGIMES)
     print(f"| truth\\pred | {header_cols} |")
@@ -139,7 +139,7 @@ async def main():
         print(f"| {_LABELS[r]} | {rec:.2f} |")
     print()
 
-    # ── (d) First-match диагностика ─────────────────────────────────────────
+    # ── (d) First-match diagnostics ─────────────────────────────────────────
     print("## First-match диагностика\n")
     print(f"- total_firing_snapshots: {diag['total_firing_snapshots']}")
     print(f"- multi_match_rate: {diag['multi_match_rate']:.3f}")
@@ -155,7 +155,7 @@ async def main():
         print("\n> ⚠ **Предварительно**: labeled-real-N < 10; метрики только по синтетике.")
     print()
 
-    # ── (f) Методологическое примечание ─────────────────────────────────────
+    # ── (f) Methodological note ─────────────────────────────────────────────
     print(
         "> **NOTE:** Плоский T_k — операционная характеристика идентификатора; "
         "per-regime пороги dwell_thresholds выводятся в Задаче 2 (derive_thresholds)."

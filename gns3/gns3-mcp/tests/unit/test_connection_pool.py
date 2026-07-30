@@ -1,8 +1,8 @@
-"""ConnectionPool: LRU-вытеснение, idle-TTL, health-check, backpressure.
+"""ConnectionPool, LRU eviction, idle TTL, health check, backpressure.
 
-Регрессия: пул не освобождал слоты и после max_size УНИКАЛЬНЫХ пользователей
-навсегда переставал выдавать соединения («Connection pool exhausted») — на пилоте
-в 50 студентов MCP-сервер становился кирпичом до рестарта.
+Regression. The pool did not free slots and, after max_size UNIQUE users, stopped
+handing out connections forever ("Connection pool exhausted"). In the 50-student
+pilot the MCP server turned into a brick until restart.
 """
 
 import mcp_sdk.connection as conn_mod
@@ -22,7 +22,7 @@ def _ctx(user_id: str) -> SessionContext:
 
 
 class _FakeTime:
-    """Управляемые часы: подменяют модуль time внутри mcp_sdk.connection."""
+    """Controllable clock that substitutes the time module inside mcp_sdk.connection."""
 
     def __init__(self) -> None:
         self._t = 1000.0
@@ -87,7 +87,7 @@ class TestConnectionPool:
         with autotest.step("Заполняем пул двумя пользователями и даём им остыть"):
             u1 = await pool.get_connection(_ctx("u1"))
             await pool.get_connection(_ctx("u2"))
-            clock.advance(60.0)  # оба соединения перестали быть «горячими»
+            clock.advance(60.0)  # both connections are no longer "hot"
 
         with autotest.step("Третий пользователь получает соединение без ошибки"):
             third = await pool.get_connection(_ctx("u3"))
@@ -109,7 +109,7 @@ class TestConnectionPool:
             for i in range(10):
                 conn = await pool.get_connection(_ctx(f"u{i}"))
                 assert conn is not None
-                clock.advance(5.0)  # предыдущие успевают остыть
+                clock.advance(5.0)  # the previous ones have time to cool down
 
         with autotest.step("Пул не «закирпичился»: размер в пределах max_size"):
             assert pool.size <= 3
@@ -141,7 +141,7 @@ class TestConnectionPool:
         with autotest.step("Берём соединение, ждём дольше health_check_interval"):
             dead = await pool.get_connection(_ctx("u1"))
             clock.advance(20.0)
-            mgr.alive = False  # соединение умерло
+            mgr.alive = False  # the connection died
 
         with autotest.step("Повторный запрос переоткрывает соединение"):
             fresh = await pool.get_connection(_ctx("u1"))

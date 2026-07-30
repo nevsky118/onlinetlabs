@@ -1,4 +1,4 @@
-# Singleton-реестр сущностей, созданных в автотестах.
+# Singleton registry of entities created by the autotests.
 
 from autotests.settings.configuration.config_model import ConfigModel
 from autotests.settings.delete_entities.entities_dict_template import EntitiesDictTemplate
@@ -9,9 +9,9 @@ from autotests.settings.utils.utils import get_current_test_name
 
 class EntitiesRegistry(metaclass=Singleton):
     """
-    Менеджер хранения данных о сущностях, созданных в автотестах.
+    Manager that stores data about entities created by the autotests.
 
-    Позволяет добавлять сущности по ID/имени, получать и очищать данные после теста.
+    Lets you add entities by ID or name, then read and clear the data after a test.
     """
 
     _main_delete_dict: dict = {}
@@ -34,10 +34,10 @@ class EntitiesRegistry(metaclass=Singleton):
 
     def add_name(self, ent_type: EntitiesTypes, ent_param: str):
         """
-        Добавляет наименование сущности в хранилище.
+        Adds an entity name to the storage.
 
-        :param ent_type: Тип сущности.
-        :param ent_param: Наименование сущности.
+        :param ent_type: Entity type.
+        :param ent_param: Entity name.
         """
         test_name = get_current_test_name()
         if test_name not in self._main_delete_dict:
@@ -46,10 +46,10 @@ class EntitiesRegistry(metaclass=Singleton):
 
     def add_id(self, ent_type: EntitiesTypes, ent_param):
         """
-        Добавляет ID сущности в хранилище.
+        Adds an entity ID to the storage.
 
-        :param ent_type: Тип сущности.
-        :param ent_param: ID сущности.
+        :param ent_type: Entity type.
+        :param ent_param: Entity ID.
         """
         test_name = get_current_test_name()
         if test_name not in self._main_delete_dict:
@@ -58,10 +58,10 @@ class EntitiesRegistry(metaclass=Singleton):
 
     def add_ids(self, ent_type: EntitiesTypes, ent_param: list):
         """
-        Добавляет список ID сущностей в хранилище.
+        Adds a list of entity IDs to the storage.
 
-        :param ent_type: Тип сущности.
-        :param ent_param: Список ID.
+        :param ent_type: Entity type.
+        :param ent_param: List of IDs.
         """
         test_name = get_current_test_name()
         if test_name not in self._main_delete_dict:
@@ -70,10 +70,10 @@ class EntitiesRegistry(metaclass=Singleton):
 
     def add_data(self, ent_type: EntitiesTypes, ent_param: dict):
         """
-        Добавляет данные сущности в хранилище.
+        Adds entity data to the storage.
 
-        :param ent_type: Тип сущности.
-        :param ent_param: Данные сущности.
+        :param ent_type: Entity type.
+        :param ent_param: Entity data.
         """
         test_name = get_current_test_name()
         if test_name not in self._main_delete_dict:
@@ -82,43 +82,43 @@ class EntitiesRegistry(metaclass=Singleton):
 
     def get_names(self, test_name: str) -> dict[str, list]:
         """
-        Получает все наименования сущностей для теста.
+        Gets all entity names for a test.
 
-        :param test_name: Имя теста.
-        :return: Словарь наименований.
+        :param test_name: Test name.
+        :return: Dictionary of names.
         """
         return self._main_delete_dict[test_name]["names_dict"]
 
     def get_ids(self, test_name: str) -> dict[str, list]:
         """
-        Получает все ID сущностей для теста.
+        Gets all entity IDs for a test.
 
-        :param test_name: Имя теста.
-        :return: Словарь ID.
+        :param test_name: Test name.
+        :return: Dictionary of IDs.
         """
         return self._main_delete_dict[test_name]["ids_dict"]
 
     def get_ids_by_name(self, test_name: str) -> dict[str, list]:
         """
-        Получает все ID по наименованию для теста.
+        Gets all IDs keyed by name for a test.
 
-        :param test_name: Имя теста.
-        :return: Словарь ID по именам.
+        :param test_name: Test name.
+        :return: Dictionary of IDs by name.
         """
         return self._main_delete_dict[test_name]["ids_name_dict"]
 
     def get_data(self, test_name: str) -> dict[str, list]:
         """
-        Получает все данные сущностей для теста.
+        Gets all entity data for a test.
 
-        :param test_name: Имя теста.
-        :return: Словарь данных.
+        :param test_name: Test name.
+        :return: Dictionary of data.
         """
         return self._main_delete_dict[test_name]["data_dict"]
 
     def get_config(self) -> ConfigModel:
         """
-        Возвращает сохранённую конфигурацию.
+        Returns the stored configuration.
 
         :return: ConfigModel.
         """
@@ -126,9 +126,9 @@ class EntitiesRegistry(metaclass=Singleton):
 
     def has_test(self, test_name: str) -> bool:
         """
-        Проверяет наличие сущностей для теста.
+        Checks whether entities exist for a test.
 
-        :param test_name: Имя теста.
-        :return: True, если есть данные.
+        :param test_name: Test name.
+        :return: True if there is data.
         """
         return test_name in self._main_delete_dict

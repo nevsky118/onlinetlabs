@@ -1,10 +1,10 @@
-# Data-генераторы для progress-эндпоинтов.
+# Data generators for the progress endpoints.
 
 from autotests.settings.utils.data_generator_abstraction import DataAbstractionGenerator
 
 
 class StepAttemptData(DataAbstractionGenerator):
-    """Payload для POST .../steps/{step_slug}/attempt."""
+    """Payload for POST .../steps/{step_slug}/attempt."""
 
     def __init__(self, result: str = "pass", score: float | None = 1.0,
                  error_details: dict | None = None):

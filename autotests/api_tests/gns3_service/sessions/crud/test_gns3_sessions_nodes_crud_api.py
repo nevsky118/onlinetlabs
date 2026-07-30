@@ -23,7 +23,7 @@ class TestGns3SessionsNodesCrudApi:
     @autotest.external_id("e1111111-eeee-4eee-eeee-eeeeeeeeeeee")
     @autotest.name("Gns3 CRUD: node action 404 при unknown session")
     async def test_e1111111_404_unknown_session(self):
-        """Действие над несуществующей сессией → 404."""
+        """An action on a nonexistent session results in 404."""
         response = await self.gns3_sessions_api.post_node_action(
             "00000000-0000-0000-0000-000000000000", "node-x", "start",
         )
@@ -33,7 +33,7 @@ class TestGns3SessionsNodesCrudApi:
     @autotest.external_id("e2222222-eeee-4eee-eeee-eeeeeeeeeeee")
     @autotest.name("Gns3 CRUD: invalid action 422")
     async def test_e2222222_invalid_action_422(self):
-        """Невалидное действие (destroy) → 422 от FastAPI Literal-валидации."""
+        """An invalid action (destroy) results in 422 from the FastAPI Literal validation."""
         response = await self.gns3_sessions_api.post_node_action(
             "00000000-0000-0000-0000-000000000000", "node-x", "destroy",
         )
@@ -43,7 +43,7 @@ class TestGns3SessionsNodesCrudApi:
     @autotest.external_id("e3333333-eeee-4eee-eeee-eeeeeeeeeeee")
     @autotest.name("Gns3 CRUD: node action 409 при закрытой сессии")
     async def test_e3333333_409_closed_session(self):
-        """Действие над закрытой (удалённой) сессией → 409."""
+        """An action on a closed (deleted) session results in 409."""
         with autotest.step("Создаём GNS3 сессию"):
             session_dict = await self.gns3_sessions_helper.create_session()
         session_id = session_dict["session_id"]

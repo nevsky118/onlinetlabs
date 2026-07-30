@@ -1,5 +1,5 @@
-# Единый conftest для всех автотестов.
-# Реальные HTTP-запросы на бэкенд, генерация токенов через API.
+# Single conftest for all autotests.
+# Real HTTP requests to the backend, token generation through the API.
 
 import logging
 import os
@@ -19,14 +19,14 @@ from autotests.settings.delete_entities.entities_helper_api import EntitiesHelpe
 from autotests.settings.utils.utils import get_current_test_name
 
 
-# Хуки Pytest
+# Pytest hooks
 
 
 def pytest_addoption(parser):
     """
-    Добавляет пользовательские опции командной строки для pytest.
+    Adds custom command line options for pytest.
 
-    :param parser: Объект парсера опций Pytest.
+    :param parser: Pytest option parser object.
     """
     parser.addoption(
         "--envFile",
@@ -43,9 +43,9 @@ def pytest_addoption(parser):
 
 def pytest_configure(config):
     """
-    Хук инициализации Pytest — настраивает pytest-html при --htmlReport.
+    Pytest initialization hook. Configures pytest-html when --htmlReport is set.
 
-    :param config: Объект конфигурации Pytest.
+    :param config: Pytest configuration object.
     """
     if config.getoption("--htmlReport"):
         os.makedirs("logs/reports", exist_ok=True)
@@ -55,23 +55,23 @@ def pytest_configure(config):
         config.option.htmlpath = os.path.join("logs", "reports", filename)
 
 
-# Конфигурация
+# Configuration
 
 
 @pytest.fixture(scope="session")
 def config(pytestconfig) -> ConfigModel:
     """
-    Сессионная фикстура, загружающая конфигурацию из .env-файла.
+    Session fixture that loads the configuration from an .env file.
 
-    :param pytestconfig: Объект конфигурации Pytest.
-    :return: Объект ConfigModel с параметрами окружения.
+    :param pytestconfig: Pytest configuration object.
+    :return: ConfigModel object with the environment parameters.
     """
     env_path = pytestconfig.getoption("envFile")
 
     if env_path is None:
         return EnvConfigLoader().load_from_environ()
 
-    # Приводим к абсолютному пути относительно корня проекта
+    # Resolve to an absolute path relative to the project root
     if not os.path.isabs(env_path):
         project_root = os.path.abspath(os.path.dirname(__file__))
         env_path = os.path.join(project_root, env_path)
@@ -82,7 +82,7 @@ def config(pytestconfig) -> ConfigModel:
     return EnvConfigLoader().load(env_path=env_path)
 
 
-# Генерация токенов через реальный API
+# Token generation through the real API
 
 
 _TEST_PASSWORD = "test_password_12345"
@@ -91,8 +91,8 @@ _TEST_PASSWORD = "test_password_12345"
 @pytest_asyncio.fixture(scope="session", loop_scope="session")
 async def _ensure_test_users(config):
     """
-    Регистрирует тестовых пользователей, обновляет account.sub реальным UUID.
-    После всех тестов — удаляет созданных пользователей.
+    Registers test users and updates account.sub with the real UUID.
+    After all tests it deletes the created users.
     """
     from autotests.api.api_methods.onlinetlabs_service.auth_api import AuthApi
 
@@ -142,8 +142,8 @@ async def _ensure_test_users(config):
 @pytest_asyncio.fixture(scope="session", loop_scope="session")
 async def _ensure_gns3_template_project(config):
     """
-    Создаёт шаблонный проект в GNS3 через gns3-service API.
-    После тестов — удаляет.
+    Creates a template project in GNS3 through the gns3-service API.
+    After the tests it deletes it.
     """
     from autotests.api.api_methods.gns3_service.gns3_projects_api import Gns3ProjectsApi
 
@@ -180,8 +180,8 @@ _TEST_LAB_SLUG = "autotest-lab"
 @pytest_asyncio.fixture(scope="session", loop_scope="session")
 async def _ensure_test_lab(config):
     """
-    Создаёт тестовую лабораторную через API бэкенда.
-    После тестов — удаляет.
+    Creates a test lab through the backend API.
+    After the tests it deletes it.
     """
     from autotests.api.api_methods.onlinetlabs_service.labs_api import LabsApi
 
@@ -220,7 +220,7 @@ async def _ensure_test_lab(config):
 @pytest_asyncio.fixture(scope="session", loop_scope="session")
 async def _generate_tokens(config, _ensure_test_users):
     """
-    Получает JWT-токены для всех аккаунтов через POST /auth/exchange.
+    Obtains JWT tokens for all accounts through POST /auth/exchange.
     """
     from autotests.api.api_methods.onlinetlabs_service.auth_api import AuthApi
 
@@ -241,32 +241,32 @@ async def _generate_tokens(config, _ensure_test_users):
                     )
 
 
-# HTTP-клиенты
+# HTTP clients
 
 
 @pytest_asyncio.fixture()
 async def anon_client(config, _generate_tokens, _ensure_gns3_template_project, _ensure_test_lab):
     """
-    AsyncClient для запросов от анонимного пользователя.
+    AsyncClient for requests made by an anonymous user.
 
-    :param config: Объект ConfigModel.
-    :param _generate_tokens: Фикстура генерации токенов.
-    :return: httpx.AsyncClient с base_url из конфига.
+    :param config: ConfigModel object.
+    :param _generate_tokens: Token generation fixture.
+    :return: httpx.AsyncClient with base_url taken from the config.
     """
     transport = httpx.AsyncHTTPTransport(retries=3)
     async with AsyncClient(base_url=config.base_url, timeout=60, transport=transport) as client:
         yield client
 
 
-# Очистка сущностей
+# Entity cleanup
 
 
 @pytest_asyncio.fixture(autouse=True)
 async def clean_entities_after_test():
     """
-    Автоматическая очистка созданных сущностей после выполнения каждого теста.
+    Automatic cleanup of created entities after each test run.
 
-    Проверяет, были ли созданы сущности в текущем тесте, и если да — удаляет их.
+    Checks whether entities were created in the current test and, if so, deletes them.
     """
     yield
 

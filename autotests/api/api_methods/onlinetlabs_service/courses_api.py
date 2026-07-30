@@ -1,4 +1,4 @@
-# Courses API — тонкие HTTP-обёртки для /courses/* эндпоинтов.
+# Courses API. Thin HTTP wrappers for the /courses/* endpoints.
 
 from httpx import AsyncClient, Response
 
@@ -10,11 +10,11 @@ from autotests.settings.reports import autotest
 
 class CoursesApi:
     """
-    HTTP-обёртки для courses-эндпоинтов.
+    HTTP wrappers for the courses endpoints.
 
-    :param client: HTTP-клиент (httpx.AsyncClient).
-    :param config: Объект ConfigModel с параметрами окружения.
-    :param account_name: Название учётной записи из конфигурации.
+    :param client: HTTP client (httpx.AsyncClient).
+    :param config: ConfigModel object with the environment parameters.
+    :param account_name: Account name from the configuration.
     """
 
     def __init__(
@@ -36,11 +36,11 @@ class CoursesApi:
         offset: int = 0,
     ) -> Response:
         """
-        GET /courses — список курсов.
+        GET /courses. List of courses.
 
-        :param limit: Макс. количество результатов.
-        :param offset: Смещение для пагинации.
-        :return: HTTP-ответ.
+        :param limit: Max number of results.
+        :param offset: Pagination offset.
+        :return: HTTP response.
         """
         with autotest.step("GET /courses"):
             return await self.api_client.get("", params={
@@ -50,10 +50,10 @@ class CoursesApi:
 
     async def get_course_by_slug(self, slug: str) -> Response:
         """
-        GET /courses/{slug} — получение курса по slug.
+        GET /courses/{slug}. Retrieves a course by slug.
 
-        :param slug: Slug курса.
-        :return: HTTP-ответ.
+        :param slug: Course slug.
+        :return: HTTP response.
         """
         with autotest.step(f"GET /courses/{slug}"):
             return await self.api_client.get(slug)

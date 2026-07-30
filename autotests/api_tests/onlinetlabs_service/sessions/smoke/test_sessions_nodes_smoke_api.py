@@ -1,4 +1,4 @@
-# Smoke-тесты POST node actions через backend.
+# Smoke tests for POST node actions through the backend.
 
 import pytest
 
@@ -13,7 +13,7 @@ from autotests.settings.utils.utils import check_response_status
 @pytest.mark.smoke
 @pytest.mark.asyncio
 class TestSessionsNodesSmokeApi:
-    """Smoke-тесты /users/me/sessions/{id}/nodes/*."""
+    """Smoke tests for /users/me/sessions/{id}/nodes/*."""
 
     @pytest.fixture(autouse=True)
     def setup(self, anon_client, config):
@@ -24,7 +24,7 @@ class TestSessionsNodesSmokeApi:
     @autotest.external_id("71111111-7777-4777-7777-777777777777")
     @autotest.name("Sessions Smoke: POST .../nodes/{id}/stop — 200")
     async def test_71111111_node_stop_200(self):
-        """POST per-node stop возвращает 200."""
+        """POST per-node stop returns 200."""
         # Arrange
         session_id = await self.sessions_helper.launch_and_wait_active("autotest-lab")
         node_id = await self.sessions_helper.pick_first_node_id(session_id)
@@ -41,7 +41,7 @@ class TestSessionsNodesSmokeApi:
     @autotest.external_id("72111111-7777-4777-7777-777777777777")
     @autotest.name("Sessions Smoke: POST .../nodes/stop (bulk) — 200")
     async def test_72111111_bulk_stop_200(self):
-        """POST bulk stop возвращает 200."""
+        """POST bulk stop returns 200."""
         # Arrange
         session_id = await self.sessions_helper.launch_and_wait_active("autotest-lab")
 

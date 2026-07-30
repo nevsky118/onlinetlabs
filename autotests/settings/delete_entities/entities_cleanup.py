@@ -1,4 +1,4 @@
-# Логика удаления сущностей после тестов.
+# Logic for deleting entities after the tests.
 
 import logging
 
@@ -11,7 +11,7 @@ logger = logging.getLogger("entities")
 
 class EntitiesCleanup:
     """
-    Удаление созданных в тестах сущностей по ID и имени.
+    Deletion of entities created by the tests, by ID and by name.
     """
 
     def __init__(self):
@@ -20,9 +20,9 @@ class EntitiesCleanup:
 
     async def delete_test_entities_by_id(self, test_name: str):
         """
-        Удаляет сущности по сохранённым ID.
+        Deletes entities by their stored IDs.
 
-        :param test_name: Имя теста.
+        :param test_name: Test name.
         """
         entities_ids = self.entities_registry.get_ids(test_name=test_name).items()
 
@@ -41,13 +41,13 @@ class EntitiesCleanup:
                         case EntitiesTypes.user.name:
                             await self.entities_helper_api.auth_api.delete_user(user_id=id_)
                 except Exception as ex:
-                    logger.error(f"[DeleteByID] Не удалось удалить {type_} - {ex}")
+                    logger.error(f"[DeleteByID] Failed to delete {type_} - {ex}")
 
     async def delete_test_entities_by_name(self, test_name: str):
         """
-        Удаляет сущности по сохранённым именам (поиск ID → удаление).
+        Deletes entities by their stored names, looking up the ID and then deleting.
 
-        :param test_name: Имя теста.
+        :param test_name: Test name.
         """
         entities_names = self.entities_registry.get_names(test_name=test_name).items()
 
@@ -56,11 +56,11 @@ class EntitiesCleanup:
                 try:
                     match type_:
                         case EntitiesTypes.user.name:
-                            logger.info(f"[DeleteByName] Ищем для удаления user - {name}")
-                            # TODO: поиск ID по имени → удаление
+                            logger.info(f"[DeleteByName] Looking up user to delete - {name}")
+                            # TODO: look up the ID by name, then delete
                 except Exception as ex:
-                    logger.error(f"[DeleteByName] Ошибка при поиске {type_} - {ex}")
+                    logger.error(f"[DeleteByName] Lookup failed for {type_} - {ex}")
 
 
-# Глобальный экземпляр
+# Global instance
 delete_test_entities = EntitiesCleanup()

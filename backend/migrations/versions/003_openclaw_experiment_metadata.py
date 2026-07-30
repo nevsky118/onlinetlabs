@@ -1,8 +1,8 @@
-"""Метаданные эксперимента OpenClaw
+"""OpenClaw experiment metadata
 
 Revision ID: 003
 Revises: 002
-Дата создания: 2026-05-16
+Create Date: 2026-05-16
 """
 
 from typing import Sequence, Union

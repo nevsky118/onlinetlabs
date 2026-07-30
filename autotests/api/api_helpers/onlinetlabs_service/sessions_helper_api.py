@@ -1,4 +1,4 @@
-# Sessions хелперы — композиция API-вызовов с данными и проверками.
+# Sessions helpers. Composition of API calls with data and checks.
 
 import asyncio
 
@@ -17,10 +17,10 @@ from autotests.settings.utils.utils import check_response_status
 
 class SessionsHelperApi:
     """
-    Высокоуровневые операции с сессиями.
+    High-level operations on sessions.
 
-    :param client: HTTP-клиент для выполнения запросов.
-    :param config: Объект ConfigModel с параметрами окружения.
+    :param client: HTTP client used to perform the requests.
+    :param config: ConfigModel object with the environment parameters.
     """
 
     def __init__(self, client: AsyncClient, config: ConfigModel):
@@ -31,10 +31,10 @@ class SessionsHelperApi:
 
     async def launch_session(self, lab_slug: str) -> dict:
         """
-        Запуск лабораторной сессии с проверкой (201) и регистрацией для очистки.
+        Launches a lab session with a check (201) and registration for cleanup.
 
-        :param lab_slug: Slug лабораторной работы.
-        :return: Тело ответа запуска сессии (session_id, status, gns3_*).
+        :param lab_slug: Lab slug.
+        :return: Body of the session launch response (session_id, status, gns3_*).
         """
         with autotest.step(f"Запускаем сессию для lab_slug={lab_slug}"):
             response = await self.sessions_api.post_session(data={"lab_slug": lab_slug})
@@ -52,10 +52,10 @@ class SessionsHelperApi:
 
     async def create_session(self, session_data: dict | None = None) -> dict:
         """
-        Создание сессии с проверкой и регистрацией для очистки.
+        Creates a session with a check and registration for cleanup.
 
-        :param session_data: Payload (если None — генерируется).
-        :return: Данные созданной сессии.
+        :param session_data: Payload (generated when None).
+        :return: Data of the created session.
         """
         if session_data is None:
             session_data = SessionCreateData().data
@@ -80,12 +80,12 @@ class SessionsHelperApi:
         timeout: float = 30.0,
     ) -> str:
         """
-        Запускает сессию и поллит GET до status=active. Возвращает session_id.
+        Launches a session and polls GET until status=active. Returns session_id.
 
-        :param lab_slug: Slug лабораторной работы.
-        :param timeout: Таймаут ожидания active-статуса, секунды.
-        :return: Идентификатор сессии.
-        :raises AssertionError: Если сессия не перешла в active за отведённое время.
+        :param lab_slug: Lab slug.
+        :param timeout: Timeout for waiting on the active status, in seconds.
+        :return: Session identifier.
+        :raises AssertionError: If the session did not move to active within the allotted time.
         """
         with autotest.step(f"Запускаем сессию и ждём active (lab_slug={lab_slug})"):
             launched = await self.launch_session(lab_slug)
@@ -103,10 +103,10 @@ class SessionsHelperApi:
 
     async def pick_first_node_id(self, session_id: str) -> str:
         """
-        Возвращает id первого узла из GET /state. Если узлов нет — pytest.skip.
+        Returns the id of the first node from GET /state. Calls pytest.skip if there are no nodes.
 
-        :param session_id: Идентификатор сессии.
-        :return: Идентификатор первого узла.
+        :param session_id: Session identifier.
+        :return: Identifier of the first node.
         """
         with autotest.step(f"Получаем первый node_id из state сессии {session_id}"):
             response = await self.sessions_api.get_session_state(session_id)

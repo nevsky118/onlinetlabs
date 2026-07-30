@@ -1,4 +1,4 @@
-"""Unit-тесты GNS3AdminClient UsersMixin."""
+"""Unit tests for GNS3AdminClient UsersMixin."""
 
 import httpx
 import pytest
@@ -9,7 +9,7 @@ from src.clients.admin import GNS3AdminClient
 
 
 class TestGns3AdminClientUsers:
-    """Unit-тесты управления пользователями через HTTP-обёртку."""
+    """Unit tests for user management through the HTTP wrapper."""
 
     @pytest.fixture
     def admin_client(self):

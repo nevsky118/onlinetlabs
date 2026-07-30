@@ -1,4 +1,4 @@
-"""Адаптер OpenClaw для интервенций платформы."""
+"""OpenClaw adapter for platform interventions."""
 
 from agents.hint.tools import HintTools
 from agents.orchestrator.models import InterventionInput, OrchestratorResponse
@@ -7,14 +7,14 @@ from openclaw.client import OpenClawClient, OpenClawCompletion
 
 
 class OpenClawInterventionAdapter:
-    """Преобразует вход интервенции платформы в запросы chat completions OpenClaw."""
+    """Converts a platform intervention input into OpenClaw chat completions requests."""
 
     def __init__(self, client: OpenClawClient):
         self._client = client
         self._hint_tools = HintTools()
 
     async def generate(self, input_data: InterventionInput) -> OrchestratorResponse:
-        """Сгенерировать нормализованный результат интервенции через OpenClaw."""
+        """Generates a normalized intervention result through OpenClaw."""
         completion = await self._client.complete(self._build_messages(input_data))
         metadata = self._metadata(completion)
 
@@ -38,7 +38,7 @@ class OpenClawInterventionAdapter:
         )
 
     def _build_messages(self, input_data: InterventionInput) -> list[dict]:
-        """Собрать OpenAI-совместимые сообщения для OpenClaw Gateway."""
+        """Builds OpenAI-compatible messages for the OpenClaw Gateway."""
         return [
             {
                 "role": "system",
@@ -52,7 +52,7 @@ class OpenClawInterventionAdapter:
         ]
 
     def _build_user_prompt(self, input_data: InterventionInput) -> str:
-        """Собрать детерминированный промпт из нормализованного контекста."""
+        """Builds a deterministic prompt from the normalized context."""
         context = input_data.context
         parts = [
             f"session_id: {input_data.session_id}",
@@ -71,7 +71,7 @@ class OpenClawInterventionAdapter:
         return "\n".join(parts)
 
     def _agent_context_prompt(self, value) -> str:
-        """Преобразовать AgentContext или словарь в текст промпта."""
+        """Converts an AgentContext or a dict into prompt text."""
         if value is None:
             return ""
         if hasattr(value, "to_prompt"):
@@ -81,7 +81,7 @@ class OpenClawInterventionAdapter:
         return str(value)
 
     def _build_data(self, input_data: InterventionInput, content: str) -> dict:
-        """Собрать полезную нагрузку ответа для существующих путей доставки."""
+        """Builds the response payload for the existing delivery paths."""
         if input_data.intervention_type == "tutor":
             return {"answer": content}
         hint_level = self._hint_tools.get_hint_level(
@@ -95,7 +95,7 @@ class OpenClawInterventionAdapter:
 
     @staticmethod
     def _metadata(completion: OpenClawCompletion) -> dict:
-        """Собрать метаданные трассировки для логирования эксперимента."""
+        """Builds the trace metadata for experiment logging."""
         metadata = {
             "model": completion.model,
             "provider": completion.provider,
@@ -109,7 +109,7 @@ class OpenClawInterventionAdapter:
 
     @staticmethod
     def _format_error(completion: OpenClawCompletion) -> str:
-        """Отформатировать ошибку адаптера без вызова другого бэкенда."""
+        """Formats the adapter error without calling another backend."""
         if completion.error_code and completion.error_message:
             return f"{completion.error_code}: {completion.error_message}"
         return completion.error_code or completion.error_message or "openclaw_error"

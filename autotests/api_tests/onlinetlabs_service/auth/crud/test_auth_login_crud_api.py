@@ -1,4 +1,4 @@
-# CRUD-тесты POST /auth/login.
+# CRUD tests for POST /auth/login.
 
 import pytest
 
@@ -13,7 +13,7 @@ from autotests.settings.utils.utils import check_response_status
 @pytest.mark.crud
 @pytest.mark.asyncio
 class TestAuthLoginCrudApi:
-    """CRUD-тесты POST /auth/login."""
+    """CRUD tests for POST /auth/login."""
 
     @pytest.fixture(autouse=True)
     def setup(self, anon_client, config):
@@ -24,7 +24,7 @@ class TestAuthLoginCrudApi:
     @autotest.external_id("e5f6a7b8-c9d0-1234-efab-345678901234")
     @autotest.name("Auth Login: success (200)")
     async def test_e5f6a7b8_login_success(self):
-        """Успешный логин после регистрации возвращает 200."""
+        """A successful login after registration returns 200."""
         # Arrange
         with autotest.step("Регистрируем пользователя"):
             reg_data = AuthRegisterData()
@@ -47,7 +47,7 @@ class TestAuthLoginCrudApi:
     @autotest.external_id("f6a7b8c9-d0e1-2345-fabc-456789012345")
     @autotest.name("Auth Login: wrong password (401)")
     async def test_f6a7b8c9_login_wrong_password(self):
-        """Логин с неверным паролем возвращает 401."""
+        """A login with a wrong password returns 401."""
         # Arrange
         with autotest.step("Регистрируем пользователя"):
             reg_data = AuthRegisterData()
@@ -70,7 +70,7 @@ class TestAuthLoginCrudApi:
     @autotest.external_id("a7b8c9d0-e1f2-3456-abcd-567890123456")
     @autotest.name("Auth Login: non-existent email (401)")
     async def test_a7b8c9d0_login_nonexistent_email(self):
-        """Логин с несуществующим email возвращает 401."""
+        """A login with a nonexistent email returns 401."""
         # Arrange
         login_data = AuthLoginData()
 

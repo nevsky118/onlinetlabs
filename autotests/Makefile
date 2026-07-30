@@ -1,4 +1,4 @@
-# Env лежат в deployment/<tier>/. Шифрование общими `make encrypt`/`make decrypt` из корня.
+# Env files live in deployment/<tier>/. Encryption uses the shared `make encrypt`/`make decrypt` from the repo root.
 ENV ?= local
 ENV_FILE := ../deployment/$(ENV)/autotests.env
 

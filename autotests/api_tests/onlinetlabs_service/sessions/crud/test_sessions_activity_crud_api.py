@@ -1,4 +1,4 @@
-# CRUD-тесты GET activity.
+# CRUD tests for GET activity.
 
 import pytest
 
@@ -11,7 +11,7 @@ from autotests.settings.reports import autotest
 @pytest.mark.crud
 @pytest.mark.asyncio
 class TestSessionsActivityCrudApi:
-    """CRUD-тесты /users/me/sessions/{id}/activity."""
+    """CRUD tests for /users/me/sessions/{id}/activity."""
 
     @pytest.fixture(autouse=True)
     def setup(self, anon_client, config):
@@ -21,7 +21,7 @@ class TestSessionsActivityCrudApi:
     @autotest.external_id("77111111-7777-4777-7777-777777777777")
     @autotest.name("Sessions CRUD: activity limit=0 → 422 или 404")
     async def test_77111111_limit_0_422(self):
-        """limit=0 даёт 422 от FastAPI Query, либо 404 при неизвестной сессии — оба валидны."""
+        """limit=0 gives 422 from FastAPI Query, or 404 for an unknown session, and both are valid."""
         # Act
         with autotest.step("GET activity с limit=0"):
             response = await self.sessions_api.get_session_activity(

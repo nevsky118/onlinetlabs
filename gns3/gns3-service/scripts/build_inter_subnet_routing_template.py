@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Сборка шаблона лабы inter-subnet-routing в GNS3 v3 (шлюз на FRR).
+"""Builds the inter-subnet-routing lab template in GNS3 v3 (FRR-based gateway).
 
-R1 = FRR Router с FRR_ROLE=GW: два IP-шлюза, ip forwarding, без OSPF.
-Печатает INTER_SUBNET_ROUTING_TEMPLATE_PROJECT_ID=<uuid>. Код выхода: 0 успех/уже есть, 2 нет шаблона FRR или ошибка API.
+R1 = FRR Router with FRR_ROLE=GW, two IP gateways, ip forwarding, no OSPF.
+Prints INTER_SUBNET_ROUTING_TEMPLATE_PROJECT_ID=<uuid>. Exit codes, 0 success or already exists, 2 no FRR template or API error.
 """
 
 from __future__ import annotations
@@ -60,9 +60,9 @@ def build_template(force: bool) -> str:
         pc1 = tb.add_vpcs_node(client, project_id, name="PC1", x=-300, y=0)
         pc2 = tb.add_vpcs_node(client, project_id, name="PC2", x=300, y=0)
 
-        # PC1 -> R1.eth0 (adapter 0): подсеть 192.168.1.0/24
+        # PC1 -> R1.eth0 (adapter 0), subnet 192.168.1.0/24
         tb.link(client, project_id, pc1, 0, r1, 0, a_adapter=0, b_adapter=0)
-        # PC2 -> R1.eth1 (adapter 1): подсеть 192.168.2.0/24
+        # PC2 -> R1.eth1 (adapter 1), subnet 192.168.2.0/24
         tb.link(client, project_id, pc2, 0, r1, 0, a_adapter=0, b_adapter=1)
 
         return project_id

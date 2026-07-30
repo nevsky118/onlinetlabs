@@ -1,4 +1,4 @@
-# Smoke-тесты GET /users/me/sessions/{id}/state.
+# Smoke tests for GET /users/me/sessions/{id}/state.
 
 import pytest
 
@@ -14,7 +14,7 @@ from autotests.settings.utils.utils import check_response_status
 @pytest.mark.smoke
 @pytest.mark.asyncio
 class TestSessionsStateSmokeApi:
-    """Smoke-тесты /users/me/sessions/{id}/state."""
+    """Smoke tests for /users/me/sessions/{id}/state."""
 
     @pytest.fixture(autouse=True)
     def setup(self, anon_client, config):
@@ -25,7 +25,7 @@ class TestSessionsStateSmokeApi:
     @autotest.external_id("70111111-7777-4777-7777-777777777777")
     @autotest.name("Sessions Smoke: GET .../state — 200")
     async def test_70111111_state_200(self):
-        """GET state активной сессии возвращает 200 и обязательные поля."""
+        """GET state of an active session returns 200 and the required fields."""
         # Arrange
         session_id = await self.sessions_helper.launch_and_wait_active("autotest-lab")
 

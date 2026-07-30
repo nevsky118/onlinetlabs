@@ -1,14 +1,14 @@
-# Метакласс Singleton (потокобезопасный).
+# Singleton metaclass (thread-safe).
 
 from threading import Lock
 
 
 class Singleton(type):
     """
-    Метакласс, реализующий паттерн Singleton.
+    Metaclass implementing the Singleton pattern.
 
-    Потокобезопасен. При повторных вызовах возвращает уже созданный экземпляр
-    и повторно вызывает __init__ с новыми аргументами.
+    Thread-safe. On repeated calls it returns the already created instance
+    and calls __init__ again with the new arguments.
     """
 
     _instances = {}

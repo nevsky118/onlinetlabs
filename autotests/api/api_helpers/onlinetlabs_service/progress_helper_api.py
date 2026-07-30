@@ -1,4 +1,4 @@
-# Progress хелперы — композиция API-вызовов с данными и проверками.
+# Progress helpers. Composition of API calls with data and checks.
 
 from httpx import AsyncClient
 
@@ -11,10 +11,10 @@ from autotests.settings.utils.utils import check_response_status
 
 class ProgressHelperApi:
     """
-    Высокоуровневые операции с прогрессом.
+    High-level operations on progress.
 
-    :param client: HTTP-клиент для выполнения запросов.
-    :param config: Объект ConfigModel с параметрами окружения.
+    :param client: HTTP client used to perform the requests.
+    :param config: ConfigModel object with the environment parameters.
     """
 
     def __init__(self, client: AsyncClient, config: ConfigModel):
@@ -24,10 +24,10 @@ class ProgressHelperApi:
 
     async def start_lab(self, lab_slug: str) -> dict:
         """
-        Начать лабораторную работу с проверкой.
+        Starts a lab with a check.
 
-        :param lab_slug: Slug лабораторной работы.
-        :return: Данные прогресса.
+        :param lab_slug: Lab slug.
+        :return: Progress data.
         """
         with autotest.step("Начинаем лабораторную"):
             response = await self.progress_api.post_start_lab(lab_slug=lab_slug)

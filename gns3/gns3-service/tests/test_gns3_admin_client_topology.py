@@ -1,4 +1,4 @@
-"""Unit-тесты GNS3AdminClient.get_nodes / get_links."""
+"""Unit tests for GNS3AdminClient.get_nodes / get_links."""
 
 import pytest
 import respx
@@ -8,7 +8,7 @@ from src.clients.admin import GNS3AdminClient
 
 
 class TestGns3AdminClientTopology:
-    """Unit-тесты получения топологии через HTTP-обёртку."""
+    """Unit tests for fetching the topology through the HTTP wrapper."""
 
     @pytest.fixture
     def admin_client(self):

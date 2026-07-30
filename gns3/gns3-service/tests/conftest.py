@@ -1,10 +1,10 @@
-"""Общие builders и фикстуры для unit-тестов gns3-service."""
+"""Shared builders and fixtures for the gns3-service unit tests."""
 
 import os
 
-# Сидируем env до любого импорта src.config — settings ленивые, но как только
-# роутерные тесты дотягиваются до settings.security.internal_api_token, грузится
-# полная модель. Дефолты не должны конфликтовать с реальными .env переменными.
+# Seed env before any import of src.config. Settings are lazy, but as soon as
+# the router tests reach settings.security.internal_api_token, the full model
+# gets loaded. The defaults must not conflict with real .env variables.
 os.environ.setdefault("GNS3_URL", "http://gns3:3080")
 os.environ.setdefault("GNS3_ADMIN_USER", "admin")
 os.environ.setdefault("GNS3_ADMIN_PASSWORD", "admin")
@@ -20,7 +20,7 @@ import pytest
 
 
 def build_gns3_node(**overrides) -> dict:
-    """Сборка JSON-структуры узла GNS3 API."""
+    """Builds the JSON structure of a GNS3 API node."""
     defaults = {
         "node_id": "node-1",
         "project_id": "project-1",
@@ -38,7 +38,7 @@ def build_gns3_node(**overrides) -> dict:
 
 
 def build_gns3_link(**overrides) -> dict:
-    """Сборка JSON-структуры связки GNS3 API."""
+    """Builds the JSON structure of a GNS3 API link."""
     defaults = {
         "link_id": "link-1",
         "project_id": "project-1",
@@ -54,7 +54,7 @@ def build_gns3_link(**overrides) -> dict:
 
 
 def build_gns3_project(**overrides) -> dict:
-    """Сборка JSON-структуры проекта GNS3 API."""
+    """Builds the JSON structure of a GNS3 API project."""
     defaults = {
         "project_id": "project-1",
         "name": "test-project",
@@ -68,7 +68,7 @@ def build_gns3_project(**overrides) -> dict:
 
 
 def build_gns3_user(**overrides) -> dict:
-    """Сборка JSON-структуры пользователя GNS3 API."""
+    """Builds the JSON structure of a GNS3 API user."""
     defaults = {
         "user_id": "user-1",
         "username": "student-1",

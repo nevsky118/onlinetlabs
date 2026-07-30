@@ -1,4 +1,4 @@
-# Модель конфигурации окружения для автотестов.
+# Environment configuration model for the autotests.
 
 from typing import Dict, Optional
 
@@ -7,11 +7,11 @@ from pydantic import BaseModel, Field
 
 class Account(BaseModel):
     """
-    Учётные данные тестового пользователя.
+    Credentials of a test user.
 
-    :param sub: Идентификатор пользователя (subject claim).
-    :param email: Email пользователя.
-    :param token: JWT-токен пользователя (генерируется при старте тестов).
+    :param sub: User identifier (subject claim).
+    :param email: User email.
+    :param token: User JWT token (generated when the tests start).
     """
 
     sub: Optional[str] = Field(
@@ -30,10 +30,10 @@ class Account(BaseModel):
 
 class ConfigModel(BaseModel):
     """
-    Главная модель конфигурации окружения для автотестов.
+    Main environment configuration model for the autotests.
 
-    :param base_url: Базовый URL для обращения к тестируемому API.
-    :param accounts: Словарь тестовых аккаунтов (по ключу — имя аккаунта).
+    :param base_url: Base URL used to reach the API under test.
+    :param accounts: Dictionary of test accounts, keyed by account name.
     """
 
     base_url: str = Field(

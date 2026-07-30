@@ -1,4 +1,4 @@
-# CRUD-тесты POST /auth/register.
+# CRUD tests for POST /auth/register.
 
 import pytest
 
@@ -13,7 +13,7 @@ from autotests.settings.utils.utils import check_response_status, verify_data
 @pytest.mark.crud
 @pytest.mark.asyncio
 class TestAuthRegisterCrudApi:
-    """CRUD-тесты POST /auth/register."""
+    """CRUD tests for POST /auth/register."""
 
     @pytest.fixture(autouse=True)
     def setup(self, anon_client, config):
@@ -24,7 +24,7 @@ class TestAuthRegisterCrudApi:
     @autotest.external_id("b2c3d4e5-f6a7-8901-bcde-f12345678901")
     @autotest.name("Auth Register: success (201)")
     async def test_b2c3d4e5_register_success(self):
-        """Успешная регистрация возвращает 201 и корректные данные."""
+        """A successful registration returns 201 and correct data."""
         # Arrange
         reg_data = AuthRegisterData()
 
@@ -47,7 +47,7 @@ class TestAuthRegisterCrudApi:
     @autotest.external_id("c3d4e5f6-a7b8-9012-cdef-123456789012")
     @autotest.name("Auth Register: duplicate email (409)")
     async def test_c3d4e5f6_register_duplicate_email(self):
-        """Регистрация с существующим email возвращает 409."""
+        """Registration with an existing email returns 409."""
         # Arrange
         with autotest.step("Регистрируем пользователя"):
             reg_data = AuthRegisterData()
@@ -65,7 +65,7 @@ class TestAuthRegisterCrudApi:
     @autotest.external_id("d4e5f6a7-b8c9-0123-defa-234567890123")
     @autotest.name("Auth Register: short password (422)")
     async def test_d4e5f6a7_register_short_password(self):
-        """Пароль < 8 символов возвращает 422."""
+        """A password shorter than 8 characters returns 422."""
         # Arrange
         reg_data = AuthRegisterData()
         reg_data.data["password"] = short_password()

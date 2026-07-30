@@ -1,11 +1,11 @@
-# Константы тестового фреймворка.
+# Test framework constants.
 
 
 class ConstantsSettings:
     """
-    Константы, используемые внутри тестового фреймворка.
+    Constants used inside the test framework.
     """
 
-    # Имена аккаунтов (ключи в config.accounts)
+    # Account names (keys in config.accounts)
     ANON_ACCOUNT = "ANON_ACCOUNT"
     REGISTERED_ACCOUNT = "REGISTERED_ACCOUNT"

@@ -66,7 +66,7 @@ class WebSocketGateway:
         """Sends an intervention to the student over WebSocket."""
         websocket = self._connections.get(session_id)
         if not websocket:
-            logger.warning("WebSocket не найден для сессии %s", session_id)
+            logger.warning("WebSocket not found for session %s", session_id)
             return
 
         payload = {
@@ -78,7 +78,7 @@ class WebSocketGateway:
             await websocket.send_json(payload)
         except Exception:
             logger.warning(
-                "Не удалось отправить интервенцию в сессию %s", session_id, exc_info=True
+                "Failed to send an intervention to session %s", session_id, exc_info=True
             )
             self.disconnect(session_id)
 

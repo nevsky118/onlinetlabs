@@ -1,4 +1,4 @@
-"""e2e: WS /sessions/{id}/events на gns3-service."""
+"""e2e: WS /sessions/{id}/events on gns3-service."""
 
 import pytest
 
@@ -23,7 +23,7 @@ class TestGns3SessionWsE2E:
     @autotest.external_id("aa111111-eeee-4eee-eeee-eeeeeeeeeeee")
     @autotest.name("Gns3 e2e: WS connects + receives snapshot")
     async def test_aa111111_ws_snapshot(self):
-        """Подключение к WS возвращает snapshot первым сообщением."""
+        """Connecting to the WS returns a snapshot as the first message."""
         session_dict = await self.helper.create_session()
         session_id = session_dict["session_id"]
 

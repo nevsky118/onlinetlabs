@@ -1,12 +1,12 @@
 name: Provision GNS3 templates
 
-# Ручной запуск: Actions → "Provision GNS3 templates" → Run workflow.
-# Строит GNS3-шаблоны в gns3-service и привязывает их id к лабам через /internal API.
+# Manual run: Actions → "Provision GNS3 templates" → Run workflow.
+# Builds GNS3 templates in gns3-service and binds their ids to labs through the /internal API.
 on:
   workflow_dispatch:
     inputs:
       lab:
-        description: "Slug лабы (или 'all' для всех)"
+        description: "Lab slug (or 'all' for every lab)"
         required: false
         default: all
 

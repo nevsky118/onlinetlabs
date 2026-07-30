@@ -1,4 +1,4 @@
-# Smoke-тесты GET /courses.
+# Smoke tests for GET /courses.
 
 import pytest
 
@@ -12,7 +12,7 @@ from autotests.settings.utils.utils import check_response_status, Randomizer
 @pytest.mark.smoke
 @pytest.mark.asyncio
 class TestCoursesSmokeApi:
-    """Smoke-тесты GET /courses."""
+    """Smoke tests for GET /courses."""
 
     @pytest.fixture(autouse=True)
     def setup(self, anon_client, config):
@@ -22,7 +22,7 @@ class TestCoursesSmokeApi:
     @autotest.external_id("b8c9d0e1-f2a3-4567-bcde-678901234567")
     @autotest.name("Smoke: GET /courses — 200 и список курсов")
     async def test_b8c9d0e1_get_courses(self):
-        """Получение списка курсов возвращает 200."""
+        """Fetching the list of courses returns 200."""
         # Act
         with autotest.step("Отправляем GET /courses"):
             response = await self.courses_api.get_courses()
@@ -39,7 +39,7 @@ class TestCoursesSmokeApi:
     @autotest.external_id("c9d0e1f2-a3b4-5678-cdef-789012345678")
     @autotest.name("Smoke: GET /courses/{slug} — 404 для несуществующего")
     async def test_c9d0e1f2_get_course_not_found(self):
-        """Запрос несуществующего курса возвращает 404."""
+        """Requesting a nonexistent course returns 404."""
         # Arrange
         fake_slug = f"nonexistent-{Randomizer.random_string(8).lower()}"
 

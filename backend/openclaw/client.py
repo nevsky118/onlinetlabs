@@ -1,4 +1,4 @@
-"""HTTP-клиент для OpenClaw Gateway."""
+"""HTTP client for the OpenClaw Gateway."""
 
 import time
 from dataclasses import dataclass, field
@@ -8,7 +8,7 @@ import httpx
 
 @dataclass
 class OpenClawCompletion:
-    """Нормализованный результат генерации OpenClaw."""
+    """Normalized OpenClaw generation result."""
 
     success: bool
     content: str
@@ -22,7 +22,7 @@ class OpenClawCompletion:
 
 
 class OpenClawClient:
-    """Минимальный OpenAI-совместимый клиент для OpenClaw Gateway."""
+    """Minimal OpenAI-compatible client for the OpenClaw Gateway."""
 
     def __init__(
         self,
@@ -42,19 +42,19 @@ class OpenClawClient:
         )
 
     async def __aenter__(self) -> "OpenClawClient":
-        """Вернуть клиент для использования в async with."""
+        """Returns the client for use in async with."""
         return self
 
     async def __aexit__(self, *_) -> None:
-        """Закрыть HTTP-клиент при выходе из async with."""
+        """Closes the HTTP client on exit from async with."""
         await self.aclose()
 
     async def aclose(self) -> None:
-        """Закрыть пул соединений OpenClaw HTTP-клиента."""
+        """Closes the OpenClaw HTTP client's connection pool."""
         await self._client.aclose()
 
     async def complete(self, messages: list[dict]) -> OpenClawCompletion:
-        """Вызвать /v1/chat/completions и нормализовать ответ."""
+        """Calls /v1/chat/completions and normalizes the response."""
         started = time.perf_counter()
         payload = {"model": self._model, "messages": messages, "stream": False}
 
@@ -111,17 +111,17 @@ class OpenClawClient:
         )
 
     async def _post(self, payload: dict) -> httpx.Response:
-        """Отправить запрос через долгоживущий HTTP-клиент."""
+        """Sends the request through the long-lived HTTP client."""
         return await self._client.post("/v1/chat/completions", json=payload)
 
     def _build_headers(self) -> dict:
-        """Собрать постоянные заголовки для OpenClaw Gateway."""
+        """Builds the persistent headers for the OpenClaw Gateway."""
         if not self._token:
             return {}
         return {"Authorization": f"Bearer {self._token}"}
 
     def _error(self, code: str, message: str, started: float) -> OpenClawCompletion:
-        """Собрать неуспешный результат для транспортных ошибок."""
+        """Builds an unsuccessful result for transport errors."""
         return OpenClawCompletion(
             success=False,
             content="",
@@ -133,7 +133,7 @@ class OpenClawClient:
 
 
 def _looks_like_json(response: httpx.Response) -> bool:
-    """Вернуть True, если тело ответа парсится как JSON."""
+    """Returns True if the response body parses as JSON."""
     try:
         response.json()
     except ValueError:

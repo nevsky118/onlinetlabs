@@ -1,4 +1,4 @@
-# Smoke-тесты /users/me/progress.
+# Smoke tests for /users/me/progress.
 
 import pytest
 
@@ -12,7 +12,7 @@ from autotests.settings.utils.utils import check_response_status, Randomizer
 @pytest.mark.smoke
 @pytest.mark.asyncio
 class TestProgressSmokeApi:
-    """Smoke-тесты /users/me/progress."""
+    """Smoke tests for /users/me/progress."""
 
     @pytest.fixture(autouse=True)
     def setup(self, anon_client, config):
@@ -22,7 +22,7 @@ class TestProgressSmokeApi:
     @autotest.external_id("b4c5d6e7-f8a9-0123-bcde-234567890123")
     @autotest.name("Smoke: GET /users/me/progress — 200")
     async def test_b4c5d6e7_get_progress(self):
-        """Получение прогресса возвращает 200."""
+        """Fetching the progress returns 200."""
         # Act
         with autotest.step("Отправляем GET /users/me/progress"):
             response = await self.progress_api.get_progress()
@@ -35,7 +35,7 @@ class TestProgressSmokeApi:
     @autotest.external_id("c5d6e7f8-a9b0-1234-cdef-345678901234")
     @autotest.name("Smoke: GET /users/me/progress/labs/{slug} — 404 для несуществующей")
     async def test_c5d6e7f8_get_lab_progress_not_found(self):
-        """Прогресс по несуществующей лабораторной возвращает 404."""
+        """Progress for a nonexistent lab returns 404."""
         # Arrange
         fake_slug = f"nonexistent-{Randomizer.random_string(8).lower()}"
 

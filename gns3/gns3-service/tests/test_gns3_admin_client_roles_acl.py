@@ -1,4 +1,4 @@
-"""Unit-тесты GNS3AdminClient RolesMixin и AclMixin."""
+"""Unit tests for GNS3AdminClient RolesMixin and AclMixin."""
 
 import httpx
 import pytest
@@ -9,7 +9,7 @@ from src.clients.admin import GNS3AdminClient
 
 
 class TestGns3AdminClientRoles:
-    """Unit-тесты управления ролями через HTTP-обёртку."""
+    """Unit tests for role management through the HTTP wrapper."""
 
     @pytest.fixture
     def admin_client(self):
@@ -32,7 +32,7 @@ class TestGns3AdminClientRoles:
         )
         result = await admin_client.get_builtin_role("User")
         assert result["role_id"] == "r1"
-        # Повторный вызов — должен вернуться из кеша без HTTP-запроса.
+        # Repeat call, must be served from the cache without an HTTP request.
         result_cached = await admin_client.get_builtin_role("User")
         assert result_cached["role_id"] == "r1"
         assert route.call_count == 1
@@ -53,7 +53,7 @@ class TestGns3AdminClientRoles:
 
 
 class TestGns3AdminClientAcl:
-    """Unit-тесты управления ACL через HTTP-обёртку."""
+    """Unit tests for ACL management through the HTTP wrapper."""
 
     @pytest.fixture
     def admin_client(self):

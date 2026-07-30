@@ -1,8 +1,8 @@
-# Smoke-тесты гейта активации аккаунта.
-# Активированный пользователь имеет доступ к ресурсам (запуск лаб, ИИ);
-# require_active_user не блокирует активного. Блокировка неактивного (403)
-# покрыта backend-юнит-тестами — в API-наборе нет аккаунта-источника
-# неактивного пользователя (credential-аккаунты активны).
+# Smoke tests for the account activation gate.
+# An activated user has access to the resources (launching labs, AI);
+# require_active_user does not block an active user. Blocking an inactive one (403)
+# is covered by the backend unit tests, since the API suite has no source account
+# for an inactive user (credential accounts are active).
 
 import pytest
 
@@ -17,7 +17,7 @@ from autotests.settings.utils.custom_assertions import assert_is_not_none
 @pytest.mark.smoke
 @pytest.mark.asyncio
 class TestActivationSmokeApi:
-    """Smoke-тесты гейта активации: активный пользователь не блокируется."""
+    """Smoke tests for the activation gate, where an active user is not blocked."""
 
     @pytest.fixture(autouse=True)
     def setup(self, anon_client, config):
@@ -29,7 +29,7 @@ class TestActivationSmokeApi:
         "Smoke: активный пользователь проходит гейт активации и запускает лабу"
     )
     async def test_3a985e9f_active_user_passes_activation_gate(self):
-        """Активный пользователь не получает 403 require_active_user и запускает лабу."""
+        """An active user does not get a 403 from require_active_user and launches the lab."""
         # Act
         with autotest.step("Активный пользователь запускает autotest-lab"):
             body = await self.sessions_helper.launch_session("autotest-lab")

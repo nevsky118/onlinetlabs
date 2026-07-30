@@ -25,7 +25,7 @@ class TestGns3SessionsActivitySmokeApi:
     @autotest.external_id("d1111111-dddd-4ddd-dddd-dddddddddddd")
     @autotest.name("Gns3 Smoke: GET .../activity — 200")
     async def test_d1111111_activity_200(self):
-        """GET activity возвращает 200 и поля events/next_cursor."""
+        """GET activity returns 200 and the events/next_cursor fields."""
         session_dict = await self.gns3_sessions_helper.create_session()
         session_id = session_dict["session_id"]
         query = ActivityQueryData(limit=10)

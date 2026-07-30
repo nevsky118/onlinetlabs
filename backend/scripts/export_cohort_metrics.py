@@ -1,4 +1,4 @@
-"""Выгрузка когортных орг-метрик на защиту. Читает тот же сервис, что эндпоинт."""
+"""Export of cohort org metrics for the defense. Reads the same service as the endpoint."""
 
 import asyncio
 

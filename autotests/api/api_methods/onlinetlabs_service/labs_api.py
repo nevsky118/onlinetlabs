@@ -1,4 +1,4 @@
-# Labs API — тонкие HTTP-обёртки для /labs/* эндпоинтов.
+# Labs API. Thin HTTP wrappers for the /labs/* endpoints.
 
 from httpx import AsyncClient, Response
 
@@ -10,11 +10,11 @@ from autotests.settings.reports import autotest
 
 class LabsApi:
     """
-    HTTP-обёртки для labs-эндпоинтов.
+    HTTP wrappers for the labs endpoints.
 
-    :param client: HTTP-клиент (httpx.AsyncClient).
-    :param config: Объект ConfigModel с параметрами окружения.
-    :param account_name: Название учётной записи из конфигурации.
+    :param client: HTTP client (httpx.AsyncClient).
+    :param config: ConfigModel object with the environment parameters.
+    :param account_name: Account name from the configuration.
     """
 
     def __init__(
@@ -37,12 +37,12 @@ class LabsApi:
         offset: int = 0,
     ) -> Response:
         """
-        GET /labs — список лабораторий с опциональной фильтрацией по курсу.
+        GET /labs. List of labs with optional filtering by course.
 
-        :param course_slug: Фильтр по slug курса.
-        :param limit: Макс. количество результатов.
-        :param offset: Смещение для пагинации.
-        :return: HTTP-ответ.
+        :param course_slug: Filter by course slug.
+        :param limit: Max number of results.
+        :param offset: Pagination offset.
+        :return: HTTP response.
         """
         with autotest.step("GET /labs"):
             return await self.api_client.get("", params={
@@ -61,10 +61,10 @@ class LabsApi:
 
     async def get_lab_by_slug(self, slug: str) -> Response:
         """
-        GET /labs/{slug} — получение лабораторной работы по slug.
+        GET /labs/{slug}. Retrieves a lab by slug.
 
-        :param slug: Slug лабораторной работы.
-        :return: HTTP-ответ.
+        :param slug: Lab slug.
+        :return: HTTP response.
         """
         with autotest.step(f"GET /labs/{slug}"):
             return await self.api_client.get(slug)

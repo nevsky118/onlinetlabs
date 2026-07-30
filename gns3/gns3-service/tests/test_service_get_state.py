@@ -1,4 +1,4 @@
-"""Unit-тесты SessionService.get_state — агрегация и кэш."""
+"""Unit tests for SessionService.get_state, aggregation and cache."""
 
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
@@ -19,7 +19,7 @@ def _make_active_session(uptime_seconds: int = 0):
 
 
 class TestSessionServiceGetState:
-    """Unit-тесты SessionService.get_state."""
+    """Unit tests for SessionService.get_state."""
 
     @pytest.mark.asyncio
     async def test_get_state_aggregates_nodes_and_links(self, gns3_node, gns3_link):
@@ -73,7 +73,7 @@ class TestSessionServiceGetState:
 
 
 class TestSessionServiceStateCache:
-    """Unit-тесты кэширования state-снапшота."""
+    """Unit tests for state snapshot caching."""
 
     @pytest.fixture
     def service_and_db(self):

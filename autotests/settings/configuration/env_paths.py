@@ -1,4 +1,4 @@
-# Единое место с конвенцией путей env: не хардкодим, резолвим env_file(service); тир из ENV (local/development/ci).
+# Single place holding the env path convention. Nothing is hardcoded, paths are resolved via env_file(service), and the tier comes from ENV (local/development/ci).
 
 import os
 from pathlib import Path
@@ -7,10 +7,10 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 def env_file(service: str, tier: str | None = None) -> Path:
-    """Абсолютный путь к env-файлу сервиса: deployment/<tier>/<service>.env.
+    """Absolute path to the service env file, deployment/<tier>/<service>.env.
 
-    Тир по умолчанию из ENV (как в Makefile), иначе local. Путь абсолютный, не
-    зависит от рабочей директории.
+    The tier defaults to ENV (as in the Makefile), otherwise local. The path is
+    absolute and does not depend on the working directory.
     """
     tier = tier or os.getenv("ENV", "local")
     return _REPO_ROOT / "deployment" / tier / f"{service}.env"

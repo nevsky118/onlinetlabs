@@ -1,14 +1,14 @@
-# Генераторы тестовых данных для e2e тестов Learning Analytics.
+# Test data generators for the Learning Analytics e2e tests.
 
 
 class MCPContextTestData:
     """
-    Тестовые данные для e2e проверки MCP → AgentContext → LLM пайплайна.
+    Test data for the e2e check of the MCP → AgentContext → LLM pipeline.
 
-    :ivar project_name: Имя GNS3 проекта.
-    :ivar user_question: Вопрос студента для TutorAgent.
-    :ivar struggle_type: Тип проблемы для AgentContext.
-    :ivar dominant_error: Доминирующая ошибка.
+    :ivar project_name: GNS3 project name.
+    :ivar user_question: Student question for the TutorAgent.
+    :ivar struggle_type: Problem type for the AgentContext.
+    :ivar dominant_error: Dominant error.
     """
 
     def __init__(self):
@@ -20,11 +20,11 @@ class MCPContextTestData:
 
 class HintTestData:
     """
-    Тестовые данные для проверки HintAgent.
+    Test data for checking the HintAgent.
 
-    :ivar step_slug: Шаг, на котором застрял студент.
-    :ivar last_error: Последняя ошибка.
-    :ivar attempts_count: Кол-во попыток (определяет hint_level).
+    :ivar step_slug: The step where the student got stuck.
+    :ivar last_error: Last error.
+    :ivar attempts_count: Number of attempts, which determines hint_level.
     """
 
     def __init__(self, attempts_count: int = 4):

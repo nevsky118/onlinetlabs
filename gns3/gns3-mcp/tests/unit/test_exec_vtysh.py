@@ -1,4 +1,4 @@
-"""exec_vtysh domain tool: наблюдение состояния устройства через MCP (gns3-service)."""
+"""exec_vtysh domain tool, observing device state through MCP (gns3-service)."""
 
 import json
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Сборка шаблона лабы lan-static-ip в GNS3 v3 (VPCS + встроенный коммутатор).
+"""Builds the lan-static-ip lab template in GNS3 v3 (VPCS + built-in switch).
 
-Печатает LAN_STATIC_IP_TEMPLATE_PROJECT_ID=<uuid>. Код выхода: 0 успех/уже есть, 2 ошибка API.
+Prints LAN_STATIC_IP_TEMPLATE_PROJECT_ID=<uuid>. Exit codes, 0 success or already exists, 2 API error.
 """
 
 from __future__ import annotations
@@ -49,7 +49,7 @@ def build_template(force: bool) -> str:
         pc1 = tb.add_vpcs_node(client, project_id, name="PC1", x=-200, y=0)
         pc2 = tb.add_vpcs_node(client, project_id, name="PC2", x=200, y=0)
 
-        # ethernet_switch порты: adapter_number=0, port_number=N.
+        # ethernet_switch ports, adapter_number=0, port_number=N.
         tb.link(client, project_id, pc1, 0, sw1, 0, a_adapter=0, b_adapter=0)
         tb.link(client, project_id, pc2, 0, sw1, 1, a_adapter=0, b_adapter=0)
 

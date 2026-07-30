@@ -1,4 +1,4 @@
-"""Unit-тесты WebSocket-роутера ws."""
+"""Unit tests for the ws WebSocket router."""
 
 from unittest.mock import AsyncMock
 
@@ -12,7 +12,7 @@ from src.routers.ws import router as ws_router
 
 
 def _build_app() -> FastAPI:
-    """Минимальное приложение с ws-роутером и stub-ами app.state."""
+    """Minimal application with the ws router and app.state stubs."""
     app = FastAPI()
     app.include_router(ws_router)
     app.state.session_service = AsyncMock()
@@ -28,10 +28,10 @@ def app():
 
 
 class TestWsTokenValidation:
-    """Без валидного internal_api_token соединение должно закрываться 1008."""
+    """Without a valid internal_api_token the connection must close with 1008."""
 
     def test_close_1008_when_token_missing(self, app, monkeypatch):
-        # Убедимся, что в settings token непуст — иначе guard просто пропустит.
+        # Make sure the token in settings is non-empty, otherwise the guard just lets it through.
         monkeypatch.setattr(
             settings.security, "internal_api_token", "expected-token", raising=False
         )

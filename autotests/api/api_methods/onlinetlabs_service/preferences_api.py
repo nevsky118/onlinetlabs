@@ -1,4 +1,4 @@
-# Preferences API — тонкие HTTP-обёртки для /users/me/preferences.
+# Preferences API. Thin HTTP wrappers for /users/me/preferences.
 
 from httpx import AsyncClient, Response
 
@@ -10,11 +10,11 @@ from autotests.settings.reports import autotest
 
 class PreferencesApi:
     """
-    HTTP-обёртки для preferences-эндпоинтов.
+    HTTP wrappers for the preferences endpoints.
 
-    :param client: HTTP-клиент (httpx.AsyncClient).
-    :param config: Объект ConfigModel с параметрами окружения.
-    :param account_name: Название учётной записи из конфигурации.
+    :param client: HTTP client (httpx.AsyncClient).
+    :param config: ConfigModel object with the environment parameters.
+    :param account_name: Account name from the configuration.
     """
 
     def __init__(
@@ -32,19 +32,19 @@ class PreferencesApi:
 
     async def get_preferences(self) -> Response:
         """
-        GET /users/me/preferences — настройки текущего пользователя.
+        GET /users/me/preferences. Settings of the current user.
 
-        :return: HTTP-ответ.
+        :return: HTTP response.
         """
         with autotest.step("GET /users/me/preferences"):
             return await self.api_client.get("")
 
     async def patch_preferences(self, data: dict) -> Response:
         """
-        PATCH /users/me/preferences — обновление настроек пользователя.
+        PATCH /users/me/preferences. Updates the user settings.
 
-        :param data: Payload с настройками (например, default_model_id).
-        :return: HTTP-ответ.
+        :param data: Payload with the settings (for example, default_model_id).
+        :return: HTTP response.
         """
         with autotest.step("PATCH /users/me/preferences"):
             return await self.api_client.patch("", json_data=data)

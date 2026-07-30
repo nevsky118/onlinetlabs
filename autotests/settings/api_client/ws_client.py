@@ -1,4 +1,4 @@
-"""Async WS client для autotests."""
+"""Async WS client for the autotests."""
 
 import asyncio
 import json

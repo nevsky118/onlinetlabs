@@ -1,7 +1,7 @@
 [project]
 name = "mcp_sdk"
 version = "0.1.0"
-description = "SDK для создания MCP-серверов сложных систем"
+description = "SDK for building MCP servers for complex systems"
 authors = []
 readme = "README.md"
 requires-python = ">=3.11"

@@ -73,7 +73,7 @@ class BehavioralCollector:
             except asyncio.CancelledError:
                 break
             except Exception:
-                logger.warning("Цикл опроса: ошибка", exc_info=True)
+                logger.warning("Poll loop error", exc_info=True)
             await asyncio.sleep(self._cfg.poll_interval)
 
     async def _poll_cycle(self) -> None:
@@ -102,7 +102,7 @@ class BehavioralCollector:
                     payload={"events": events},
                 )
         except Exception:
-            logger.warning("Не удалось записать evidence-снимок", exc_info=True)
+            logger.warning("Failed to record the evidence snapshot", exc_info=True)
 
     async def _call_observe(self, tool: str, arguments: dict):
         """Observe via the seam or directly (fallback)."""
@@ -150,9 +150,9 @@ class BehavioralCollector:
             from control_interface.interface import InterfaceDenied
 
             if isinstance(exc, InterfaceDenied):
-                logger.warning("observe list_user_actions отклонён швом: %s", exc.reason)
+                logger.warning("observe list_user_actions rejected by the seam: %s", exc.reason)
             else:
-                logger.warning("Не удалось получить user actions", exc_info=True)
+                logger.warning("Failed to fetch user actions", exc_info=True)
         return result
 
     async def _fetch_logs(self) -> list[dict]:
@@ -177,9 +177,9 @@ class BehavioralCollector:
             from control_interface.interface import InterfaceDenied
 
             if isinstance(exc, InterfaceDenied):
-                logger.warning("observe get_logs отклонён швом: %s", exc.reason)
+                logger.warning("observe get_logs rejected by the seam: %s", exc.reason)
             else:
-                logger.warning("Не удалось получить логи", exc_info=True)
+                logger.warning("Failed to fetch logs", exc_info=True)
         return result
 
     async def _fetch_errors(self) -> list[dict]:
@@ -201,9 +201,9 @@ class BehavioralCollector:
             from control_interface.interface import InterfaceDenied
 
             if isinstance(exc, InterfaceDenied):
-                logger.warning("observe list_errors отклонён швом: %s", exc.reason)
+                logger.warning("observe list_errors rejected by the seam: %s", exc.reason)
             else:
-                logger.warning("Не удалось получить ошибки", exc_info=True)
+                logger.warning("Failed to fetch errors", exc_info=True)
         return result
 
     # DB write
@@ -218,7 +218,7 @@ class BehavioralCollector:
                     session.add(BehavioralEvent(**evt))
                 await session.commit()
         except Exception:
-            logger.error("Не удалось сохранить события", exc_info=True)
+            logger.error("Failed to save events", exc_info=True)
 
     # Helpers
 

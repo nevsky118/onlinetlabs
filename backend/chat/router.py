@@ -174,7 +174,7 @@ async def _fetch_mcp_context(mcp_client, ctx, expected_vpcs: dict | None = None)
                 parts.append("Ошибок не обнаружено.")
         return "\n\n".join(parts) if parts else None
     except Exception:
-        logger.warning("chat: не удалось предзагрузить MCP-контекст", exc_info=True)
+        logger.warning("chat: failed to preload the MCP context", exc_info=True)
         return None
 
 
@@ -217,7 +217,7 @@ async def _fetch_lab_context(db: AsyncSession, lab_slug: str, spec: dict | None)
 
         return "\n".join(parts)
     except Exception:
-        logger.warning("chat: не удалось загрузить контекст лабы %s", lab_slug, exc_info=True)
+        logger.warning("chat: failed to load the lab context %s", lab_slug, exc_info=True)
         return None
 
 
@@ -352,7 +352,7 @@ async def _finalize_assistant_message(
         merged = {**(usage or {}), "model_id": model_id}
         await save_assistant_message(db, session_id, parts, merged)
     except Exception:
-        logger.exception("chat: не удалось сохранить assistant message session_id=%s", session_id)
+        logger.exception("chat: failed to save the assistant message session_id=%s", session_id)
 
 
 @router.post("/chat/stream")
@@ -382,7 +382,7 @@ async def chat_stream(
         )
         if body.model_id and effective_model_id != body.model_id:
             logger.warning(
-                "chat: model_id '%s' отклонён, фолбэк на '%s'", body.model_id, effective_model_id
+                "chat: model_id '%s' rejected, fallback to '%s'", body.model_id, effective_model_id
             )
             _activity_emit(
                 request.app.state,

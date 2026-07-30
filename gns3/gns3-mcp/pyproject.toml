@@ -1,7 +1,7 @@
 [project]
 name = "gns3-mcp-server"
 version = "0.1.0"
-description = "MCP-сервер для GNS3"
+description = "MCP server for GNS3"
 authors = []
 requires-python = ">=3.11"
 dependencies = [

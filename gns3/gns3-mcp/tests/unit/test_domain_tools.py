@@ -17,7 +17,7 @@ SNAPSHOT_ID = "snap-1"
 
 
 class StubServer:
-    """Минимальная замена OnlinetlabsMCPServer для перехвата зарегистрированных tool-функций."""
+    """Minimal stand-in for OnlinetlabsMCPServer that captures the registered tool functions."""
 
     def __init__(self) -> None:
         self.tools: dict[str, callable] = {}
@@ -46,7 +46,7 @@ def _make_ctx_dict(**overrides) -> dict:
 
 @pytest.fixture()
 def registered():
-    """Регистрирует domain tools на stub-сервере и возвращает (server, api_mock)."""
+    """Registers the domain tools on the stub server and returns (server, api_mock)."""
     server = StubServer()
     api = AsyncMock()
 
@@ -92,7 +92,7 @@ EXPECTED_TOOL_NAMES = {
     "list_snapshots",
     "create_snapshot",
     "restore_snapshot",
-    # console/exec (наблюдение состояния устройства через MCP)
+    # console/exec (observing device state through MCP)
     "exec_vtysh",
 }
 

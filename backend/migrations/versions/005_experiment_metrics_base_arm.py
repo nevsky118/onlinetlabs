@@ -1,4 +1,4 @@
-"""experiment_metrics: добавлена колонка base_arm (постоянный training-arm пользователя)
+"""experiment_metrics: added the base_arm column (the user's permanent training arm)
 
 Revision ID: 005_experiment_metrics_base_arm
 Revises: 004_experiment_metrics_ab_task8

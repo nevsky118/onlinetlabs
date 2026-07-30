@@ -1,14 +1,14 @@
-# E2E (Tier 2): compute_experiment_analysis считает H1/H2 по группам.
+# E2E (Tier 2): compute_experiment_analysis computes H1/H2 per group.
 
 import pytest
 
-pytest.importorskip("pydantic_ai")  # Tier 2: бежит только в backend-venv, иначе module-level skip
+pytest.importorskip("pydantic_ai")  # Tier 2: runs only in the backend venv, otherwise a module-level skip
 
 from autotests.settings.reports import autotest
 
 
 def _metric(group: str, time_s: float, repeated: int):
-    """Простая заглушка метрики — только поля, нужные analysis."""
+    """A simple metric stub holding only the fields analysis needs."""
     from experiment.assignment import ExperimentGroup
 
     class _M:

@@ -1,4 +1,4 @@
-# Smoke-тест POST /auth/exchange через HTTP.
+# Smoke test for POST /auth/exchange over HTTP.
 
 import pytest
 
@@ -16,7 +16,7 @@ from autotests.settings.utils.utils import check_response_status
 @pytest.mark.smoke
 @pytest.mark.asyncio
 class TestAuthExchangeSmokeApi:
-    """Smoke-тест POST /auth/exchange."""
+    """Smoke test for POST /auth/exchange."""
 
     @pytest.fixture(autouse=True)
     def setup(self, anon_client, config):
@@ -27,7 +27,7 @@ class TestAuthExchangeSmokeApi:
     @autotest.external_id("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
     @autotest.name("Smoke: POST /auth/exchange — 200 и JWT-токен в ответе")
     async def test_a1b2c3d4_exchange_token(self):
-        """Обмен учётных данных -> JWT токен."""
+        """Exchange of credentials -> JWT token."""
         # Arrange
         account = self.config.accounts[ConstantsSettings.REGISTERED_ACCOUNT]
         exchange_data = {"user_id": account.sub, "email": account.email}

@@ -1,4 +1,4 @@
-# E2E тест: GNS3 → MCP → AgentContext → YandexGPT.
+# E2E test: GNS3 → MCP → AgentContext → YandexGPT.
 
 import os
 import sys
@@ -41,7 +41,7 @@ from autotests.settings.utils.custom_assertions import (
 @pytest.mark.e2e
 @pytest.mark.asyncio
 class TestMCPAgentPipelineE2E:
-    """E2E тесты пайплайна: GNS3 → MCP → AgentContext → LLM."""
+    """E2E tests of the pipeline GNS3 → MCP → AgentContext → LLM."""
 
     @pytest.fixture(autouse=True)
     def setup(self, config):
@@ -49,7 +49,7 @@ class TestMCPAgentPipelineE2E:
         self.test_data = MCPContextTestData()
 
     async def _ensure_project(self):
-        """Создать проект с нодами. Очистка через EntitiesRegistry."""
+        """Create a project with nodes. Cleanup goes through EntitiesRegistry."""
         await self.helper.authenticate()
         await self.helper.create_project(self.test_data.project_name)
         await self.helper.create_vpcs_nodes(["PC1", "PC2"])

@@ -1,4 +1,4 @@
-"""Unit-тесты REST-роутера sessions."""
+"""Unit tests for the sessions REST router."""
 
 from unittest.mock import AsyncMock
 
@@ -13,7 +13,7 @@ from src.routers.sessions import router as sessions_router
 
 
 def _build_app() -> FastAPI:
-    """Сконструировать минимальное приложение с роутером и handler'ом 404."""
+    """Build a minimal application with the router and a 404 handler."""
     app = FastAPI()
 
     @app.exception_handler(SessionNotFound)
@@ -27,7 +27,7 @@ def _build_app() -> FastAPI:
 
 
 class _StubDbFactory:
-    """Имитация фабрики async-сессий: yield-ит AsyncMock как контекст-менеджер."""
+    """Stand-in for the async session factory, yields an AsyncMock as a context manager."""
 
     def __call__(self):
         return _StubDbCtx()
@@ -103,7 +103,7 @@ class TestDeleteSession:
 
 class TestGetSessionState:
     async def test_get_state_returns_502_on_unexpected_error(self, app, client):
-        # ValueError пробрасывается → SessionNotFound → 404, иначе → 502.
+        # ValueError propagates → SessionNotFound → 404, otherwise → 502.
         app.state.session_service.get_state.side_effect = RuntimeError("gns3 down")
         sid = "44444444-4444-4444-4444-444444444444"
 

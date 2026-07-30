@@ -1,4 +1,4 @@
-# E2E: сквозной путь студента (HTTP) — браузинг → launch → чат → прогресс → lifecycle → end.
+# E2E: end-to-end student path (HTTP), browsing → launch → chat → progress → lifecycle → end.
 
 import json
 
@@ -47,7 +47,7 @@ def _parse_sse(lines: list[str]) -> tuple[set[str], bool]:
 @pytest.mark.e2e
 @pytest.mark.asyncio
 class TestStudentJourneyE2E:
-    """E2E сквозной путь студента по HTTP."""
+    """E2E end-to-end student path over HTTP."""
 
     @pytest.fixture(autouse=True)
     def setup(self, anon_client, config):

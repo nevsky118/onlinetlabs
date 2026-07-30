@@ -1,7 +1,7 @@
 [project]
 name = "gns3-service"
 version = "0.1.0"
-description = "Сервис управления GNS3 — users, projects, ACL, history"
+description = "GNS3 management service (users, projects, ACL, history)"
 authors = []
 requires-python = ">=3.11"
 dependencies = [

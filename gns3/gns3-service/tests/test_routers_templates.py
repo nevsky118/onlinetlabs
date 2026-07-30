@@ -1,4 +1,4 @@
-"""Unit-тесты POST /v1/templates/{lab}/build."""
+"""Unit tests for POST /v1/templates/{lab}/build."""
 
 from unittest.mock import AsyncMock, patch
 

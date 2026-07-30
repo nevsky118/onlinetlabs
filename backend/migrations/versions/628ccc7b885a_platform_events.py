@@ -40,8 +40,8 @@ def upgrade() -> None:
     op.create_index('ix_platform_events_name_ts', 'platform_events', ['event_name', 'server_ts'], unique=False)
     op.create_index('ix_platform_events_session', 'platform_events', ['session_id'], unique=False)
     op.create_index('ix_platform_events_user_ts', 'platform_events', ['user_id', 'server_ts'], unique=False)
-    # Вспомогательное представление поднимает частые измерения из общего
-    # JSONB наружу как колонки, чтобы ручной SQL для исследования был удобнее
+    # The helper view lifts the frequently used dimensions out of the shared
+    # JSONB into columns, so that hand-written exploratory SQL is more convenient
     op.execute(
         sa.text(
             """

@@ -1,4 +1,4 @@
-# Генераторы тестовых данных для sessions.
+# Test data generators for sessions.
 
 from autotests.settings.utils.data_generator_abstraction import DataAbstractionGenerator
 from autotests.settings.utils.utils import Randomizer
@@ -6,10 +6,10 @@ from autotests.settings.utils.utils import Randomizer
 
 class SessionCreateData(DataAbstractionGenerator):
     """
-    Генерирует payload для создания сессии.
+    Generates the payload for creating a session.
 
-    :ivar lab_slug: Slug лабораторной работы.
-    :ivar data: Словарь-payload для POST.
+    :ivar lab_slug: Lab slug.
+    :ivar data: Payload dictionary for the POST.
     """
 
     def __init__(self, lab_slug: str = None):
@@ -23,10 +23,10 @@ class SessionCreateData(DataAbstractionGenerator):
 
 class SessionUpdateData(DataAbstractionGenerator):
     """
-    Генерирует payload для обновления статуса сессии.
+    Generates the payload for updating a session status.
 
-    :ivar status: Новый статус сессии.
-    :ivar data: Словарь-payload для PATCH.
+    :ivar status: New session status.
+    :ivar data: Payload dictionary for the PATCH.
     """
 
     def __init__(self, status: str = "completed"):
@@ -39,10 +39,10 @@ class SessionUpdateData(DataAbstractionGenerator):
 
 class NodeActionData(DataAbstractionGenerator):
     """
-    Генерирует payload для node action эндпоинтов.
+    Generates the payload for the node action endpoints.
 
-    :ivar action: Имя действия (start/stop/suspend/reset/reload).
-    :ivar data: Пустой payload (action в path параметре).
+    :ivar action: Action name (start/stop/suspend/reset/reload).
+    :ivar data: Empty payload, the action lives in the path parameter.
     """
 
     def __init__(self, action: str):
@@ -52,11 +52,11 @@ class NodeActionData(DataAbstractionGenerator):
 
 class ActivityQueryData(DataAbstractionGenerator):
     """
-    Генерирует query-параметры для GET activity.
+    Generates the query parameters for GET activity.
 
-    :ivar limit: Лимит количества событий.
-    :ivar cursor: Курсор пагинации (опционально).
-    :ivar data: Словарь query-параметров.
+    :ivar limit: Limit on the number of events.
+    :ivar cursor: Pagination cursor (optional).
+    :ivar data: Dictionary of query parameters.
     """
 
     def __init__(self, limit: int = 50, cursor: str | None = None):

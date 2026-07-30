@@ -1,4 +1,4 @@
-# Генераторы данных для GNS3 sessions.
+# Data generators for GNS3 sessions.
 
 from autotests.settings.utils.data_generator_abstraction import DataAbstractionGenerator
 from autotests.settings.utils.utils import Randomizer
@@ -6,11 +6,11 @@ from autotests.settings.utils.utils import Randomizer
 
 class Gns3SessionCreateData(DataAbstractionGenerator):
     """
-    Генерирует payload для POST /sessions.
+    Generates the payload for POST /sessions.
 
-    :ivar user_id: ID пользователя платформы.
-    :ivar lab_template_project_id: UUID шаблонного проекта GNS3.
-    :ivar data: Словарь-payload для POST.
+    :ivar user_id: Platform user ID.
+    :ivar lab_template_project_id: UUID of the GNS3 template project.
+    :ivar data: Payload dictionary for the POST.
     """
 
     def __init__(self, user_id: str = None, lab_template_project_id: str = None):
@@ -25,10 +25,10 @@ class Gns3SessionCreateData(DataAbstractionGenerator):
 
 class NodeActionData(DataAbstractionGenerator):
     """
-    Описывает действие над node (start/stop/suspend/reload).
+    Describes an action on a node (start/stop/suspend/reload).
 
-    :ivar action: Имя действия.
-    :ivar data: Пустой payload (action передаётся в URL).
+    :ivar action: Action name.
+    :ivar data: Empty payload, the action is passed in the URL.
     """
 
     def __init__(self, action: str):
@@ -38,11 +38,11 @@ class NodeActionData(DataAbstractionGenerator):
 
 class ActivityQueryData(DataAbstractionGenerator):
     """
-    Query-параметры для GET /sessions/{id}/activity.
+    Query parameters for GET /sessions/{id}/activity.
 
-    :ivar limit: Лимит событий.
-    :ivar cursor: Курсор пагинации.
-    :ivar data: Словарь query-параметров.
+    :ivar limit: Event limit.
+    :ivar cursor: Pagination cursor.
+    :ivar data: Dictionary of query parameters.
     """
 
     def __init__(self, limit: int = 50, cursor: str | None = None):

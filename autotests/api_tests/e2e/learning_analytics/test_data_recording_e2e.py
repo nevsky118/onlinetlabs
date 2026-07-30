@@ -1,8 +1,8 @@
-# E2E (Tier 2): после чата в БД появляются chat_messages (+usage).
+# E2E (Tier 2): after a chat, chat_messages (+usage) appear in the database.
 
 import pytest
 
-pytest.importorskip("pydantic_ai")  # Tier 2: бежит только в backend-venv, иначе module-level skip
+pytest.importorskip("pydantic_ai")  # Tier 2: runs only in the backend venv, otherwise a module-level skip
 
 from autotests.api.api_helpers.e2e.db_readback_helper import fetch_chat_messages
 from autotests.api.api_helpers.onlinetlabs_service.sessions_helper_api import SessionsHelperApi

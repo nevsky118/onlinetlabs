@@ -1,4 +1,4 @@
-# Smoke-тесты /users/me/preferences.
+# Smoke tests for /users/me/preferences.
 
 import pytest
 
@@ -13,7 +13,7 @@ from autotests.settings.utils.utils import check_response_status
 @pytest.mark.smoke
 @pytest.mark.asyncio
 class TestPreferencesSmokeApi:
-    """Smoke-тесты /users/me/preferences."""
+    """Smoke tests for /users/me/preferences."""
 
     @pytest.fixture(autouse=True)
     def setup(self, anon_client, config):
@@ -25,7 +25,7 @@ class TestPreferencesSmokeApi:
     @autotest.external_id("c1edee66-bbdc-492f-9521-8f573a0725a6")
     @autotest.name("Smoke: GET /users/me/preferences — 200")
     async def test_c1edee66_get_preferences(self):
-        """Чтение настроек возвращает 200 с полем default_model_id."""
+        """Reading the preferences returns 200 with the default_model_id field."""
         # Act
         with autotest.step("Отправляем GET /users/me/preferences"):
             response = await self.preferences_api.get_preferences()
@@ -44,7 +44,7 @@ class TestPreferencesSmokeApi:
     @autotest.external_id("d924753b-1a0f-4006-9eca-231618d7f838")
     @autotest.name("Smoke: PATCH /users/me/preferences — очистка модели (200)")
     async def test_d924753b_clear_default_model(self):
-        """Очистка модели по умолчанию (null) доступна всем и возвращает 200."""
+        """Clearing the default model (null) is available to everyone and returns 200."""
         # Act
         with autotest.step("Отправляем PATCH default_model_id=null"):
             response = await self.preferences_api.patch_preferences(

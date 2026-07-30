@@ -1,4 +1,4 @@
-# CRUD-тесты GET /users/me/sessions/{id}/state.
+# CRUD tests for GET /users/me/sessions/{id}/state.
 
 import pytest
 
@@ -12,7 +12,7 @@ from autotests.settings.utils.utils import check_response_status
 @pytest.mark.crud
 @pytest.mark.asyncio
 class TestSessionsStateCrudApi:
-    """CRUD-тесты /users/me/sessions/{id}/state."""
+    """CRUD tests for /users/me/sessions/{id}/state."""
 
     @pytest.fixture(autouse=True)
     def setup(self, anon_client, config):
@@ -22,7 +22,7 @@ class TestSessionsStateCrudApi:
     @autotest.external_id("74111111-7777-4777-7777-777777777777")
     @autotest.name("Sessions CRUD: state 404 для неизвестной сессии")
     async def test_74111111_state_404(self):
-        """GET state с несуществующим session_id возвращает 404."""
+        """GET state with a nonexistent session_id returns 404."""
         # Act
         with autotest.step("GET state с UUID нулей"):
             response = await self.sessions_api.get_session_state(

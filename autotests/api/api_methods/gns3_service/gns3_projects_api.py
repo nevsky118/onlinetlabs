@@ -1,4 +1,4 @@
-# HTTP-обёртки для GNS3 /projects эндпоинтов.
+# HTTP wrappers for the GNS3 /projects endpoints.
 
 from httpx import AsyncClient, Response
 

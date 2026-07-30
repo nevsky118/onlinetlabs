@@ -1,4 +1,4 @@
-# Класс-обёртка с API-классами для удаления сущностей, созданных в тестах.
+# Wrapper class holding the API classes used to delete entities created by the tests.
 
 import httpx
 
@@ -10,15 +10,15 @@ from autotests.settings.configuration.config_model import ConfigModel
 
 class EntitiesHelperApi:
     """
-    Класс-обёртка, инкапсулирующий доступ ко всем API-классам, необходимым для удаления сущностей.
-    Используется в системе автоматического удаления тестовых данных.
+    Wrapper class encapsulating access to every API class needed to delete entities.
+    Used by the automatic test data cleanup system.
     """
 
     def __init__(self, config: ConfigModel = None):
         """
-        Инициализация вспомогательных API-классов.
+        Initialization of the helper API classes.
 
-        :param config: Конфигурация окружения (ConfigModel).
+        :param config: Environment configuration (ConfigModel).
         """
         self._config = config
         if config is not None:
@@ -27,7 +27,7 @@ class EntitiesHelperApi:
             self.gns3_sessions_api = Gns3SessionsApi(config=config, base_url=config.gns3_base_url)
 
     async def delete_gns3_project(self, project_id: str) -> None:
-        """Удалить GNS3 проект по ID через GNS3 server API."""
+        """Delete a GNS3 project by ID through the GNS3 server API."""
         if not self._config:
             return
         gns3_url = self._config.gns3_url

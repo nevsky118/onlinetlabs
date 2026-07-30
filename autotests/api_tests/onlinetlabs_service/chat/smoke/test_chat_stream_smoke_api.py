@@ -1,4 +1,4 @@
-# Smoke-тест SSE чат-стрима тьютора POST /chat/stream (Vercel AI SDK v1).
+# Smoke test for the tutor SSE chat stream POST /chat/stream (Vercel AI SDK v1).
 
 import json
 
@@ -11,7 +11,7 @@ from autotests.settings.reports import autotest
 
 
 def _parse_sse(lines: list[str]) -> tuple[list[dict], bool]:
-    """Разбирает SSE-строки в события и флаг [DONE]."""
+    """Parses SSE lines into events and the [DONE] flag."""
     events: list[dict] = []
     done = False
     for line in lines:
@@ -29,7 +29,7 @@ def _parse_sse(lines: list[str]) -> tuple[list[dict], bool]:
 @pytest.mark.smoke
 @pytest.mark.asyncio
 class TestChatStreamSmokeApi:
-    """Smoke-тест стриминга ответа тьютора через SSE (требует валидного LLM-ключа)."""
+    """Smoke test for streaming the tutor response over SSE (requires a valid LLM key)."""
 
     @pytest.fixture(autouse=True)
     def setup(self, anon_client, config):
@@ -40,7 +40,7 @@ class TestChatStreamSmokeApi:
     @autotest.external_id("e0f1a2b3-c4d5-6789-efab-890123456789")
     @autotest.name("Smoke: chat/stream — v1 события (start, text-delta, [DONE])")
     async def test_e0f1a2b3_chat_stream_v1_events(self):
-        """POST /chat/stream возвращает SSE-поток v1 со start, text-delta и [DONE]."""
+        """POST /chat/stream returns a v1 SSE stream with start, text-delta and [DONE]."""
         # Arrange
         with autotest.step("Запускаем сессию autotest-lab"):
             launched = await self.sessions_helper.launch_session("autotest-lab")

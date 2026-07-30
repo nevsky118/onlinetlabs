@@ -1,10 +1,9 @@
-"""Тесты error-декоратора `_tool_errors` в mcp_sdk.server.OnlinetlabsMCPServer.
+"""Tests for the `_tool_errors` error decorator in mcp_sdk.server.OnlinetlabsMCPServer.
 
-Проверяют контракт ошибок tool-функций: невалидный SessionContext →
-SessionContextError, доменная MCPServerError пробрасывается без изменений,
-неожиданное исключение маскируется как "Internal server error". Плюс два
-bonus-фикса: bad level/since больше не маскируются, а всплывают как
-SessionContextError.
+They check the error contract of the tool functions. An invalid SessionContext →
+SessionContextError, a domain MCPServerError propagates unchanged, and an
+unexpected exception is masked as "Internal server error". Plus two bonus fixes,
+a bad level/since is no longer masked and surfaces as SessionContextError.
 """
 
 import pytest
@@ -35,7 +34,7 @@ def _ctx_dict(**overrides) -> dict:
 
 
 def _call_kwargs(name: str, ctx: dict) -> dict:
-    """Именованные аргументы, достаточные для вызова каждой из 8 tool-функций."""
+    """Keyword arguments sufficient to call each of the 8 tool functions."""
     if name == "get_component":
         return {"ctx": ctx, "component_id": "c1"}
     if name == "execute_action":
@@ -44,7 +43,7 @@ def _call_kwargs(name: str, ctx: dict) -> dict:
 
 
 class _ProbeImpl:
-    """Реализация всех 4 протоколов SDK с управляемым исключением из impl-методов."""
+    """Implementation of all 4 SDK protocols with a controllable exception from the impl methods."""
 
     def __init__(self, raise_error: Exception | None = None) -> None:
         self._raise_error = raise_error
@@ -101,7 +100,7 @@ class _ProbeImpl:
 
 
 class _FakeMCP:
-    """Замена FastMCP: перехватывает зарегистрированные tool-функции по имени, без реального транспорта."""
+    """FastMCP stand-in, captures the registered tool functions by name with no real transport."""
 
     def __init__(self, name, **kwargs) -> None:
         self.tools: dict[str, callable] = {}
@@ -116,7 +115,7 @@ class _FakeMCP:
 
 @pytest.fixture()
 def make_server(monkeypatch):
-    """Строит OnlinetlabsMCPServer поверх _FakeMCP, возвращая фабрику по raise_error."""
+    """Builds an OnlinetlabsMCPServer on top of _FakeMCP, returning a factory keyed by raise_error."""
     monkeypatch.setattr("mcp_sdk.server.FastMCP", _FakeMCP)
 
     def _make(raise_error: Exception | None = None) -> OnlinetlabsMCPServer:

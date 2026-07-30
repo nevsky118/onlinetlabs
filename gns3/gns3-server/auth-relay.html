@@ -13,13 +13,13 @@
       var password = params.get('password');
       var project = params.get('project');
 
-      // GNS3 Web UI хранит подключение к серверу как "controller-<id>" в
-      // localStorage и падает с "Cannot read properties of null (reading
-      // 'authToken')" на /login и /project, если эта запись отсутствует —
-      // обычно её создаёт мастер «Add Controller» при первом визите.
-      // Регистрируем тем же форматом, что и сам GNS3 (см. controllers.component),
-      // подставляя host/port/protocol текущего origin — так ссылка остаётся
-      // рабочей независимо от домена/порта, на котором опубликован GNS3.
+      // The GNS3 Web UI stores the server connection as "controller-<id>" in
+      // localStorage and crashes with "Cannot read properties of null (reading
+      // 'authToken')" on /login and /project when that entry is missing. Normally
+      // it is created by the "Add Controller" wizard on the first visit.
+      // We register it in the same format GNS3 itself uses (see controllers.component),
+      // filling in host/port/protocol from the current origin, so the link stays
+      // working regardless of the domain/port GNS3 is published on.
       if (!localStorage.getItem('controller-1')) {
         localStorage.setItem('controllerIds', 'controller-1');
         localStorage.setItem('controller-1', JSON.stringify({
@@ -35,10 +35,11 @@
       }
 
       if (username && password) {
-        // Форма входа GNS3 Web UI сама подставляет логин/пароль из этого
-        // ключа localStorage при загрузке (см. компонент логина: ngOnInit
-        // читает isRememberMe и заполняет loginForm). Студенту останется
-        // один клик «Войти» вместо ручного ввода временных доступов.
+        // The GNS3 Web UI login form fills in the login/password from this
+        // localStorage key by itself on load (see the login component, where
+        // ngOnInit reads isRememberMe and populates loginForm). The student is
+        // left with one click on "Log in" instead of typing the temporary
+        // credentials by hand.
         localStorage.setItem('isRememberMe', JSON.stringify({
           username: username,
           password: password,
@@ -46,12 +47,12 @@
         }));
       }
 
-      // Сбрасываем JWT предыдущей сессии GNS3. Если в браузере уже был
-      // залогинен другой пользователь (напр. admin), Angular SPA видит
-      // controller-1.authToken, пропускает форму логина и идёт на /projects,
-      // игнорируя returnUrl со ссылкой на конкретный проект студента.
-      // Удаляем authToken из объекта контроллера — SPA покажет форму логина
-      // с предзаполненными credentials студента из isRememberMe.
+      // Reset the JWT of the previous GNS3 session. If another user was already
+      // logged in in the browser (e.g. admin), the Angular SPA sees
+      // controller-1.authToken, skips the login form and goes to /projects,
+      // ignoring the returnUrl that points at the student's specific project.
+      // We delete authToken from the controller object, so the SPA shows the
+      // login form with the student's credentials prefilled from isRememberMe.
       try {
         var ctrl = JSON.parse(localStorage.getItem('controller-1') || '{}');
         delete ctrl.authToken;

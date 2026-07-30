@@ -127,17 +127,17 @@ check:
 	cd $(SDK) && poetry run ruff format --check src/ tests/
 
 # ── Encryption ───────────────────────────────────────────────
-# Все env стека лежат в deployment/<tier>/ и шифруются двумя командами. Ключ в
-# CONFIG_PASSWORD (в CI берётся из секретов раннера, в репозитории его нет).
-# gns3 шифруется отдельно (gns3/Makefile) — это отдельный сервис.
+# All stack env files live in deployment/<tier>/ and are encrypted by two commands. The key is
+# in CONFIG_PASSWORD (in CI it is taken from the runner secrets, it is not in the repository).
+# gns3 is encrypted separately (gns3/Makefile), it is a separate service.
 encrypt:
-	@test -n "$(CONFIG_PASSWORD)" || { echo "CONFIG_PASSWORD не задан"; exit 1; }
+	@test -n "$(CONFIG_PASSWORD)" || { echo "CONFIG_PASSWORD is not set"; exit 1; }
 	@find deployment -name '*.env' | while read -r f; do \
 		openssl enc -aes-256-cbc -salt -pbkdf2 -in "$$f" -out "$$f.aes" -pass pass:$(CONFIG_PASSWORD) && echo "  encrypted $$f"; \
 	done
 
 decrypt:
-	@test -n "$(CONFIG_PASSWORD)" || { echo "CONFIG_PASSWORD не задан"; exit 1; }
+	@test -n "$(CONFIG_PASSWORD)" || { echo "CONFIG_PASSWORD is not set"; exit 1; }
 	@find deployment -name '*.env.aes' | while read -r f; do \
 		openssl enc -aes-256-cbc -d -salt -pbkdf2 -in "$$f" -out "$${f%.aes}" -pass pass:$(CONFIG_PASSWORD) && echo "  decrypted $${f%.aes}"; \
 	done

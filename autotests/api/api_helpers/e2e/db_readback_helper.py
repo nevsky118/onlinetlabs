@@ -1,4 +1,4 @@
-# Tier 2: чтение записанных строк напрямую из БД (backend-venv).
+# Tier 2. Reading the written rows directly from the DB (backend-venv).
 
 import os
 
@@ -6,7 +6,7 @@ from sqlalchemy import select
 
 from autotests.settings.configuration.env_paths import env_file
 
-# db/session.py читает settings на уровне модуля — нужно загрузить env до импорта.
+# db/session.py reads settings at module level, so env must be loaded before the import.
 _BACKEND_ENV = env_file("backend")
 if _BACKEND_ENV.exists():
     from dotenv import dotenv_values
@@ -15,7 +15,7 @@ if _BACKEND_ENV.exists():
 
 
 async def fetch_chat_messages(session_id: str) -> list:
-    """Вернуть chat_messages для сессии (in-process, backend async_session)."""
+    """Return the chat_messages for a session (in-process, backend async_session)."""
     from db.session import async_session
     from models.chat_message import ChatMessage
     async with async_session() as db:

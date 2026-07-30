@@ -30,7 +30,7 @@ import sys
 
 import httpx
 
-# Позволяет запускать как `python scripts/build_lab_template.py` без -m.
+# Allows running it as `python scripts/build_lab_template.py` without -m.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from lib import topology_builder as tb

@@ -4,9 +4,9 @@ Revision ID: a3f8c1d2e4b5
 Revises: b9bc17963aae
 Create Date: 2026-06-02 10:00:00.000000
 
-Колонка `gns3_password_hash` больше не используется: пароль GNS3-учётки
-сразу выдаётся студенту и не нужен сервису для последующей аутентификации,
-которая делается через admin-JWT.
+The `gns3_password_hash` column is no longer used. The GNS3 account password is
+handed to the student right away and the service does not need it for subsequent
+authentication, which is done via the admin JWT.
 """
 
 from collections.abc import Sequence

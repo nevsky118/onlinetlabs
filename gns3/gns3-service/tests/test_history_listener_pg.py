@@ -1,4 +1,4 @@
-"""Unit-тесты HistoryPgListener (PostgreSQL LISTEN history_events)."""
+"""Unit tests for HistoryPgListener (PostgreSQL LISTEN history_events)."""
 
 import asyncio
 import json
@@ -11,7 +11,7 @@ from src.history_listener_pg import HistoryPgListener
 
 @pytest.fixture
 def broker():
-    """EventBroker mock — нас интересует только publish()."""
+    """EventBroker mock, only publish() is of interest here."""
     b = MagicMock()
     b.publish = AsyncMock()
     return b
@@ -23,7 +23,7 @@ def listener(broker):
 
 
 class TestOnNotify:
-    """`_on_notify` — синхронный колбэк asyncpg, превращает payload в publish-таск."""
+    """`_on_notify` is a synchronous asyncpg callback, it turns a payload into a publish task."""
 
     async def test_publishes_history_event_envelope_on_valid_payload(self, listener, broker):
         payload = json.dumps(
@@ -36,7 +36,7 @@ class TestOnNotify:
         )
         listener._on_notify(conn=None, pid=1, channel="history_events", payload=payload)
 
-        # Колбэк планирует create_task → ждём его завершения.
+        # The callback schedules create_task → wait for it to finish.
         pending = list(listener._pending_publishes)
         assert pending, "_on_notify must schedule a publish task"
         await asyncio.gather(*pending)
@@ -66,10 +66,10 @@ class TestOnNotify:
 
 
 class TestStartStop:
-    """Жизненный цикл фоновой таски."""
+    """Lifecycle of the background task."""
 
     async def test_stop_cancels_running_task_and_clears_state(self, listener, monkeypatch):
-        # Замокаем asyncpg.connect, чтобы _run не пытался реально приконнектиться.
+        # Mock asyncpg.connect so that _run does not try to connect for real.
         fake_conn = AsyncMock()
         fake_conn.add_listener = AsyncMock()
         fake_conn.execute = AsyncMock()
@@ -82,7 +82,7 @@ class TestStartStop:
         monkeypatch.setattr("src.history_listener_pg.asyncpg.connect", fake_connect)
 
         await listener.start()
-        # Дать _run выполнить connect + add_listener + LISTEN.
+        # Let _run run connect + add_listener + LISTEN.
         for _ in range(20):
             await asyncio.sleep(0)
             if fake_conn.add_listener.await_count:

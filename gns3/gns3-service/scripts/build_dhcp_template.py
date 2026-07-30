@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Сборка шаблона лабы dhcp в GNS3 v3 (VPCS + коммутатор + DHCP-сервер).
+"""Builds the dhcp lab template in GNS3 v3 (VPCS + switch + DHCP server).
 
-Печатает DHCP_TEMPLATE_PROJECT_ID=<uuid>. Код выхода: 0 успех/уже есть, 2 нет шаблона DHCP или ошибка API.
+Prints DHCP_TEMPLATE_PROJECT_ID=<uuid>. Exit codes, 0 success or already exists, 2 no DHCP template or API error.
 """
 
 from __future__ import annotations
@@ -77,7 +77,7 @@ def build_template(force: bool) -> str:
         tb.append_docker_env(client, project_id, dhcp, "DHCP_SUBNET=192.168.10.0/24")
         tb.append_docker_env(client, project_id, dhcp, "DHCP_RANGE=192.168.10.100,192.168.10.200")
         tb.append_docker_env(client, project_id, dhcp, "DHCP_GATEWAY=192.168.10.1")
-        # Headless: telnet-консоль через WS падает на Docker Desktop macOS.
+        # Headless. The telnet console over WS fails on Docker Desktop macOS.
         tb.set_console_type(client, project_id, dhcp, "none")
 
         tb.link(client, project_id, pc1, 0, sw1, 0, a_adapter=0, b_adapter=0)

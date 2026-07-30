@@ -1,4 +1,4 @@
-# Универсальный async REST API клиент.
+# Generic async REST API client.
 
 from urllib.parse import urljoin
 
@@ -9,11 +9,11 @@ from autotests.settings.configuration.config_model import ConfigModel
 
 def _get_controller_url(config: ConfigModel, name: str) -> str:
     """
-    Формирует URL-адрес контроллера на основе base_url и имени контроллера.
+    Builds the controller URL from base_url and the controller name.
 
-    :param config: Объект конфигурации с base_url.
-    :param name: Название контроллера (часть пути).
-    :return: Полный URL-адрес контроллера.
+    :param config: Configuration object holding base_url.
+    :param name: Controller name (a path segment).
+    :return: Full controller URL.
     """
     base_url = config.base_url
     if not base_url.endswith("/"):
@@ -23,13 +23,13 @@ def _get_controller_url(config: ConfigModel, name: str) -> str:
 
 class ApiClient:
     """
-    Универсальный async REST API клиент с авторизацией через JWT.
+    Generic async REST API client with JWT authorization.
 
-    :param client: HTTP-клиент (httpx.AsyncClient).
-    :param config: Конфигурационная модель с параметрами окружения.
-    :param account_name: Имя аккаунта из config.accounts для авторизации.
-    :param controller_path: Название контроллера (часть пути до эндпоинтов).
-    :param service_name: Имя сервиса.
+    :param client: HTTP client (httpx.AsyncClient).
+    :param config: Configuration model with environment parameters.
+    :param account_name: Account name from config.accounts used for authorization.
+    :param controller_path: Controller name (the path segment leading to the endpoints).
+    :param service_name: Service name.
     """
 
     def __init__(
@@ -57,10 +57,10 @@ class ApiClient:
 
     def _url(self, path: str) -> str:
         """
-        Формирует полный URL эндпоинта.
+        Builds the full endpoint URL.
 
-        :param path: Относительный путь до эндпоинта.
-        :return: Полный URL.
+        :param path: Endpoint path relative to the base.
+        :return: Full URL.
         """
         if not path:
             return self.base_url
@@ -71,10 +71,10 @@ class ApiClient:
 
     def _get_headers(self, headers: dict = None) -> dict:
         """
-        Формирует заголовки запроса с авторизацией из config.accounts.
+        Builds request headers with authorization taken from config.accounts.
 
-        :param headers: Пользовательские заголовки (если None — генерируются автоматически).
-        :return: Словарь заголовков.
+        :param headers: Custom headers. If None, they are generated automatically.
+        :return: Dictionary of headers.
         """
         if headers is not None:
             return headers
@@ -102,16 +102,16 @@ class ApiClient:
         **kwargs,
     ) -> Response:
         """
-        Внутренний метод отправки HTTP-запроса.
+        Internal method that sends an HTTP request.
 
-        :param method: HTTP-метод (GET, POST, PUT, DELETE, PATCH).
-        :param path: Относительный путь эндпоинта.
-        :param headers: Заголовки запроса.
-        :param json_data: JSON-данные в теле запроса.
-        :param params: Query-параметры запроса.
-        :param data: Form-данные в теле запроса.
-        :param kwargs: Дополнительные параметры.
-        :return: HTTP-ответ.
+        :param method: HTTP method (GET, POST, PUT, DELETE, PATCH).
+        :param path: Endpoint path relative to the base.
+        :param headers: Request headers.
+        :param json_data: JSON data in the request body.
+        :param params: Query parameters of the request.
+        :param data: Form data in the request body.
+        :param kwargs: Additional parameters.
+        :return: HTTP response.
         """
         clean_params = {k: v for k, v in params.items() if v is not None} if params else None
         return await self.client.request(
@@ -131,12 +131,12 @@ class ApiClient:
         headers: dict = None,
     ) -> list[str]:
         """
-        Выполняет POST с чтением SSE-потока (text/event-stream).
+        Performs a POST while reading an SSE stream (text/event-stream).
 
-        :param path: Относительный путь до эндпоинта.
-        :param json_data: JSON-данные в теле запроса.
-        :param headers: Заголовки запроса.
-        :return: Список строк ответа (включая пустые строки-разделители SSE).
+        :param path: Endpoint path relative to the base.
+        :param json_data: JSON data in the request body.
+        :param headers: Request headers.
+        :return: List of response lines, including the empty SSE separator lines.
         """
         lines: list[str] = []
         async with self.client.stream(
@@ -151,50 +151,50 @@ class ApiClient:
 
     async def get(self, path: str, **kwargs) -> Response:
         """
-        Выполняет GET-запрос.
+        Performs a GET request.
 
-        :param path: Относительный путь до эндпоинта.
-        :param kwargs: Дополнительные параметры запроса.
-        :return: HTTP-ответ.
+        :param path: Endpoint path relative to the base.
+        :param kwargs: Additional request parameters.
+        :return: HTTP response.
         """
         return await self._send_request("GET", path, **kwargs)
 
     async def post(self, path: str, **kwargs) -> Response:
         """
-        Выполняет POST-запрос.
+        Performs a POST request.
 
-        :param path: Относительный путь до эндпоинта.
-        :param kwargs: Дополнительные параметры запроса (json_data, headers и т.д.).
-        :return: HTTP-ответ.
+        :param path: Endpoint path relative to the base.
+        :param kwargs: Additional request parameters (json_data, headers, and so on).
+        :return: HTTP response.
         """
         return await self._send_request("POST", path, **kwargs)
 
     async def put(self, path: str, **kwargs) -> Response:
         """
-        Выполняет PUT-запрос.
+        Performs a PUT request.
 
-        :param path: Относительный путь до эндпоинта.
-        :param kwargs: Дополнительные параметры запроса.
-        :return: HTTP-ответ.
+        :param path: Endpoint path relative to the base.
+        :param kwargs: Additional request parameters.
+        :return: HTTP response.
         """
         return await self._send_request("PUT", path, **kwargs)
 
     async def patch(self, path: str, **kwargs) -> Response:
         """
-        Выполняет PATCH-запрос.
+        Performs a PATCH request.
 
-        :param path: Относительный путь до эндпоинта.
-        :param kwargs: Дополнительные параметры запроса.
-        :return: HTTP-ответ.
+        :param path: Endpoint path relative to the base.
+        :param kwargs: Additional request parameters.
+        :return: HTTP response.
         """
         return await self._send_request("PATCH", path, **kwargs)
 
     async def delete(self, path: str, **kwargs) -> Response:
         """
-        Выполняет DELETE-запрос.
+        Performs a DELETE request.
 
-        :param path: Относительный путь до эндпоинта.
-        :param kwargs: Дополнительные параметры запроса.
-        :return: HTTP-ответ.
+        :param path: Endpoint path relative to the base.
+        :param kwargs: Additional request parameters.
+        :return: HTTP response.
         """
         return await self._send_request("DELETE", path, **kwargs)

@@ -1,4 +1,4 @@
-# Smoke-тесты запуска сессии /users/me/sessions (launch lifecycle).
+# Smoke tests for session launch /users/me/sessions (launch lifecycle).
 
 import pytest
 
@@ -14,7 +14,7 @@ from autotests.settings.utils.utils import check_response_status
 @pytest.mark.smoke
 @pytest.mark.asyncio
 class TestSessionsLaunchSmokeApi:
-    """Smoke-тесты запуска лабораторной сессии /users/me/sessions."""
+    """Smoke tests for launching a lab session via /users/me/sessions."""
 
     @pytest.fixture(autouse=True)
     def setup(self, anon_client, config):
@@ -25,7 +25,7 @@ class TestSessionsLaunchSmokeApi:
     @autotest.external_id("b1c2d3e4-f5a6-7890-bcde-f01234567890")
     @autotest.name("Smoke: POST /users/me/sessions — 201 launch autotest-lab, тело содержит session_id/gns3_*/status=active")
     async def test_b1c2d3e4_launch_autotest_lab(self):
-        """Запуск autotest-lab возвращает 201 с полным телом ответа и status=active."""
+        """Launching autotest-lab returns 201 with a full response body and status=active."""
         # Act
         with autotest.step("Запускаем сессию для autotest-lab через хелпер"):
             body = await self.sessions_helper.launch_session("autotest-lab")

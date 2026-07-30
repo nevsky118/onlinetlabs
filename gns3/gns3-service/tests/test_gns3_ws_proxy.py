@@ -1,4 +1,4 @@
-"""Unit-тесты Gns3WsProxy core поведения."""
+"""Unit tests for the core Gns3WsProxy behavior."""
 
 import asyncio
 from unittest.mock import AsyncMock, MagicMock
@@ -22,7 +22,7 @@ def admin_client():
 
 @pytest.fixture
 def proxy(broker, admin_client):
-    """Proxy без Redis — для большинства unit-тестов это корректно."""
+    """Proxy without Redis, which is correct for most unit tests."""
     return Gns3WsProxy(
         broker=broker,
         gns3_url="http://gns3:3080",
@@ -32,7 +32,7 @@ def proxy(broker, admin_client):
 
 
 class TestConstants:
-    """Sanity-проверки констант."""
+    """Sanity checks of the constants."""
 
     def test_lock_ttl_seconds(self):
         assert Gns3WsProxy._LOCK_TTL_SECONDS == 3600
@@ -42,7 +42,7 @@ class TestConstants:
 
 
 class TestBackoffDelay:
-    """Экспоненциальный backoff: 1, 2, 4, 8, 16, 30, 30 для attempts 0-6."""
+    """Exponential backoff, 1, 2, 4, 8, 16, 30, 30 for attempts 0-6."""
 
     @pytest.mark.parametrize(
         "attempt,expected",
@@ -61,7 +61,7 @@ class TestBackoffDelay:
 
 
 class TestLockKey:
-    """Формат ключа Redis-лока."""
+    """Format of the Redis lock key."""
 
     def test_lock_key_format(self, proxy):
         assert proxy._lock_key("project-123") == "lock:ws_proxy:project-123"
@@ -72,20 +72,20 @@ class TestLockKey:
 
 
 class TestStartProjectIdempotency:
-    """start_project — идемпотентность при наличии задачи."""
+    """start_project is idempotent when a task already exists."""
 
     @pytest.mark.asyncio
     async def test_start_project_returns_early_if_already_running(self, proxy):
         existing_task = MagicMock()
         proxy._tasks["project-1"] = existing_task
 
-        # Если бы пошёл лок-путь или create_task, мы бы заметили: redis None,
-        # но проверка _tasks происходит ДО проверки _redis.
+        # If the lock path or create_task had been taken we would notice, redis is
+        # None, but the _tasks check happens BEFORE the _redis check.
         await proxy.start_project("project-1", "session-1")
 
-        # Задача не была заменена.
+        # The task was not replaced.
         assert proxy._tasks["project-1"] is existing_task
-        # Heartbeat не запускался.
+        # Heartbeat was not started.
         assert "project-1" not in proxy._heartbeat_tasks
 
     @pytest.mark.asyncio
@@ -97,18 +97,18 @@ class TestStartProjectIdempotency:
             admin_client=admin_client,
             redis_url=None,
         )
-        # Подменяем уже инициализированное поле _redis.
+        # Substitute the already initialized _redis field.
         proxy._redis = redis_mock
         proxy._tasks["project-1"] = MagicMock()
 
         await proxy.start_project("project-1", "session-1")
 
-        # Лок не запрашивался — ранний return сработал.
+        # The lock was never requested, the early return kicked in.
         redis_mock.set.assert_not_called()
 
 
 class TestStopAll:
-    """stop_all — отменяет таски и heartbeat и ожидает их."""
+    """stop_all cancels the tasks and heartbeats and awaits them."""
 
     @pytest.mark.asyncio
     async def test_stop_all_cancels_and_awaits_all_tasks(self, proxy):
@@ -139,7 +139,7 @@ class TestStopAll:
 
     @pytest.mark.asyncio
     async def test_stop_all_empty_state_is_noop(self, proxy):
-        # Не должно падать на пустых словарях.
+        # It must not fail on empty dicts.
         await proxy.stop_all()
         assert proxy._tasks == {}
         assert proxy._heartbeat_tasks == {}
@@ -161,7 +161,7 @@ class TestStopAll:
 
 
 class TestTranslate:
-    """_translate — преобразование GNS3 event → broker envelope."""
+    """_translate converts a GNS3 event into a broker envelope."""
 
     def test_translate_node_updated_returns_status_changed(self, proxy):
         result = proxy._translate(

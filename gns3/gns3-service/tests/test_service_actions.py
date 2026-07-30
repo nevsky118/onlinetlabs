@@ -1,4 +1,4 @@
-"""Unit-тесты SessionService.node_action / bulk_node_action."""
+"""Unit tests for SessionService.node_action / bulk_node_action."""
 
 import uuid
 from unittest.mock import AsyncMock, MagicMock
@@ -10,7 +10,7 @@ from src.services.session_lifecycle import SessionService
 
 
 class TestSessionServiceNodeAction:
-    """Unit-тесты SessionService.node_action."""
+    """Unit tests for SessionService.node_action."""
 
     @pytest.fixture
     def admin(self):
@@ -54,7 +54,7 @@ class TestSessionServiceNodeAction:
 
 
 class TestSessionServiceBulkNodeAction:
-    """Unit-тесты SessionService.bulk_node_action."""
+    """Unit tests for SessionService.bulk_node_action."""
 
     @pytest.mark.asyncio
     async def test_bulk_node_action_delegates_to_admin(self):
@@ -71,7 +71,7 @@ class TestSessionServiceBulkNodeAction:
 
 
 class TestSessionServiceCreateSession:
-    """Unit-тесты SessionService.create_session."""
+    """Unit tests for SessionService.create_session."""
 
     @pytest.mark.asyncio
     async def test_create_session_happy_path(self, gns3_project, gns3_user):
@@ -94,9 +94,10 @@ class TestSessionServiceCreateSession:
         student_id = "abcdef12-3456-7890-abcd-ef1234567890"
         response = await service.create_session(db, student_id, "tmpl-1")
 
-        # Имя GNS3-юзера — хеш ПОЛНОГО user_id (префикс id не уникален и приводил
-        # к удалению чужого GNS3-пользователя при orphan-cleanup).
+        # The GNS3 user name is a hash of the FULL user_id (the id prefix is not
+        # unique and led to deleting someone else's GNS3 user during orphan cleanup).
         from src.gns3_identity import gns3_username_for
+
         expected_username = gns3_username_for(student_id)
 
         admin.create_user.assert_awaited_once()
@@ -106,8 +107,9 @@ class TestSessionServiceCreateSession:
             "tmpl-1", name=f"session-{expected_username}"
         )
         admin.open_project.assert_awaited_once_with("proj-99")
-        # Два ACL: на сам проект (роль User) и на список проектов (роль Auditor) —
-        # оба через RBAC-гейт и последовательно, GNS3 500-тит на параллельных записях.
+        # Two ACLs, one on the project itself (User role) and one on the project list
+        # (Auditor role). Both go through the RBAC gate sequentially, GNS3 returns 500
+        # on concurrent writes.
         acl_calls = [c.args for c in admin.create_acl.await_args_list]
         assert acl_calls == [
             ("/projects/proj-99", "role-user", "u-42"),
@@ -124,13 +126,15 @@ class TestSessionServiceCreateSession:
 
     @pytest.mark.asyncio
     async def test_create_session_propagates_admin_error_and_rolls_back(
-        self, gns3_project, gns3_user,
+        self,
+        gns3_project,
+        gns3_user,
     ):
         admin = AsyncMock()
         admin.find_user_by_name.return_value = None
         admin.create_user.return_value = gns3_user(user_id="u-42")
         admin.duplicate_project.return_value = gns3_project(project_id="p-99")
-        # open_project падает после успешного gather — оба ресурса уже созданы.
+        # open_project fails after a successful gather, both resources already exist.
         admin.open_project.side_effect = RuntimeError("409 duplicate")
 
         service = SessionService(admin_client=admin, gns3_url="http://gns3:3080")
@@ -142,21 +146,21 @@ class TestSessionServiceCreateSession:
         with pytest.raises(RuntimeError, match="409 duplicate"):
             await service.create_session(db, student_id, "tmpl-1")
 
-        # Rollback должен снести и проект, и пользователя.
+        # Rollback must remove both the project and the user.
         admin.delete_project.assert_awaited_with("p-99")
         admin.delete_user.assert_awaited_with("u-42")
         db.commit.assert_not_awaited()
 
 
 class TestSessionServiceDeleteSession:
-    """Unit-тесты SessionService.delete_session."""
+    """Unit tests for SessionService.delete_session."""
 
     @pytest.mark.asyncio
     async def test_delete_session_finally_marks_closed_even_on_admin_error(self):
         admin = AsyncMock()
-        # delete_user падает; внутренний try/except его глотает.
-        # Чтобы проверить finally, заставим упасть и delete_project тоже —
-        # они оба обёрнуты, но finally в любом случае выставит статус.
+        # delete_user fails, the inner try/except swallows it.
+        # To exercise finally we make delete_project fail as well. Both are
+        # wrapped, but finally sets the status in any case.
         admin.delete_user.side_effect = RuntimeError("boom")
         admin.delete_project.side_effect = RuntimeError("kaboom")
 
@@ -171,7 +175,7 @@ class TestSessionServiceDeleteSession:
         db = AsyncMock()
         db.get.return_value = session
 
-        # delete_session не должен выбросить наружу: внутренние ошибки логируются.
+        # delete_session must not raise outward, internal errors are logged.
         await service.delete_session(db, str(session_uuid))
 
         assert session.status == SessionStatus.CLOSED
@@ -180,7 +184,7 @@ class TestSessionServiceDeleteSession:
 
 
 class TestSessionServiceResetPassword:
-    """Unit-тесты SessionService.reset_password."""
+    """Unit tests for SessionService.reset_password."""
 
     @pytest.mark.asyncio
     async def test_reset_password_calls_admin_without_storing_hash(self):
@@ -204,12 +208,10 @@ class TestSessionServiceResetPassword:
         admin.update_user_password.assert_awaited_once()
         called_user_id, called_password = admin.update_user_password.await_args.args
         assert called_user_id == "u-42"
-        # Пароль должен быть свежим plaintext, не sha256-хэшем.
+        # The password must be fresh plaintext, not a sha256 hash.
         assert isinstance(called_password, str) and len(called_password) > 0
-        admin.get_user_token.assert_awaited_once_with(
-            "student-abcdef12", called_password
-        )
-        # В БД ничего не пишем: commit не вызывается, hash-поля не трогаем.
+        admin.get_user_token.assert_awaited_once_with("student-abcdef12", called_password)
+        # Nothing is written to the DB, commit is not called and hash fields are untouched.
         db.commit.assert_not_awaited()
         assert response.gns3_password == called_password
         assert response.gns3_jwt == "fresh-jwt"

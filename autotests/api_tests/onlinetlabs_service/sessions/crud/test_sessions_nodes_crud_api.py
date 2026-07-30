@@ -1,4 +1,4 @@
-# CRUD-тесты node actions через backend.
+# CRUD tests for node actions through the backend.
 
 import asyncio
 
@@ -15,7 +15,7 @@ from autotests.settings.utils.utils import check_response_status
 @pytest.mark.crud
 @pytest.mark.asyncio
 class TestSessionsNodesCrudApi:
-    """CRUD-тесты /users/me/sessions/{id}/nodes/*."""
+    """CRUD tests for /users/me/sessions/{id}/nodes/*."""
 
     @pytest.fixture(autouse=True)
     def setup(self, anon_client, config):
@@ -26,7 +26,7 @@ class TestSessionsNodesCrudApi:
     @autotest.external_id("75111111-7777-4777-7777-777777777777")
     @autotest.name("Sessions CRUD: невалидное действие 422")
     async def test_75111111_invalid_action_422(self):
-        """Невалидное действие → 422."""
+        """An invalid action results in 422."""
         # Arrange
         session_id = await self.sessions_helper.launch_and_wait_active("autotest-lab")
 
@@ -42,7 +42,7 @@ class TestSessionsNodesCrudApi:
     @autotest.external_id("76111111-7777-4777-7777-777777777777")
     @autotest.name("Sessions CRUD: 12 быстрых node action → есть 429")
     async def test_76111111_rate_limit_429(self):
-        """slowapi 5/sec — после серии запросов ожидаем 429 хотя бы в одном."""
+        """slowapi 5/sec, so after a burst of requests we expect 429 in at least one of them."""
         # Arrange
         session_id = await self.sessions_helper.launch_and_wait_active("autotest-lab")
         node_id = await self.sessions_helper.pick_first_node_id(session_id)

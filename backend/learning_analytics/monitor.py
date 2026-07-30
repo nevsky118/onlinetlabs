@@ -159,7 +159,7 @@ class SessionMonitor:
             except asyncio.CancelledError:
                 break
             except Exception:
-                logger.warning("Цикл анализа: ошибка", exc_info=True)
+                logger.warning("Analysis loop error", exc_info=True)
 
     async def _run_analysis(self) -> None:
         """Cycle orchestrator: load events, decide, dispatch, persist."""
@@ -196,7 +196,7 @@ class SessionMonitor:
                             source="objective",
                         )
                 except Exception:
-                    logger.warning("Не удалось записать объективную эскалацию", exc_info=True)
+                    logger.warning("Failed to record the objective escalation", exc_info=True)
         else:
             self._escalated_in_spell = False
 
@@ -242,10 +242,10 @@ class SessionMonitor:
                     lab_slug=self._lab_slug,
                 )
         except Exception:
-            logger.warning("Не удалось записать act-аудит интервенции", exc_info=True)
+            logger.warning("Failed to record the intervention act audit", exc_info=True)
 
         logger.info(
-            "Интервенция: type=%s struggle=%s success=%s",
+            "Intervention: type=%s struggle=%s success=%s",
             pending.analysis.suggested_intervention.value,
             pending.analysis.struggle_type,
             pending.response.success if pending.response else False,
@@ -464,7 +464,7 @@ class SessionMonitor:
                     db, self._session_id, grounded_text, ungrounded_text
                 )
         except Exception:
-            logger.warning("Grounding-ablation не удалось", exc_info=True)
+            logger.warning("Grounding ablation failed", exc_info=True)
 
     async def _persist_intervention(self, db, pending: PendingIntervention) -> None:
         """Record the intervention as a behavioral event for later analysis."""
@@ -505,7 +505,7 @@ class SessionMonitor:
                 await db.commit()
             logger.debug("Arm A: would_intervene action=%s", action)
         except Exception:
-            logger.warning("Не удалось записать would_intervene", exc_info=True)
+            logger.warning("Failed to record would_intervene", exc_info=True)
 
     async def _log_intervention_in(self, db, analysis, response) -> None:
         """Record the intervention as a behavioral event for effect analysis."""
@@ -540,7 +540,7 @@ class SessionMonitor:
             )
             await db.commit()
         except Exception:
-            logger.error("Не удалось записать интервенцию", exc_info=True)
+            logger.error("Failed to record the intervention", exc_info=True)
 
     # Helper emit, never propagates an exception
 
@@ -581,7 +581,7 @@ class SessionMonitor:
             async with self._db_factory() as db:
                 await record_stage_latency(db, self._session_id, stage, duration_ms)
         except Exception:
-            logger.warning("Не удалось записать латентность стадии", exc_info=True)
+            logger.warning("Failed to record the stage latency", exc_info=True)
 
     # ── MRT (micro-randomized trial) ─────────────────────────────
     async def _mrt_step(self, analysis, features, regime, dwell: float, now) -> None:

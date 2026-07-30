@@ -1,6 +1,6 @@
-# Dev-стек gns3. Минимум обвязки: без restart-полиси, без mem_limit/cpus,
-# секреты — с разумными dev-дефолтами (без `:?required` маркеров).
-# Для production-сайзинга и обязательных секретов используется overlay:
+# Dev stack for gns3. Minimal wiring, no restart policy, no mem_limit/cpus,
+# secrets come with sensible dev defaults (no `:?required` markers).
+# For production sizing and mandatory secrets an overlay is used:
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml ...
 services:
   gns3-server:
@@ -14,13 +14,13 @@ services:
     pid: host
     ports:
       - "3080:3080"
-      # Консоли узлов (telnet). Backend проверяет конфиг студента, подключаясь к
-      # консоли VPCS/FRR (`vpcs.show_ip`, `vpcs.ping`). Локально backend работает на
-      # хосте, поэтому консольный диапазон GNS3 (аллоцируется с 5000) должен быть
-      # опубликован — иначе spec-проверки висят на таймауте, LabProgressObserver не
-      # успевает отдать ни одного цикла, и детектор режимов не получает сигнал.
-      # 200 портов ≈ 50 студентов × 2 VPCS-консоли (в проде backend в той же
-      # docker-сети и публикация не нужна).
+      # Node consoles (telnet). The backend checks the student's config by connecting
+      # to the VPCS/FRR console (`vpcs.show_ip`, `vpcs.ping`). Locally the backend runs
+      # on the host, so the GNS3 console range (allocated from 5000) has to be
+      # published. Otherwise spec checks hang on timeout, LabProgressObserver does not
+      # manage to deliver a single cycle, and the mode detector gets no signal.
+      # 200 ports ≈ 50 students × 2 VPCS consoles (in prod the backend is on the same
+      # docker network and publishing is not needed).
       - "5000-5199:5000-5199"
     environment:
       GNS3_AUTH: "true"
@@ -30,7 +30,7 @@ services:
       # template nodes, it uses paths inside its own container. The host
       # Docker daemon only understands host paths. Patched gns3server module
       # translates these prefixes before sending to Docker.
-      # В dev дефолт — текущий путь репозитория; в prod overlay переопределяет.
+      # In dev the default is the current repository path; in prod the overlay overrides it.
       GNS3_BIND_PATH_TRANSLATION: "/data=${ONLINETLABS_HOST_ROOT:-.}/gns3/runtime/data;/root/.local/share/GNS3=${ONLINETLABS_HOST_ROOT:-.}/gns3/runtime/gns3-resources"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3080/v3/version"]
@@ -65,10 +65,10 @@ services:
       interval: 3s
       timeout: 2s
       retries: 5
-    # Дев — эфемерный анонимный том. Prod overlay подменяет на named volume.
-    # tmpfs тут НЕ используем: docker compose merge не умеет очистить tmpfs-список
-    # из overlay, поэтому хранилище задаётся через volumes (анонимный том в dev,
-    # named volume в prod).
+    # Dev gets an ephemeral anonymous volume. The prod overlay swaps it for a named volume.
+    # tmpfs is NOT used here because docker compose merge cannot clear a tmpfs list
+    # coming from an overlay, so storage is set through volumes (anonymous volume in dev,
+    # named volume in prod).
     volumes:
       - /var/lib/postgresql/data
 
@@ -94,7 +94,7 @@ services:
       # Redis lives in a separate compose project (local-redis-1) — reach via host gateway.
       REDIS_URL: ${GNS3_REDIS_URL:-redis://host.docker.internal:6379/0}
       # Shared secret between backend and gns3-service for /v1/exec/vtysh auth.
-      # Dev дефолт; prod overlay делает обязательным.
+      # Dev default; the prod overlay makes it mandatory.
       INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:-dev-secret}
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -130,7 +130,7 @@ services:
       gns3-service:
         condition: service_healthy
 
-  # build-only: GNS3 поднимает их как узлы; как сервисы не стартуют (profiles)
+  # build-only: GNS3 starts them as nodes; they do not start as services (profiles)
   frr-role:
     build:
       context: frr-role

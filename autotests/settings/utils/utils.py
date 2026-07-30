@@ -12,27 +12,27 @@ system_logger = logging.getLogger(__name__)
 
 class Randomizer:
     """
-    Утилитный класс для генерации случайных чисел, строк и UUID.
+    Utility class for generating random numbers, strings and UUIDs.
     """
 
     @staticmethod
     def int_between(low: int, high: int) -> int:
         """
-        Генерирует случайное целое число в заданном диапазоне.
+        Generates a random integer within the given range.
 
-        :param low: Минимальное возможное значение (включительно).
-        :param high: Максимальное возможное значение (включительно).
-        :return: Случайное целое число.
+        :param low: Minimum possible value (inclusive).
+        :param high: Maximum possible value (inclusive).
+        :return: A random integer.
         """
         return random.randint(low, high)
 
     @staticmethod
     def random_string(length: int) -> str:
         """
-        Формирует случайную строку из букв латиницы и цифр.
+        Builds a random string made of Latin letters and digits.
 
-        :param length: Длина результирующей строки.
-        :return: Случайная строка.
+        :param length: Length of the resulting string.
+        :return: A random string.
         """
         alphabet = string.ascii_letters + string.digits
         return "".join(random.choices(alphabet, k=length))
@@ -40,30 +40,30 @@ class Randomizer:
     @staticmethod
     def random_email() -> str:
         """
-        Генерирует случайный тестовый email.
+        Generates a random test email.
 
-        :return: Email в формате 'test_XXXXXXXX@autotest.local'.
+        :return: An email in the 'test_XXXXXXXX@autotest.local' format.
         """
         return f"test_{Randomizer.random_string(8)}@autotest.local"
 
     @staticmethod
     def uuid() -> str:
         """
-        Возвращает новый уникальный идентификатор в формате UUID4.
+        Returns a new unique identifier in UUID4 format.
 
-        :return: Строка с UUID.
+        :return: A string holding the UUID.
         """
         return str(uuid.uuid4())
 
 
 def get_path_file(path, name: str = "", ext: str = "") -> str:
     """
-    Получает путь до файла.
+    Gets the path to a file.
 
-    :param path: Путь до папки в которой запущен тест.
-    :param name: Имя файла, ищется перебором рекурсивно, относительно path.
-    :param ext: Расширение файла или правило на расширение, например: json или [jJ][sS][oO][nN].
-    :return: Путь до файла.
+    :param path: Path to the folder the test is run from.
+    :param name: File name, searched for recursively relative to path.
+    :param ext: File extension or an extension pattern, for example json or [jJ][sS][oO][nN].
+    :return: Path to the file.
     """
     if isinstance(path, str):
         return os.path.abspath(os.path.join(path, name, ext))
@@ -81,11 +81,11 @@ def get_path_file(path, name: str = "", ext: str = "") -> str:
 
 def get_path_folder(path, name: str = "") -> str:
     """
-    Получает путь до папки.
+    Gets the path to a folder.
 
-    :param path: Путь до папки в которой запущен тест.
-    :param name: Имя папки, ищется перебором рекурсивно, относительно path.
-    :return: Путь до папки.
+    :param path: Path to the folder the test is run from.
+    :param name: Folder name, searched for recursively relative to path.
+    :return: Path to the folder.
     """
     if isinstance(path, str):
         return os.path.abspath(path)
@@ -100,9 +100,9 @@ def get_path_folder(path, name: str = "") -> str:
 
 def get_current_test_name() -> str | None:
     """
-    Получает имя текущего выполняемого теста (если тест уже запущен).
+    Gets the name of the currently running test (if a test is already running).
 
-    :return: Имя теста в виде строки или None, если тест ещё не запущен.
+    :return: The test name as a string, or None if no test has started yet.
     """
     if os.environ.get('PYTEST_CURRENT_TEST') is not None:
         return os.environ.get('PYTEST_CURRENT_TEST').split(':')[-1].split(' ')[0]
@@ -111,11 +111,11 @@ def get_current_test_name() -> str | None:
 
 def check_response_status(response, expected_status: int) -> None:
     """
-    Проверяет, что статус-код HTTP-ответа соответствует ожидаемому.
+    Checks that the HTTP response status code matches the expected one.
 
-    :param response: Объект HTTP-ответа (httpx.Response).
-    :param expected_status: Ожидаемый HTTP статус-код.
-    :raises AssertionError: Если фактический статус не совпадает с ожидаемым.
+    :param response: HTTP response object (httpx.Response).
+    :param expected_status: Expected HTTP status code.
+    :raises AssertionError: If the actual status does not match the expected one.
     """
     actual_status = response.status_code
     request_url = getattr(response.request, 'url', 'unknown') if response.request else 'unknown'
@@ -139,15 +139,15 @@ def verify_data(
     msg_option: str = "",
 ) -> None:
     """
-    Проверяет, что фактические данные соответствуют ожидаемым. Поддерживаются словари и списки.
+    Checks that the actual data matches the expected data. Dictionaries and lists are supported.
 
-    :param actual_data: Фактические данные (dict или list).
-    :param expected_data: Ожидаемые данные (dict или list).
-    :param verified_fields: Список ключей, которые необходимо проверить в словаре (по умолчанию None).
-    :param unverified_fields: Список ключей, которые нужно исключить из проверки в словаре (по умолчанию None).
-    :param msg_option: Дополнительное сообщение для контекста ошибки (по умолчанию пустая строка).
-    :raises AssertionError: Если данные не совпадают.
-    :raises TypeError: Если типы данных не поддерживаются или не совпадают.
+    :param actual_data: Actual data (dict or list).
+    :param expected_data: Expected data (dict or list).
+    :param verified_fields: List of keys that must be checked in the dictionary (None by default).
+    :param unverified_fields: List of keys to exclude from the dictionary check (None by default).
+    :param msg_option: Additional message giving context for the error (empty string by default).
+    :raises AssertionError: If the data does not match.
+    :raises TypeError: If the data types are unsupported or do not match.
     """
     if isinstance(expected_data, dict) and isinstance(actual_data, dict):
         verified_keys = expected_data.keys()
@@ -195,13 +195,13 @@ def verify_entity_count(
     msg_option: str = "",
 ) -> None:
     """
-    Проверяет, что количество сущностей в списке соответствует ожидаемому.
+    Checks that the number of entities in the list matches the expected one.
 
-    :param actual_data: Список сущностей.
-    :param expected_count: Ожидаемое количество сущностей.
-    :param msg_option: Дополнительное сообщение для контекста ошибки (по умолчанию пустая строка).
-    :raises AssertionError: Если количество не совпадает.
-    :raises TypeError: Если передан не список.
+    :param actual_data: List of entities.
+    :param expected_count: Expected number of entities.
+    :param msg_option: Additional message giving context for the error (empty string by default).
+    :raises AssertionError: If the count does not match.
+    :raises TypeError: If the argument passed is not a list.
     """
     if not isinstance(actual_data, list):
         raise TypeError(

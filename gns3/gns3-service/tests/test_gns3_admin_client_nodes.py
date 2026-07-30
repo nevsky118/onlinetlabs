@@ -1,4 +1,4 @@
-"""Unit-тесты GNS3AdminClient.node_action / bulk_node_action."""
+"""Unit tests for GNS3AdminClient.node_action / bulk_node_action."""
 
 import pytest
 import respx
@@ -8,7 +8,7 @@ from src.clients.admin import GNS3AdminClient
 
 
 class TestGns3AdminClientNodeAction:
-    """Unit-тесты node_action и bulk_node_action."""
+    """Unit tests for node_action and bulk_node_action."""
 
     @pytest.fixture
     def admin_client(self):

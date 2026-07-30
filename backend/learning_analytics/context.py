@@ -82,7 +82,7 @@ class MCPContextBuilder:
         try:
             return await self._mcp.list_components(ctx)
         except Exception:
-            logger.warning("Не удалось получить компоненты", exc_info=True)
+            logger.warning("Failed to fetch components", exc_info=True)
             return []
 
     async def _safe_list_actions(self, ctx) -> list:
@@ -90,7 +90,7 @@ class MCPContextBuilder:
         try:
             return await self._mcp.list_user_actions(ctx, limit=10)
         except Exception:
-            logger.warning("Не удалось получить действия", exc_info=True)
+            logger.warning("Failed to fetch actions", exc_info=True)
             return []
 
     async def _safe_list_errors(self, ctx) -> list:
@@ -98,7 +98,7 @@ class MCPContextBuilder:
         try:
             return await self._mcp.list_errors(ctx, since=None)
         except Exception:
-            logger.warning("Не удалось получить ошибки", exc_info=True)
+            logger.warning("Failed to fetch errors", exc_info=True)
             return []
 
     @staticmethod

@@ -1,7 +1,7 @@
 FROM alpine:3.21
 
 USER root
-# iproute2 — eth0 поднимаем сами, GNS3 адрес не вешает. gettext — envsubst для рендера конфига.
+# iproute2, we bring eth0 up ourselves because GNS3 does not assign an address. gettext gives envsubst for rendering the config.
 RUN apk add --no-cache dnsmasq iproute2 gettext
 
 COPY configs/dnsmasq.conf.tmpl /etc/dnsmasq/role-configs/dnsmasq.conf.tmpl

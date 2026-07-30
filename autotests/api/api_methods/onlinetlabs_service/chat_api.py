@@ -1,4 +1,4 @@
-# Chat API — тонкая HTTP-обёртка для SSE-эндпоинта /chat/stream.
+# Chat API. Thin HTTP wrapper for the /chat/stream SSE endpoint.
 
 from httpx import AsyncClient
 
@@ -10,11 +10,11 @@ from autotests.settings.reports import autotest
 
 class ChatApi:
     """
-    HTTP-обёртка для чат-эндпоинта тьютора (Vercel AI SDK v1 SSE).
+    HTTP wrapper for the tutor chat endpoint (Vercel AI SDK v1 SSE).
 
-    :param client: HTTP-клиент (httpx.AsyncClient).
-    :param config: Объект ConfigModel с параметрами окружения.
-    :param account_name: Название учётной записи из конфигурации.
+    :param client: HTTP client (httpx.AsyncClient).
+    :param config: ConfigModel object with the environment parameters.
+    :param account_name: Account name from the configuration.
     """
 
     def __init__(
@@ -32,11 +32,11 @@ class ChatApi:
 
     async def post_chat_stream(self, session_id: str, messages: list[dict]) -> list[str]:
         """
-        POST /chat/stream — стрим ответа тьютора (SSE).
+        POST /chat/stream. Streams the tutor response (SSE).
 
-        :param session_id: Идентификатор активной сессии.
-        :param messages: Сообщения в формате UI Message (role + parts).
-        :return: Список SSE-строк ответа.
+        :param session_id: Identifier of the active session.
+        :param messages: Messages in UI Message format (role + parts).
+        :return: List of SSE response lines.
         """
         with autotest.step("POST /chat/stream"):
             return await self.api_client.post_stream(

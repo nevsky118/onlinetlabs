@@ -23,7 +23,7 @@ class TestGns3SessionsNodesSmokeApi:
     @autotest.external_id("c1111111-cccc-4ccc-cccc-cccccccccccc")
     @autotest.name("Gns3 Smoke: POST .../nodes/{id}/stop — 204")
     async def test_c1111111_node_stop_204(self):
-        """Остановка одного узла возвращает 204."""
+        """Stopping a single node returns 204."""
         session_dict = await self.gns3_sessions_helper.create_session()
         session_id = session_dict["session_id"]
         node_id = await self.gns3_sessions_helper.pick_first_node_id(session_id)
@@ -35,7 +35,7 @@ class TestGns3SessionsNodesSmokeApi:
     @autotest.external_id("c2222222-cccc-4ccc-cccc-cccccccccccc")
     @autotest.name("Gns3 Smoke: POST .../nodes/stop (bulk) — 204")
     async def test_c2222222_bulk_stop_204(self):
-        """Bulk-остановка всех узлов возвращает 204."""
+        """Bulk-stopping all nodes returns 204."""
         session_dict = await self.gns3_sessions_helper.create_session()
         session_id = session_dict["session_id"]
 

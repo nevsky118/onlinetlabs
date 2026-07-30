@@ -1,14 +1,14 @@
-"""Выгрузка сводки mcp_audit по сессиям (observe/act/отказы)."""
+"""Export of the mcp_audit summary by session (observe/act/denials)."""
 
 import asyncio
 
 from sqlalchemy import func, select
 
-from models.mcp_audit import MCPAudit  # проверяем зависимость без env
+from models.mcp_audit import MCPAudit  # check the dependency without env
 
 
 async def main():
-    # Ленивый импорт: db.session тянет config, который требует env-файл
+    # Lazy import. db.session pulls in config, which requires an env file
     from db.session import async_session
 
     async with async_session() as db:
@@ -25,7 +25,7 @@ async def main():
             )
         ).all()
 
-    # Свернуть в session_id → {observe_ok, observe_deny, act_ok, act_deny}
+    # Fold into session_id → {observe_ok, observe_deny, act_ok, act_deny}
     sessions: dict[str, dict[str, int]] = {}
     for row in rows:
         sid = row.session_id

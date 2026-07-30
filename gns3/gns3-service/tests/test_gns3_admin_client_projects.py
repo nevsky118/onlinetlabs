@@ -1,4 +1,4 @@
-"""Unit-тесты GNS3AdminClient ProjectsMixin."""
+"""Unit tests for GNS3AdminClient ProjectsMixin."""
 
 import httpx
 import pytest
@@ -9,7 +9,7 @@ from src.clients.admin import GNS3AdminClient
 
 
 class TestGns3AdminClientProjects:
-    """Unit-тесты управления проектами через HTTP-обёртку."""
+    """Unit tests for project management through the HTTP wrapper."""
 
     @pytest.fixture
     def admin_client(self):
@@ -56,8 +56,8 @@ class TestGns3AdminClientProjects:
     @pytest.mark.asyncio
     @respx.mock
     async def test_list_projects_raises_on_500(self, admin_client):
-        # _retry_on_401 не ретраит 500; transient_retry — только на сетевые/5xx
-        # уровня httpx-ошибок, но он не применён к list_projects.
+        # _retry_on_401 does not retry a 500. transient_retry covers only network/5xx
+        # errors at the httpx level, and it is not applied to list_projects.
         respx.get("http://gns3-server:3080/v3/projects").mock(
             return_value=Response(500, json={"message": "boom"}),
         )

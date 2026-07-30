@@ -1,13 +1,13 @@
-# Перечисление типов сущностей для автоочистки.
+# Enumeration of entity types used by the automatic cleanup.
 
 from enum import Enum
 
 
 class EntitiesTypes(Enum):
     """
-    Типы сущностей, создаваемых в тестах.
+    Types of entities created by the tests.
 
-    Порядок важен: верхние удаляются первыми.
+    Order matters, the ones listed first are deleted first.
     """
 
     gns3_project = "gns3_project"

@@ -1,11 +1,11 @@
-# E2E (Tier 2): REPEATING_ERRORS детектится и шлётся интервенция через gateway.
+# E2E (Tier 2): REPEATING_ERRORS is detected and an intervention is sent through the gateway.
 
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-pytest.importorskip("pydantic_ai")  # Tier 2: бежит только в backend-venv, иначе module-level skip
+pytest.importorskip("pydantic_ai")  # Tier 2: runs only in the backend venv, otherwise a module-level skip
 
 from autotests.settings.configuration.env_paths import env_file
 from autotests.settings.reports import autotest

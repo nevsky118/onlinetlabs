@@ -1,4 +1,4 @@
-# Smoke-тесты GNS3 /sessions и /history.
+# Smoke tests for GNS3 /sessions and /history.
 
 import pytest
 
@@ -16,7 +16,7 @@ from autotests.settings.utils.utils import check_response_status
 @pytest.mark.smoke
 @pytest.mark.asyncio
 class TestGns3SessionsSmokeApi:
-    """Smoke-тесты GNS3 /sessions."""
+    """Smoke tests for GNS3 /sessions."""
 
     @pytest.fixture(autouse=True)
     def setup(self, anon_client, config):
@@ -28,7 +28,7 @@ class TestGns3SessionsSmokeApi:
     @autotest.external_id("5fa35cd6-e3d3-4ed7-b586-a7cd16a31e04")
     @autotest.name("Smoke: POST /sessions — 201 создание GNS3 сессии")
     async def test_5fa35cd6_create_gns3_session(self):
-        """Создание GNS3 сессии возвращает 201."""
+        """Creating a GNS3 session returns 201."""
         # Arrange
         session_data = Gns3SessionCreateData(
             lab_template_project_id=self.config.gns3_lab_template_project_id or None,
@@ -55,7 +55,7 @@ class TestGns3SessionsSmokeApi:
     @autotest.external_id("d52b0d65-d724-4520-b50a-e67806a8561d")
     @autotest.name("Smoke: GET /sessions/{session_id} — 200 статус сессии")
     async def test_d52b0d65_get_gns3_session(self):
-        """Получение статуса GNS3 сессии возвращает 200."""
+        """Fetching the status of a GNS3 session returns 200."""
         # Arrange
         with autotest.step("Создаём GNS3 сессию"):
             session = await self.gns3_sessions_helper.create_session()
@@ -76,7 +76,7 @@ class TestGns3SessionsSmokeApi:
     @autotest.external_id("42df50e2-3f08-4649-881b-95aa38536ac7")
     @autotest.name("Smoke: POST /sessions/{session_id}/reset-password — 200 сброс пароля")
     async def test_42df50e2_reset_gns3_password(self):
-        """Сброс пароля GNS3 сессии возвращает 200."""
+        """Resetting the password of a GNS3 session returns 200."""
         # Arrange
         with autotest.step("Создаём GNS3 сессию"):
             session = await self.gns3_sessions_helper.create_session()
@@ -97,7 +97,7 @@ class TestGns3SessionsSmokeApi:
     @autotest.external_id("43bece25-725e-4c93-9efb-a0b77342bd40")
     @autotest.name("Smoke: DELETE /sessions/{session_id} — 200 удаление сессии")
     async def test_43bece25_delete_gns3_session(self):
-        """Удаление GNS3 сессии возвращает 200."""
+        """Deleting a GNS3 session returns 200."""
         # Arrange
         with autotest.step("Создаём GNS3 сессию"):
             session = await self.gns3_sessions_helper.create_session()
@@ -114,7 +114,7 @@ class TestGns3SessionsSmokeApi:
     @autotest.external_id("0463e32e-ceb5-49ee-9f0b-7500189c0940")
     @autotest.name("Smoke: GET /history/{session_id}/actions — 200 история действий")
     async def test_0463e32e_get_gns3_history(self):
-        """Получение истории действий GNS3 сессии возвращает 200."""
+        """Fetching the action history of a GNS3 session returns 200."""
         # Arrange
         with autotest.step("Создаём GNS3 сессию"):
             session = await self.gns3_sessions_helper.create_session()

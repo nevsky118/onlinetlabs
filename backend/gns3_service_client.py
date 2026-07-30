@@ -1,10 +1,10 @@
-"""Async HTTP-клиент к gns3-service (provision/reset/teardown)."""
+"""Async HTTP client for gns3-service (provision/reset/teardown)."""
 
 import httpx
 
 
 class Gns3ServiceClient:
-    """Async HTTP-клиент к gns3-service для управления сессиями студентов."""
+    """Async HTTP client for gns3-service, used to manage student sessions."""
 
     def __init__(
         self,
@@ -12,14 +12,14 @@ class Gns3ServiceClient:
         timeout: float = 60.0,
         internal_token: str | None = None,
     ):
-        """Настраивает httpx-клиент с bearer-токеном и транспортными ретраями."""
-        # Bearer-токен для /v1/exec/vtysh. Без него gns3-service отвергнет запрос.
+        """Configures the httpx client with a bearer token and transport retries."""
+        # Bearer token for /v1/exec/vtysh. Without it gns3-service rejects the request.
         headers: dict[str, str] = {}
         if internal_token:
             headers["Authorization"] = f"Bearer {internal_token}"
-        # Транспортные ретраи на уровне connection: httpx сам пересоберёт
-        # сетевой коннект на ConnectError/ReadError до трёх раз. Логика
-        # HTTP-ответов 5xx сюда не попадает, для них нужен retry в коде.
+        # Transport retries at the connection level. httpx itself re-establishes
+        # the network connection on ConnectError/ReadError up to three times.
+        # 5xx HTTP responses are not covered here, they need a retry in code.
         transport = httpx.AsyncHTTPTransport(retries=3)
         self._client = httpx.AsyncClient(
             base_url=base_url.rstrip("/"),
@@ -29,7 +29,7 @@ class Gns3ServiceClient:
         )
 
     async def create_session(self, user_id: str, template_project_id: str) -> dict:
-        """Создать новую сессию из шаблонного проекта для пользователя."""
+        """Creates a new session for the user from the template project."""
         resp = await self._client.post(
             "/sessions",
             json={"user_id": user_id, "lab_template_project_id": template_project_id},
@@ -38,7 +38,7 @@ class Gns3ServiceClient:
         return resp.json()
 
     async def reset_project(self, gns3_service_session_id: str, template_project_id: str) -> dict:
-        """Сбросить проект сессии к исходному состоянию шаблона."""
+        """Resets the session project back to the template's initial state."""
         resp = await self._client.post(
             f"/sessions/{gns3_service_session_id}/reset-project",
             json={"lab_template_project_id": template_project_id},
@@ -47,23 +47,23 @@ class Gns3ServiceClient:
         return resp.json()
 
     async def delete_session(self, gns3_service_session_id: str) -> None:
-        """Удалить сессию и освободить её ресурсы."""
+        """Deletes the session and frees its resources."""
         resp = await self._client.delete(f"/sessions/{gns3_service_session_id}")
         resp.raise_for_status()
 
     async def get_state(self, session_id: str) -> dict:
-        """Получить текущее состояние сессии и её узлов."""
+        """Gets the current state of the session and its nodes."""
         resp = await self._client.get(f"/sessions/{session_id}/state")
         resp.raise_for_status()
         return resp.json()
 
     async def node_action(self, session_id: str, node_id: str, action: str) -> None:
-        """Выполнить действие над одним узлом (start, stop и т.п.)."""
+        """Performs an action on a single node (start, stop, etc.)."""
         resp = await self._client.post(f"/sessions/{session_id}/nodes/{node_id}/{action}")
         resp.raise_for_status()
 
     async def bulk_node_action(self, session_id: str, action: str) -> None:
-        """Выполнить действие над всеми узлами сессии разом."""
+        """Performs an action on all session nodes at once."""
         # Per-call timeout 180s: with backend-side semaphore (8 concurrent)
         # and ~10s per bulk-start on gns3-server, 50-student queue takes ~60s.
         # 180s gives 3x headroom for cold caches / heavier topologies.
@@ -79,7 +79,7 @@ class Gns3ServiceClient:
         limit: int = 50,
         cursor: str | None = None,
     ) -> dict:
-        """Получить ленту активности сессии с курсорной пагинацией."""
+        """Gets the session activity feed with cursor-based pagination."""
         params: dict = {"limit": limit}
         if cursor:
             params["cursor"] = cursor
@@ -88,7 +88,7 @@ class Gns3ServiceClient:
         return resp.json()
 
     async def exec_vtysh(self, project_id: str, node_id: str, command: str) -> dict:
-        """Выполнить vtysh-команду на docker-узле через gns3-service exec endpoint.
+        """Runs a vtysh command on a docker node via the gns3-service exec endpoint.
 
         Returns: `{stdout, stderr, exit_code}`.
         """
@@ -100,11 +100,11 @@ class Gns3ServiceClient:
         return resp.json()
 
     async def build_template(self, lab_slug: str) -> str:
-        """Построить GNS3-шаблон для лабы в gns3-service. Возвращает template_project_id."""
+        """Builds the GNS3 template for the lab in gns3-service. Returns template_project_id."""
         resp = await self._client.post(f"/v1/templates/{lab_slug}/build", timeout=600.0)
         resp.raise_for_status()
         return resp.json()["template_project_id"]
 
     async def close(self) -> None:
-        """Закрыть HTTP-клиент и его соединения."""
+        """Closes the HTTP client and its connections."""
         await self._client.aclose()

@@ -1,4 +1,4 @@
-# Smoke-тесты /users/me/sessions.
+# Smoke tests for /users/me/sessions.
 
 import pytest
 
@@ -15,7 +15,7 @@ from autotests.settings.utils.utils import check_response_status
 @pytest.mark.smoke
 @pytest.mark.asyncio
 class TestSessionsSmokeApi:
-    """Smoke-тесты /users/me/sessions."""
+    """Smoke tests for /users/me/sessions."""
 
     @pytest.fixture(autouse=True)
     def setup(self, anon_client, config):
@@ -26,7 +26,7 @@ class TestSessionsSmokeApi:
     @autotest.external_id("f2a3b4c5-d6e7-8901-fabc-012345678901")
     @autotest.name("Smoke: GET /users/me/sessions — 200")
     async def test_f2a3b4c5_get_sessions(self):
-        """Получение списка сессий возвращает 200."""
+        """Fetching the list of sessions returns 200."""
         # Act
         with autotest.step("Отправляем GET /users/me/sessions"):
             response = await self.sessions_api.get_sessions()
@@ -39,7 +39,7 @@ class TestSessionsSmokeApi:
     @autotest.external_id("a3b4c5d6-e7f8-9012-abcd-123456789012")
     @autotest.name("Smoke: POST /users/me/sessions — 201 создание сессии")
     async def test_a3b4c5d6_create_session(self):
-        """Создание сессии возвращает 201."""
+        """Creating a session returns 201."""
         # Arrange
         session_data = SessionCreateData(lab_slug="autotest-lab")
 

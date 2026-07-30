@@ -1,4 +1,4 @@
-# Генераторы тестовых данных для auth.
+# Test data generators for auth.
 
 from autotests.settings.utils.data_generator_abstraction import DataAbstractionGenerator
 from autotests.settings.utils.utils import Randomizer
@@ -6,12 +6,12 @@ from autotests.settings.utils.utils import Randomizer
 
 class AuthRegisterData(DataAbstractionGenerator):
     """
-    Генерирует случайный payload для регистрации.
+    Generates a random payload for registration.
 
-    :ivar email: Тестовый email пользователя.
-    :ivar password: Случайный пароль.
-    :ivar name: Уникальное имя сущности для теста.
-    :ivar data: Словарь с полями email, password, name.
+    :ivar email: Test user email.
+    :ivar password: Random password.
+    :ivar name: Unique entity name for the test.
+    :ivar data: Dictionary with the email, password, name fields.
     """
 
     def __init__(self):
@@ -29,11 +29,11 @@ class AuthRegisterData(DataAbstractionGenerator):
 
 class AuthLoginData(DataAbstractionGenerator):
     """
-    Генерирует случайный payload для логина.
+    Generates a random payload for login.
 
-    :ivar email: Тестовый email пользователя.
-    :ivar password: Случайный пароль.
-    :ivar data: Словарь с полями email, password.
+    :ivar email: Test user email.
+    :ivar password: Random password.
+    :ivar data: Dictionary with the email, password fields.
     """
 
     def __init__(self):
@@ -49,11 +49,11 @@ class AuthLoginData(DataAbstractionGenerator):
 
 class AuthExchangeData(DataAbstractionGenerator):
     """
-    Генерирует случайный payload для exchange.
+    Generates a random payload for exchange.
 
-    :ivar user_id: Случайный идентификатор пользователя.
-    :ivar email: Тестовый email пользователя.
-    :ivar data: Словарь с полями user_id, email.
+    :ivar user_id: Random user identifier.
+    :ivar email: Test user email.
+    :ivar data: Dictionary with the user_id, email fields.
     """
 
     def __init__(self):
@@ -68,10 +68,10 @@ class AuthExchangeData(DataAbstractionGenerator):
 
 
 def short_password() -> str:
-    """Пароль короче 8 символов (вызывает 400)."""
+    """Password shorter than 8 characters (triggers a 400)."""
     return "1234567"
 
 
 def valid_password() -> str:
-    """Генерирует валидный пароль (>= 8 символов)."""
+    """Generates a valid password (>= 8 characters)."""
     return f"validpass_{Randomizer.random_string(6)}"

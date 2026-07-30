@@ -56,20 +56,21 @@ class RbacGate:
         deadline = loop.time() + self._wait_timeout
         while True:
             try:
-                acquired = await self._redis.set(
-                    _LOCK_KEY, token, nx=True, ex=self._lock_ttl
-                )
+                acquired = await self._redis.set(_LOCK_KEY, token, nx=True, ex=self._lock_ttl)
             except Exception:
                 # Redis unavailable → don't block provisioning: the local lock is enough
                 # for a single replica (current deployment).
-                logger.warning("RBAC-гейт: Redis недоступен, работаем на локальном локе",
-                               exc_info=True)
+                logger.warning(
+                    "RBAC gate, Redis unavailable, falling back to the local lock", exc_info=True
+                )
                 return None
             if acquired:
                 return token
             if loop.time() >= deadline:
-                logger.warning("RBAC-гейт: ждали лок %.0fs, продолжаем без него",
-                               self._wait_timeout)
+                logger.warning(
+                    "RBAC gate, waited %.0fs for the lock, continuing without it",
+                    self._wait_timeout,
+                )
                 return None
             await asyncio.sleep(self._poll_interval)
 
@@ -82,4 +83,4 @@ class RbacGate:
             if current == token:
                 await self._redis.delete(_LOCK_KEY)
         except Exception:
-            logger.warning("RBAC-гейт: не удалось снять Redis-лок", exc_info=True)
+            logger.warning("RBAC gate, failed to release the Redis lock", exc_info=True)

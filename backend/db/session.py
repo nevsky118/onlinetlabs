@@ -6,7 +6,7 @@ from config import settings
 
 
 def _unique_prepared_statement_name() -> str:
-    """Генерирует уникальное имя prepared statement, чтобы они не конфликтовали при пулинге pgbouncer."""
+    """Generates a unique prepared statement name so they do not clash under pgbouncer pooling."""
     # pgbouncer transaction-mode pooling shares backend connections between
     # clients, so prepared statement names must be unique per query.
     return f"__asyncpg_{uuid.uuid4()}__"
@@ -30,7 +30,7 @@ async_session = async_sessionmaker(engine, expire_on_commit=False)
 
 
 async def get_db():
-    """FastAPI-зависимость: сессия БД + commit на границе запроса, rollback при исключении."""
+    """FastAPI dependency. DB session, commit at the request boundary, rollback on exception."""
     async with async_session() as session:
         try:
             yield session
@@ -42,5 +42,5 @@ async def get_db():
 
 
 def get_db_factory():
-    """Возвращает фабрику сессий для создания сессий БД вне контекста запроса."""
+    """Returns the session factory for creating DB sessions outside of a request context."""
     return async_session

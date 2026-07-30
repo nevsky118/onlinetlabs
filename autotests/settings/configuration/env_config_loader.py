@@ -1,4 +1,4 @@
-# Загрузчик конфигурации из .env-файла или переменных окружения.
+# Configuration loader that reads from a .env file or from environment variables.
 
 import os
 
@@ -9,15 +9,15 @@ from autotests.settings.configuration.config_model import Account, ConfigModel
 
 class EnvConfigLoader:
     """
-    Загружает переменные из .env-файла или os.environ и формирует ConfigModel.
+    Loads variables from a .env file or from os.environ and builds a ConfigModel.
     """
 
     def load(self, env_path: str) -> ConfigModel:
         """
-        Загружает переменные из .env-файла и экспортирует в os.environ.
+        Loads variables from a .env file and exports them into os.environ.
 
-        :param env_path: Путь к .env-файлу.
-        :return: Объект ConfigModel.
+        :param env_path: Path to the .env file.
+        :return: A ConfigModel object.
         """
         values = dotenv_values(env_path)
         for key, value in values.items():
@@ -26,19 +26,19 @@ class EnvConfigLoader:
 
     def load_from_environ(self) -> ConfigModel:
         """
-        Загружает конфигурацию из переменных окружения.
+        Loads the configuration from environment variables.
 
-        :return: Объект ConfigModel.
+        :return: A ConfigModel object.
         """
         return self._build(dict(os.environ))
 
     @staticmethod
     def _build(values: dict) -> ConfigModel:
         """
-        Собирает ConfigModel из словаря переменных.
+        Builds a ConfigModel from a dictionary of variables.
 
-        :param values: Словарь с переменными окружения.
-        :return: Объект ConfigModel.
+        :param values: Dictionary of environment variables.
+        :return: A ConfigModel object.
         """
         accounts = {
             "ANON_ACCOUNT": Account(

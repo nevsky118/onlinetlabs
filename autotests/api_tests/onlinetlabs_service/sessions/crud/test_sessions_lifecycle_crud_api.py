@@ -1,4 +1,4 @@
-# CRUD-тесты жизненного цикла сессии /users/me/sessions.
+# CRUD tests for the session lifecycle of /users/me/sessions.
 
 import pytest
 
@@ -14,7 +14,7 @@ from autotests.settings.utils.utils import check_response_status
 @pytest.mark.crud
 @pytest.mark.asyncio
 class TestSessionsLifecycleCrudApi:
-    """CRUD-тесты жизненного цикла лабораторной сессии."""
+    """CRUD tests for the lab session lifecycle."""
 
     @pytest.fixture(autouse=True)
     def setup(self, anon_client, config):
@@ -26,7 +26,7 @@ class TestSessionsLifecycleCrudApi:
     @autotest.external_id("c2d3e4f5-a6b7-8901-cdef-012345678901")
     @autotest.name("CRUD: relaunch autotest-lab — идемпотентность (тот же session_id)")
     async def test_c2d3e4f5_relaunch_idempotent(self):
-        """Повторный запуск активной сессии возвращает тот же session_id."""
+        """Relaunching an active session returns the same session_id."""
         # Arrange
         with autotest.step("Запускаем сессию первый раз"):
             first = await self.sessions_helper.launch_session("autotest-lab")
@@ -50,7 +50,7 @@ class TestSessionsLifecycleCrudApi:
     @autotest.external_id("d3e4f5a6-b7c8-9012-defa-123456789012")
     @autotest.name("CRUD: GET credentials — 200, возвращает gns3_username/password/url")
     async def test_d3e4f5a6_get_credentials(self):
-        """GET credentials активной сессии возвращает 200 с полями gns3."""
+        """GET credentials of an active session returns 200 with the gns3 fields."""
         # Arrange
         with autotest.step("Запускаем сессию"):
             launched = await self.sessions_helper.launch_session("autotest-lab")
@@ -78,7 +78,7 @@ class TestSessionsLifecycleCrudApi:
     @autotest.external_id("e4f5a6b7-c8d9-0123-efab-234567890123")
     @autotest.name("CRUD: POST stop — 200 {ok: true}")
     async def test_e4f5a6b7_stop(self):
-        """POST stop возвращает 200 с телом {ok: true}."""
+        """POST stop returns 200 with the body {ok: true}."""
         # Arrange
         with autotest.step("Запускаем сессию"):
             launched = await self.sessions_helper.launch_session("autotest-lab")
@@ -99,7 +99,7 @@ class TestSessionsLifecycleCrudApi:
     @autotest.external_id("f5a6b7c8-d9e0-1234-fabc-345678901234")
     @autotest.name("CRUD: POST restart — 200 {ok: true}")
     async def test_f5a6b7c8_restart(self):
-        """POST restart возвращает 200 с телом {ok: true}."""
+        """POST restart returns 200 with the body {ok: true}."""
         # Arrange
         with autotest.step("Запускаем сессию"):
             launched = await self.sessions_helper.launch_session("autotest-lab")
@@ -120,7 +120,7 @@ class TestSessionsLifecycleCrudApi:
     @autotest.external_id("a6b7c8d9-e0f1-2345-abcd-456789012345")
     @autotest.name("CRUD: POST reset — 200 {ok: true}")
     async def test_a6b7c8d9_reset(self):
-        """POST reset возвращает 200 с телом {ok: true}."""
+        """POST reset returns 200 with the body {ok: true}."""
         # Arrange
         with autotest.step("Запускаем сессию"):
             launched = await self.sessions_helper.launch_session("autotest-lab")
@@ -141,7 +141,7 @@ class TestSessionsLifecycleCrudApi:
     @autotest.external_id("b7c8d9e0-f1a2-3456-bcde-567890123456")
     @autotest.name("CRUD: POST end — 200 {ok: true}, relaunch создаёт новую сессию")
     async def test_b7c8d9e0_end_and_relaunch(self):
-        """POST end завершает сессию, повторный запуск создаёт новый session_id."""
+        """POST end finishes the session, and a relaunch creates a new session_id."""
         # Arrange
         with autotest.step("Запускаем первую сессию"):
             launched = await self.sessions_helper.launch_session("autotest-lab")
@@ -173,7 +173,7 @@ class TestSessionsLifecycleCrudApi:
     @autotest.external_id("c8d9e0f1-a2b3-4567-cdef-678901234567")
     @autotest.name("CRUD: ownership — чужой токен на credentials → 404")
     async def test_c8d9e0f1_ownership_credentials(self):
-        """Чужой токен при доступе к credentials → 404."""
+        """Another user's token when accessing credentials results in 404."""
         # Arrange
         with autotest.step("Регистрируем сессию от REGISTERED_ACCOUNT"):
             launched = await self.sessions_helper.launch_session("autotest-lab")
@@ -191,7 +191,7 @@ class TestSessionsLifecycleCrudApi:
     @autotest.external_id("d9e0f1a2-b3c4-5678-defa-789012345678")
     @autotest.name("CRUD: ownership — чужой токен на stop → 404")
     async def test_d9e0f1a2_ownership_stop(self):
-        """Чужой токен при POST stop → 404."""
+        """Another user's token on POST stop results in 404."""
         # Arrange
         with autotest.step("Регистрируем сессию от REGISTERED_ACCOUNT"):
             launched = await self.sessions_helper.launch_session("autotest-lab")

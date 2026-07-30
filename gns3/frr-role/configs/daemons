@@ -1,6 +1,6 @@
 zebra=yes
-# OSPF не нужен: единственная активная роль GW маршрутизирует два /24 через
-# connected-маршруты zebra. Вернуть ospfd=yes при возврате OSPF-лаб (роли R1/R2).
+# OSPF is not needed, the only active role GW routes two /24 subnets through
+# zebra connected routes. Set ospfd=yes back when the OSPF labs return (roles R1/R2).
 ospfd=no
 ospf6d=no
 ripd=no

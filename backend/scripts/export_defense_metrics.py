@@ -1,4 +1,4 @@
-"""Защитный экспорт всех метрик контура 2.3.4 → stdout + md-артефакт."""
+"""Defense export of all metrics of the 2.3.4 control loop → stdout plus an md artifact."""
 
 import asyncio
 from pathlib import Path
@@ -38,7 +38,7 @@ def _fmt_days(seconds):
 
 
 def _build_synthetic_scenarios():
-    """Сценарии идентификатора: 3 onset × 4 типа + 5 нормальных (зеркало eval_identifier)."""
+    """Identifier scenarios. 3 onsets × 4 types plus 5 normal ones (mirrors eval_identifier)."""
     scns = []
     for regime in [
         ProcessRegime.REPEATING_ERRORS,
@@ -54,7 +54,7 @@ def _build_synthetic_scenarios():
 
 
 def _build_synthetic_sessions():
-    """Синтет-сессии для кривой T_k (зеркало derive_thresholds.__main__)."""
+    """Synthetic sessions for the T_k curve (mirrors derive_thresholds.__main__)."""
 
     def _session(spell_len, regime="stuck_on_step", t_step=15):
         samples, t, dwell = [], 0, 0.0
@@ -77,7 +77,7 @@ def _build_synthetic_sessions():
 
 
 def _section_ab(lines, db_metrics, cfg):
-    """Секция 1: A/B-эффект через compute_arm_analysis."""
+    """Section 1. A/B effect computed via compute_arm_analysis."""
     from experiment.analysis import compute_arm_analysis
 
     r = compute_arm_analysis(db_metrics, mentor_seconds=cfg.mentor_handling_seconds)
@@ -115,7 +115,7 @@ def _section_ab(lines, db_metrics, cfg):
 
 
 async def _section_cohort(lines, db, cfg):
-    """Секция 2: когортные метрики по навыку."""
+    """Section 2. Cohort metrics per skill."""
     from cohort.service import compute_cohort_metrics
 
     horizon = cfg.cohort_horizon_days * 86400.0
@@ -145,10 +145,10 @@ async def _section_cohort(lines, db, cfg):
 
 
 def _section_identifier(lines, cfg):
-    """Секция 3: рабочая кривая + матрица + first-match (синтетика)."""
+    """Section 3. Operating curve, confusion matrix and first-match (synthetic)."""
     from evaluation.harness import run_identifier
 
-    # стоимости из конфига
+    # costs from the config
     costs = Costs(
         c_stuck=cfg.cost_stuck,
         c_intervention=cfg.cost_intervention,
@@ -180,7 +180,7 @@ def _section_identifier(lines, cfg):
         )
     lines += [f"\n_* J-оптимум при T_k={best.t_k:.0f}с_", ""]
 
-    # матрица @ J-оптимум
+    # matrix @ J-optimum
     pairs_best = [(scn, run_identifier(scn, best.t_k, cfg)) for scn in scns]
     cm = confusion_matrix(pairs_best)
     header_cols = " | ".join(_LABELS[r] for r in _REGIMES)
@@ -211,7 +211,7 @@ def _section_identifier(lines, cfg):
 
 
 def _section_tk(lines, cfg):
-    """Секция 4: кривая чувствительности T_k."""
+    """Section 4. T_k sensitivity curve."""
     from control.derive_thresholds import sensitivity_curve
 
     sessions = _build_synthetic_sessions()
@@ -236,7 +236,7 @@ def _section_tk(lines, cfg):
         base_c_intervention=c_int,
         c_false=c_false,
         cooldown_seconds=cfg.cooldown_period,
-        time_unit_seconds=60.0,  # ratio = мин⁻¹; D*(ratio)=60/ratio сек
+        time_unit_seconds=60.0,  # ratio = min⁻¹; D*(ratio)=60/ratio sec
     )
 
     lines += [
@@ -255,7 +255,7 @@ def _section_tk(lines, cfg):
 
 
 async def main():
-    # ленивый импорт db — только при реальном прогоне
+    # lazy db import, only for a real run
     try:
         cfg_obj = load_settings()
         cfg = cfg_obj.learning_analytics
@@ -272,7 +272,7 @@ async def main():
         "",
     ]
 
-    # Порядок секций 1→2→3→4 (логичный для защиты). Секции 1+2 требуют БД.
+    # Section order 1→2→3→4 (the logical one for the defense). Sections 1+2 require the DB.
     try:
         from sqlalchemy import select
 
@@ -295,14 +295,14 @@ async def main():
             "",
         ]
 
-    # Секции 3+4 (синтетика, без БД) — после
+    # Sections 3+4 (synthetic, no DB) come after
     _section_identifier(lines, cfg)
     _section_tk(lines, cfg)
 
     report = "\n".join(lines)
     print(report)
 
-    # пишем артефакт
+    # write the artifact
     out_dir = Path(__file__).parents[2] / "docs" / "superpowers" / "artifacts"
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "defense_metrics.md").write_text(report + "\n")

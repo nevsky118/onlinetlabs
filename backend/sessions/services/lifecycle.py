@@ -107,7 +107,7 @@ async def _mark_ended_and_finalize(
     try:
         await _finalize_experiment_metrics(db, session)
     except Exception:
-        logger.exception("Финализация метрик эксперимента упала для сессии %s", session.id)
+        logger.exception("Experiment metrics finalization failed for session %s", session.id)
 
     # best-effort, MRT points with an unclosed spell are right-censored by session end
     try:
@@ -115,7 +115,7 @@ async def _mark_ended_and_finalize(
 
         await censor_open_decisions(db, session.id)
     except Exception:
-        logger.exception("Censoring MRT-точек упал для сессии %s", session.id)
+        logger.exception("Censoring of MRT points failed for session %s", session.id)
 
     return session
 
@@ -201,7 +201,7 @@ async def end_lab(db, session_id: str, user_id: str, gns3_client, monitor_regist
         try:
             await gns3_client.delete_session(meta["gns3_service_session_id"])
         except Exception:
-            logger.exception("Teardown gns3-service упал для %s", session_id)
+            logger.exception("gns3-service teardown failed for %s", session_id)
     from sessions.queue import _get_or_create_singleton
 
     queue = _get_or_create_singleton()

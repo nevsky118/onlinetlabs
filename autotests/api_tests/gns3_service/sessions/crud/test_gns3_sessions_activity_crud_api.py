@@ -23,7 +23,7 @@ class TestGns3SessionsActivityCrudApi:
     @autotest.external_id("f1111111-ffff-4fff-ffff-ffffffffffff")
     @autotest.name("Gns3 CRUD: activity limit=0 → 422")
     async def test_f1111111_limit_0_422(self):
-        """limit вне границ → 422."""
+        """A limit outside the allowed bounds results in 422."""
         response = await self.gns3_sessions_api.get_activity(
             "00000000-0000-0000-0000-000000000000", {"limit": 0},
         )
@@ -33,7 +33,7 @@ class TestGns3SessionsActivityCrudApi:
     @autotest.external_id("f2222222-ffff-4fff-ffff-ffffffffffff")
     @autotest.name("Gns3 CRUD: activity cursor сужает выборку")
     async def test_f2222222_cursor_pagination(self):
-        """Если next_cursor вернулся, повтор с cursor возвращает 200."""
+        """If next_cursor was returned, a repeat request with cursor returns 200."""
         session_dict = await self.gns3_sessions_helper.create_session()
         session_id = session_dict["session_id"]
 
@@ -48,7 +48,7 @@ class TestGns3SessionsActivityCrudApi:
     @autotest.external_id("f3333333-ffff-4fff-ffff-ffffffffffff")
     @autotest.name("Gns3 CRUD: activity invalid cursor → 400")
     async def test_f3333333_invalid_cursor_400(self):
-        """Невалидный ISO в cursor → 400."""
+        """An invalid ISO value in cursor results in 400."""
         session_dict = await self.gns3_sessions_helper.create_session()
         session_id = session_dict["session_id"]
         response = await self.gns3_sessions_api.get_activity(
@@ -60,7 +60,7 @@ class TestGns3SessionsActivityCrudApi:
     @autotest.external_id("f4444444-ffff-4fff-ffff-ffffffffffff")
     @autotest.name("Gns3 CRUD: activity limit>200 → 422")
     async def test_f4444444_limit_over_max_422(self):
-        """limit за верхней границей (>200) → 422."""
+        """A limit past the upper bound (>200) results in 422."""
         response = await self.gns3_sessions_api.get_activity(
             "00000000-0000-0000-0000-000000000000", {"limit": 201},
         )

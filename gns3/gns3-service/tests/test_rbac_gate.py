@@ -1,8 +1,9 @@
-"""Unit-тесты RbacGate: сериализация записей в RBAC GNS3.
+"""Unit tests for RbacGate, serialization of writes into the GNS3 RBAC.
 
-Регрессия: GNS3-сервер отдаёт 500 на параллельных POST /v3/access/acl. Ретраи не
-спасали — конкурирующие провижны сталкивались снова (на 5 одновременных студентах
-~60% сессий не создавалось). Гейт пропускает RBAC-записи строго по одной.
+Regression. The GNS3 server returns a 500 on concurrent POST /v3/access/acl.
+Retries did not help, competing provisioning runs collided again (with 5
+simultaneous students roughly 60% of sessions were not created). The gate lets
+RBAC writes through strictly one at a time.
 """
 
 import asyncio
@@ -13,12 +14,12 @@ from src.rbac_gate import RbacGate
 
 
 class TestRbacGate:
-    """Гейт сериализует критическую секцию RBAC."""
+    """The gate serializes the RBAC critical section."""
 
     @pytest.mark.asyncio
     async def test_serializes_concurrent_sections(self):
-        """Параллельные вызовы не пересекаются внутри гейта."""
-        gate = RbacGate()  # без Redis: только локальный лок
+        """Concurrent calls do not overlap inside the gate."""
+        gate = RbacGate()  # no Redis, local lock only
         overlaps = 0
         inside = 0
 
@@ -28,7 +29,7 @@ class TestRbacGate:
                 inside += 1
                 if inside > 1:
                     overlaps += 1
-                await asyncio.sleep(0.01)  # удерживаем секцию
+                await asyncio.sleep(0.01)  # hold the section
                 inside -= 1
 
         await asyncio.gather(*(rbac_write() for _ in range(8)))
@@ -38,20 +39,20 @@ class TestRbacGate:
 
     @pytest.mark.asyncio
     async def test_releases_lock_on_exception(self):
-        """Исключение внутри секции не оставляет гейт заблокированным."""
+        """An exception inside the section does not leave the gate locked."""
         gate = RbacGate()
 
         with pytest.raises(RuntimeError):
             async with gate():
                 raise RuntimeError("GNS3 500")
 
-        # Гейт снова проходим — иначе провижн встал бы навсегда.
+        # The gate is passable again, otherwise provisioning would stall forever.
         async with gate():
             pass
 
     @pytest.mark.asyncio
     async def test_works_without_redis(self):
-        """Без Redis гейт работает на локальном локе (одиночная реплика)."""
+        """Without Redis the gate runs on the local lock (single replica)."""
         gate = RbacGate(redis_url=None)
         entered = False
 
@@ -62,7 +63,7 @@ class TestRbacGate:
 
     @pytest.mark.asyncio
     async def test_redis_failure_does_not_block_provisioning(self, monkeypatch):
-        """Недоступный Redis не должен ронять провижн: остаётся локальный лок."""
+        """An unavailable Redis must not break provisioning, the local lock remains."""
         gate = RbacGate()
 
         class _BrokenRedis:

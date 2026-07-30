@@ -158,7 +158,7 @@ class LabProgressObserver:
             except asyncio.CancelledError:
                 break
             except Exception:
-                logger.warning("LabProgressObserver: ошибка цикла", exc_info=True)
+                logger.warning("LabProgressObserver: cycle error", exc_info=True)
             await asyncio.sleep(self._cfg.progress_poll_interval)
 
     async def _poll_cycle(self) -> None:
@@ -206,4 +206,4 @@ class LabProgressObserver:
                     session.add(BehavioralEvent(**evt))
                 await session.commit()
         except Exception:
-            logger.error("LabProgressObserver: не удалось сохранить события", exc_info=True)
+            logger.error("LabProgressObserver: failed to save events", exc_info=True)

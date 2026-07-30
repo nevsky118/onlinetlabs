@@ -1,4 +1,4 @@
-# Хелпер для e2e тестов: GNS3 → MCP → Agent пайплайн.
+# Helper for the e2e tests of the GNS3 → MCP → Agent pipeline.
 
 import os
 import sys
@@ -21,7 +21,7 @@ sys.path.insert(
 
 class GNS3MCPHelper:
     """
-    Управляет GNS3 проектом и MCP-клиентом для e2e тестов.
+    Manages the GNS3 project and the MCP client for the e2e tests.
 
     :param config: ConfigModel.
     """
@@ -35,7 +35,7 @@ class GNS3MCPHelper:
         self.entities_registry = EntitiesRegistry(config=config)
 
     async def authenticate(self) -> str:
-        """Получить JWT от GNS3 сервера."""
+        """Obtain a JWT from the GNS3 server."""
         with autotest.step("Аутентификация в GNS3"):
             async with httpx.AsyncClient() as client:
                 response = await client.post(
@@ -49,7 +49,7 @@ class GNS3MCPHelper:
                 return self._jwt
 
     async def create_project(self, name: str) -> str:
-        """Создать GNS3 проект с уникальным именем и зарегистрировать для очистки."""
+        """Create a GNS3 project with a unique name and register it for cleanup."""
         unique_name = f"{name}-{uuid.uuid4().hex[:8]}"
         with autotest.step(f"Создание GNS3 проекта '{unique_name}'"):
             async with httpx.AsyncClient(
@@ -67,7 +67,7 @@ class GNS3MCPHelper:
                 return self._project_id
 
     async def create_vpcs_nodes(self, names: list[str]) -> list[dict]:
-        """Создать VPCS ноды в проекте."""
+        """Create VPCS nodes in the project."""
         with autotest.step(f"Создание VPCS нод: {names}"):
             async with httpx.AsyncClient(
                 base_url=self.gns3_url,
@@ -95,12 +95,12 @@ class GNS3MCPHelper:
                 return nodes
 
     def get_mcp_client(self):
-        """Создать MCPClient для MCP-сервера."""
+        """Create an MCPClient for the MCP server."""
         from mcp_client.client import MCPClient
         return MCPClient(self.mcp_url)
 
     def get_session_context(self):
-        """Создать SessionContext для MCP вызовов."""
+        """Create a SessionContext for MCP calls."""
         from mcp_sdk.context import SessionContext
         return SessionContext(
             user_id="e2e-test-user",

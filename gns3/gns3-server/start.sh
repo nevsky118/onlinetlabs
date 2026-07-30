@@ -7,8 +7,8 @@ set -eu
 CONFIG=${CONFIG:-/data/config.ini}
 [ -f "$CONFIG" ] || cp /config.ini "$CONFIG"
 
-# Подставляем админ-креды из env (prod) в конфиг — иначе остаётся dev-fallback admin/admin.
-# Применяется при создании админа на первом старте (пустой controller-DB).
+# Substitute the admin credentials from env (prod) into the config, otherwise the dev fallback admin/admin stays.
+# Applied when the admin is created on the first start (empty controller DB).
 [ -n "${GNS3_DEFAULT_ADMIN_USER:-}" ] && \
   sed -i "s|^default_admin_username = .*|default_admin_username = ${GNS3_DEFAULT_ADMIN_USER}|" "$CONFIG"
 [ -n "${GNS3_DEFAULT_ADMIN_PASSWORD:-}" ] && \

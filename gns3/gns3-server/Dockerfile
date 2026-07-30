@@ -1,8 +1,8 @@
 # gns3-server: alpine + dynamips + ubridge + vpcs + gns3server.
 # Image is intentionally minimal: no IOS images baked in (mounted from host),
 # no template registration (handled by gns3-service on startup).
-# qemu НЕ ставим: активные лабы (lan-static-ip / dhcp-basics / inter-subnet-routing)
-# используют только VPCS, встроенный ethernet_switch (ubridge) и docker-узлы.
+# qemu is NOT installed, because the active labs (lan-static-ip / dhcp-basics /
+# inter-subnet-routing) use only VPCS, the built-in ethernet_switch (ubridge) and docker nodes.
 
 FROM alpine:3.21
 
@@ -17,10 +17,10 @@ RUN apk add --no-cache --virtual=build-deps gcc python3-dev musl-dev linux-heade
  && pip install --break-system-packages gns3-server==3.0.6 \
  && apk del --purge build-deps
 
-# Без бинарей коммутации образ молча-битый (409 "Could not find ..." на seed).
-# Ловим на сборке, а не в рантайме.
+# Without the switching binaries the image is silently broken (409 "Could not find ..." on seed).
+# We catch that at build time, not at runtime.
 RUN for bin in dynamips ubridge vpcs; do \
-      command -v "$bin" >/dev/null || { echo "FATAL: $bin отсутствует в образе"; exit 1; }; \
+      command -v "$bin" >/dev/null || { echo "FATAL: $bin is missing from the image"; exit 1; }; \
     done
 
 # Modern Docker daemons (29+) require API client >= 1.40. Upstream gns3server
@@ -34,10 +34,11 @@ COPY start.sh /start.sh
 COPY config.ini /config.ini
 COPY patch_bind.py /patch_bind.py
 
-# Бандл web-ui (gns3-server 3.0.6) не содержит auth-relay.html: deep-link на
-# проект студента ведёт на форму логина, требующую ручного ввода временных
-# доступов. Кладём свою страницу-релей рядом с index.html — она подставляет
-# логин/пароль в форму логина и ведёт студента сразу к returnUrl проекта.
+# The web-ui bundle (gns3-server 3.0.6) does not contain auth-relay.html, so a
+# deep link to a student's project leads to the login form, which requires typing
+# the temporary credentials by hand. We put our own relay page next to index.html,
+# it fills the login/password into the login form and takes the student straight
+# to the project returnUrl.
 COPY auth-relay.html /usr/lib/python3.12/site-packages/gns3server/static/web-ui/auth-relay.html
 
 # gns3server passes container-local paths in HostConfig.Mounts.Source. The host

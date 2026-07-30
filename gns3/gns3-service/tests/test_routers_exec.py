@@ -1,4 +1,4 @@
-"""Unit-тесты POST /v1/exec/vtysh."""
+"""Unit tests for POST /v1/exec/vtysh."""
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -11,7 +11,7 @@ from src.routers.exec import router as exec_router
 
 
 def _stub_response(status_code: int, payload: dict) -> MagicMock:
-    """httpx.Response с привязанным request не сериализуется без мока."""
+    """An httpx.Response with a bound request is not serializable without a mock."""
     response = MagicMock()
     response.status_code = status_code
     response.json.return_value = payload
@@ -25,7 +25,7 @@ _VALID_TOKEN = "test-internal-token"
 def _build_app() -> FastAPI:
     app = FastAPI()
     app.include_router(exec_router)
-    # _admin — атрибут, к которому обращается роутер. service.* не используется.
+    # _admin is the attribute the router reaches for. service.* is not used.
     service = MagicMock()
     service._admin = AsyncMock()
     app.state.session_service = service
@@ -34,7 +34,7 @@ def _build_app() -> FastAPI:
 
 @pytest.fixture(autouse=True)
 def _seed_internal_token(monkeypatch):
-    """Гарантируем известный токен для verify_internal_token."""
+    """Guarantee a known token for verify_internal_token."""
     monkeypatch.setattr(settings.security, "internal_api_token", _VALID_TOKEN, raising=False)
 
 
@@ -120,7 +120,7 @@ class TestExecHappyPath:
             "exit_code": 0,
         }
         mock_spawn.assert_awaited_once()
-        # Проверим что в команде есть container_id и vtysh -c "..."
+        # Check that the command contains container_id and vtysh -c "..."
         args = mock_spawn.await_args.args
         assert "container-xyz" in args
         assert "vtysh" in args

@@ -4,7 +4,7 @@
 #
 # Differences from docker-compose.yml (dev):
 #   - restart: unless-stopped on every service.
-#   - mem_limit + cpus на каждый сервис.
+#   - mem_limit + cpus on every service.
 #   - postgres switches from tmpfs to a named volume so DB survives restarts.
 #   - All credentials/secrets are required via env-interpolation (:?) — no compose defaults
 #     to prevent shipping with `admin/admin`. See .env.prod.example.
@@ -34,10 +34,11 @@ services:
       POSTGRES_USER: ${GNS3_DB_USER:?set GNS3_DB_USER in .env.prod}
       POSTGRES_PASSWORD: ${GNS3_DB_PASSWORD:?set GNS3_DB_PASSWORD in .env.prod}
       POSTGRES_DB: ${GNS3_DB_NAME:?set GNS3_DB_NAME in .env.prod}
-    # Базовый docker-compose.yml монтирует анонимный том в /var/lib/postgresql/data.
-    # docker compose merge склеивает volumes-списки — добавление named-volume на тот же
-    # target в overlay вызовет конфликт. Решение: в overlay явно используем тот же mount
-    # path, но именованный том. Compose дедуплицирует по target, оставляя последний.
+    # The base docker-compose.yml mounts an anonymous volume at /var/lib/postgresql/data.
+    # docker compose merge concatenates volumes lists, so adding a named volume on the same
+    # target in the overlay would cause a conflict. The fix is to use the same mount path
+    # in the overlay explicitly, but with a named volume. Compose deduplicates by target,
+    # keeping the last one.
     volumes:
       - gns3_postgres_data:/var/lib/postgresql/data
 
@@ -71,7 +72,7 @@ services:
     environment:
       GNS3_DB_USER: ${GNS3_DB_USER:?set GNS3_DB_USER in .env.prod}
       GNS3_DB_PASSWORD: ${GNS3_DB_PASSWORD:?set GNS3_DB_PASSWORD in .env.prod}
-    # userlist из env, без committed-секрета
+    # userlist from env, without a committed secret
     entrypoint: ["/bin/sh", "-c"]
     command:
       - >

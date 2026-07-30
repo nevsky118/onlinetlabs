@@ -1,4 +1,4 @@
-# Вспомогательные методы для GNS3 sessions.
+# Helper methods for GNS3 sessions.
 
 from httpx import AsyncClient
 
@@ -13,11 +13,11 @@ from autotests.settings.utils.utils import check_response_status
 
 class Gns3SessionsHelperApi:
     """
-    Вспомогательные методы для операций с GNS3 сессиями.
+    Helper methods for operations on GNS3 sessions.
 
     :param client: httpx.AsyncClient.
     :param config: ConfigModel.
-    :param base_url: Базовый URL gns3-service.
+    :param base_url: Base URL of gns3-service.
     """
 
     def __init__(self, client: AsyncClient, config: ConfigModel, base_url: str = ""):
@@ -28,10 +28,10 @@ class Gns3SessionsHelperApi:
 
     async def create_session(self, session_data: dict | None = None) -> dict:
         """
-        Создание GNS3 сессии с проверкой и регистрацией для очистки.
+        Creates a GNS3 session with a check and registration for cleanup.
 
-        :param session_data: Payload (если None — генерируется).
-        :return: Данные созданной сессии.
+        :param session_data: Payload (generated when None).
+        :return: Data of the created session.
         """
         if session_data is None:
             session_data = Gns3SessionCreateData(
@@ -54,10 +54,10 @@ class Gns3SessionsHelperApi:
 
     async def get_state_and_verify(self, session_id: str) -> dict:
         """
-        Получает /sessions/{id}/state и проверяет 200.
+        Fetches /sessions/{id}/state and checks for 200.
 
-        :param session_id: UUID сессии.
-        :return: JSON-снапшот состояния.
+        :param session_id: Session UUID.
+        :return: JSON snapshot of the state.
         """
         with autotest.step("Получить состояние сессии"):
             response = await self.gns3_sessions_api.get_state(session_id)
@@ -72,13 +72,13 @@ class Gns3SessionsHelperApi:
         timeout: float = 15.0,
     ) -> None:
         """
-        Ждёт, пока узел не перейдёт в ожидаемый статус.
+        Waits until the node moves to the expected status.
 
-        :param session_id: UUID сессии.
-        :param node_id: ID узла.
-        :param expected: Ожидаемый статус (started, stopped, suspended, ...).
-        :param timeout: Тайм-аут ожидания (сек).
-        :raises AssertionError: Если статус не достигнут за timeout.
+        :param session_id: Session UUID.
+        :param node_id: Node ID.
+        :param expected: Expected status (started, stopped, suspended, ...).
+        :param timeout: Wait timeout in seconds.
+        :raises AssertionError: If the status is not reached within timeout.
         """
         import asyncio
 
@@ -98,10 +98,10 @@ class Gns3SessionsHelperApi:
 
     async def pick_first_node_id(self, session_id: str) -> str:
         """
-        Возвращает ID первого узла сессии или skip, если узлов нет.
+        Returns the ID of the session's first node, or skips if there are no nodes.
 
-        :param session_id: UUID сессии.
-        :return: ID первого узла.
+        :param session_id: Session UUID.
+        :return: ID of the first node.
         """
         import pytest
 

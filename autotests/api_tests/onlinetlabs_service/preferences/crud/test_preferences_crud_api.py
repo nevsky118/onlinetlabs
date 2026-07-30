@@ -1,4 +1,4 @@
-# CRUD-тесты /users/me/preferences.
+# CRUD tests for /users/me/preferences.
 
 import pytest
 
@@ -12,7 +12,7 @@ from autotests.settings.utils.utils import check_response_status
 @pytest.mark.crud
 @pytest.mark.asyncio
 class TestPreferencesCrudApi:
-    """CRUD-тесты /users/me/preferences."""
+    """CRUD tests for /users/me/preferences."""
 
     @pytest.fixture(autouse=True)
     def setup(self, anon_client, config):
@@ -24,7 +24,7 @@ class TestPreferencesCrudApi:
     @autotest.external_id("bbaf4a63-0451-480f-8dff-4f2b491c93b4")
     @autotest.name("CRUD: PATCH /users/me/preferences — выбор модели без права → 403")
     async def test_bbaf4a63_set_model_without_permission_forbidden(self):
-        """Установка модели аккаунтом без права выбора возвращает 403."""
+        """Setting the model from an account without the right to choose returns 403."""
         # Act
         with autotest.step("PATCH default_model_id для аккаунта без can_select"):
             response = await self.preferences_api.patch_preferences(
