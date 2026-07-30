@@ -1,0 +1,29 @@
+{
+  "name": "@repo/api",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./env": "./env.ts",
+    "./env.client": "./env.client.ts",
+    "./authed-fetch": "./authed-fetch.ts",
+    "./analytics": "./analytics.ts",
+    "./realtime-token": "./realtime-token.ts",
+    "./http": "./http.ts"
+  },
+  "dependencies": {
+    "axios": "^1.13.4",
+    "server-only": "^0.0.1",
+    "zod": "^4.3.6"
+  },
+  "peerDependencies": {
+    "next": "^16.2.12"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^20",
+    "typescript": "^5"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}
