@@ -1,0 +1,45 @@
+---
+title: Routing Between Subnets
+description: Two hosts on different subnets behind a shared router. The student's task is to configure addresses and gateways for PC1 and PC2 so that ping traffic routes through the router between the subnets.
+slug: inter-subnet-routing
+skill: subnet-routing
+difficulty: easy
+duration: 10-15 min
+launchable: true
+environment: gns3
+tags:
+  - networking
+  - routing
+  - gateway
+  - vpcs
+tasks: 3
+---
+
+## The goal
+
+Two computers on different subnets can't reach each other directly — they need a router in between. R1 is already up and configured: each interface holds the gateway address for its own subnet. You'll assign addresses and gateways to the hosts so ping traffic routes through the router.
+
+## IP plan
+
+| Device | Subnet | IP | Gateway |
+|-|-|-|-|
+| R1 (to PC1) | 192.168.1.0/24 | 192.168.1.1/24 | — |
+| R1 (to PC2) | 192.168.2.0/24 | 192.168.2.1/24 | — |
+| PC1 | 192.168.1.0/24 | 192.168.1.11/24 | 192.168.1.1 |
+| PC2 | 192.168.2.0/24 | 192.168.2.11/24 | 192.168.2.1 |
+
+## Tasks
+
+1. On the **PC1** console: `ip 192.168.1.11/24 192.168.1.1`, then `save`.
+2. On the **PC2** console: `ip 192.168.2.11/24 192.168.2.1`, then `save`.
+3. From PC1: `ping 192.168.2.11`.
+
+## Completion criteria
+
+- PC1 — `192.168.1.11/24`, gateway `192.168.1.1`.
+- PC2 — `192.168.2.11/24`, gateway `192.168.2.1`.
+- Ping `PC1 → 192.168.2.11` succeeds (`ttl=63`, through one router).
+
+## Validation
+
+Launch the lab and click "Validate".

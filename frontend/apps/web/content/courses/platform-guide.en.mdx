@@ -1,0 +1,78 @@
+---
+title: How to Use the Platform
+description: The student's end-to-end flow — from sign-in to session completion, with screenshots
+slug: platform-guide
+launchable: false
+---
+
+This guide walks through the full platform flow for completing a lab. Screenshots are taken from an actual running session.
+
+## 1. Sign in
+
+Open `/sign-in`. Enter your email and password. No account yet? Use `/sign-up` (or the GitHub button on the right).
+
+![Platform sign-in form](/screenshots/platform-guide/01-sign-in.webp)
+
+After signing in, the home page opens.
+
+## 2. Choosing a lab
+
+Go to the "Labs" section in the header, or open a lab page directly, e.g. `/labs/lan-static-ip`. On the right, the sidebar has a "Launch lab" card with metadata (difficulty/duration) and a launch button. On mobile the sidebar is hidden — the button appears in the page header instead.
+
+![Lab page with launch button](/screenshots/platform-guide/02-lab-page.webp)
+
+## 3. Launch + credentials dialog
+
+Clicking "Launch" creates a dedicated GNS3 environment (your temporary user plus a project clone) and opens a dialog with the access details.
+
+![Lab access credentials dialog](/screenshots/platform-guide/03-credentials-dialog.webp)
+
+In the dialog:
+
+- **Login** (`student-…`) — your temporary GNS3 user.
+- **Password** — shown in full **once**; save it if you plan to come back later.
+- **"Open GNS3"** — opens the GNS3 Web UI in a new tab.
+- **"Go to lab"** — takes you to the session page.
+
+## 4. Session page
+
+`/session/{id}` — where you manage the lab. Here you'll find:
+
+- The lab title.
+- A credentials card (login, hidden password with reveal/copy, "Open GNS3").
+- A status badge (`active` or `ended`).
+- Controls: Stop, Restart, Reset, End.
+- A tutor chat launcher button in the bottom right.
+
+![Session page](/screenshots/platform-guide/04-session-page.webp)
+
+## 5. Chat with the tutor
+
+Clicking the launcher opens a floating chat window.
+
+![Open tutor chat](/screenshots/platform-guide/05-chat-empty.webp)
+
+Type a question and press "Send" — the answer streams token by token over SSE.
+
+![Streaming tutor response](/screenshots/platform-guide/06-chat-streamed.webp)
+
+While the answer is being generated, the "Send" button turns into "Stop" — you can interrupt the stream.
+
+## 6. Lab controls
+
+- **Stop** — stops all nodes in the GNS3 project; the session stays active.
+- **Restart** — Stop → Start for all nodes.
+- **Reset** — recreates the GNS3 project from the template. **Destructive** — the current topology in the environment is lost. Confirmed via an AlertDialog.
+- **End** — deletes the GNS3 environment entirely (user + project). **Irreversible**. Confirmed via an AlertDialog.
+
+## 7. Ending the session
+
+Clicking "End" opens an AlertDialog for confirmation.
+
+![Session end confirmation](/screenshots/platform-guide/07-end-dialog.webp)
+
+After confirming, the GNS3 environment is torn down. If you reload the session page, the status shows `ended` and all controls are disabled.
+
+![Ended session](/screenshots/platform-guide/08-ended-state.webp)
+
+The session stays in the database (for analytics and history), but there's no more access to GNS3 — you'll need a new launch.

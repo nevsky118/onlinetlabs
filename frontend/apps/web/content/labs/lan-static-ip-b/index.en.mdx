@@ -1,0 +1,32 @@
+---
+title: Static IP Addressing on 10.0.0.0/24
+description: The same skill as in "Static IP Addressing in a Single Subnet", but on a new 10.0.0.0/24 network. The student's task is to manually assign static addresses to PC1 and PC2 with no gateway, then verify connectivity with ping. A near-transfer instance for testing skill transfer.
+slug: lan-static-ip-b
+skill: static-ip-addressing
+difficulty: easy
+duration: 10-15 min
+launchable: true
+environment: gns3
+tags:
+  - networking
+  - ip
+  - vpcs
+tasks: 3
+---
+
+## The goal
+
+The same static addressing skill as in the first lab, but a different network. Two computers on the same `10.0.0.0/24` local network need to see each other directly over L2 — no router involved. You'll manually assign static addresses and verify connectivity with ping.
+
+## IP plan
+
+| Node | Address | Gateway |
+|-|-|-|
+| PC1 | `10.0.0.11/24` | not needed |
+| PC2 | `10.0.0.12/24` | not needed |
+
+## Steps
+
+1. Open the PC1 console and set the address: `ip 10.0.0.11/24`
+2. Open the PC2 console and set the address: `ip 10.0.0.12/24`
+3. From PC1, verify connectivity: `ping 10.0.0.12`

@@ -1,0 +1,42 @@
+---
+title: Static IP Addressing in a Single Subnet
+description: Two hosts on a shared 192.168.1.0/24 network. The student's task is to manually assign static addresses to PC1 and PC2 with no gateway, then verify connectivity with ping within the subnet.
+slug: lan-static-ip
+skill: static-ip-addressing
+difficulty: easy
+duration: 10-15 min
+launchable: true
+environment: gns3
+tags:
+  - networking
+  - ip
+  - vpcs
+tasks: 3
+---
+
+## The goal
+
+Two computers on the same local network need to see each other. No router is needed: both hosts sit on the same `192.168.1.0/24` subnet, so they communicate directly over L2. You'll manually assign static addresses and verify connectivity with ping.
+
+## IP plan
+
+| Device | IP | Mask | Gateway |
+|-|-|-|-|
+| PC1 | 192.168.1.11 | /24 | — |
+| PC2 | 192.168.1.12 | /24 | — |
+
+## Tasks
+
+1. On the **PC1** console: `ip 192.168.1.11/24`, then `save`.
+2. On the **PC2** console: `ip 192.168.1.12/24`, then `save`.
+3. From PC1: `ping 192.168.1.12`.
+
+## Completion criteria
+
+- PC1 — address `192.168.1.11/24`, gateway empty.
+- PC2 — address `192.168.1.12/24`, gateway empty.
+- Ping `PC1 → 192.168.1.12` succeeds (`ttl=64`, direct path).
+
+## Validation
+
+Launch the lab and click "Validate" on the session page — the auto-validator will check the criteria above.
