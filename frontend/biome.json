@@ -59,7 +59,7 @@
   },
   "overrides": [
     {
-      "includes": ["shared/ui/**"],
+      "includes": ["apps/*/shared/ui/**", "packages/design-system/ui/**"],
       "linter": {
         "rules": {
           "a11y": { "useFocusableInteractive": "off" },

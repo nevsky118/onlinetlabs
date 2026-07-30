@@ -1,0 +1,26 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "ui": "tui",
+  "envMode": "strict",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "env": [
+        "NEXT_PUBLIC_*",
+        "BACKEND_URL",
+        "BETTER_AUTH_URL",
+        "BETTER_AUTH_SECRET",
+        "INTERNAL_API_TOKEN",
+        "GITHUB_CLIENT_ID",
+        "GITHUB_CLIENT_SECRET",
+        "NODE_ENV"
+      ],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**", ".source/**"]
+    },
+    // typecheck waits for its own build because .source/ (fumadocs-mdx codegen) appears only after next build/dev
+    "typecheck": { "dependsOn": ["build", "^build", "^typecheck"] },
+    "dev": { "cache": false, "persistent": true },
+    "clean": { "cache": false }
+  }
+}

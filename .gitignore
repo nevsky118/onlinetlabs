@@ -33,6 +33,7 @@ next-env.d.ts
 .DS_Store
 *.pem
 .env*
+!.env.example
 deployment/**/*.env
 !*.env.aes
 
@@ -95,3 +96,4 @@ gns3/runtime/
 .agents
 .migration
 skills-lock.json
+.playwright-mcp/
