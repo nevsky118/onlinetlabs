@@ -145,17 +145,22 @@ async def _fetch_mcp_context(
             mcp_client.list_errors(ctx),
             return_exceptions=True,
         )
+        # gather(return_exceptions=True) yields value-or-exception; narrow once so a
+        # failed call stays distinguishable from an empty result downstream.
+        component_list = components if isinstance(components, list) else None
+        error_list = errors if isinstance(errors, list) else None
+
         parts = []
         component_count = 0
         error_count = 0
-        if isinstance(components, list) and components:
-            component_count = len(components)
-            lines = [f"  - {c.name} ({c.type}): {c.status} — {c.summary}" for c in components]
+        if component_list:
+            component_count = len(component_list)
+            lines = [f"  - {c.name} ({c.type}): {c.status} — {c.summary}" for c in component_list]
             parts.append(t("prompt.env.components", locale) + "\n" + "\n".join(lines))
 
             # Run show ip ourselves: models often skip get_vpcs_ip and echo the
             # expected values from [TASK] instead.
-            vpcs_nodes = [c for c in components if c.type == "vpcs" and c.status == "started"]
+            vpcs_nodes = [c for c in component_list if c.type == "vpcs" and c.status == "started"]
             if vpcs_nodes:
                 ip_results = await asyncio.gather(
                     *(run_vpcs_show_ip(c.name, ctx, mcp_client, locale) for c in vpcs_nodes),
@@ -179,11 +184,14 @@ async def _fetch_mcp_context(
                     lines.append(line)
                 if lines:
                     parts.append(t("prompt.env.vpcs_current", locale) + "\n" + "\n".join(lines))
-        else:
+        elif component_list is not None:
             parts.append(t("prompt.env.components_empty", locale))
+        else:
+            # The call failed. Saying "empty" here would present an outage as a confirmed state.
+            parts.append(t("prompt.env.components_unavailable", locale))
 
-        if isinstance(errors, list):
-            recent = [e for e in errors if not isinstance(e, Exception)][:5]
+        if error_list is not None:
+            recent = [e for e in error_list if not isinstance(e, Exception)][:5]
             error_count = len(recent)
             if recent:
                 lines = [
@@ -192,6 +200,8 @@ async def _fetch_mcp_context(
                 parts.append(t("prompt.env.recent_errors", locale) + "\n" + "\n".join(lines))
             else:
                 parts.append(t("prompt.env.no_errors", locale))
+        else:
+            parts.append(t("prompt.env.errors_unavailable", locale))
         return ("\n\n".join(parts) if parts else None), component_count, error_count
     except Exception:
         logger.warning("chat: failed to preload the MCP context", exc_info=True)

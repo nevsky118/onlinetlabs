@@ -125,6 +125,9 @@ prompt:
   env:
     components: "Environment components:"
     components_empty: "Environment components: the list is empty."
+    # Distinct from components_empty: we could not ask, so the lab is not known to be empty.
+    components_unavailable: |-
+      Environment components: could not be read, the lab environment did not respond. Do not assume the lab is empty or unconfigured, and say the state is unknown rather than guessing.
     vpcs_current: "Current VPCS configuration (show ip), captured just now:"
     ip_unset: (not configured)
     # Caps match the Russian ВЕРНО/ОШИБКА: emphasis is a signal the model reads.
@@ -132,6 +135,7 @@ prompt:
     verdict_bad: " WRONG, the task requires {expected}"
     recent_errors: "Recent errors:"
     no_errors: No errors detected.
+    errors_unavailable: "Recent errors: could not be read, so it is unknown whether any occurred."
   lab:
     title: "Lab: {title}"
     goal: "Goal: {goal}"

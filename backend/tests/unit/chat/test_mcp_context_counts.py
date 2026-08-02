@@ -2,24 +2,29 @@ from types import SimpleNamespace
 
 import pytest
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 
 from chat.router import _fetch_mcp_context
+from i18n import t
 
 pytestmark = [pytest.mark.unit]
 
 
 class _Client:
-    """MCP client stub returning fixed components and errors."""
+    """MCP client stub returning fixed components and errors, or raising if given an Exception."""
 
     def __init__(self, components, errors):
         self._components = components
         self._errors = errors
 
     async def list_components(self, ctx):
+        if isinstance(self._components, Exception):
+            raise self._components
         return self._components
 
     async def list_errors(self, ctx):
+        if isinstance(self._errors, Exception):
+            raise self._errors
         return self._errors
 
 
@@ -69,3 +74,56 @@ class TestMcpContextCounts:
 
         with autotest.step("Assert: the caller gets a usable triple rather than a bare None"):
             assert_equal((text, components, errors), (None, 0, 0), "absent client is not an error")
+
+    @autotest.num("3144")
+    @autotest.external_id("244e2f7f-f3a8-4e1f-93de-6fbfdb1a2c88")
+    @autotest.name("_fetch_mcp_context: an unreachable environment is not reported as an empty lab")
+    @pytest.mark.asyncio
+    async def test_244e2f7f_component_failure_is_not_empty(self):
+        with autotest.step("Arrange: list_components fails while list_errors succeeds"):
+            failing = _Client(RuntimeError("mcp down"), [])
+            genuinely_empty = _Client([], [])
+
+        with autotest.step("Act: fetch context for both, in both locales"):
+            failed_en, _, _ = await _fetch_mcp_context(failing, None, "en")
+            failed_ru, _, _ = await _fetch_mcp_context(failing, None, "ru")
+            empty_en, _, _ = await _fetch_mcp_context(genuinely_empty, None, "en")
+
+        with autotest.step("Assert: the outage is stated explicitly, not silently or as emptiness"):
+            assert_true(failed_en != empty_en, "an outage must not read as a confirmed-empty lab")
+            assert_true(
+                t("prompt.env.components_unavailable", "en") in failed_en,
+                "the tutor is told the environment could not be read",
+            )
+            assert_true(
+                t("prompt.env.components_unavailable", "ru") in failed_ru,
+                "the failure notice is localized",
+            )
+            assert_true(
+                t("prompt.env.components_empty", "en") in empty_en,
+                "a genuinely empty lab still reports as empty",
+            )
+
+    @autotest.num("3145")
+    @autotest.external_id("79ca0dd8-6f84-4963-b899-d1dc817591b0")
+    @autotest.name("_fetch_mcp_context: an unreadable error list is not reported as no errors")
+    @pytest.mark.asyncio
+    async def test_79ca0dd8_error_failure_is_not_no_errors(self):
+        with autotest.step("Arrange: list_errors fails while list_components succeeds"):
+            failing = _Client([_component("SW1")], RuntimeError("mcp down"))
+            clean = _Client([_component("SW1")], [])
+
+        with autotest.step("Act: fetch context for both"):
+            failed_text, _, failed_count = await _fetch_mcp_context(failing, None, "en")
+            clean_text, _, clean_count = await _fetch_mcp_context(clean, None, "en")
+
+        with autotest.step("Assert: an unreadable error list is stated, not silently omitted"):
+            assert_true(
+                t("prompt.env.errors_unavailable", "en") in failed_text,
+                "the tutor is told the error list could not be read",
+            )
+            assert_true(
+                t("prompt.env.no_errors", "en") in clean_text,
+                "a confirmed-clean environment still reports no errors",
+            )
+            assert_equal((failed_count, clean_count), (0, 0), "neither case invents an error count")
