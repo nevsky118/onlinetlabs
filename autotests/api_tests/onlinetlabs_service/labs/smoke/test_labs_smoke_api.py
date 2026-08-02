@@ -20,33 +20,33 @@ class TestLabsSmokeApi:
 
     @autotest.num("10")
     @autotest.external_id("d0e1f2a3-b4c5-6789-defa-890123456789")
-    @autotest.name("Smoke: GET /labs — 200 и список лабораторий")
+    @autotest.name("Smoke: GET /labs — 200 and list of labs")
     async def test_d0e1f2a3_get_labs(self):
         """Fetching the list of labs returns 200."""
         # Act
-        with autotest.step("Отправляем GET /labs"):
+        with autotest.step("Send GET /labs"):
             response = await self.labs_api.get_labs()
 
         # Assert
-        with autotest.step("Проверяем статус код 200"):
+        with autotest.step("Verify status code 200"):
             check_response_status(response, 200)
 
-        with autotest.step("Проверяем, что ответ — список"):
+        with autotest.step("Verify response is a list"):
             body = response.json()
-            assert_true(isinstance(body, list), f"Ожидался список, получен {type(body)}")
+            assert_true(isinstance(body, list), f"Expected a list, got {type(body)}")
 
     @autotest.num("11")
     @autotest.external_id("e1f2a3b4-c5d6-7890-efab-901234567890")
-    @autotest.name("Smoke: GET /labs/{slug} — 404 для несуществующей")
+    @autotest.name("Smoke: GET /labs/{slug} — 404 for nonexistent")
     async def test_e1f2a3b4_get_lab_not_found(self):
         """Requesting a nonexistent lab returns 404."""
         # Arrange
         fake_slug = f"nonexistent-{Randomizer.random_string(8).lower()}"
 
         # Act
-        with autotest.step(f"Отправляем GET /labs/{fake_slug}"):
+        with autotest.step(f"Send GET /labs/{fake_slug}"):
             response = await self.labs_api.get_lab_by_slug(slug=fake_slug)
 
         # Assert
-        with autotest.step("Проверяем статус код 404"):
+        with autotest.step("Verify status code 404"):
             check_response_status(response, 404)

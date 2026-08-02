@@ -13,10 +13,10 @@ pytestmark = [pytest.mark.unit]
 class TestFinalizer:
     @autotest.num("610")
     @autotest.external_id("2cd36978-2dbc-49ec-9a59-b2353e95b973")
-    @autotest.name("compute_session_metrics: вычисляет метрики из событий")
+    @autotest.name("compute_session_metrics: computes metrics from events")
     def test_2cd36978_compute_metrics(self):
         # Arrange
-        with autotest.step("Создаём события сессии"):
+        with autotest.step("Build session events"):
             now = datetime.now(tz=UTC)
             events = [
                 EventData(
@@ -72,7 +72,7 @@ class TestFinalizer:
             ]
 
         # Act
-        with autotest.step("Вычисляем метрики"):
+        with autotest.step("Compute the metrics"):
             metrics = compute_session_metrics(
                 events=events,
                 started_at=now - timedelta(minutes=30),
@@ -84,28 +84,28 @@ class TestFinalizer:
             )
 
         # Assert
-        with autotest.step("Проверяем результат"):
-            assert_equal(metrics["total_errors"], 3, "3 ошибки")
-            assert_equal(metrics["repeated_errors"], 3, "3 повтора одной ошибки")
+        with autotest.step("Check the result"):
+            assert_equal(metrics["total_errors"], 3, "3 errors")
+            assert_equal(metrics["repeated_errors"], 3, "3 repeats of one error")
             assert_equal(metrics["experiment_group"], "group_b", "group_b")
             assert_equal(metrics["agent_backend"], "tutor", "backend")
-            assert_equal(metrics["interventions_received"], 2, "2 интервенции")
-            assert_equal(metrics["interventions_succeeded"], 1, "1 успешная")
-            assert_equal(metrics["interventions_failed"], 1, "1 неуспешная")
-            assert_equal(metrics["steps_completed"], 3, "3 шага")
+            assert_equal(metrics["interventions_received"], 2, "2 interventions")
+            assert_equal(metrics["interventions_succeeded"], 1, "1 succeeded")
+            assert_equal(metrics["interventions_failed"], 1, "1 failed")
+            assert_equal(metrics["steps_completed"], 3, "3 steps")
             assert_equal(metrics["final_score"], 60.0, "60%")
-            assert_greater(metrics["total_time_seconds"], 0, "время > 0")
+            assert_greater(metrics["total_time_seconds"], 0, "time > 0")
 
     @autotest.num("611")
     @autotest.external_id("14c8efff-3d1c-489a-bbf5-545596c60d9f")
-    @autotest.name("compute_session_metrics: пустая сессия")
+    @autotest.name("compute_session_metrics: empty session")
     def test_14c8efff_empty_session(self):
         # Arrange
-        with autotest.step("Готовим границы пустой сессии"):
+        with autotest.step("Prepare bounds for an empty session"):
             now = datetime.now(tz=UTC)
 
         # Act
-        with autotest.step("Вычисляем метрики пустой сессии"):
+        with autotest.step("Compute metrics for an empty session"):
             metrics = compute_session_metrics(
                 events=[],
                 started_at=now - timedelta(minutes=5),
@@ -116,9 +116,9 @@ class TestFinalizer:
             )
 
         # Assert
-        with autotest.step("Все нули"):
-            assert_equal(metrics["total_errors"], 0, "0 ошибок")
-            assert_equal(metrics["repeated_errors"], 0, "0 повторов")
-            assert_equal(metrics["interventions_succeeded"], 0, "0 успешных")
-            assert_equal(metrics["interventions_failed"], 0, "0 неуспешных")
+        with autotest.step("All zeros"):
+            assert_equal(metrics["total_errors"], 0, "0 errors")
+            assert_equal(metrics["repeated_errors"], 0, "0 repeats")
+            assert_equal(metrics["interventions_succeeded"], 0, "0 succeeded")
+            assert_equal(metrics["interventions_failed"], 0, "0 failed")
             assert_equal(metrics["final_score"], 0.0, "0%")

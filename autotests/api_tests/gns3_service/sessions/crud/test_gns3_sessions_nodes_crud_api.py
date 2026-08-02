@@ -21,7 +21,7 @@ class TestGns3SessionsNodesCrudApi:
 
     @autotest.num("166")
     @autotest.external_id("e1111111-eeee-4eee-eeee-eeeeeeeeeeee")
-    @autotest.name("Gns3 CRUD: node action 404 при unknown session")
+    @autotest.name("Gns3 CRUD: node action 404 on unknown session")
     async def test_e1111111_404_unknown_session(self):
         """An action on a nonexistent session results in 404."""
         response = await self.gns3_sessions_api.post_node_action(
@@ -41,18 +41,18 @@ class TestGns3SessionsNodesCrudApi:
 
     @autotest.num("172")
     @autotest.external_id("e3333333-eeee-4eee-eeee-eeeeeeeeeeee")
-    @autotest.name("Gns3 CRUD: node action 409 при закрытой сессии")
+    @autotest.name("Gns3 CRUD: node action 409 on closed session")
     async def test_e3333333_409_closed_session(self):
         """An action on a closed (deleted) session results in 409."""
-        with autotest.step("Создаём GNS3 сессию"):
+        with autotest.step("Create GNS3 session"):
             session_dict = await self.gns3_sessions_helper.create_session()
         session_id = session_dict["session_id"]
 
-        with autotest.step("Закрываем сессию через DELETE"):
+        with autotest.step("Close session via DELETE"):
             delete_response = await self.gns3_sessions_api.delete_session(session_id)
             check_response_status(delete_response, 200)
 
-        with autotest.step("Пробуем действие над узлом закрытой сессии"):
+        with autotest.step("Try an action on the node of a closed session"):
             response = await self.gns3_sessions_api.post_node_action(
                 session_id, "node-x", "start",
             )

@@ -80,32 +80,32 @@ def _gns3():
 class TestSessionStateNoAssist:
     @autotest.num("2007")
     @autotest.external_id("91794f12-2555-4624-ab08-9d8a074191b5")
-    @autotest.name("Schema: no_assist сериализуется как noAssist (by-alias), дефолт False")
+    @autotest.name("Schema: no_assist serializes as noAssist (by-alias), defaults False")
     def test_91794f12_schema_alias_and_default(self):
-        with autotest.step("Assert: поле есть, alias noAssist, дефолт False"):
+        with autotest.step("Assert: field exists, alias noAssist, defaults False"):
             field = FullSessionStateResponse.model_fields["no_assist"]
             assert_equal(field.alias, "noAssist", "alias == noAssist")
-            assert_equal(field.default, False, "дефолт False")
+            assert_equal(field.default, False, "defaults False")
 
     @autotest.num("2008")
     @autotest.external_id("d60f1ae3-c868-406b-a0d5-189a9af55a57")
-    @autotest.name("get_session_state: no_assist=True на L2-холдауте")
+    @autotest.name("get_session_state: no_assist=True on L2 holdout")
     async def test_d60f1ae3_no_assist_true_on_l2(self, db_factory):
-        with autotest.step("Act: состояние сессии u1 на l2 (есть завершённая l1)"):
+        with autotest.step("Act: session state for u1 on l2 (has a completed l1)"):
             async with db_factory() as db:
                 state = await get_session_state(db, "sess-u1", "u1", _gns3(), _Cache())
 
         with autotest.step("Assert: no_assist == True"):
-            assert_true(state is not None, "состояние получено")
-            assert_equal(state["no_assist"], True, "L2-холдаут → no_assist True")
+            assert_true(state is not None, "state retrieved")
+            assert_equal(state["no_assist"], True, "L2 holdout → no_assist True")
 
     @autotest.num("2009")
     @autotest.external_id("4ba89ec7-f060-4a43-8e77-a4d19df92f6b")
-    @autotest.name("get_session_state: no_assist=False без предшествующей лабы навыка")
+    @autotest.name("get_session_state: no_assist=False with no prior lab of the skill")
     async def test_4ba89ec7_no_assist_false_otherwise(self, db_factory):
-        with autotest.step("Act: состояние сессии u2 на l2 (нет завершённых лаб)"):
+        with autotest.step("Act: session state for u2 on l2 (no completed labs)"):
             async with db_factory() as db:
                 state = await get_session_state(db, "sess-u2", "u2", _gns3(), _Cache())
 
         with autotest.step("Assert: no_assist == False"):
-            assert_equal(state["no_assist"], False, "не L2 → no_assist False")
+            assert_equal(state["no_assist"], False, "not L2 → no_assist False")

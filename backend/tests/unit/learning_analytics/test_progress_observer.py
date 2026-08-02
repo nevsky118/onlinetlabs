@@ -12,7 +12,7 @@ pytestmark = [pytest.mark.unit]
 
 @autotest.num("1700")
 @autotest.external_id("b94ed73e-a79f-421b-84c7-c854fca6b17b")
-@autotest.name("derive_current_step: первый провальный шаг становится текущим")
+@autotest.name("derive_current_step: first failing step becomes current")
 def test_derive_current_step_first_failing():
     snap = [
         {"id": "s1", "title": "A", "ok": True, "checks": []},
@@ -40,7 +40,7 @@ def test_derive_current_step_first_failing():
 
 @autotest.num("1701")
 @autotest.external_id("910e6277-e671-4e8a-b0b8-617eb8b25448")
-@autotest.name("derive_current_step: все шаги пройдены, current_step_id None")
+@autotest.name("derive_current_step: all steps passed, current_step_id None")
 def test_derive_current_step_all_passed():
     snap = [{"id": "s1", "title": "A", "ok": True, "checks": []}]
     st = derive_current_step(snap)
@@ -51,14 +51,14 @@ def test_derive_current_step_all_passed():
 
 @autotest.num("1702")
 @autotest.external_id("02a052a4-742e-4db2-9d76-98dd6d41510b")
-@autotest.name("derive_current_step: пустой снапшот → None")
+@autotest.name("derive_current_step: empty snapshot -> None")
 def test_derive_current_step_empty():
     assert derive_current_step([]).current_step_id is None
 
 
 @autotest.num("1703")
 @autotest.external_id("046c5254-78b7-4258-851a-bdcef918a896")
-@autotest.name("derive_current_step: failing_checks фильтрует только упавшие проверки")
+@autotest.name("derive_current_step: failing_checks filters to failed checks only")
 def test_derive_current_step_filters_failing_checks():
     snap = [
         {

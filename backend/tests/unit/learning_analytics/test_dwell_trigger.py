@@ -25,9 +25,9 @@ def _monitor(thresholds):
 class TestDwellTrigger:
     @autotest.num("1512")
     @autotest.external_id("40aceb36-6ef0-4432-8931-f6d41a4e3688")
-    @autotest.name("DwellTrigger: не триггерит ниже порога, триггерит на пороге")
+    @autotest.name("DwellTrigger: does not trigger below the threshold, triggers at it")
     def test_40aceb36_gate_below_and_at_threshold(self):
-        with autotest.step("Arrange: монитор с порогом idle=30"):
+        with autotest.step("Arrange: monitor with idle=30 threshold"):
             m = _monitor(
                 {
                     "idle": 30.0,
@@ -37,15 +37,15 @@ class TestDwellTrigger:
                 }
             )
 
-        with autotest.step("Act + Assert: ниже порога False, на пороге True"):
-            assert_false(m._dwell_ready("idle", 15.0), "ниже T_k, не триггерим")
-            assert_true(m._dwell_ready("idle", 30.0), "достигнут T_k, триггерим")
+        with autotest.step("Act + Assert: below threshold False, at threshold True"):
+            assert_false(m._dwell_ready("idle", 15.0), "below T_k, does not trigger")
+            assert_true(m._dwell_ready("idle", 30.0), "T_k reached, triggers")
 
     @autotest.num("1513")
     @autotest.external_id("0d9d65d1-08d1-486d-85fb-e526310e141b")
-    @autotest.name("DwellTrigger: хороший режим productive никогда не триггерит")
+    @autotest.name("DwellTrigger: the good productive regime never triggers")
     def test_0d9d65d1_productive_never_triggers(self):
-        with autotest.step("Arrange: монитор"):
+        with autotest.step("Arrange: monitor"):
             m = _monitor(
                 {
                     "idle": 30.0,
@@ -55,14 +55,14 @@ class TestDwellTrigger:
                 }
             )
 
-        with autotest.step("Act + Assert: productive с любым dwell дает False"):
-            assert_false(m._dwell_ready("productive", 999.0), "хороший режим, не триггерим")
+        with autotest.step("Act + Assert: productive with any dwell gives False"):
+            assert_false(m._dwell_ready("productive", 999.0), "good regime, does not trigger")
 
     @autotest.num("1514")
     @autotest.external_id("bc05d46d-7548-4388-a1f7-ebb2f33e73a8")
-    @autotest.name("DwellTrigger: T_k=0 baseline триггерит немедленно")
+    @autotest.name("DwellTrigger: T_k=0 baseline triggers immediately")
     def test_bc05d46d_zero_threshold_triggers_immediately(self):
-        with autotest.step("Arrange: монитор с порогом stuck_on_step=0"):
+        with autotest.step("Arrange: monitor with stuck_on_step=0 threshold"):
             m = _monitor(
                 {
                     "idle": 30.0,
@@ -72,5 +72,7 @@ class TestDwellTrigger:
                 }
             )
 
-        with autotest.step("Act + Assert: dwell=0 при T_k=0 дает True"):
-            assert_true(m._dwell_ready("stuck_on_step", 0.0), "T_k=0 baseline → сразу триггерим")
+        with autotest.step("Act + Assert: dwell=0 at T_k=0 gives True"):
+            assert_true(
+                m._dwell_ready("stuck_on_step", 0.0), "T_k=0 baseline → triggers immediately"
+            )

@@ -25,15 +25,15 @@ class _Cap:
 class TestEscalation:
     @autotest.num("1242")
     @autotest.external_id("33841f1a-9dae-40f8-bff1-26c66accde50")
-    @autotest.name("record_escalation: записывает событие с типом escalation и action=manual")
+    @autotest.name("record_escalation: writes an event with type escalation and action=manual")
     async def test_33841f1a_record_escalation_writes_event(self):
         from escalation.service import record_escalation
 
-        with autotest.step("Act: вызов record_escalation с source=manual"):
+        with autotest.step("Act: call record_escalation with source=manual"):
             cap = _Cap()
             await record_escalation(cap, "s1", "u1", "lab-1", source="manual")
             e = cap.added[0]
-        with autotest.step("Assert: event_type и action корректны"):
+        with autotest.step("Assert: event_type and action are correct"):
             assert_equal(e.event_type, "escalation", "event_type = escalation")
             assert_equal(e.action, "manual", "action = manual")
 
@@ -45,11 +45,11 @@ class TestEscalation:
     async def test_4253a169_record_escalation_objective_source(self):
         from escalation.service import record_escalation
 
-        with autotest.step("Act: вызов record_escalation с source=objective"):
+        with autotest.step("Act: call record_escalation with source=objective"):
             cap = _Cap()
             await record_escalation(cap, "s2", "u2", "lab-2", source="objective")
             e = cap.added[0]
-        with autotest.step("Assert: action, success и severity корректны"):
+        with autotest.step("Assert: action, success and severity are correct"):
             assert_equal(e.action, "objective", "action = objective")
             assert_false(e.success, "success = False")
             assert_equal(e.severity, "warn", "severity = warn")

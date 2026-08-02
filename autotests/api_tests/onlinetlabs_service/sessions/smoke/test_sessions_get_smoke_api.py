@@ -22,24 +22,24 @@ class TestSessionsGetSmokeApi:
 
     @autotest.num("60")
     @autotest.external_id("a2b3c4d5-e6f7-8901-abcd-ef0123456790")
-    @autotest.name("Smoke: GET /users/me/sessions/{id} — 200, тело содержит lab_slug и status")
+    @autotest.name("Smoke: GET /users/me/sessions/{id} — 200, body contains lab_slug and status")
     async def test_a2b3c4d5_get_session_by_id(self):
         """GET by id returns 200 with the lab_slug and status of the launched session."""
-        with autotest.step("Запускаем сессию autotest-lab"):
+        with autotest.step("Launch the autotest-lab session"):
             launched = await self.sessions_helper.launch_session("autotest-lab")
             session_id = launched["session_id"]
 
-        with autotest.step("Запрашиваем сессию по id"):
+        with autotest.step("Fetch the session by id"):
             response = await self.sessions_api.get_session(session_id)
 
         check_response_status(response, 200)
         body = response.json()
 
-        with autotest.step("Проверяем lab_slug"):
-            assert body.get("lab_slug") == "autotest-lab", f"Ожидали lab_slug=autotest-lab, получили: {body.get('lab_slug')}"
+        with autotest.step("Check lab_slug"):
+            assert body.get("lab_slug") == "autotest-lab", f"Expected lab_slug=autotest-lab, got: {body.get('lab_slug')}"
 
-        with autotest.step("Проверяем status=active"):
-            assert body.get("status") == "active", f"Ожидали status=active, получили: {body.get('status')}"
+        with autotest.step("Check status=active"):
+            assert body.get("status") == "active", f"Expected status=active, got: {body.get('status')}"
 
-        with autotest.step("Проверяем lab_title"):
-            assert body.get("lab_title") == "Autotest Lab", f"Ожидали lab_title=Autotest Lab, получили: {body.get('lab_title')}"
+        with autotest.step("Check lab_title"):
+            assert body.get("lab_title") == "Autotest Lab", f"Expected lab_title=Autotest Lab, got: {body.get('lab_title')}"

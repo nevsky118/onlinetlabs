@@ -26,7 +26,7 @@ class TestGns3SessionsSmokeApi:
 
     @autotest.num("101")
     @autotest.external_id("5fa35cd6-e3d3-4ed7-b586-a7cd16a31e04")
-    @autotest.name("Smoke: POST /sessions — 201 создание GNS3 сессии")
+    @autotest.name("Smoke: POST /sessions — 201 creates GNS3 session")
     async def test_5fa35cd6_create_gns3_session(self):
         """Creating a GNS3 session returns 201."""
         # Arrange
@@ -35,16 +35,16 @@ class TestGns3SessionsSmokeApi:
         )
 
         # Act
-        with autotest.step("Создаём GNS3 сессию"):
+        with autotest.step("Create GNS3 session"):
             response = await self.gns3_sessions_api.post_session(data=session_data.data)
 
         # Assert
-        with autotest.step("Проверяем статус код 201"):
+        with autotest.step("Verify status code 201"):
             check_response_status(response, 201)
 
-        with autotest.step("Проверяем наличие session_id в ответе"):
+        with autotest.step("Verify session_id present in response"):
             body = response.json()
-            assert_is_not_none(body.get("session_id"), "session_id не должен быть None")
+            assert_is_not_none(body.get("session_id"), "session_id must not be None")
             delete_test_entities.entities_registry._config = self.config
             delete_test_entities.entities_registry.add_id(
                 ent_type=EntitiesTypes.gns3_session,
@@ -53,34 +53,34 @@ class TestGns3SessionsSmokeApi:
 
     @autotest.num("104")
     @autotest.external_id("43bece25-725e-4c93-9efb-a0b77342bd40")
-    @autotest.name("Smoke: DELETE /sessions/{session_id} — 200 удаление сессии")
+    @autotest.name("Smoke: DELETE /sessions/{session_id} — 200 deletes session")
     async def test_43bece25_delete_gns3_session(self):
         """Deleting a GNS3 session returns 200."""
         # Arrange
-        with autotest.step("Создаём GNS3 сессию"):
+        with autotest.step("Create GNS3 session"):
             session = await self.gns3_sessions_helper.create_session()
 
         # Act
-        with autotest.step("Удаляем сессию"):
+        with autotest.step("Delete session"):
             response = await self.gns3_sessions_api.delete_session(session["session_id"])
 
         # Assert
-        with autotest.step("Проверяем статус код 200"):
+        with autotest.step("Verify status code 200"):
             check_response_status(response, 200)
 
     @autotest.num("105")
     @autotest.external_id("0463e32e-ceb5-49ee-9f0b-7500189c0940")
-    @autotest.name("Smoke: GET /history/{session_id}/actions — 200 история действий")
+    @autotest.name("Smoke: GET /history/{session_id}/actions — 200 action history")
     async def test_0463e32e_get_gns3_history(self):
         """Fetching the action history of a GNS3 session returns 200."""
         # Arrange
-        with autotest.step("Создаём GNS3 сессию"):
+        with autotest.step("Create GNS3 session"):
             session = await self.gns3_sessions_helper.create_session()
 
         # Act
-        with autotest.step("Запрашиваем историю действий"):
+        with autotest.step("Request action history"):
             response = await self.gns3_sessions_api.get_history_actions(session["session_id"])
 
         # Assert
-        with autotest.step("Проверяем статус код 200"):
+        with autotest.step("Verify status code 200"):
             check_response_status(response, 200)

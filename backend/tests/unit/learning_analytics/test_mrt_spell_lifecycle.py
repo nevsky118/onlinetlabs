@@ -109,17 +109,15 @@ def _monitor(session_factory):
 class TestMRTSpellLifecycle:
     @autotest.num("1973")
     @autotest.external_id("472db8c1-dfcd-4951-bcde-0bc48220a268")
-    @autotest.name(
-        "MRT: смена режима на productive закрывает spell, проставляет subsequent_exit_ts"
-    )
+    @autotest.name("MRT: switching regime to productive closes the spell, sets subsequent_exit_ts")
     async def test_472db8c1_spell_exit_sets_exit_ts(self):
-        with autotest.step("Arrange: реальная sqlite, монитор MRT, analyze: struggle→productive"):
+        with autotest.step("Arrange: real sqlite, MRT monitor, analyze: struggle -> productive"):
             sf = await _sqlite_factory()
             m = _monitor(sf)
             ev = SimpleNamespace(timestamp=datetime(2026, 6, 21, 12, 0, tzinfo=UTC))
 
         with autotest.step(
-            "Act: цикл 1 (idle → открыть spell + записать точку), цикл 2 (productive → закрыть)"
+            "Act: cycle 1 (idle -> open spell + log a point), cycle 2 (productive -> close it)"
         ):
             with (
                 patch.object(m, "_load_new_events", AsyncMock(return_value=[ev])),
@@ -131,7 +129,7 @@ class TestMRTSpellLifecycle:
                 await m._run_analysis()
                 await m._run_analysis()
 
-        with autotest.step("Assert: точка решения получила subsequent_exit_ts"):
+        with autotest.step("Assert: decision point got subsequent_exit_ts"):
             async with sf() as db:
                 rows = (
                     (
@@ -144,18 +142,18 @@ class TestMRTSpellLifecycle:
                     .scalars()
                     .all()
                 )
-            assert_equal(len(rows), 1, f"ровно 1 точка решения; получено {len(rows)}")
+            assert_equal(len(rows), 1, f"exactly 1 decision point; got {len(rows)}")
             assert_true(
                 rows[0].subsequent_exit_ts is not None,
-                "subsequent_exit_ts проставлен при закрытии spell",
+                "subsequent_exit_ts is set when the spell closes",
             )
-            assert_equal(rows[0].censored, False, "закрытая точка не censored")
+            assert_equal(rows[0].censored, False, "closed point is not censored")
 
     @autotest.num("1974")
     @autotest.external_id("d29b917f-ccfb-4604-a851-4c034f7e138e")
-    @autotest.name("MRT censoring: end_session помечает censored открытые точки (exit_ts IS NULL)")
+    @autotest.name("MRT censoring: end_session marks open points as censored (exit_ts IS NULL)")
     async def test_d29b917f_censor_open_decisions(self):
-        with autotest.step("Arrange: одна открытая точка (exit_ts null) и одна закрытая"):
+        with autotest.step("Arrange: one open point (exit_ts null) and one closed"):
             from learning_analytics.mrt import censor_open_decisions
 
             sf = await _sqlite_factory()
@@ -197,10 +195,10 @@ class TestMRTSpellLifecycle:
             async with sf() as db:
                 count = await censor_open_decisions(db, "s1")
 
-        with autotest.step("Assert: открытая censored=True, закрытая нетронута, count==1"):
-            assert_equal(count, 1, f"помечена 1 строка; получено {count}")
+        with autotest.step("Assert: open row censored=True, closed row untouched, count==1"):
+            assert_equal(count, 1, f"1 row marked; got {count}")
             async with sf() as db:
                 opened = await db.get(InterventionDecision, "d-open")
                 closed = await db.get(InterventionDecision, "d-closed")
-            assert_equal(opened.censored, True, "открытая точка censored")
-            assert_equal(closed.censored, False, "закрытая точка не тронута")
+            assert_equal(opened.censored, True, "open point is censored")
+            assert_equal(closed.censored, False, "closed point is untouched")

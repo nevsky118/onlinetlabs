@@ -31,7 +31,7 @@ class TestGns3SessionsActivityCrudApi:
 
     @autotest.num("169")
     @autotest.external_id("f2222222-ffff-4fff-ffff-ffffffffffff")
-    @autotest.name("Gns3 CRUD: activity cursor сужает выборку")
+    @autotest.name("Gns3 CRUD: activity cursor narrows the result set")
     async def test_f2222222_cursor_pagination(self):
         """If next_cursor was returned, a repeat request with cursor returns 200."""
         session_dict = await self.gns3_sessions_helper.create_session()

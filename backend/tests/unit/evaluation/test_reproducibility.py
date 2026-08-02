@@ -31,9 +31,9 @@ async def _sqlite_factory():
 class TestReproducibility:
     @autotest.num("1986")
     @autotest.external_id("8795ed23-880c-4ad9-b4e4-f23cc003b301")
-    @autotest.name("Repro-bundle: анонимизирует id, консистентен по таблицам, считает gold")
+    @autotest.name("Repro-bundle: anonymizes id, consistent across tables, counts gold")
     async def test_8795ed23_bundle_anonymized_consistent(self):
-        with autotest.step("Arrange: точка решения и gold-аннотация одной сессии s1/u1"):
+        with autotest.step("Arrange: decision point and gold annotation for one session s1/u1"):
             from datetime import datetime
 
             from evaluation.reproducibility import build_reproducibility_bundle
@@ -67,18 +67,18 @@ class TestReproducibility:
                 )
                 await db.commit()
 
-        with autotest.step("Act: собрать bundle"):
+        with autotest.step("Act: build the bundle"):
             async with sf() as db:
                 bundle = await build_reproducibility_bundle(db)
 
-        with autotest.step("Assert: структура, счётчики, анонимизация, консистентность id"):
-            assert_equal(len(bundle["intervention_decisions"]), 1, "1 точка решения")
-            assert_equal(len(bundle["regime_annotations"]), 1, "1 аннотация")
+        with autotest.step("Assert: structure, counts, anonymization, id consistency"):
+            assert_equal(len(bundle["intervention_decisions"]), 1, "1 decision point")
+            assert_equal(len(bundle["regime_annotations"]), 1, "1 annotation")
             assert_equal(bundle["gold_label_count"], 1, "1 gold")
             blob = json.dumps(bundle)
-            assert_true("s1" not in blob and "u1" not in blob, "сырые id анонимизированы")
+            assert_true("s1" not in blob and "u1" not in blob, "raw ids anonymized")
             assert_equal(
                 bundle["intervention_decisions"][0]["session"],
                 bundle["regime_annotations"][0]["session"],
-                "один session → один анонимный id в обеих таблицах",
+                "one session → one anonymous id in both tables",
             )

@@ -34,7 +34,7 @@ class TestRbacGate:
 
         await asyncio.gather(*(rbac_write() for _ in range(8)))
 
-        assert overlaps == 0, "внутри гейта одновременно был больше чем один писатель"
+        assert overlaps == 0, "more than one writer was inside the gate at once"
         assert inside == 0
 
     @pytest.mark.asyncio
@@ -82,4 +82,4 @@ class TestRbacGate:
         async with gate():
             entered = True
 
-        assert entered is True, "падение Redis не должно блокировать RBAC-запись"
+        assert entered is True, "a Redis outage must not block the RBAC write"

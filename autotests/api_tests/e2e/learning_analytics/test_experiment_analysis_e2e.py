@@ -24,7 +24,7 @@ def _metric(group: str, time_s: float, repeated: int):
 class TestExperimentAnalysisE2E:
     @autotest.num("713")
     @autotest.external_id("a1b2c3d4-e5f6-7890-abcd-713000000001")
-    @autotest.name("E2E: compute_experiment_analysis возвращает H1/H2 по двум группам")
+    @autotest.name("E2E: compute_experiment_analysis returns H1/H2 for two groups")
     async def test_a1b2c3d4_analysis(self):
         from experiment.analysis import compute_experiment_analysis
         from experiment.assignment import ExperimentGroup
@@ -33,9 +33,9 @@ class TestExperimentAnalysisE2E:
             [_metric(ExperimentGroup.GROUP_A.value, 600.0, 5) for _ in range(4)]
             + [_metric(ExperimentGroup.GROUP_B.value, 400.0, 2) for _ in range(4)]
         )
-        with autotest.step("Считаем анализ"):
+        with autotest.step("Compute analysis"):
             res = compute_experiment_analysis(metrics)
-        with autotest.step("Размер выборки и гипотезы присутствуют"):
+        with autotest.step("Sample size and hypotheses present"):
             assert res["sample_size"]["group_a"] == 4
             assert res["sample_size"]["group_b"] == 4
             assert "h1_time_to_completion" in res

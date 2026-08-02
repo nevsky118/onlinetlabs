@@ -26,7 +26,7 @@ class TestAuthLoginCrudApi:
     async def test_e5f6a7b8_login_success(self):
         """A successful login after registration returns 200."""
         # Arrange
-        with autotest.step("Регистрируем пользователя"):
+        with autotest.step("Register user"):
             reg_data = AuthRegisterData()
             await self.auth_helper.register_user(reg_data.data)
 
@@ -36,11 +36,11 @@ class TestAuthLoginCrudApi:
         }
 
         # Act
-        with autotest.step("Логинимся с корректными данными"):
+        with autotest.step("Log in with correct credentials"):
             response = await self.auth_api.post_login(data=login_data)
 
         # Assert
-        with autotest.step("Проверяем статус код 200"):
+        with autotest.step("Verify status code 200"):
             check_response_status(response, 200)
 
     @autotest.num("6")
@@ -49,7 +49,7 @@ class TestAuthLoginCrudApi:
     async def test_f6a7b8c9_login_wrong_password(self):
         """A login with a wrong password returns 401."""
         # Arrange
-        with autotest.step("Регистрируем пользователя"):
+        with autotest.step("Register user"):
             reg_data = AuthRegisterData()
             await self.auth_helper.register_user(reg_data.data)
 
@@ -59,11 +59,11 @@ class TestAuthLoginCrudApi:
         }
 
         # Act
-        with autotest.step("Логинимся с неверным паролем"):
+        with autotest.step("Log in with wrong password"):
             response = await self.auth_api.post_login(data=login_data)
 
         # Assert
-        with autotest.step("Проверяем статус код 401"):
+        with autotest.step("Verify status code 401"):
             check_response_status(response, 401)
 
     @autotest.num("7")
@@ -75,9 +75,9 @@ class TestAuthLoginCrudApi:
         login_data = AuthLoginData()
 
         # Act
-        with autotest.step("Логинимся с несуществующим email"):
+        with autotest.step("Log in with nonexistent email"):
             response = await self.auth_api.post_login(data=login_data.data)
 
         # Assert
-        with autotest.step("Проверяем статус код 401"):
+        with autotest.step("Verify status code 401"):
             check_response_status(response, 401)

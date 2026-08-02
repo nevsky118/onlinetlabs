@@ -26,17 +26,17 @@ class TestActivationSmokeApi:
     @autotest.num("804")
     @autotest.external_id("3a985e9f-26b7-4fe1-84dc-9834a296fa67")
     @autotest.name(
-        "Smoke: активный пользователь проходит гейт активации и запускает лабу"
+        "Smoke: active user passes the activation gate and launches the lab"
     )
     async def test_3a985e9f_active_user_passes_activation_gate(self):
         """An active user does not get a 403 from require_active_user and launches the lab."""
         # Act
-        with autotest.step("Активный пользователь запускает autotest-lab"):
+        with autotest.step("Active user launches autotest-lab"):
             body = await self.sessions_helper.launch_session("autotest-lab")
 
         # Assert
-        with autotest.step("Гейт активации пройден: сессия создана (нет 403)"):
+        with autotest.step("Activation gate passed: session created (no 403)"):
             assert_is_not_none(
                 body.get("session_id"),
-                "session_id присутствует — активный пользователь не заблокирован",
+                "session_id present — active user not blocked",
             )

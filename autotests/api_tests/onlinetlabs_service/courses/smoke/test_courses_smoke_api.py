@@ -20,33 +20,33 @@ class TestCoursesSmokeApi:
 
     @autotest.num("8")
     @autotest.external_id("b8c9d0e1-f2a3-4567-bcde-678901234567")
-    @autotest.name("Smoke: GET /courses — 200 и список курсов")
+    @autotest.name("Smoke: GET /courses — 200 and list of courses")
     async def test_b8c9d0e1_get_courses(self):
         """Fetching the list of courses returns 200."""
         # Act
-        with autotest.step("Отправляем GET /courses"):
+        with autotest.step("Send GET /courses"):
             response = await self.courses_api.get_courses()
 
         # Assert
-        with autotest.step("Проверяем статус код 200"):
+        with autotest.step("Verify status code 200"):
             check_response_status(response, 200)
 
-        with autotest.step("Проверяем, что ответ — список"):
+        with autotest.step("Verify response is a list"):
             body = response.json()
-            assert_true(isinstance(body, list), f"Ожидался список, получен {type(body)}")
+            assert_true(isinstance(body, list), f"Expected a list, got {type(body)}")
 
     @autotest.num("9")
     @autotest.external_id("c9d0e1f2-a3b4-5678-cdef-789012345678")
-    @autotest.name("Smoke: GET /courses/{slug} — 404 для несуществующего")
+    @autotest.name("Smoke: GET /courses/{slug} — 404 for nonexistent")
     async def test_c9d0e1f2_get_course_not_found(self):
         """Requesting a nonexistent course returns 404."""
         # Arrange
         fake_slug = f"nonexistent-{Randomizer.random_string(8).lower()}"
 
         # Act
-        with autotest.step(f"Отправляем GET /courses/{fake_slug}"):
+        with autotest.step(f"Send GET /courses/{fake_slug}"):
             response = await self.courses_api.get_course_by_slug(slug=fake_slug)
 
         # Assert
-        with autotest.step("Проверяем статус код 404"):
+        with autotest.step("Verify status code 404"):
             check_response_status(response, 404)

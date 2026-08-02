@@ -8,19 +8,19 @@ pytestmark = [pytest.mark.unit]
 class TestSessionEvidenceSnapshot:
     @autotest.num("1975")
     @autotest.external_id("811b4689-f44f-4e9d-af1c-43cf7dcc2e4d")
-    @autotest.name("SessionEvidenceSnapshot: таблица содержит все обязательные колонки")
+    @autotest.name("SessionEvidenceSnapshot: table has all required columns")
     def test_811b4689_model_columns_present(self):
-        with autotest.step("Act: получить имена колонок модели"):
+        with autotest.step("Act: get the model's column names"):
             from models.session_evidence_snapshot import SessionEvidenceSnapshot
 
             cols = set(SessionEvidenceSnapshot.__table__.columns.keys())
 
-        with autotest.step("Assert: обязательные колонки присутствуют, имя таблицы верно"):
+        with autotest.step("Assert: required columns present, table name correct"):
             assert_true(
                 {"id", "session_id", "user_id", "lab_slug", "ts", "kind", "payload", "created_at"}
                 <= cols,
-                f"обязательные колонки присутствуют; есть {cols}",
+                f"required columns present; have {cols}",
             )
             assert_equal(
-                SessionEvidenceSnapshot.__tablename__, "session_evidence_snapshots", "имя таблицы"
+                SessionEvidenceSnapshot.__tablename__, "session_evidence_snapshots", "table name"
             )

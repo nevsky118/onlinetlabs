@@ -90,9 +90,9 @@ class TestInternalLabTemplate:
 
     @autotest.num("1826")
     @autotest.external_id("8a0aea6c-53cb-4732-ac7c-811a7291a533")
-    @autotest.name("POST /internal/labs/{slug}/gns3-template: default variant, 200, поле записано")
+    @autotest.name("POST /internal/labs/{slug}/gns3-template: default variant, 200, field written")
     async def test_8a0aea6c_set_default_template(self):
-        with autotest.step("Act: POST с variant=default"):
+        with autotest.step("Act: POST with variant=default"):
             async with self._client() as client:
                 resp = await client.post(
                     "/internal/labs/ospf-lab/gns3-template",
@@ -102,20 +102,20 @@ class TestInternalLabTemplate:
         with autotest.step("Assert: 200"):
             assert_equal(resp.status_code, 200, "status 200")
 
-        with autotest.step("Assert: gns3_template_project_id установлен"):
+        with autotest.step("Assert: gns3_template_project_id is set"):
             body = resp.json()
             assert_equal(body["slug"], "ospf-lab", "slug")
             assert_equal(body["gns3_template_project_id"], "proj-uuid-default", "default field")
 
-        with autotest.step("Assert: остальные поля пустые"):
+        with autotest.step("Assert: other fields are empty"):
             assert_true(body["gns3_template_project_id_frr"] is None, "frr=None")
             assert_true(body["gns3_template_project_id_iosvl2"] is None, "iosvl2=None")
 
     @autotest.num("1827")
     @autotest.external_id("9a08f49c-7e89-4ab4-afc4-be6c0261f3ba")
-    @autotest.name("POST /internal/labs/{slug}/gns3-template: variant=frr, поле _frr записано")
+    @autotest.name("POST /internal/labs/{slug}/gns3-template: variant=frr, _frr field written")
     async def test_9a08f49c_set_frr_template(self):
-        with autotest.step("Act: POST с variant=frr"):
+        with autotest.step("Act: POST with variant=frr"):
             async with self._client() as client:
                 resp = await client.post(
                     "/internal/labs/ospf-lab/gns3-template",
@@ -125,19 +125,19 @@ class TestInternalLabTemplate:
         with autotest.step("Assert: 200"):
             assert_equal(resp.status_code, 200, "status 200")
 
-        with autotest.step("Assert: gns3_template_project_id_frr установлен"):
+        with autotest.step("Assert: gns3_template_project_id_frr is set"):
             body = resp.json()
             assert_equal(body["gns3_template_project_id_frr"], "proj-uuid-frr", "frr field")
 
-        with autotest.step("Assert: default и iosvl2 пусты"):
+        with autotest.step("Assert: default and iosvl2 are empty"):
             assert_true(body["gns3_template_project_id"] is None, "default=None")
             assert_true(body["gns3_template_project_id_iosvl2"] is None, "iosvl2=None")
 
     @autotest.num("1828")
     @autotest.external_id("cb7a90b6-f065-48a0-9576-e548bf0a88be")
-    @autotest.name("POST /internal/labs/{slug}/gns3-template: неверный токен, 401")
+    @autotest.name("POST /internal/labs/{slug}/gns3-template: invalid token, 401")
     async def test_cb7a90b6_invalid_token_rejected(self):
-        with autotest.step("Act: POST с неверным Bearer токеном"):
+        with autotest.step("Act: POST with an invalid Bearer token"):
             async with self._raw_client() as client:
                 resp = await client.post(
                     "/internal/labs/ospf-lab/gns3-template",
@@ -150,9 +150,9 @@ class TestInternalLabTemplate:
 
     @autotest.num("1829")
     @autotest.external_id("e4e9cf7e-bf00-44a5-8ef4-98ce41a4d975")
-    @autotest.name("POST /internal/labs/{slug}/gns3-template: неизвестный slug, 404")
+    @autotest.name("POST /internal/labs/{slug}/gns3-template: unknown slug, 404")
     async def test_e4e9cf7e_unknown_slug_404(self):
-        with autotest.step("Act: POST с несуществующим slug"):
+        with autotest.step("Act: POST with a nonexistent slug"):
             async with self._client() as client:
                 resp = await client.post(
                     "/internal/labs/nonexistent-lab/gns3-template",
@@ -162,6 +162,6 @@ class TestInternalLabTemplate:
         with autotest.step("Assert: 404"):
             assert_equal(resp.status_code, 404, "status 404")
 
-        with autotest.step("Assert: detail содержит 'not found'"):
+        with autotest.step("Assert: detail contains 'not found'"):
             detail = resp.json().get("detail", "").lower()
             assert_true("not found" in detail, "detail=not found")

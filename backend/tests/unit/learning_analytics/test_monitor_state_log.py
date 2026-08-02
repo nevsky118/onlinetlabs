@@ -34,9 +34,9 @@ class _Cap:
 class TestMonitorStateLog:
     @autotest.num("1542")
     @autotest.external_id("264681a7-5244-4ab3-8544-d7fb3f708681")
-    @autotest.name("MonitorStateLog: логирует состояние на каждый цикл, dwell накапливается")
+    @autotest.name("MonitorStateLog: logs state every cycle, dwell accumulates")
     async def test_264681a7_logs_state_every_cycle(self):
-        with autotest.step("Arrange: монитор с захватывающей сессией БД"):
+        with autotest.step("Arrange: monitor with a capturing DB session"):
             cap = _Cap()
             monitor = SessionMonitor(
                 mcp_client=MagicMock(),
@@ -48,14 +48,14 @@ class TestMonitorStateLog:
             a = SimpleNamespace(struggle_detected=True, struggle_type=StruggleType.IDLE)
             t = datetime(2026, 6, 21, 12, 0, tzinfo=UTC)
 
-        with autotest.step("Act: два вызова _log_process_state с разрывом 15 сек"):
+        with autotest.step("Act: two _log_process_state calls 15 sec apart"):
             r1, d1 = await monitor._log_process_state(a, t)
             r2, d2 = await monitor._log_process_state(a, t + timedelta(seconds=15))
 
-        with autotest.step("Assert: режимы и dwell корректны, записи добавлены в БД"):
-            assert_equal(r1, ProcessRegime.IDLE, "первый режим IDLE")
-            assert_equal(d1, 0.0, "первый dwell 0.0")
-            assert_equal(d2, 15.0, "второй dwell 15.0")
-            assert_equal(len(cap.added), 2, "два объекта добавлено в сессию")
-            assert_equal(cap.added[0].regime, "idle", "первая запись, режим idle")
-            assert_equal(cap.added[0].dwell_seconds, 0.0, "первая запись, dwell 0.0")
+        with autotest.step("Assert: regimes and dwell are correct, rows added to the DB"):
+            assert_equal(r1, ProcessRegime.IDLE, "first regime is IDLE")
+            assert_equal(d1, 0.0, "first dwell 0.0")
+            assert_equal(d2, 15.0, "second dwell 15.0")
+            assert_equal(len(cap.added), 2, "two objects added to the session")
+            assert_equal(cap.added[0].regime, "idle", "first row, regime idle")
+            assert_equal(cap.added[0].dwell_seconds, 0.0, "first row, dwell 0.0")

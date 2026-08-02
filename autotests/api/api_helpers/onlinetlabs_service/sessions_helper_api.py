@@ -36,7 +36,7 @@ class SessionsHelperApi:
         :param lab_slug: Lab slug.
         :return: Body of the session launch response (session_id, status, gns3_*).
         """
-        with autotest.step(f"Запускаем сессию для lab_slug={lab_slug}"):
+        with autotest.step(f"Launch the session for lab_slug={lab_slug}"):
             response = await self.sessions_api.post_session(data={"lab_slug": lab_slug})
 
         check_response_status(response, 201)
@@ -60,7 +60,7 @@ class SessionsHelperApi:
         if session_data is None:
             session_data = SessionCreateData().data
 
-        with autotest.step("Создаём сессию"):
+        with autotest.step("Create the session"):
             response = await self.sessions_api.post_session(data=session_data)
 
         check_response_status(response, 201)
@@ -87,7 +87,7 @@ class SessionsHelperApi:
         :return: Session identifier.
         :raises AssertionError: If the session did not move to active within the allotted time.
         """
-        with autotest.step(f"Запускаем сессию и ждём active (lab_slug={lab_slug})"):
+        with autotest.step(f"Launch the session and wait for active (lab_slug={lab_slug})"):
             launched = await self.launch_session(lab_slug)
             session_id = launched["session_id"]
 
@@ -99,7 +99,7 @@ class SessionsHelperApi:
                     return session_id
                 await asyncio.sleep(0.5)
 
-            raise AssertionError(f"Session {session_id} не перешла в active за {timeout}s")
+            raise AssertionError(f"Session {session_id} did not become active within {timeout}s")
 
     async def pick_first_node_id(self, session_id: str) -> str:
         """
@@ -108,11 +108,11 @@ class SessionsHelperApi:
         :param session_id: Session identifier.
         :return: Identifier of the first node.
         """
-        with autotest.step(f"Получаем первый node_id из state сессии {session_id}"):
+        with autotest.step(f"Get the first node_id from the session state {session_id}"):
             response = await self.sessions_api.get_session_state(session_id)
             check_response_status(response, 200)
             body = response.json()
             nodes = body.get("nodes") or []
             if not nodes:
-                pytest.skip("Шаблонный проект без узлов; node-тесты пропущены")
+                pytest.skip("The template project has no nodes; node tests skipped")
             return nodes[0]["id"]

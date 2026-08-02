@@ -78,34 +78,34 @@ def _first_match(app: FastAPI, method: str, path: str):
 class TestSessionRouterWiring:
     @autotest.num("2510")
     @autotest.external_id("65a828fd-599b-4817-a47a-5493fe707ffc")
-    @autotest.name("router wiring: набор (method, path) сессионных роутеров не изменился")
+    @autotest.name("router wiring: the (method, path) set of session routers is unchanged")
     def test_65a828fd_route_table_matches_pinned_set(self):
         app = _build_app()
-        with autotest.step("Act: собрать (method, path) под /users/me/sessions и /sessions"):
+        with autotest.step("Act: collect (method, path) under /users/me/sessions and /sessions"):
             actual = _route_table(app)
-        with autotest.step("Assert: набор идентичен зафиксированному до рефакторинга"):
-            assert_equal(actual, _EXPECTED_ROUTES, "маршрутная таблица не изменилась")
+        with autotest.step("Assert: set is identical to the one pinned before the refactor"):
+            assert_equal(actual, _EXPECTED_ROUTES, "route table unchanged")
 
     @autotest.num("2511")
     @autotest.external_id("47ed00f3-936e-4e50-baa8-b1b8771959d3")
-    @autotest.name("router wiring: GET queue-status не перекрыт catch-all'ом {session_id}")
+    @autotest.name("router wiring: GET queue-status is not shadowed by the {session_id} catch-all")
     def test_47ed00f3_queue_status_not_shadowed_by_session_id_catchall(self):
         app = _build_app()
-        with autotest.step("Act: разрешить GET /users/me/sessions/queue-status"):
+        with autotest.step("Act: resolve GET /users/me/sessions/queue-status"):
             route = _first_match(app, "GET", "/users/me/sessions/queue-status")
-        with autotest.step("Assert: резолвится в queue_status, а не в get_session_endpoint"):
-            assert route is not None, "маршрут не найден"
-            assert_equal(route.endpoint.__name__, "queue_status", "резолвится не в тот хендлер")
+        with autotest.step("Assert: resolves to queue_status, not get_session_endpoint"):
+            assert route is not None, "route not found"
+            assert_equal(route.endpoint.__name__, "queue_status", "resolved to the wrong handler")
 
     @autotest.num("2512")
     @autotest.external_id("5526191c-4cde-45bc-a6b1-657613cdbf0e")
-    @autotest.name("router wiring: GET {session_id} по-прежнему резолвится корректно")
+    @autotest.name("router wiring: GET {session_id} still resolves correctly")
     def test_5526191c_session_id_catchall_still_resolves(self):
         app = _build_app()
-        with autotest.step("Act: разрешить GET /users/me/sessions/<обычный id>"):
+        with autotest.step("Act: resolve GET /users/me/sessions/<regular id>"):
             route = _first_match(app, "GET", "/users/me/sessions/some-session-id")
-        with autotest.step("Assert: резолвится в get_session_endpoint"):
-            assert route is not None, "маршрут не найден"
+        with autotest.step("Assert: resolves to get_session_endpoint"):
+            assert route is not None, "route not found"
             assert_equal(
-                route.endpoint.__name__, "get_session_endpoint", "резолвится не в тот хендлер"
+                route.endpoint.__name__, "get_session_endpoint", "resolved to the wrong handler"
             )

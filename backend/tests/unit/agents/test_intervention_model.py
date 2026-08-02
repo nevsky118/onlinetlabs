@@ -14,26 +14,26 @@ pytestmark = [pytest.mark.unit, pytest.mark.agents]
 class TestResolveInterventionModel:
     @autotest.num("2605")
     @autotest.external_id("3d4fc426-0be0-4eca-b212-7b554626c99c")
-    @autotest.name("Orchestrator._resolve_intervention_model: дефолт из конфига")
+    @autotest.name("Orchestrator._resolve_intervention_model: default from config")
     def test_3d4fc426_default(self, config_model):
-        with autotest.step("Создаём оркестратор"):
+        with autotest.step("Create orchestrator"):
             orch = Orchestrator(config_model)
 
-        with autotest.step("Резолв без context дает дефолт"):
+        with autotest.step("Resolve without context gives default"):
             result = orch._resolve_intervention_model(context={})
             assert result == config_model.agents.intervention_model
 
     @autotest.num("2606")
     @autotest.external_id("71310acd-74d5-4d8d-9913-b61ee64412c5")
     @autotest.name(
-        "Orchestrator._resolve_intervention_model: follow_session возвращает session_model_id"
+        "Orchestrator._resolve_intervention_model: follow_session returns session_model_id"
     )
     def test_71310acd_follows_session(self, config_model):
-        with autotest.step("Включаем interventions_follow_session"):
+        with autotest.step("Enable interventions_follow_session"):
             config_model.agents.interventions_follow_session = True
             orch = Orchestrator(config_model)
 
-        with autotest.step("Резолв с валидным session_model_id"):
+        with autotest.step("Resolve with a valid session_model_id"):
             result = orch._resolve_intervention_model(
                 context={"session_model_id": "yandex-gpt-5.1"}
             )
@@ -42,14 +42,14 @@ class TestResolveInterventionModel:
     @autotest.num("2607")
     @autotest.external_id("9a370a8f-8c08-4385-b971-23563eae9cda")
     @autotest.name(
-        "Orchestrator._resolve_intervention_model: follow_session + неизвестная модель → дефолт"
+        "Orchestrator._resolve_intervention_model: follow_session + unknown model → default"
     )
     def test_9a370a8f_follows_session_unknown_model(self, config_model):
-        with autotest.step("Включаем follow_session, передаём неизвестную модель"):
+        with autotest.step("Enable follow_session, pass an unknown model"):
             config_model.agents.interventions_follow_session = True
             orch = Orchestrator(config_model)
 
-        with autotest.step("Неизвестная модель → дефолт"):
+        with autotest.step("Unknown model → default"):
             result = orch._resolve_intervention_model(
                 context={"session_model_id": "does-not-exist"}
             )
@@ -58,28 +58,28 @@ class TestResolveInterventionModel:
     @autotest.num("2608")
     @autotest.external_id("705fe41b-caa9-4f53-bb17-af190b4c51b3")
     @autotest.name(
-        "Orchestrator._resolve_intervention_model: follow_session=True + пустой payload → дефолт (без KeyError)"
+        "Orchestrator._resolve_intervention_model: follow_session=True + empty payload → default (no KeyError)"
     )
     def test_705fe41b_follow_session_empty_payload(self, config_model):
-        with autotest.step("Включаем follow_session"):
+        with autotest.step("Enable follow_session"):
             config_model.agents.interventions_follow_session = True
             orch = Orchestrator(config_model)
 
-        with autotest.step("Пустой payload без session_model_id не должен бросить KeyError"):
+        with autotest.step("Empty payload without session_model_id should not raise KeyError"):
             result = orch._resolve_intervention_model(context={})
             assert result == config_model.agents.intervention_model
 
     @autotest.num("1794")
     @autotest.external_id("f8527a65-43fd-48d6-8de9-bf1e10c91e75")
     @autotest.name(
-        "Orchestrator._resolve_intervention_model: follow_session=True + валидный session_model_id → session id"
+        "Orchestrator._resolve_intervention_model: follow_session=True + valid session_model_id → session id"
     )
     def test_f8527a65_follow_session_valid_id(self, config_model):
-        with autotest.step("Включаем follow_session"):
+        with autotest.step("Enable follow_session"):
             config_model.agents.interventions_follow_session = True
             orch = Orchestrator(config_model)
 
-        with autotest.step("Валидный session_model_id возвращается как есть"):
+        with autotest.step("Valid session_model_id is returned as-is"):
             result = orch._resolve_intervention_model(
                 context={"session_model_id": "yandex-gpt-5.1"}
             )
@@ -89,12 +89,12 @@ class TestResolveInterventionModel:
 class TestInterventionMetadata:
     @autotest.num("1795")
     @autotest.external_id("c12c25db-4087-4f9b-b976-d197ce305f0e")
-    @autotest.name("intervene tutor/hint: metadata содержит model и provider")
+    @autotest.name("intervene tutor/hint: metadata contains model and provider")
     @pytest.mark.asyncio
     async def test_c12c25db_intervene_llm_metadata(self, config_model):
         """Full intervene requires MCP/DB; this test checks the metadata assembly via
         resolve_model, the same branch executed in intervene for LLM agents."""
-        with autotest.step("Резолвим model_id через resolve_model с тестовым конфигом"):
+        with autotest.step("Resolve model_id through resolve_model with the test config"):
             orch = Orchestrator(config_model)
             model_id = orch._resolve_intervention_model(context={})
 
@@ -107,7 +107,7 @@ class TestInterventionMetadata:
                 id=model_id, label="test", provider_ref="yandex", model="yandexgpt/latest"
             )
 
-        with autotest.step("Имитируем resolve_model → проверяем сборку metadata"):
+        with autotest.step("Stub resolve_model → assert metadata assembly"):
             with patch(
                 "agents.orchestrator.agent.resolve_model", return_value=(fake_creds, fake_entry)
             ):

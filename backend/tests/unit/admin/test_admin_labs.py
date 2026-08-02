@@ -77,9 +77,9 @@ class TestAdminLabsEndpoints:
 
     @autotest.num("1932")
     @autotest.external_id("b0c1d2e3-f4a5-4b6c-8d7e-9f0a1b2c3d4e")
-    @autotest.name("GET /admin/labs: не-admin получает 403")
+    @autotest.name("GET /admin/labs: non-admin gets 403")
     async def test_b0c1d2e3_non_admin_gets_403(self):
-        with autotest.step("Act: student запрашивает /admin/labs"):
+        with autotest.step("Act: student requests /admin/labs"):
             async with self._student_client() as client:
                 resp = await client.get("/admin/labs")
 
@@ -88,7 +88,7 @@ class TestAdminLabsEndpoints:
 
     @autotest.num("1933")
     @autotest.external_id("bad07024-113b-45b1-a684-cc2661c29478")
-    @autotest.name("GET /admin/labs: возвращает вставленные лабы с корректным template_ready")
+    @autotest.name("GET /admin/labs: returns seeded labs with correct template_ready")
     async def test_bad07024_list_labs_template_ready(self):
         await self._seed(
             [
@@ -118,26 +118,26 @@ class TestAdminLabsEndpoints:
             async with self._client() as client:
                 resp = await client.get("/admin/labs")
 
-        with autotest.step("Assert: 200, 3 лабы"):
+        with autotest.step("Assert: 200, 3 labs"):
             assert_equal(resp.status_code, 200, "status 200")
             items = resp.json()
-            assert_equal(len(items), 3, "3 лабы")
+            assert_equal(len(items), 3, "3 labs")
 
-        with autotest.step("Assert: template_ready для none-env дает True"):
+        with autotest.step("Assert: template_ready for none-env is True"):
             none_item = next(i for i in items if i["slug"] == "none-lab")
             assert_true(none_item["template_ready"] is True, "none env → template_ready True")
 
-        with autotest.step("Assert: template_ready для gns3+id дает True"):
+        with autotest.step("Assert: template_ready for gns3+id is True"):
             gns3_with = next(i for i in items if i["slug"] == "gns3-lab-with-tpl")
             assert_true(gns3_with["template_ready"] is True, "gns3 with tpl → template_ready True")
 
-        with autotest.step("Assert: template_ready для gns3 без id дает False"):
+        with autotest.step("Assert: template_ready for gns3 without id is False"):
             gns3_no = next(i for i in items if i["slug"] == "gns3-lab-no-tpl")
             assert_true(gns3_no["template_ready"] is False, "gns3 no tpl → template_ready False")
 
     @autotest.num("1934")
     @autotest.external_id("3b6d23c5-699f-4f4c-a5dc-c29735a7ca1a")
-    @autotest.name("PATCH /admin/labs/{slug}: переключает enabled → false")
+    @autotest.name("PATCH /admin/labs/{slug}: toggles enabled → false")
     async def test_3b6d23c5_patch_toggles_enabled(self):
         await self._seed(
             [
@@ -154,18 +154,18 @@ class TestAdminLabsEndpoints:
             async with self._client() as client:
                 resp = await client.patch("/admin/labs/toggle-lab", json={"enabled": False})
 
-        with autotest.step("Assert: 200, enabled=false в ответе"):
+        with autotest.step("Assert: 200, enabled=false in response"):
             assert_equal(resp.status_code, 200, "status 200")
-            assert_equal(resp.json()["enabled"], False, "enabled=false в ответе")
+            assert_equal(resp.json()["enabled"], False, "enabled=false in response")
 
-        with autotest.step("Assert: БД отражает изменение"):
+        with autotest.step("Assert: DB reflects the change"):
             async with self.session_factory() as db:
                 lab = await db.get(Lab, "toggle-lab")
-                assert_true(lab.enabled is False, "enabled=false в БД")
+                assert_true(lab.enabled is False, "enabled=false in DB")
 
     @autotest.num("1935")
     @autotest.external_id("92947fab-1ea1-4561-a968-40b654db46eb")
-    @autotest.name("PATCH /admin/labs/{slug}: устанавливает gns3_template_project_id")
+    @autotest.name("PATCH /admin/labs/{slug}: sets gns3_template_project_id")
     async def test_92947fab_patch_sets_template_id(self):
         await self._seed(
             [
@@ -185,17 +185,17 @@ class TestAdminLabsEndpoints:
                     json={"gns3_template_project_id": "new-tpl-uuid-999"},
                 )
 
-        with autotest.step("Assert: 200, gns3_template_project_id и template_ready=True"):
+        with autotest.step("Assert: 200, gns3_template_project_id and template_ready=True"):
             assert_equal(resp.status_code, 200, "status 200")
             body = resp.json()
             assert_equal(body["gns3_template_project_id"], "new-tpl-uuid-999", "tpl id")
-            assert_true(body["template_ready"] is True, "template_ready True после установки id")
+            assert_true(body["template_ready"] is True, "template_ready True after setting id")
 
     @autotest.num("1936")
     @autotest.external_id("aedd410a-2dc4-4cf4-9a43-4dd0aa62cdd4")
-    @autotest.name("PATCH /admin/labs/{slug}: неизвестный slug → 404")
+    @autotest.name("PATCH /admin/labs/{slug}: unknown slug → 404")
     async def test_aedd410a_patch_unknown_slug_404(self):
-        with autotest.step("Act: PATCH несуществующего slug"):
+        with autotest.step("Act: PATCH a nonexistent slug"):
             async with self._client() as client:
                 resp = await client.patch("/admin/labs/does-not-exist", json={"enabled": False})
 
@@ -204,7 +204,7 @@ class TestAdminLabsEndpoints:
 
     @autotest.num("1937")
     @autotest.external_id("b98bcad9-3ffb-47b2-8594-97eb2057a492")
-    @autotest.name("GET /admin/labs: template_status по умолчанию 'unknown' при meta=null")
+    @autotest.name("GET /admin/labs: template_status defaults to 'unknown' when meta=null")
     async def test_b98bcad9_template_status_default_unknown(self):
         await self._seed(
             [
@@ -222,7 +222,7 @@ class TestAdminLabsEndpoints:
             async with self._client() as client:
                 resp = await client.get("/admin/labs")
 
-        with autotest.step("Assert: template_status='unknown' при meta=null"):
+        with autotest.step("Assert: template_status='unknown' when meta=null"):
             assert_equal(resp.status_code, 200, "status 200")
             item = resp.json()[0]
             assert_equal(item["template_status"], "unknown", "template_status=unknown")
@@ -285,7 +285,7 @@ class TestRebuildTemplate:
 
     @autotest.num("1938")
     @autotest.external_id("3db4cf7c-fbd1-4ca5-b233-d4f0f9856072")
-    @autotest.name("POST rebuild-template: не-admin → 403")
+    @autotest.name("POST rebuild-template: non-admin → 403")
     async def test_3db4cf7c_rebuild_non_admin_403(self):
         await self._seed(
             [
@@ -301,21 +301,21 @@ class TestRebuildTemplate:
             async with self._student_client() as client:
                 resp = await client.post("/admin/labs/gns3-lab/rebuild-template")
         with autotest.step("Assert: 403"):
-            assert_equal(resp.status_code, 403, "403 для не-admin")
+            assert_equal(resp.status_code, 403, "403 for non-admin")
 
     @autotest.num("1939")
     @autotest.external_id("a08e847c-bc24-4d4c-8464-d7957fb91449")
-    @autotest.name("POST rebuild-template: неизвестный slug → 404")
+    @autotest.name("POST rebuild-template: unknown slug → 404")
     async def test_a08e847c_rebuild_unknown_slug_404(self):
         with autotest.step("Act"):
             async with self._client() as client:
                 resp = await client.post("/admin/labs/no-such-lab/rebuild-template")
         with autotest.step("Assert: 404"):
-            assert_equal(resp.status_code, 404, "404 для неизвестного slug")
+            assert_equal(resp.status_code, 404, "404 for unknown slug")
 
     @autotest.num("1940")
     @autotest.external_id("10a02c2f-c54b-42f0-b9f3-30f65ef9e777")
-    @autotest.name("POST rebuild-template: не-gns3 лаба → 400")
+    @autotest.name("POST rebuild-template: non-gns3 lab → 400")
     async def test_10a02c2f_rebuild_non_gns3_400(self):
         await self._seed(
             [
@@ -331,11 +331,11 @@ class TestRebuildTemplate:
             async with self._client() as client:
                 resp = await client.post("/admin/labs/none-lab/rebuild-template")
         with autotest.step("Assert: 400"):
-            assert_equal(resp.status_code, 400, "400 для не-gns3")
+            assert_equal(resp.status_code, 400, "400 for non-gns3")
 
     @autotest.num("1941")
     @autotest.external_id("0fb8df28-9c53-406b-9156-f7ad9fbdb142")
-    @autotest.name("POST rebuild-template: gns3 лаба → 202, building в ответе")
+    @autotest.name("POST rebuild-template: gns3 lab → 202, building in response")
     async def test_0fb8df28_rebuild_gns3_202_meta_building(self):
         # stub raises so worker sets "error", lets us assert the endpoint
         # committed "building" synchronously (confirmed by 202 response) without
@@ -354,10 +354,10 @@ class TestRebuildTemplate:
         with autotest.step("Act: POST rebuild-template"):
             async with self._client() as client:
                 resp = await client.post("/admin/labs/build-lab/rebuild-template")
-        with autotest.step("Assert: 202, status=building в ответе"):
+        with autotest.step("Assert: 202, status=building in response"):
             assert_equal(resp.status_code, 202, "202")
             assert_equal(resp.json()["status"], "building", "status=building")
-        with autotest.step("Assert: meta.template_status в БД building→error (worker ran)"):
+        with autotest.step("Assert: meta.template_status in DB building→error (worker ran)"):
             async with self.session_factory() as db:
                 from labs.service import get_lab_by_slug
 
@@ -366,12 +366,12 @@ class TestRebuildTemplate:
                 # writes "error" (stub raises). Either value confirms the endpoint committed.
                 assert_true(
                     lab.meta["template_status"] in {"building", "error"},
-                    "template_status is building или error",
+                    "template_status is building or error",
                 )
 
     @autotest.num("1942")
     @autotest.external_id("b03fa068-bbc3-469c-9625-33eb5af3c628")
-    @autotest.name("POST rebuild-template: idempotent, не запускает второй билд")
+    @autotest.name("POST rebuild-template: idempotent, doesn't start a second build")
     async def test_b03fa068_rebuild_idempotent(self):
         await self._seed(
             [
@@ -385,17 +385,17 @@ class TestRebuildTemplate:
             ]
         )
         self.stub_client.build_template.reset_mock()
-        with autotest.step("Act: POST на уже строящуюся лабу"):
+        with autotest.step("Act: POST to a lab that's already building"):
             async with self._client() as client:
                 resp = await client.post("/admin/labs/already-building/rebuild-template")
-        with autotest.step("Assert: 202 building, build_template не вызван"):
+        with autotest.step("Assert: 202 building, build_template not called"):
             assert_equal(resp.status_code, 202, "202")
             assert_equal(resp.json()["status"], "building", "status=building")
-            assert_equal(self.stub_client.build_template.call_count, 0, "build_template не вызван")
+            assert_equal(self.stub_client.build_template.call_count, 0, "build_template not called")
 
     @autotest.num("1943")
     @autotest.external_id("a836dbf5-a71f-4fc3-88bd-c02ac9636810")
-    @autotest.name("Worker: успех, записывает template_id и status=ready")
+    @autotest.name("Worker: success, writes template_id and status=ready")
     async def test_a836dbf5_worker_success(self):
         await self._seed(
             [
@@ -411,20 +411,20 @@ class TestRebuildTemplate:
         client = AsyncMock()
         client.build_template = AsyncMock(return_value=expected_id)
 
-        with autotest.step("Act: вызов worker напрямую с тестовой session_factory"):
+        with autotest.step("Act: call worker directly with the test session_factory"):
             await _rebuild_worker("worker-ok", client, session_factory=self.session_factory)
 
-        with autotest.step("Assert: template_id и status=ready в БД"):
+        with autotest.step("Assert: template_id and status=ready in DB"):
             async with self.session_factory() as db:
                 from labs.service import get_lab_by_slug
 
                 lab = await get_lab_by_slug(db, "worker-ok")
-                assert_equal(lab.gns3_template_project_id, expected_id, "template_id записан")
+                assert_equal(lab.gns3_template_project_id, expected_id, "template_id is written")
                 assert_equal(lab.meta["template_status"], "ready", "status=ready")
 
     @autotest.num("1944")
     @autotest.external_id("3daf90a1-d803-4fc9-af45-04d178cb7d8e")
-    @autotest.name("Worker: ошибка build_template → status=error")
+    @autotest.name("Worker: build_template error → status=error")
     async def test_3daf90a1_worker_error(self):
         await self._seed(
             [
@@ -439,13 +439,13 @@ class TestRebuildTemplate:
         client = AsyncMock()
         client.build_template = AsyncMock(side_effect=RuntimeError("gns3 down"))
 
-        with autotest.step("Act: вызов worker с ошибкой"):
+        with autotest.step("Act: call worker with an error"):
             await _rebuild_worker("worker-err", client, session_factory=self.session_factory)
 
-        with autotest.step("Assert: status=error, template_id не перезаписан"):
+        with autotest.step("Assert: status=error, template_id not overwritten"):
             async with self.session_factory() as db:
                 from labs.service import get_lab_by_slug
 
                 lab = await get_lab_by_slug(db, "worker-err")
                 assert_equal(lab.meta["template_status"], "error", "status=error")
-                assert_true(lab.gns3_template_project_id is None, "template_id не установлен")
+                assert_true(lab.gns3_template_project_id is None, "template_id not set")

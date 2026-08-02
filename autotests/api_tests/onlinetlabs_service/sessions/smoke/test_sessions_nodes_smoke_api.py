@@ -34,7 +34,7 @@ class TestSessionsNodesSmokeApi:
             response = await self.sessions_api.post_node_action(session_id, node_id, "stop")
 
         # Assert
-        with autotest.step("Проверяем статус код 200"):
+        with autotest.step("Check status code 200"):
             check_response_status(response, 200)
 
     @autotest.num("72")
@@ -50,5 +50,5 @@ class TestSessionsNodesSmokeApi:
             response = await self.sessions_api.post_bulk_node_action(session_id, "stop")
 
         # Assert
-        with autotest.step("Проверяем статус код 200"):
+        with autotest.step("Check status code 200"):
             check_response_status(response, 200)

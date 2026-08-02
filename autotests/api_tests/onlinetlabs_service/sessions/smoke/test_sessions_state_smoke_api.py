@@ -34,11 +34,11 @@ class TestSessionsStateSmokeApi:
             response = await self.sessions_api.get_session_state(session_id)
 
         # Assert
-        with autotest.step("Проверяем статус код 200"):
+        with autotest.step("Check status code 200"):
             check_response_status(response, 200)
 
-        with autotest.step("Проверяем наличие sessionId, nodes, metrics в ответе"):
+        with autotest.step("Check sessionId, nodes, metrics are present in the response"):
             body = response.json()
-            assert_is_not_none(body.get("sessionId"), "sessionId отсутствует")
-            assert_in("nodes", body, "поле nodes отсутствует")
-            assert_in("metrics", body, "поле metrics отсутствует")
+            assert_is_not_none(body.get("sessionId"), "sessionId is missing")
+            assert_in("nodes", body, "field nodes is missing")
+            assert_in("metrics", body, "field metrics is missing")

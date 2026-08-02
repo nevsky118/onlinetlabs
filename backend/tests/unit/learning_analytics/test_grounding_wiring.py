@@ -82,9 +82,11 @@ def _comparisons(cap):
 class TestGroundingWiring:
     @autotest.num("2000")
     @autotest.external_id("924bbef8-32d3-4e51-9c08-9eb9e778e2d9")
-    @autotest.name("Ablation on: генерирует ungrounded-вариант и пишет пару")
+    @autotest.name("Ablation on: generates an ungrounded variant and records a pair")
     async def test_924bbef8_records_pair_when_enabled(self):
-        with autotest.step("Arrange: монитор ablation on, pending с grounded='G', orch отдаёт 'U'"):
+        with autotest.step(
+            "Arrange: monitor ablation on, pending with grounded='G', orch returns 'U'"
+        ):
             cap = _Cap()
             m = _monitor(cap, ablation_enabled=True, ungrounded_hint="U")
             pending = _pending(grounded_hint="G")
@@ -92,18 +94,18 @@ class TestGroundingWiring:
         with autotest.step("Act: _maybe_grounding_ablation"):
             await m._maybe_grounding_ablation(pending)
 
-        with autotest.step("Assert: записана пара G/U, orchestrator вызван 1 раз (ungrounded)"):
+        with autotest.step("Assert: G/U pair recorded, orchestrator called once (ungrounded)"):
             comps = _comparisons(cap)
-            assert_equal(len(comps), 1, f"1 сравнение; получено {len(comps)}")
-            assert_equal(comps[0].grounded_text, "G", "grounded из ответа dispatch")
-            assert_equal(comps[0].ungrounded_text, "U", "ungrounded из повторной генерации")
-            assert_equal(m._orchestrator.intervene.await_count, 1, "1 доп. вызов (ungrounded)")
+            assert_equal(len(comps), 1, f"1 comparison; got {len(comps)}")
+            assert_equal(comps[0].grounded_text, "G", "grounded from the dispatch response")
+            assert_equal(comps[0].ungrounded_text, "U", "ungrounded from the retry generation")
+            assert_equal(m._orchestrator.intervene.await_count, 1, "1 extra call (ungrounded)")
 
     @autotest.num("2001")
     @autotest.external_id("a722d45e-b05a-41ef-8938-47d49938e0b3")
-    @autotest.name("Ablation off: пара НЕ пишется, доп. генерации нет")
+    @autotest.name("Ablation off: pair is NOT recorded, no extra generation")
     async def test_a722d45e_noop_when_disabled(self):
-        with autotest.step("Arrange: монитор ablation off"):
+        with autotest.step("Arrange: monitor ablation off"):
             cap = _Cap()
             m = _monitor(cap, ablation_enabled=False)
             pending = _pending()
@@ -111,6 +113,6 @@ class TestGroundingWiring:
         with autotest.step("Act: _maybe_grounding_ablation"):
             await m._maybe_grounding_ablation(pending)
 
-        with autotest.step("Assert: ноль сравнений, orchestrator не вызван"):
-            assert_equal(len(_comparisons(cap)), 0, "выключено → 0 сравнений")
-            assert_equal(m._orchestrator.intervene.await_count, 0, "доп. генерации нет")
+        with autotest.step("Assert: zero comparisons, orchestrator not called"):
+            assert_equal(len(_comparisons(cap)), 0, "disabled → 0 comparisons")
+            assert_equal(m._orchestrator.intervene.await_count, 0, "no extra generation")

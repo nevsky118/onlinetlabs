@@ -12,9 +12,9 @@ pytestmark = [pytest.mark.unit]
 class TestBehavioralEvent:
     @autotest.num("510")
     @autotest.external_id("e2f3a4b5-c6d7-4e8f-8a9b-c0d1e2f3a4b5")
-    @autotest.name("BehavioralEvent: создание события действия")
+    @autotest.name("BehavioralEvent: create an action event")
     def test_e2f3a4b5_create_action_event(self):
-        with autotest.step("Создаём событие типа action"):
+        with autotest.step("Create an action-type event"):
             now = datetime.now(tz=UTC)
             event = BehavioralEvent(
                 session_id="sess-1",
@@ -28,15 +28,15 @@ class TestBehavioralEvent:
                 success=True,
             )
 
-        with autotest.step("Проверяем поля"):
+        with autotest.step("Check the fields"):
             assert_equal(event.event_type, "action", "event_type = action")
             assert_equal(event.session_id, "sess-1", "session_id")
 
     @autotest.num("511")
     @autotest.external_id("c99a22ee-25d2-4a5a-ab4d-7b9f6b3683ae")
-    @autotest.name("BehavioralEvent: создание события ошибки")
+    @autotest.name("BehavioralEvent: create an error event")
     def test_c99a22ee_create_error_event(self):
-        with autotest.step("Создаём событие типа error"):
+        with autotest.step("Create an error-type event"):
             now = datetime.now(tz=UTC)
             event = BehavioralEvent(
                 session_id="sess-1",
@@ -50,15 +50,15 @@ class TestBehavioralEvent:
                 message="Interface not found",
             )
 
-        with autotest.step("Проверяем поля"):
+        with autotest.step("Check the fields"):
             assert_equal(event.event_type, "error", "event_type = error")
             assert_equal(event.severity, "error", "severity = error")
 
     @autotest.num("512")
     @autotest.external_id("a4b5c6d7-e8f9-4a0b-8c1d-e2f3a4b5c6d7")
-    @autotest.name("BehavioralEvent: nullable поля по умолчанию None")
+    @autotest.name("BehavioralEvent: nullable fields default to None")
     def test_a4b5c6d7_nullable_fields(self):
-        with autotest.step("Создаём событие с минимальными полями"):
+        with autotest.step("Create an event with minimal fields"):
             now = datetime.now(tz=UTC)
             event = BehavioralEvent(
                 session_id="sess-1",
@@ -70,7 +70,7 @@ class TestBehavioralEvent:
                 success=True,
             )
 
-        with autotest.step("Проверяем nullable поля"):
+        with autotest.step("Check the nullable fields"):
             assert_is_none(event.component_id, "component_id is None")
             assert_is_none(event.component_type, "component_type is None")
             assert_is_none(event.severity, "severity is None")

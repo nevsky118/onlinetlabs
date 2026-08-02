@@ -60,9 +60,9 @@ class TestAuthRouter:
 
     @autotest.num("710")
     @autotest.external_id("11223344-5566-4778-8990-aabbccddeeff")
-    @autotest.name("POST /auth/register: успешная регистрация → 201 + UserResponse")
+    @autotest.name("POST /auth/register: successful registration → 201 + UserResponse")
     async def test_11223344_register_success_returns_201(self):
-        with autotest.step("Act: регистрируем нового пользователя"):
+        with autotest.step("Act: register a new user"):
             async with self._client() as client:
                 response = await client.post(
                     "/auth/register",
@@ -73,19 +73,19 @@ class TestAuthRouter:
                     },
                 )
 
-        with autotest.step("Assert: 201 и валидный payload"):
+        with autotest.step("Assert: 201 and a valid payload"):
             assert_equal(response.status_code, 201, "status_code = 201")
             body = response.json()
             assert_equal(body["email"], "newuser@example.com", "email")
             assert_equal(body["name"], "New User", "name")
-            assert_equal(body["role"], "student", "role по умолчанию")
-            assert_in("id", body, "id присутствует")
+            assert_equal(body["role"], "student", "role defaults to student")
+            assert_in("id", body, "id is present")
 
     @autotest.num("711")
     @autotest.external_id("22334455-6677-4889-8aa1-bbccddeeff00")
-    @autotest.name("POST /auth/register: дубликат email → 409")
+    @autotest.name("POST /auth/register: duplicate email → 409")
     async def test_22334455_register_duplicate_returns_409(self):
-        with autotest.step("Arrange: создаём первого пользователя"):
+        with autotest.step("Arrange: create the first user"):
             async with self._client() as client:
                 first = await client.post(
                     "/auth/register",
@@ -94,9 +94,9 @@ class TestAuthRouter:
                         "password": "supersecret123",
                     },
                 )
-                assert_equal(first.status_code, 201, "первая регистрация ok")
+                assert_equal(first.status_code, 201, "first registration ok")
 
-        with autotest.step("Act: пытаемся зарегать тот же email"):
+        with autotest.step("Act: try to register the same email"):
             async with self._client() as client:
                 response = await client.post(
                     "/auth/register",
@@ -111,9 +111,9 @@ class TestAuthRouter:
 
     @autotest.num("712")
     @autotest.external_id("33445566-7788-499a-8bb2-ccddeeff0011")
-    @autotest.name("POST /auth/register: короткий пароль → 422")
+    @autotest.name("POST /auth/register: short password → 422")
     async def test_33445566_register_short_password_returns_422(self):
-        with autotest.step("Act: пароль из 4 символов (min_length=8)"):
+        with autotest.step("Act: a 4-char password (min_length=8)"):
             async with self._client() as client:
                 response = await client.post(
                     "/auth/register",
@@ -125,9 +125,9 @@ class TestAuthRouter:
 
     @autotest.num("713")
     @autotest.external_id("44556677-8899-4aab-8cc3-ddeeff001122")
-    @autotest.name("POST /auth/exchange: валидный INTERNAL_API_TOKEN → JWT")
+    @autotest.name("POST /auth/exchange: valid INTERNAL_API_TOKEN → JWT")
     async def test_44556677_exchange_valid_internal_token_returns_jwt(self):
-        with autotest.step("Arrange: создаём пользователя и узнаём его id"):
+        with autotest.step("Arrange: create a user and learn its id"):
             async with self._client() as client:
                 reg = await client.post(
                     "/auth/register",
@@ -138,7 +138,7 @@ class TestAuthRouter:
                 )
                 user_id = reg.json()["id"]
 
-        with autotest.step("Act: запрашиваем exchange с INTERNAL_API_TOKEN"):
+        with autotest.step("Act: request exchange with INTERNAL_API_TOKEN"):
             async with self._client() as client:
                 response = await client.post(
                     "/auth/exchange",
@@ -146,7 +146,7 @@ class TestAuthRouter:
                     headers={"Authorization": (f"Bearer {settings.security.internal_api_token}")},
                 )
 
-        with autotest.step("Assert: 200 + декодируемый JWT с sub = user_id"):
+        with autotest.step("Assert: 200 + a decodable JWT with sub = user_id"):
             assert_equal(response.status_code, 200, "status_code = 200")
             body = response.json()
             assert_equal(body["token_type"], "bearer", "token_type")
@@ -156,9 +156,9 @@ class TestAuthRouter:
 
     @autotest.num("714")
     @autotest.external_id("55667788-99aa-4bbc-8dd4-eeff00112233")
-    @autotest.name("POST /auth/exchange: неверный internal token → 401")
+    @autotest.name("POST /auth/exchange: invalid internal token → 401")
     async def test_55667788_exchange_bad_internal_token_returns_401(self):
-        with autotest.step("Act: вызываем exchange с мусорным Bearer"):
+        with autotest.step("Act: call exchange with a garbage Bearer"):
             async with self._client() as client:
                 response = await client.post(
                     "/auth/exchange",
@@ -170,5 +170,5 @@ class TestAuthRouter:
             assert_equal(response.status_code, 401, "status_code = 401")
             assert_true(
                 "internal" in response.json()["detail"].lower(),
-                "detail упоминает internal",
+                "detail mentions internal",
             )

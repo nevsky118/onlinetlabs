@@ -13,30 +13,30 @@ pytestmark = [pytest.mark.unit]
 class TestProcessState:
     @autotest.num("1572")
     @autotest.external_id("e1f4efe4-7bbc-4b12-b7b6-9175cc3ab8f1")
-    @autotest.name("ProcessState: нет борьбы → PRODUCTIVE, is_bad=False")
+    @autotest.name("ProcessState: no struggle -> PRODUCTIVE, is_bad=False")
     def test_e1f4efe4_productive_when_no_struggle(self):
-        with autotest.step("Arrange: анализ без борьбы"):
+        with autotest.step("Arrange: analysis with no struggle"):
             a = SimpleNamespace(struggle_detected=False, struggle_type=None)
 
-        with autotest.step("Act: определить режим и is_bad"):
+        with autotest.step("Act: determine regime and is_bad"):
             regime = analysis_to_regime(a)
             bad = is_bad(ProcessRegime.PRODUCTIVE)
 
-        with autotest.step("Assert: режим PRODUCTIVE, is_bad=False"):
-            assert_equal(regime, ProcessRegime.PRODUCTIVE, "режим PRODUCTIVE")
-            assert_false(bad, "PRODUCTIVE не является плохим режимом")
+        with autotest.step("Assert: regime PRODUCTIVE, is_bad=False"):
+            assert_equal(regime, ProcessRegime.PRODUCTIVE, "regime PRODUCTIVE")
+            assert_false(bad, "PRODUCTIVE is not a bad regime")
 
     @autotest.num("1573")
     @autotest.external_id("a08292ae-4579-43d2-8d94-e3713a4fb2b1")
-    @autotest.name("ProcessState: борьба STUCK_ON_STEP → режим STUCK_ON_STEP, is_bad=True")
+    @autotest.name("ProcessState: STUCK_ON_STEP struggle -> STUCK_ON_STEP regime, is_bad=True")
     def test_a08292ae_regime_mirrors_struggle_type(self):
-        with autotest.step("Arrange: анализ с борьбой STUCK_ON_STEP"):
+        with autotest.step("Arrange: analysis with STUCK_ON_STEP struggle"):
             a = SimpleNamespace(struggle_detected=True, struggle_type=StruggleType.STUCK_ON_STEP)
 
-        with autotest.step("Act: определить режим"):
+        with autotest.step("Act: determine regime"):
             r = analysis_to_regime(a)
 
-        with autotest.step("Assert: режим STUCK_ON_STEP, value=stuck_on_step, is_bad=True"):
-            assert_equal(r, ProcessRegime.STUCK_ON_STEP, "режим STUCK_ON_STEP")
-            assert_equal(r.value, "stuck_on_step", "value enum stuck_on_step")
-            assert_true(is_bad(r), "STUCK_ON_STEP является плохим режимом")
+        with autotest.step("Assert: regime STUCK_ON_STEP, value=stuck_on_step, is_bad=True"):
+            assert_equal(r, ProcessRegime.STUCK_ON_STEP, "regime STUCK_ON_STEP")
+            assert_equal(r.value, "stuck_on_step", "enum value stuck_on_step")
+            assert_true(is_bad(r), "STUCK_ON_STEP is a bad regime")

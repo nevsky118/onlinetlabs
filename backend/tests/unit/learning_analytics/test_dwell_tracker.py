@@ -12,23 +12,23 @@ pytestmark = [pytest.mark.unit]
 class TestDwellTracker:
     @autotest.num("1482")
     @autotest.external_id("42f1732e-d33f-419c-a17f-b31c923d32b3")
-    @autotest.name("DwellTracker: накапливает время и сбрасывается при смене режима")
+    @autotest.name("DwellTracker: accumulates time and resets on regime change")
     def test_42f1732e_accumulates_then_resets(self):
-        with autotest.step("Arrange: трекер и опорная точка времени"):
+        with autotest.step("Arrange: tracker and a reference time point"):
             t = datetime(2026, 6, 21, 12, 0, tzinfo=UTC)
             dt = DwellTracker()
 
-        with autotest.step("Act: серия наблюдений в режиме STUCK_ON_STEP"):
+        with autotest.step("Act: a series of observations in STUCK_ON_STEP regime"):
             obs0 = dt.observe(ProcessRegime.STUCK_ON_STEP, t)
             obs15 = dt.observe(ProcessRegime.STUCK_ON_STEP, t + timedelta(seconds=15))
             obs30 = dt.observe(ProcessRegime.STUCK_ON_STEP, t + timedelta(seconds=30))
             obs_switch = dt.observe(ProcessRegime.PRODUCTIVE, t + timedelta(seconds=45))
 
         with autotest.step(
-            "Assert: первое наблюдение 0, последующие накапливают, смена режима сбрасывает"
+            "Assert: first observation is 0, later ones accumulate, regime change resets"
         ):
-            assert_equal(obs0, 0.0, "первое наблюдение 0.0")
-            assert_equal(obs15, 15.0, "через 15 сек, 15.0")
-            assert_equal(obs30, 30.0, "через 30 сек, 30.0")
-            assert_equal(obs_switch, 0.0, "смена режима сбрасывает до 0.0")
-            assert_equal(dt.current_regime, ProcessRegime.PRODUCTIVE, "текущий режим обновлён")
+            assert_equal(obs0, 0.0, "first observation is 0.0")
+            assert_equal(obs15, 15.0, "after 15 sec, 15.0")
+            assert_equal(obs30, 30.0, "after 30 sec, 30.0")
+            assert_equal(obs_switch, 0.0, "regime change resets to 0.0")
+            assert_equal(dt.current_regime, ProcessRegime.PRODUCTIVE, "current regime updated")

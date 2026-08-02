@@ -24,9 +24,9 @@ async def audit_db():
 class TestAudit:
     @autotest.num("1760")
     @autotest.external_id("f7a3e2b1-4c90-4d56-8e12-3a9f1b2c5d7e")
-    @autotest.name("audit: act-вызов записан (источник воздействий)")
+    @autotest.name("audit: act call recorded (source of interventions)")
     async def test_f7a3e2b1_record_act(self, audit_db):
-        with autotest.step("Act: записать act"):
+        with autotest.step("Act: record an act"):
             await record(
                 audit_db,
                 user_id="u1",
@@ -36,7 +36,7 @@ class TestAudit:
                 success=True,
                 lab_slug="lan-static-ip",
             )
-        with autotest.step("Assert: строка есть, kind=act"):
+        with autotest.step("Assert: row exists, kind=act"):
             rows = (await audit_db.execute(select(MCPAudit))).scalars().all()
-            assert_equal(len(rows), 1, "одна запись")
+            assert_equal(len(rows), 1, "one row")
             assert_equal(rows[0].kind, "act", "kind")

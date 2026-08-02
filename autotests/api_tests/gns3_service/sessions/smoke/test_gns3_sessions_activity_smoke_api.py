@@ -34,5 +34,5 @@ class TestGns3SessionsActivitySmokeApi:
 
         check_response_status(response, 200)
         body = response.json()
-        assert_in("events", body, "Поле events отсутствует")
-        assert_in("next_cursor", body, "Поле next_cursor отсутствует")
+        assert_in("events", body, "events field missing")
+        assert_in("next_cursor", body, "next_cursor field missing")

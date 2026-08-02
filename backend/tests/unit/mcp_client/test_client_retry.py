@@ -42,7 +42,7 @@ def _build_call_tool_result(payload: str = '{"ok": true}'):
 class TestMCPClientRetry:
     @autotest.num("1830")
     @autotest.external_id("0326bce7-6376-4e0a-8acf-0aa5c55a8caa")
-    @autotest.name("MCPClient._call_tool: успех со второй попытки после RequestError")
+    @autotest.name("MCPClient._call_tool: succeeds on the second attempt after RequestError")
     async def test_0326bce7_retry_succeeds_on_second_attempt(self):
         call_count = 0
 
@@ -60,7 +60,7 @@ class TestMCPClientRetry:
             write = AsyncMock()
             yield (read, write, lambda: "sid")
 
-        with autotest.step("Патчим streamablehttp_client и ClientSession"):
+        with autotest.step("Patch streamablehttp_client and ClientSession"):
             with (
                 patch("mcp_client.client.streamablehttp_client", fake_streamable),
                 patch(
@@ -71,15 +71,15 @@ class TestMCPClientRetry:
                 client = MCPClient("http://localhost:9999", timeout=1.0)
                 result = await client._call_tool("ping", {})
 
-        with autotest.step("Проверяем, что был ровно один ретрай"):
-            assert_equal(call_count, 2, "ожидалась 1 неудача + 1 успех")
+        with autotest.step("Check that there was exactly one retry"):
+            assert_equal(call_count, 2, "expected 1 failure + 1 success")
 
-        with autotest.step("Проверяем, что вернулся распарсенный JSON-результат"):
-            assert_equal(result, {"ok": True}, "результат должен быть распарсенным JSON")
+        with autotest.step("Check that a parsed JSON result was returned"):
+            assert_equal(result, {"ok": True}, "result must be the parsed JSON")
 
     @autotest.num("1831")
     @autotest.external_id("4ca60575-01a4-4559-8caf-b3720d28476e")
-    @autotest.name("MCPClient._call_tool: три падения RequestError → reraise после 3 попыток")
+    @autotest.name("MCPClient._call_tool: 3 RequestError failures -> reraise after 3 attempts")
     async def test_4ca60575_all_attempts_fail_reraises(self):
         call_count = 0
 
@@ -91,7 +91,7 @@ class TestMCPClientRetry:
             yield  # pragma: no cover  # makes the function an async generator for the CM
 
         with (
-            autotest.step("Патчим streamablehttp_client на постоянное падение"),
+            autotest.step("Patch streamablehttp_client to fail permanently"),
             patch(
                 "mcp_client.client.streamablehttp_client",
                 fake_streamable_always_fails,
@@ -99,40 +99,40 @@ class TestMCPClientRetry:
         ):
             client = MCPClient("http://localhost:9999", timeout=1.0)
 
-            with autotest.step("Ожидаем reraise RequestError после исчерпания"):
+            with autotest.step("Expect a RequestError reraise after retries are exhausted"):
                 with pytest.raises(httpx.RequestError):
                     await client._call_tool("ping", {})
 
-        with autotest.step("Проверяем число попыток"):
-            assert_equal(call_count, 3, "должно быть ровно 3 попытки")
+        with autotest.step("Check the attempt count"):
+            assert_equal(call_count, 3, "must be exactly 3 attempts")
 
     @autotest.num("1832")
     @autotest.external_id("8afd21f0-7b8f-4a40-9e00-68fc8bf350fa")
-    @autotest.name("MCPClient._call_tool: конфиг tenacity (stop_after_attempt=3)")
+    @autotest.name("MCPClient._call_tool: tenacity config (stop_after_attempt=3)")
     def test_8afd21f0_retry_config_stop_after_attempt(self):
-        with autotest.step("Достаём tenacity-обёртку с _call_tool"):
+        with autotest.step("Get the tenacity wrapper for _call_tool"):
             retry_state = MCPClient._call_tool.retry
 
-        with autotest.step("Проверяем stop_after_attempt=3"):
+        with autotest.step("Check stop_after_attempt=3"):
             assert_equal(
                 retry_state.stop.max_attempt_number,
                 3,
-                "должно быть 3 попытки",
+                "must be 3 attempts",
             )
 
     @autotest.num("1833")
     @autotest.external_id("bf0341ee-4fbc-4e0e-8b7d-12641f5d716b")
     @autotest.name("MCPClient._call_tool: wait_exponential(multiplier=0.3, max=2.0)")
     def test_bf0341ee_retry_config_wait_exponential(self):
-        with autotest.step("Достаём tenacity-обёртку"):
+        with autotest.step("Get the tenacity wrapper"):
             wait = MCPClient._call_tool.retry.wait
 
-        with autotest.step("Проверяем тип wait-стратегии"):
+        with autotest.step("Check the wait strategy type"):
             assert_true(
                 isinstance(wait, wait_exponential),
-                f"ожидался wait_exponential, получен {type(wait).__name__}",
+                f"expected wait_exponential, got {type(wait).__name__}",
             )
 
-        with autotest.step("Проверяем multiplier и max"):
-            assert_equal(wait.multiplier, 0.3, "multiplier должен быть 0.3")
-            assert_equal(wait.max, 2.0, "max должен быть 2.0")
+        with autotest.step("Check multiplier and max"):
+            assert_equal(wait.multiplier, 0.3, "multiplier must be 0.3")
+            assert_equal(wait.max, 2.0, "max must be 2.0")

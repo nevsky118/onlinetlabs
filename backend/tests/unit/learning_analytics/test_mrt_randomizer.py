@@ -174,36 +174,36 @@ def _decisions(cap):
 class TestMRTRandomizer:
     @autotest.num("1969")
     @autotest.external_id("69d64974-b2d4-4cac-9ee6-5e18f3481ab9")
-    @autotest.name("MRT: _mrt_open_spell выставляет джиттеренный T_k в [base*(1-f), base*(1+f)]")
+    @autotest.name("MRT: _mrt_open_spell sets a jittered T_k in [base*(1-f), base*(1+f)]")
     def test_69d64974_spell_jitter_within_range(self):
-        with autotest.step("Arrange: монитор, dwell_thresholds[idle]=100, jitter=0.5"):
+        with autotest.step("Arrange: monitor, dwell_thresholds[idle]=100, jitter=0.5"):
             cap = _Cap()
             m = _make_monitor(cap, mrt_enabled=True, jitter=0.5, dwell_thresholds={"idle": 100.0})
 
-        with autotest.step("Act: открыть spell для idle 50 раз"):
+        with autotest.step("Act: open the idle spell 50 times"):
             samples = []
             for _ in range(50):
                 m._mrt_open_spell("idle")
                 samples.append(m._spell_t_k)
 
-        with autotest.step("Assert: spell_id задан, все T_k в [50,150]"):
-            assert_true(m._spell_id is not None, "spell_id задан")
+        with autotest.step("Assert: spell_id is set, all T_k in [50,150]"):
+            assert_true(m._spell_id is not None, "spell_id is set")
             assert_true(
                 all(50.0 <= t <= 150.0 for t in samples),
-                f"все T_k в [50,150]; min={min(samples)}, max={max(samples)}",
+                f"all T_k in [50,150]; min={min(samples)}, max={max(samples)}",
             )
 
     @autotest.num("1970")
     @autotest.external_id("725a54f1-11fe-4057-9c7e-70926ccadeb4")
     @autotest.name(
-        "MRT: withhold (hold=1.0) пишет InterventionDecision assignment=withhold, без dispatch"
+        "MRT: withhold (hold=1.0) writes InterventionDecision assignment=withhold, no dispatch"
     )
     async def test_725a54f1_withhold_records_decision_no_dispatch(self):
-        with autotest.step("Arrange: монитор MRT, hold_probability=1.0 (всегда withhold)"):
+        with autotest.step("Arrange: MRT monitor, hold_probability=1.0 (always withhold)"):
             cap = _Cap()
             m = _make_monitor(cap, mrt_enabled=True, hold_prob=1.0)
 
-        with autotest.step("Act: _run_analysis с одним событием"):
+        with autotest.step("Act: _run_analysis with one event"):
             with (
                 patch.object(m, "_load_new_events", AsyncMock(return_value=[_fake_event()])),
                 patch(
@@ -213,25 +213,25 @@ class TestMRTRandomizer:
             ):
                 await m._run_analysis()
 
-        with autotest.step("Assert: записана точка решения withhold, orchestrator не вызван"):
+        with autotest.step("Assert: withhold decision point recorded, orchestrator not called"):
             decisions = _decisions(cap)
-            assert_equal(len(decisions), 1, f"ровно 1 точка решения; получено {len(decisions)}")
+            assert_equal(len(decisions), 1, f"exactly 1 decision point; got {len(decisions)}")
             assert_equal(decisions[0].assignment, "withhold", "assignment == withhold")
-            assert_equal(decisions[0].session_id, "s1", "session_id проброшен")
-            assert_true(decisions[0].spell_id is not None, "spell_id задан")
+            assert_equal(decisions[0].session_id, "s1", "session_id passed through")
+            assert_true(decisions[0].spell_id is not None, "spell_id is set")
             m._orchestrator.intervene.assert_not_called()
             types = [getattr(o, "event_type", None) for o in cap.added]
-            assert_true("would_intervene" in types, f"would_intervene записан; types {types}")
+            assert_true("would_intervene" in types, f"would_intervene recorded; types {types}")
 
     @autotest.num("1971")
     @autotest.external_id("238f96be-f346-42d0-aece-f25a3a62eb64")
-    @autotest.name("MRT: intervene (hold=0.0) пишет assignment=intervene и диспатчит")
+    @autotest.name("MRT: intervene (hold=0.0) writes assignment=intervene and dispatches")
     async def test_238f96be_intervene_records_and_dispatches(self):
-        with autotest.step("Arrange: монитор MRT, hold_probability=0.0 (всегда intervene)"):
+        with autotest.step("Arrange: MRT monitor, hold_probability=0.0 (always intervene)"):
             cap = _Cap()
             m = _make_monitor(cap, mrt_enabled=True, hold_prob=0.0)
 
-        with autotest.step("Act: _run_analysis с одним событием"):
+        with autotest.step("Act: _run_analysis with one event"):
             with (
                 patch.object(m, "_load_new_events", AsyncMock(return_value=[_fake_event()])),
                 patch(
@@ -241,21 +241,21 @@ class TestMRTRandomizer:
             ):
                 await m._run_analysis()
 
-        with autotest.step("Assert: точка решения intervene, orchestrator вызван"):
+        with autotest.step("Assert: intervene decision point, orchestrator called"):
             decisions = _decisions(cap)
-            assert_equal(len(decisions), 1, f"ровно 1 точка решения; получено {len(decisions)}")
+            assert_equal(len(decisions), 1, f"exactly 1 decision point; got {len(decisions)}")
             assert_equal(decisions[0].assignment, "intervene", "assignment == intervene")
             m._orchestrator.intervene.assert_called_once()
 
     @autotest.num("1972")
     @autotest.external_id("7e0b9735-e4da-4371-8bd9-9a9a279b53ad")
-    @autotest.name("MRT off: точки решения НЕ пишутся (поведение не меняется)")
+    @autotest.name("MRT off: decision points are NOT written (behavior unchanged)")
     async def test_7e0b9735_mrt_off_no_decisions(self):
-        with autotest.step("Arrange: монитор с mrt_enabled=False (дефолт)"):
+        with autotest.step("Arrange: monitor with mrt_enabled=False (default)"):
             cap = _Cap()
             m = _make_monitor(cap, mrt_enabled=False)
 
-        with autotest.step("Act: _run_analysis с одним событием"):
+        with autotest.step("Act: _run_analysis with one event"):
             with (
                 patch.object(m, "_load_new_events", AsyncMock(return_value=[_fake_event()])),
                 patch(
@@ -265,5 +265,5 @@ class TestMRTRandomizer:
             ):
                 await m._run_analysis()
 
-        with autotest.step("Assert: ни одной InterventionDecision"):
-            assert_equal(len(_decisions(cap)), 0, "MRT выключен → нет точек решения")
+        with autotest.step("Assert: no InterventionDecision at all"):
+            assert_equal(len(_decisions(cap)), 0, "MRT disabled → no decision points")

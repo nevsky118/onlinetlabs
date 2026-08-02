@@ -29,14 +29,14 @@ class TestAuthRegisterCrudApi:
         reg_data = AuthRegisterData()
 
         # Act
-        with autotest.step("Регистрируем нового пользователя"):
+        with autotest.step("Register new user"):
             response = await self.auth_api.post_register(data=reg_data.data)
 
         # Assert
-        with autotest.step("Проверяем статус код 201"):
+        with autotest.step("Verify status code 201"):
             check_response_status(response, 201)
 
-        with autotest.step("Проверяем, что возвращённые данные совпадают с отправленными"):
+        with autotest.step("Verify returned data matches sent data"):
             verify_data(
                 actual_data=response.json(),
                 expected_data=reg_data.data,
@@ -49,16 +49,16 @@ class TestAuthRegisterCrudApi:
     async def test_c3d4e5f6_register_duplicate_email(self):
         """Registration with an existing email returns 409."""
         # Arrange
-        with autotest.step("Регистрируем пользователя"):
+        with autotest.step("Register user"):
             reg_data = AuthRegisterData()
             await self.auth_helper.register_user(reg_data.data)
 
         # Act
-        with autotest.step("Повторная регистрация с тем же email"):
+        with autotest.step("Repeat registration with same email"):
             response = await self.auth_api.post_register(data=reg_data.data)
 
         # Assert
-        with autotest.step("Проверяем статус код 409"):
+        with autotest.step("Verify status code 409"):
             check_response_status(response, 409)
 
     @autotest.num("4")
@@ -71,9 +71,9 @@ class TestAuthRegisterCrudApi:
         reg_data.data["password"] = short_password()
 
         # Act
-        with autotest.step("Регистрация с коротким паролем"):
+        with autotest.step("Registration with short password"):
             response = await self.auth_api.post_register(data=reg_data.data)
 
         # Assert
-        with autotest.step("Проверяем статус код 422"):
+        with autotest.step("Verify status code 422"):
             check_response_status(response, 422)

@@ -25,9 +25,9 @@ class TestAgentsRunPath:
 
     @autotest.num("2520")
     @autotest.external_id("9945ed45-b6be-4aa2-9715-2e5f018e041d")
-    @autotest.name("HintAgent: реальный Agent.run через TestModel (без кэша Agent по model_id)")
+    @autotest.name("HintAgent: real Agent.run via TestModel (no Agent cache by model_id)")
     async def test_9945ed45_hint_real_run_path(self, config_model, monkeypatch):
-        with autotest.step("Создаём HintAgent, подменяем _build_model на TestModel"):
+        with autotest.step("Create HintAgent, patch _build_model to TestModel"):
             agent = HintAgent(config_model)
             mid = config_model.agents.intervention_model
             monkeypatch.setattr(
@@ -36,7 +36,7 @@ class TestAgentsRunPath:
                 lambda model_id: TestModel(custom_output_text="Проверь маршрут OSPF на R1"),
             )
 
-        with autotest.step("Реальный run через Agent.run с TestModel"):
+        with autotest.step("Real run through Agent.run with TestModel"):
             inp = HintInput(
                 session_id="s1",
                 user_id="u1",
@@ -48,22 +48,24 @@ class TestAgentsRunPath:
             )
             result = await agent.run(inp, model_id=mid)
 
-        with autotest.step("HintResponse собран из result.output реального прогона"):
+        with autotest.step("HintResponse is built from result.output of a real run"):
             assert_equal(result.hint, "Проверь маршрут OSPF на R1", "hint == canned output")
-            assert_equal(result.hint_level, 3, "уровень 3 при 4 попытках")
+            assert_equal(result.hint_level, 3, "level 3 at 4 attempts")
 
-        with autotest.step("Повторный run с тем же model_id снова строит Agent с нужной моделью"):
+        with autotest.step(
+            "Repeat run with the same model_id builds the Agent with the right model again"
+        ):
             result_again = await agent.run(inp, model_id=mid)
             assert_true(
                 result_again.hint == result.hint,
-                "без кэша Agent-инстансов результат стабилен между вызовами",
+                "without Agent instance caching, the result is stable across calls",
             )
 
     @autotest.num("2521")
     @autotest.external_id("75960d89-a54c-4e98-aaa0-6e95629b81ff")
-    @autotest.name("TutorAgent: реальный Agent.run через TestModel даёт TutorResponse из output")
+    @autotest.name("TutorAgent: real Agent.run via TestModel produces TutorResponse from output")
     async def test_75960d89_tutor_real_run_path(self, config_model, monkeypatch):
-        with autotest.step("Создаём TutorAgent, подменяем _build_model на TestModel"):
+        with autotest.step("Create TutorAgent, patch _build_model to TestModel"):
             agent = TutorAgent(config_model)
             mid = config_model.agents.intervention_model
             canned = "OSPF сессия не поднимается из-за неверной маски"
@@ -73,7 +75,7 @@ class TestAgentsRunPath:
                 lambda model_id: TestModel(custom_output_text=canned),
             )
 
-        with autotest.step("Реальный run через Agent.run с TestModel"):
+        with autotest.step("Real run through Agent.run with TestModel"):
             inp = TutorInput(
                 session_id="s1",
                 user_id="u1",
@@ -82,6 +84,6 @@ class TestAgentsRunPath:
             )
             result = await agent.run(inp, model_id=mid)
 
-        with autotest.step("TutorResponse собран из result.output реального прогона"):
-            assert_true(isinstance(result, TutorResponse), f"тип: {type(result)}")
+        with autotest.step("TutorResponse is built from result.output of a real run"):
+            assert_true(isinstance(result, TutorResponse), f"type: {type(result)}")
             assert_equal(result.answer, canned, "answer == canned output")

@@ -61,63 +61,63 @@ class TestStudentJourneyE2E:
 
     @autotest.num("800")
     @autotest.external_id("c1d2e3f4-a5b6-7890-cdef-800000000001")
-    @autotest.name("E2E: путь студента — браузинг→launch→чат→прогресс→lifecycle→end")
+    @autotest.name("E2E: student journey — browsing→launch→chat→progress→lifecycle→end")
     async def test_c1d2e3f4_student_journey(self):
-        with autotest.step("Браузинг курсов и лаб"):
+        with autotest.step("Browsing courses and labs"):
             check_response_status(await self.courses_api.get_courses(), 200)
             check_response_status(await self.labs_api.get_labs(), 200)
             check_response_status(await self.labs_api.get_lab_by_slug(_LAB), 200)
 
-        with autotest.step("Старт прогресса по лабе"):
+        with autotest.step("Start progress on lab"):
             r = await self.progress_api.post_start_lab(_LAB)
-            assert_true(r.status_code in (200, 201), f"start_lab статус {r.status_code}")
+            assert_true(r.status_code in (200, 201), f"start_lab status {r.status_code}")
 
-        with autotest.step("Launch сессии"):
+        with autotest.step("Launch session"):
             launched = await self.sessions_helper.launch_session(_LAB)
             session_id = launched["session_id"]
-            assert_is_not_none(session_id, "session_id есть")
-            assert_true("gns3-server" not in launched["gns3_url"], "gns3_url публичный")
+            assert_is_not_none(session_id, "session_id present")
+            assert_true("gns3-server" not in launched["gns3_url"], "gns3_url is public")
 
-        with autotest.step("GET сессии — active + lab_title"):
+        with autotest.step("GET session — active + lab_title"):
             resp = await self.sessions_api.get_session(session_id)
             check_response_status(resp, 200)
             body = resp.json()
-            assert_equal(body["status"], "active", "статус active")
+            assert_equal(body["status"], "active", "status active")
             assert_equal(body["lab_title"], "Autotest Lab", "lab_title")
 
-        with autotest.step("Чат — SSE стримит токены"):
+        with autotest.step("Chat — SSE streams tokens"):
             lines = await self.chat_api.post_chat_stream(
                 session_id,
                 messages=[{"role": "user", "parts": [{"type": "text", "text": "Что такое VLAN?"}]}],
             )
             types, done = _parse_sse(lines)
-            assert_in("start", types, "событие start")
-            assert_in("text-delta", types, "событие text-delta")
-            assert_true(done, "поток завершён [DONE]")
-            assert_true("error" not in types, "нет error")
+            assert_in("start", types, "event start")
+            assert_in("text-delta", types, "event text-delta")
+            assert_true(done, "stream finished [DONE]")
+            assert_true("error" not in types, "no error")
 
-        with autotest.step("Запись попыток шага — fail затем pass"):
+        with autotest.step("Record step attempts — fail then pass"):
             r1 = await self.progress_api.post_step_attempt(
                 _LAB, _STEP, StepAttemptData(result="fail", score=0.0, error_details={"msg": "bad vlan"}).data)
             check_response_status(r1, 200)
             r2 = await self.progress_api.post_step_attempt(
                 _LAB, _STEP, StepAttemptData(result="pass", score=1.0, error_details=None).data)
             check_response_status(r2, 200)
-            assert_true(r2.json()["attempt_number"] > r1.json()["attempt_number"], "номер попытки растёт")
+            assert_true(r2.json()["attempt_number"] > r1.json()["attempt_number"], "attempt number increases")
 
-        with autotest.step("Readback прогресса — попытки записаны"):
+        with autotest.step("Readback progress — attempts recorded"):
             detail = await self.progress_api.get_lab_progress(_LAB)
             check_response_status(detail, 200)
             results = [a["result"] for a in detail.json()["attempts"] if a["step_slug"] == _STEP]
-            assert_in("fail", results, "есть fail")
-            assert_in("pass", results, "есть pass")
+            assert_in("fail", results, "fail present")
+            assert_in("pass", results, "pass present")
 
         with autotest.step("Lifecycle: stop/restart/reset"):
             check_response_status(await self.sessions_api.post_stop(session_id), 200)
             check_response_status(await self.sessions_api.post_restart(session_id), 200)
             check_response_status(await self.sessions_api.post_reset(session_id), 200)
 
-        with autotest.step("End — статус ended"):
+        with autotest.step("End — status ended"):
             check_response_status(await self.sessions_api.post_end(session_id), 200)
             ended = await self.sessions_api.get_session(session_id)
-            assert_equal(ended.json()["status"], "ended", "статус ended")
+            assert_equal(ended.json()["status"], "ended", "status ended")

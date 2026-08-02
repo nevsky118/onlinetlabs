@@ -8,14 +8,14 @@ pytestmark = [pytest.mark.unit]
 class TestRegimeAnnotation:
     @autotest.num("1980")
     @autotest.external_id("51f61070-6a3f-47be-8b51-90a4c340d52d")
-    @autotest.name("RegimeAnnotation: таблица содержит все обязательные колонки")
+    @autotest.name("RegimeAnnotation: table has all required columns")
     def test_51f61070_model_columns_present(self):
-        with autotest.step("Act: получить имена колонок модели"):
+        with autotest.step("Act: get the model's column names"):
             from models.regime_annotation import RegimeAnnotation
 
             cols = set(RegimeAnnotation.__table__.columns.keys())
 
-        with autotest.step("Assert: обязательные колонки присутствуют, имя таблицы верно"):
+        with autotest.step("Assert: required columns present, table name correct"):
             assert_true(
                 {
                     "id",
@@ -27,6 +27,6 @@ class TestRegimeAnnotation:
                     "created_at",
                 }
                 <= cols,
-                f"обязательные колонки присутствуют; есть {cols}",
+                f"required columns present; have {cols}",
             )
-            assert_equal(RegimeAnnotation.__tablename__, "regime_annotations", "имя таблицы")
+            assert_equal(RegimeAnnotation.__tablename__, "regime_annotations", "table name")

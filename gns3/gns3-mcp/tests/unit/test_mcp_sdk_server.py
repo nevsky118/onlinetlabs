@@ -129,12 +129,12 @@ def make_server(monkeypatch):
 class TestToolErrorContract:
     @autotest.num("827")
     @autotest.external_id("356217db-a3bf-4373-b8af-d4b0a9a240ae")
-    @autotest.name("_tool_errors: невалидный ctx → SessionContextError для всех 8 инструментов")
+    @autotest.name("_tool_errors: invalid ctx → SessionContextError for all 8 tools")
     async def test_invalid_ctx_raises_session_context_error(self, make_server):
-        with autotest.step("Готовим сервер с полным набором протоколов"):
+        with autotest.step("Set up a server with the full set of protocols"):
             server = make_server()
 
-        with autotest.step("Для каждого инструмента вызываем с ctx без обязательных полей"):
+        with autotest.step("For each tool, call with a ctx missing required fields"):
             for name in ALL_TOOL_NAMES:
                 fn = server.mcp.tools[name]
                 kwargs = _call_kwargs(name, {"user_id": "u1"})
@@ -143,24 +143,24 @@ class TestToolErrorContract:
 
     @autotest.num("828")
     @autotest.external_id("760061cd-e6e3-485c-8cc5-c1789c17be3d")
-    @autotest.name("_tool_errors: доменная MCPServerError пробрасывается без оборачивания")
+    @autotest.name("_tool_errors: a domain MCPServerError propagates unwrapped")
     async def test_domain_error_passthrough(self, make_server):
-        with autotest.step("impl бросает ComponentNotFoundError"):
+        with autotest.step("impl raises ComponentNotFoundError"):
             server = make_server(raise_error=ComponentNotFoundError(component_id="c1"))
 
-        with autotest.step("Вызываем list_components"):
+        with autotest.step("Call list_components"):
             fn = server.mcp.tools["list_components"]
             with pytest.raises(ComponentNotFoundError):
                 await fn(ctx=_ctx_dict())
 
     @autotest.num("829")
     @autotest.external_id("881a7ba6-da1f-4346-9be1-389c25ffd515")
-    @autotest.name("_tool_errors: неожиданное исключение → MCPServerError('Internal server error')")
+    @autotest.name("_tool_errors: unexpected exception → MCPServerError('Internal server error')")
     async def test_unexpected_error_masked(self, make_server):
-        with autotest.step("impl бросает произвольный RuntimeError"):
+        with autotest.step("impl raises an arbitrary RuntimeError"):
             server = make_server(raise_error=RuntimeError("boom"))
 
-        with autotest.step("Вызываем list_components и проверяем маскирование"):
+        with autotest.step("Call list_components and assert the masking"):
             fn = server.mcp.tools["list_components"]
             with pytest.raises(MCPServerError) as exc_info:
                 await fn(ctx=_ctx_dict())
@@ -170,26 +170,26 @@ class TestToolErrorContract:
 class TestBonusArgumentValidation:
     @autotest.num("830")
     @autotest.external_id("433369b4-ad0d-4c39-95bb-420c39c0b72c")
-    @autotest.name("get_logs: невалидный level → SessionContextError, не Internal server error")
+    @autotest.name("get_logs: invalid level → SessionContextError, not Internal server error")
     async def test_get_logs_invalid_level_raises_session_context_error(self, make_server):
-        with autotest.step("Готовим сервер"):
+        with autotest.step("Set up the server"):
             server = make_server()
             fn = server.mcp.tools["get_logs"]
 
-        with autotest.step("Вызываем с несуществующим level"):
+        with autotest.step("Call with a nonexistent level"):
             with pytest.raises(SessionContextError) as exc_info:
                 await fn(ctx=_ctx_dict(), level="not-a-level")
             assert "not-a-level" in str(exc_info.value)
 
     @autotest.num("831")
     @autotest.external_id("a03f92dc-71cd-4332-92b1-e0678ec5f80e")
-    @autotest.name("list_errors: невалидный since → SessionContextError, не Internal server error")
+    @autotest.name("list_errors: invalid since → SessionContextError, not Internal server error")
     async def test_list_errors_invalid_since_raises_session_context_error(self, make_server):
-        with autotest.step("Готовим сервер"):
+        with autotest.step("Set up the server"):
             server = make_server()
             fn = server.mcp.tools["list_errors"]
 
-        with autotest.step("Вызываем с некорректным since"):
+        with autotest.step("Call with an invalid since"):
             with pytest.raises(SessionContextError) as exc_info:
                 await fn(ctx=_ctx_dict(), since="not-a-date")
             assert "not-a-date" in str(exc_info.value)

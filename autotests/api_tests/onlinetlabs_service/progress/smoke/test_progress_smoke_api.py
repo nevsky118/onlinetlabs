@@ -24,25 +24,25 @@ class TestProgressSmokeApi:
     async def test_b4c5d6e7_get_progress(self):
         """Fetching the progress returns 200."""
         # Act
-        with autotest.step("Отправляем GET /users/me/progress"):
+        with autotest.step("Send GET /users/me/progress"):
             response = await self.progress_api.get_progress()
 
         # Assert
-        with autotest.step("Проверяем статус код 200"):
+        with autotest.step("Check status code 200"):
             check_response_status(response, 200)
 
     @autotest.num("15")
     @autotest.external_id("c5d6e7f8-a9b0-1234-cdef-345678901234")
-    @autotest.name("Smoke: GET /users/me/progress/labs/{slug} — 404 для несуществующей")
+    @autotest.name("Smoke: GET /users/me/progress/labs/{slug} — 404 for a nonexistent lab")
     async def test_c5d6e7f8_get_lab_progress_not_found(self):
         """Progress for a nonexistent lab returns 404."""
         # Arrange
         fake_slug = f"nonexistent-{Randomizer.random_string(8).lower()}"
 
         # Act
-        with autotest.step(f"Отправляем GET /users/me/progress/labs/{fake_slug}"):
+        with autotest.step(f"Send GET /users/me/progress/labs/{fake_slug}"):
             response = await self.progress_api.get_lab_progress(lab_slug=fake_slug)
 
         # Assert
-        with autotest.step("Проверяем статус код 404"):
+        with autotest.step("Check status code 404"):
             check_response_status(response, 404)

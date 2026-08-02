@@ -63,7 +63,7 @@ class TestPreferencesEndpoints:
 
     @autotest.num("1951")
     @autotest.external_id("25b65c19-8400-4f3a-8b44-e4aba61753a6")
-    @autotest.name("GET /preferences: свежий пользователь → default_model_id=null")
+    @autotest.name("GET /preferences: fresh user → default_model_id=null")
     async def test_25b65c19_get_fresh_user_null(self):
         with autotest.step("Act: GET /users/me/preferences"):
             async with self._client() as client:
@@ -75,9 +75,9 @@ class TestPreferencesEndpoints:
 
     @autotest.num("1952")
     @autotest.external_id("a5ca6174-c766-4407-8ac5-ce62d3230244")
-    @autotest.name("PATCH /preferences: {default_model_id: null} → 200, остаётся null")
+    @autotest.name("PATCH /preferences: {default_model_id: null} → 200, stays null")
     async def test_a5ca6174_patch_null_stays_null(self):
-        with autotest.step("Act: PATCH с null"):
+        with autotest.step("Act: PATCH with null"):
             async with self._client() as client:
                 resp = await client.patch("/users/me/preferences", json={"default_model_id": None})
 
@@ -87,9 +87,9 @@ class TestPreferencesEndpoints:
 
     @autotest.num("1953")
     @autotest.external_id("ab755754-b990-4bbc-be8b-f7234e56ee77")
-    @autotest.name("PATCH /preferences: неизвестная модель с can_select=True → 422")
+    @autotest.name("PATCH /preferences: unknown model with can_select=True → 422")
     async def test_ab755754_invalid_model_422(self):
-        with autotest.step("Act: PATCH с несуществующей моделью"):
+        with autotest.step("Act: PATCH with a nonexistent model"):
             async with self._client(can_select=True) as client:
                 resp = await client.patch(
                     "/users/me/preferences",
@@ -101,9 +101,9 @@ class TestPreferencesEndpoints:
 
     @autotest.num("1954")
     @autotest.external_id("3d094843-791e-454a-abba-d0b9b0f364c6")
-    @autotest.name("PATCH /preferences: валидная модель с can_select=False → 403")
+    @autotest.name("PATCH /preferences: valid model with can_select=False → 403")
     async def test_3d094843_valid_model_no_permission_403(self):
-        with autotest.step("Act: PATCH с can_select=False"):
+        with autotest.step("Act: PATCH with can_select=False"):
             async with self._client(can_select=False) as client:
                 resp = await client.patch(
                     "/users/me/preferences",
@@ -115,23 +115,23 @@ class TestPreferencesEndpoints:
 
     @autotest.num("1955")
     @autotest.external_id("64428791-cc9b-4da1-89c6-375fe448adfc")
-    @autotest.name("PATCH /preferences: валидная модель с can_select=True → 200, сохранено")
+    @autotest.name("PATCH /preferences: valid model with can_select=True → 200, persisted")
     async def test_64428791_valid_model_persisted(self):
-        with autotest.step("Act: PATCH с can_select=True"):
+        with autotest.step("Act: PATCH with can_select=True"):
             async with self._client(can_select=True) as client:
                 resp = await client.patch(
                     "/users/me/preferences",
                     json={"default_model_id": _VALID_MODEL_ID},
                 )
 
-        with autotest.step("Assert: 200, default_model_id сохранён"):
+        with autotest.step("Assert: 200, default_model_id persisted"):
             assert_equal(resp.status_code, 200, "status 200")
-            assert_equal(resp.json()["default_model_id"], _VALID_MODEL_ID, "модель сохранена")
+            assert_equal(resp.json()["default_model_id"], _VALID_MODEL_ID, "model persisted")
 
-        with autotest.step("Assert: GET возвращает сохранённое значение"):
+        with autotest.step("Assert: GET returns the persisted value"):
             async with self._client(can_select=True) as client:
                 get_resp = await client.get("/users/me/preferences")
             assert_equal(get_resp.status_code, 200, "GET 200")
             assert_equal(
-                get_resp.json()["default_model_id"], _VALID_MODEL_ID, "GET возвращает модель"
+                get_resp.json()["default_model_id"], _VALID_MODEL_ID, "GET returns the model"
             )

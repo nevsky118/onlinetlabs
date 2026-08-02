@@ -25,27 +25,27 @@ def _make_ctx(**overrides) -> SessionContext:
 class TestGNS3ConnectionManager:
     @autotest.num("340")
     @autotest.external_id("gns3-conn-connect-creates-client")
-    @autotest.name("GNS3ConnectionManager.connect: создаёт GNS3ApiClient")
+    @autotest.name("GNS3ConnectionManager.connect: creates a GNS3ApiClient")
     async def test_connect(self):
-        with autotest.step("Вызываем connect"):
+        with autotest.step("Call connect"):
             mgr = GNS3ConnectionManager()
             ctx = _make_ctx()
             client = await mgr.connect(ctx)
 
-        with autotest.step("Проверяем тип"):
+        with autotest.step("Assert the type"):
             assert isinstance(client, GNS3ApiClient)
             await mgr.disconnect(client)
 
     @autotest.num("341")
     @autotest.external_id("gns3-conn-connect-jwt-header")
-    @autotest.name("GNS3ConnectionManager.connect: JWT в заголовке")
+    @autotest.name("GNS3ConnectionManager.connect: JWT in the header")
     async def test_connect_with_jwt(self):
-        with autotest.step("Вызываем connect с JWT"):
+        with autotest.step("Call connect with a JWT"):
             mgr = GNS3ConnectionManager()
             ctx = _make_ctx(metadata={"gns3_jwt": "test-token"})
             client = await mgr.connect(ctx)
 
-        with autotest.step("Проверяем Authorization header"):
+        with autotest.step("Assert the Authorization header"):
             auth = client.client.headers.get("authorization")
             assert auth == "Bearer test-token"
             await mgr.disconnect(client)
@@ -53,9 +53,9 @@ class TestGNS3ConnectionManager:
     @respx.mock
     @autotest.num("342")
     @autotest.external_id("gns3-conn-health-check-ok")
-    @autotest.name("GNS3ConnectionManager.health_check: True при 200")
+    @autotest.name("GNS3ConnectionManager.health_check: True on 200")
     async def test_health_check_ok(self):
-        with autotest.step("Мокаем /v3/version"):
+        with autotest.step("Mock /v3/version"):
             respx.get(f"{GNS3_URL}/v3/version").mock(
                 return_value=httpx.Response(200, json=build_gns3_version())
             )
@@ -70,9 +70,9 @@ class TestGNS3ConnectionManager:
     @respx.mock
     @autotest.num("343")
     @autotest.external_id("gns3-conn-health-check-fail")
-    @autotest.name("GNS3ConnectionManager.health_check: False при ошибке")
+    @autotest.name("GNS3ConnectionManager.health_check: False on error")
     async def test_health_check_fail(self):
-        with autotest.step("Мокаем ConnectError"):
+        with autotest.step("Mock ConnectError"):
             respx.get(f"{GNS3_URL}/v3/version").mock(side_effect=httpx.ConnectError("refused"))
             mgr = GNS3ConnectionManager()
             client = await mgr.connect(_make_ctx())

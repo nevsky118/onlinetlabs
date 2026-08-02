@@ -65,13 +65,13 @@ class TestCourseResponses:
 
     @autotest.num("2500")
     @autotest.external_id("f2764546-2a7d-4208-bd96-b419b92f570e")
-    @autotest.name("GET /courses: полный JSON списка курсов пиксель-в-пиксель")
+    @autotest.name("GET /courses: full course list JSON, pixel-for-pixel")
     async def test_f2764546_list_courses_exact_json(self):
         with autotest.step("Act: GET /courses"):
             async with self._client() as client:
                 resp = await client.get("/courses")
 
-        with autotest.step("Assert: 200 и полный JSON равен ожидаемому"):
+        with autotest.step("Assert: 200 and full JSON equals expected"):
             assert_equal(resp.status_code, 200, "status 200")
             assert_equal(
                 resp.json(),
@@ -85,18 +85,18 @@ class TestCourseResponses:
                         "meta": {"tags": ["networking"]},
                     }
                 ],
-                "полный JSON списка курсов",
+                "full course list JSON",
             )
 
     @autotest.num("2501")
     @autotest.external_id("1c8ee1b5-fbe9-450d-bd83-147920f39336")
-    @autotest.name("GET /courses/{slug}: полный JSON курса с лабами пиксель-в-пиксель")
+    @autotest.name("GET /courses/{slug}: full course-with-labs JSON, pixel-for-pixel")
     async def test_1c8ee1b5_get_course_detail_exact_json(self):
         with autotest.step("Act: GET /courses/networking-101"):
             async with self._client() as client:
                 resp = await client.get("/courses/networking-101")
 
-        with autotest.step("Assert: 200 и полный JSON равен ожидаемому"):
+        with autotest.step("Assert: 200 and full JSON equals expected"):
             assert_equal(resp.status_code, 200, "status 200")
             assert_equal(
                 resp.json(),
@@ -117,7 +117,7 @@ class TestCourseResponses:
                         }
                     ],
                 },
-                "полный JSON курса с лабами",
+                "full course-with-labs JSON",
             )
 
     @autotest.num("3142")

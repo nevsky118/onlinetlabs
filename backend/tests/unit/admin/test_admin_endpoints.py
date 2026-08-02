@@ -24,100 +24,102 @@ pytestmark = [pytest.mark.unit]
 class TestAdminEndpoints:
     @autotest.num("1810")
     @autotest.external_id("a3f7c2d1-8b4e-4f9a-bc12-5e6d0f1a2b3c")
-    @autotest.name("admin: identifier-eval форма ответа на синтетике")
+    @autotest.name("admin: identifier-eval response shape on synthetic data")
     def test_a3f7c2d1_identifier_eval_shape(self):
         from admin.router import build_identifier_eval
 
-        with autotest.step("Act: собрать eval на синтетике"):
+        with autotest.step("Act: build eval on synthetic data"):
             out = build_identifier_eval()
 
-        with autotest.step("Assert: есть curve, J-оптимум, матрица, first-match, preliminary"):
+        with autotest.step(
+            "Assert: curve, J-optimum, confusion matrix, first-match, preliminary are present"
+        ):
             for k in ("curve", "j_optimal_t_k", "confusion", "first_match", "preliminary"):
                 assert_in(k, out, k)
 
-        with autotest.step("Assert: preliminary=True для синтетики"):
-            assert_true(out["preliminary"] is True, "синтетика → предварительно")
+        with autotest.step("Assert: preliminary=True for synthetic data"):
+            assert_true(out["preliminary"] is True, "synthetic data → preliminary")
 
-        with autotest.step("Assert: curve непуста и содержит нужные поля"):
-            assert_true(len(out["curve"]) > 0, "кривая не пуста")
+        with autotest.step("Assert: curve is non-empty and has the required fields"):
+            assert_true(len(out["curve"]) > 0, "curve is not empty")
             for field in ("t_k", "latency_median", "false_per_hour", "recall", "j"):
                 assert_in(field, out["curve"][0], field)
 
-        with autotest.step("Assert: confusion это словарь со строковыми ключами"):
+        with autotest.step("Assert: confusion is a dict with string keys"):
             assert_true(isinstance(out["confusion"], dict), "confusion is dict")
 
-        with autotest.step("Assert: first_match содержит multi_match_rate"):
+        with autotest.step("Assert: first_match contains multi_match_rate"):
             assert_in("multi_match_rate", out["first_match"], "first_match.multi_match_rate")
 
     @autotest.num("1811")
     @autotest.external_id("0955923d-b23e-4776-b7a0-8552600260f7")
-    @autotest.name("admin: tk-sensitivity форма ответа")
+    @autotest.name("admin: tk-sensitivity response shape")
     def test_0955923d_tk_sensitivity_shape(self):
         from admin.router import build_tk_sensitivity
 
-        with autotest.step("Act: собрать кривую чувствительности"):
+        with autotest.step("Act: build the sensitivity curve"):
             out = build_tk_sensitivity()
 
-        with autotest.step("Assert: есть points и costs"):
+        with autotest.step("Assert: points and costs are present"):
             assert_in("points", out, "points")
             assert_in("costs", out, "costs")
 
-        with autotest.step("Assert: points непуст, каждая точка это ratio/t_k/J"):
-            assert_true(len(out["points"]) > 0, "хотя бы одна точка")
+        with autotest.step("Assert: points is non-empty, each point has ratio/t_k/J"):
+            assert_true(len(out["points"]) > 0, "at least one point")
             for pt in out["points"]:
                 for field in ("ratio", "t_k", "J"):
                     assert_in(field, pt, field)
 
-        with autotest.step("Assert: costs содержит c_stuck и c_intervention"):
+        with autotest.step("Assert: costs contains c_stuck and c_intervention"):
             assert_in("c_stuck", out["costs"], "costs.c_stuck")
             assert_in("c_intervention", out["costs"], "costs.c_intervention")
 
     @autotest.num("1812")
     @autotest.external_id("29876633-d902-47ca-9f2a-54b43167b0df")
     @autotest.name(
-        "admin: build_overview пустая БД, возвращает dict с ключами ab/cohort/identifier/ops"
+        "admin: build_overview on an empty DB returns a dict with ab/cohort/identifier/ops keys"
     )
     async def test_29876633_overview_empty_db(self, empty_admin_db):
         from admin.router import build_overview
 
-        with autotest.step("Act: build_overview на пустой БД"):
+        with autotest.step("Act: build_overview on an empty DB"):
             out = await build_overview(empty_admin_db)
 
-        with autotest.step("Assert: все верхнеуровневые ключи присутствуют"):
+        with autotest.step("Assert: all top-level keys are present"):
             for k in ("ab", "cohort", "identifier", "ops"):
                 assert_in(k, out, k)
 
-        with autotest.step("Assert: ab содержит l2_pass_closed/open/mentor_hours_saved"):
+        with autotest.step("Assert: ab contains l2_pass_closed/open/mentor_hours_saved"):
             for k in ("l2_pass_closed", "l2_pass_open", "mentor_hours_saved"):
                 assert_in(k, out["ab"], k)
 
         with autotest.step("Assert: ops.active_sessions >= 0"):
-            assert_true(out["ops"]["active_sessions"] >= 0, "active_sessions неотрицателен")
+            assert_true(out["ops"]["active_sessions"] >= 0, "active_sessions is non-negative")
 
     @autotest.num("1813")
     @autotest.external_id("68b00e53-5e40-4fe2-9a62-0a64855fff33")
-    @autotest.name("admin: build_overview с одной метрикой не падает, возвращает числа")
+    @autotest.name("admin: build_overview with a single metric doesn't fail, returns numbers")
     async def test_68b00e53_overview_with_seed(self, seeded_admin_db):
         from admin.router import build_overview
 
-        with autotest.step("Act: build_overview с сидом"):
+        with autotest.step("Act: build_overview with seed data"):
             out = await build_overview(seeded_admin_db)
 
-        with autotest.step("Assert: структура полная"):
+        with autotest.step("Assert: structure is complete"):
             for k in ("ab", "cohort", "identifier", "ops"):
                 assert_in(k, out, k)
 
         with autotest.step("Assert: ops.finished_sessions_n >= 1"):
-            assert_true(out["ops"]["finished_sessions_n"] >= 1, "хотя бы одна метрика")
+            assert_true(out["ops"]["finished_sessions_n"] >= 1, "at least one metric")
 
     @autotest.num("1814")
     @autotest.external_id("e9e284ed-16e2-4481-a76e-908aef728a03")
-    @autotest.name("admin: роутер зарегистрирован под /admin в main.py")
+    @autotest.name("admin: router is registered under /admin in main.py")
     def test_e9e284ed_router_registered(self):
-        with autotest.step("Импортировать admin_router"):
+        with autotest.step("Import admin_router"):
             from admin.router import router as admin_router
 
-        with autotest.step("Assert: роутер имеет пути overview/identifier-eval/tk-sensitivity"):
+        with autotest.step("Assert: router has overview/identifier-eval/tk-sensitivity paths"):
             paths = {r.path for r in admin_router.routes}
             assert_in("/overview", paths, "/overview")
             assert_in("/identifier-eval", paths, "/identifier-eval")
@@ -125,22 +127,22 @@ class TestAdminEndpoints:
 
     @autotest.num("1815")
     @autotest.external_id("45ff77c3-a01a-4b80-865d-e89b51b6d9d3")
-    @autotest.name("admin: require_admin отклоняет не-admin (403)")
+    @autotest.name("admin: require_admin rejects non-admin (403)")
     def test_45ff77c3_require_admin_rejects(self):
         from fastapi import HTTPException
 
         from admin.router import require_admin
 
-        with autotest.step("Вызвать require_admin с ролью student"):
+        with autotest.step("Call require_admin with role student"):
             raised = False
             try:
                 require_admin(current_user={"role": "student"})
             except HTTPException as exc:
                 raised = True
-                assert_equal(exc.status_code, 403, "статус 403")
+                assert_equal(exc.status_code, 403, "status 403")
 
-        with autotest.step("Assert: исключение было поднято"):
-            assert_true(raised, "HTTPException был поднят для non-admin")
+        with autotest.step("Assert: exception was raised"):
+            assert_true(raised, "HTTPException was raised for non-admin")
 
 
 _ADMIN_USER = {"id": "admin-001", "role": "admin"}
@@ -208,9 +210,9 @@ class TestAdminUsersEndpoints:
 
     @autotest.num("1816")
     @autotest.external_id("db69554e-095b-4514-9f8c-6a747357d073")
-    @autotest.name("GET /admin/users: пагинация и total")
+    @autotest.name("GET /admin/users: pagination and total")
     async def test_db69554e_list_pagination_and_total(self):
-        with autotest.step("Act: запросить страницу 1 из 2 пользователей"):
+        with autotest.step("Act: request page 1 of 2 users"):
             async with self._client() as client:
                 resp = await client.get("/admin/users?page=1&page_size=2")
 
@@ -224,26 +226,26 @@ class TestAdminUsersEndpoints:
 
     @autotest.num("1817")
     @autotest.external_id("8b4bdaf0-a21f-488b-827c-6267e08671d8")
-    @autotest.name("GET /admin/users: сортировка по email desc")
+    @autotest.name("GET /admin/users: sort by email desc")
     async def test_8b4bdaf0_list_sort_email_desc(self):
-        with autotest.step("Act: сортировать по email desc"):
+        with autotest.step("Act: sort by email desc"):
             async with self._client() as client:
                 resp = await client.get("/admin/users?sort=email&order=desc&page_size=100")
 
-        with autotest.step("Assert: 200, первый email лексически наибольший"):
+        with autotest.step("Assert: 200, first email is lexically largest"):
             assert_equal(resp.status_code, 200, "status 200")
             emails = [item["email"] for item in resp.json()["items"]]
             assert_true(emails == sorted(emails, reverse=True), "desc order")
 
     @autotest.num("1818")
     @autotest.external_id("2273c58d-4502-46ca-8838-418cf711be5c")
-    @autotest.name("GET /admin/users: поиск по имени")
+    @autotest.name("GET /admin/users: search by name")
     async def test_2273c58d_list_search_by_name(self):
-        with autotest.step("Act: поиск search=Alice"):
+        with autotest.step("Act: search=Alice"):
             async with self._client() as client:
                 resp = await client.get("/admin/users?search=Alice")
 
-        with autotest.step("Assert: возвращает только Alice"):
+        with autotest.step("Assert: returns only Alice"):
             assert_equal(resp.status_code, 200, "status 200")
             body = resp.json()
             assert_equal(body["total"], 1, "total=1")
@@ -251,13 +253,13 @@ class TestAdminUsersEndpoints:
 
     @autotest.num("1819")
     @autotest.external_id("44130398-adf2-4add-b7eb-f603485c1548")
-    @autotest.name("GET /admin/users: фильтр по роли")
+    @autotest.name("GET /admin/users: filter by role")
     async def test_44130398_list_filter_by_role(self):
         with autotest.step("Act: filter role=instructor"):
             async with self._client() as client:
                 resp = await client.get("/admin/users?role=instructor")
 
-        with autotest.step("Assert: только instructor-пользователи"):
+        with autotest.step("Assert: only instructor users"):
             assert_equal(resp.status_code, 200, "status 200")
             body = resp.json()
             assert_equal(body["total"], 1, "total=1")
@@ -265,13 +267,13 @@ class TestAdminUsersEndpoints:
 
     @autotest.num("1820")
     @autotest.external_id("bb8ea7eb-a00a-42b4-9e39-c2b8747c4a92")
-    @autotest.name("PATCH /admin/users/{id}: смена роли, успех")
+    @autotest.name("PATCH /admin/users/{id}: role change, success")
     async def test_bb8ea7eb_patch_role_success(self):
-        with autotest.step("Act: сменить роль u1 на instructor"):
+        with autotest.step("Act: change u1's role to instructor"):
             async with self._client() as client:
                 resp = await client.patch("/admin/users/u1", json={"role": "instructor"})
 
-        with autotest.step("Assert: 200, role=instructor в ответе"):
+        with autotest.step("Assert: 200, role=instructor in response"):
             assert_equal(resp.status_code, 200, "status 200")
             body = resp.json()
             assert_equal(body["id"], "u1", "id=u1")
@@ -279,9 +281,9 @@ class TestAdminUsersEndpoints:
 
     @autotest.num("1821")
     @autotest.external_id("7cdfa3fa-21e3-4c79-a6ba-710cef3113c4")
-    @autotest.name("PATCH /admin/users/{id}: смена собственной роли, 400")
+    @autotest.name("PATCH /admin/users/{id}: change own role, 400")
     async def test_7cdfa3fa_patch_own_role_rejected(self):
-        with autotest.step("Act: admin-001 пытается сменить свою роль"):
+        with autotest.step("Act: admin-001 tries to change its own role"):
             async with self._client() as client:
                 resp = await client.patch("/admin/users/admin-001", json={"role": "student"})
 
@@ -291,9 +293,9 @@ class TestAdminUsersEndpoints:
 
     @autotest.num("1822")
     @autotest.external_id("e3556b2c-9572-4579-8104-59a7b7645966")
-    @autotest.name("PATCH /admin/users/{id}: смена флагов на себе разрешена")
+    @autotest.name("PATCH /admin/users/{id}: changing flags on self is allowed")
     async def test_e3556b2c_patch_flags_on_self_allowed(self):
-        with autotest.step("Act: admin-001 ставит can_select_model=true себе"):
+        with autotest.step("Act: admin-001 sets can_select_model=true on itself"):
             async with self._client() as client:
                 resp = await client.patch(
                     "/admin/users/admin-001",
@@ -306,9 +308,9 @@ class TestAdminUsersEndpoints:
 
     @autotest.num("1823")
     @autotest.external_id("4ad6d8f1-3de4-4290-8085-d458057b9f12")
-    @autotest.name("GET /admin/users: не-admin получает 403")
+    @autotest.name("GET /admin/users: non-admin gets 403")
     async def test_4ad6d8f1_non_admin_gets_403(self):
-        with autotest.step("Act: student запрашивает /admin/users"):
+        with autotest.step("Act: student requests /admin/users"):
             async with self._student_client() as client:
                 resp = await client.get("/admin/users")
 
@@ -368,9 +370,9 @@ class TestAdminDataEndpoints:
 
     @autotest.num("1927")
     @autotest.external_id("00bc7af4-e5d0-42bb-b16a-46244508c1e9")
-    @autotest.name("GET /admin/data/{table}: не-admin получает 403")
+    @autotest.name("GET /admin/data/{table}: non-admin gets 403")
     async def test_00bc7af4_non_admin_403(self):
-        with autotest.step("Act: student запрашивает /admin/data/mcp_audit"):
+        with autotest.step("Act: student requests /admin/data/mcp_audit"):
             async with self._student_client() as client:
                 resp = await client.get("/admin/data/mcp_audit")
 
@@ -379,9 +381,9 @@ class TestAdminDataEndpoints:
 
     @autotest.num("1928")
     @autotest.external_id("1284e471-a594-4ab6-9d47-7bd58895e24e")
-    @autotest.name("GET /admin/data/{table}: неизвестная таблица → 404")
+    @autotest.name("GET /admin/data/{table}: unknown table → 404")
     async def test_1284e471_unknown_table_404(self):
-        with autotest.step("Act: запросить несуществующую таблицу"):
+        with autotest.step("Act: request a nonexistent table"):
             async with self._client() as client:
                 resp = await client.get("/admin/data/not_a_table")
 
@@ -391,7 +393,7 @@ class TestAdminDataEndpoints:
 
     @autotest.num("1929")
     @autotest.external_id("d797ce5c-1aca-41f5-9862-d693b3d0bd05")
-    @autotest.name("GET /admin/data/mcp_audit: пагинация и total")
+    @autotest.name("GET /admin/data/mcp_audit: pagination and total")
     async def test_d797ce5c_pagination_and_total(self):
         now = datetime.datetime.now(datetime.UTC)
         rows = [
@@ -420,7 +422,7 @@ class TestAdminDataEndpoints:
             async with self._client() as client:
                 resp = await client.get("/admin/data/mcp_audit?page=1&page_size=1")
 
-        with autotest.step("Assert: 200, total=2, items=1, columns совпадают со spec"):
+        with autotest.step("Assert: 200, total=2, items=1, columns match spec"):
             assert_equal(resp.status_code, 200, "status 200")
             body = resp.json()
             assert_equal(body["total"], 2, "total=2")
@@ -432,7 +434,7 @@ class TestAdminDataEndpoints:
 
     @autotest.num("1930")
     @autotest.external_id("103b8e07-0ab4-467c-b6e7-f0f8c1b8869f")
-    @autotest.name("GET /admin/data/mcp_audit: search сужает результаты")
+    @autotest.name("GET /admin/data/mcp_audit: search narrows results")
     async def test_103b8e07_search_narrows(self):
         now = datetime.datetime.now(datetime.UTC)
         rows = [
@@ -461,15 +463,15 @@ class TestAdminDataEndpoints:
             async with self._client() as client:
                 resp = await client.get("/admin/data/mcp_audit?search=gns3")
 
-        with autotest.step("Assert: возвращает только строку с gns3"):
+        with autotest.step("Assert: returns only the row with gns3"):
             assert_equal(resp.status_code, 200, "status 200")
             body = resp.json()
-            assert_equal(body["total"], 1, "total=1 после поиска")
-            assert_true("gns3" in body["items"][0]["tool"], "tool содержит gns3")
+            assert_equal(body["total"], 1, "total=1 after search")
+            assert_true("gns3" in body["items"][0]["tool"], "tool contains gns3")
 
     @autotest.num("1931")
     @autotest.external_id("d998c922-fc26-4596-b3a3-627797bd7ff7")
-    @autotest.name("GET /admin/data/mcp_audit: сортировка asc vs desc по ts")
+    @autotest.name("GET /admin/data/mcp_audit: sort asc vs desc by ts")
     async def test_d998c922_sort_asc_vs_desc(self):
         t1 = datetime.datetime(2025, 1, 1, tzinfo=datetime.UTC)
         t2 = datetime.datetime(2025, 6, 1, tzinfo=datetime.UTC)
@@ -503,9 +505,9 @@ class TestAdminDataEndpoints:
             async with self._client() as client:
                 resp_desc = await client.get("/admin/data/mcp_audit?sort=ts&order=desc")
 
-        with autotest.step("Assert: asc первый ts < desc первый ts"):
+        with autotest.step("Assert: asc first ts < desc first ts"):
             assert_equal(resp_asc.status_code, 200, "asc 200")
             assert_equal(resp_desc.status_code, 200, "desc 200")
             first_asc = resp_asc.json()["items"][0]["ts"]
             first_desc = resp_desc.json()["items"][0]["ts"]
-            assert_true(first_asc < first_desc, "asc первый раньше desc первого")
+            assert_true(first_asc < first_desc, "asc first is earlier than desc first")

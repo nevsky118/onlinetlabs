@@ -65,35 +65,31 @@ class TestSessionActivityObserveWs:
     @autotest.num("2650")
     @autotest.external_id("420ec7d3-0fe6-4b34-a81d-f643f363e211")
     @autotest.name(
-        "session_activity_observe_ws: без can_view_logs, close(4403), can_view_session_activity"
+        "session_activity_observe_ws: without can_view_logs, close(4403), can_view_session_activity"
     )
     async def test_420ec7d3_rejects_user_without_view_permission(self):
-        with autotest.step("Arrange: валидный JWT владельца сессии, но без права can_view_logs"):
+        with autotest.step("Arrange: valid JWT of the session owner, but without can_view_logs"):
             token = self._token(can_view_logs=False)
             transport = ASGIWebSocketTransport(app=self.app)
 
-        with autotest.step("Act: подключение к /ws/observe/{session_id}"):
+        with autotest.step("Act: connect to /ws/observe/{session_id}"):
             async with AsyncClient(transport=transport, base_url="http://testserver") as client:
                 with pytest.raises(WebSocketDisconnect) as exc_info:
                     async with aconnect_ws(f"/ws/observe/{_SESSION_ID}?token={token}", client):
-                        pytest.fail("соединение не должно быть принято")
+                        pytest.fail("the connection must not be accepted")
 
-        with autotest.step("Assert: закрыто с кодом 4403 (can_view_session_activity=False)"):
+        with autotest.step("Assert: closed with code 4403 (can_view_session_activity=False)"):
             assert_equal(exc_info.value.code, 4403, "close code 4403")
 
     @autotest.num("2651")
     @autotest.external_id("b59676e3-71ef-49db-a61f-d2a29a373888")
-    @autotest.name(
-        "session_activity_observe_ws: авторизованный наблюдатель получает activity-событие"
-    )
+    @autotest.name("session_activity_observe_ws: authorized observer receives an activity event")
     async def test_b59676e3_forwards_activity_event_to_authorized_viewer(self):
-        with autotest.step("Arrange: JWT владельца сессии с правом can_view_logs"):
+        with autotest.step("Arrange: JWT of the session owner with can_view_logs"):
             token = self._token(can_view_logs=True)
             transport = ASGIWebSocketTransport(app=self.app)
 
-        with autotest.step(
-            "Act: подключение, дождаться subscribe() внутри хендлера, эмитить событие"
-        ):
+        with autotest.step("Act: connect, wait for subscribe() inside the handler, emit an event"):
             received = None
             try:
                 async with asyncio.timeout(2):
@@ -108,7 +104,9 @@ class TestSessionActivityObserveWs:
                                     break
                                 await asyncio.sleep(0)
                             else:
-                                pytest.fail("хендлер не подписался на activity log вовремя")
+                                pytest.fail(
+                                    "the handler did not subscribe to the activity log in time"
+                                )
 
                             event = AgentActivityEvent(
                                 session_id=_SESSION_ID,
@@ -124,23 +122,25 @@ class TestSessionActivityObserveWs:
                 # docstring), the assert below would already have run by this point.
                 pass
 
-        with autotest.step("Assert: событие форвардится как agent_activity с полями исходного"):
-            assert received is not None, "событие должно быть получено до таймаута"
+        with autotest.step(
+            "Assert: event is forwarded as agent_activity with the original's fields"
+        ):
+            assert received is not None, "event must be received before the timeout"
             assert_equal(received["type"], "agent_activity", "type=agent_activity")
-            assert_equal(received["session_id"], _SESSION_ID, "session_id форвардится")
-            assert_equal(received["summary"], "test hint", "summary форвардится")
+            assert_equal(received["session_id"], _SESSION_ID, "session_id is forwarded")
+            assert_equal(received["summary"], "test hint", "summary is forwarded")
 
     @autotest.num("2652")
     @autotest.external_id("e3d9c3a0-6557-4c68-85a8-7d89d6926def")
     @autotest.name(
-        "session_activity_observe_ws: отключение клиента снимает подписку (нет утечки задачи)"
+        "session_activity_observe_ws: client disconnect removes the subscription (no task leak)"
     )
     async def test_e3d9c3a0_disconnect_cleans_up_subscription(self):
         activity = self.app.state.activity_log
         token = self._token(can_view_logs=True)
         transport = ASGIWebSocketTransport(app=self.app)
 
-        with autotest.step("Act: наблюдатель подключается, дожидается подписки, затем отключается"):
+        with autotest.step("Act: observer connects, waits for the subscription, then disconnects"):
             # asyncio.timeout is a safeguard: before the fix, the handler would hang on
             # q.get() and unsubscribe would never be called, so the test would time out.
             async with asyncio.timeout(5):
@@ -151,7 +151,7 @@ class TestSessionActivityObserveWs:
                                 break
                             await asyncio.sleep(0)
                         else:
-                            pytest.fail("хендлер не подписался вовремя")
+                            pytest.fail("the handler did not subscribe in time")
                     # exited aconnect_ws → client disconnected; the handler should
                     # notice the disconnect and remove the subscription.
                     for _ in range(500):
@@ -159,5 +159,7 @@ class TestSessionActivityObserveWs:
                             break
                         await asyncio.sleep(0)
 
-        with autotest.step("Assert: подписка снята после disconnect (хендлер не завис)"):
-            assert _SESSION_ID not in activity._subs, "подписка должна быть снята после disconnect"
+        with autotest.step("Assert: subscription removed after disconnect (handler didn't hang)"):
+            assert _SESSION_ID not in activity._subs, (
+                "subscription must be removed after disconnect"
+            )

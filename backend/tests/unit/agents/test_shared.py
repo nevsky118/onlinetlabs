@@ -10,9 +10,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.agents]
 class TestFormatFailingCheck:
     @autotest.num("420")
     @autotest.external_id("e6c94f9f-8f98-4e37-8c7e-c51bbeb39b52")
-    @autotest.name("format_failing_check: с узлом (node) в params")
+    @autotest.name("format_failing_check: with a node in params")
     def test_e6c94f9f_with_node(self):
-        with autotest.step("Провалившаяся проверка с params.node"):
+        with autotest.step("Failing check with params.node"):
             fc = {
                 "kind": "vpcs.ping",
                 "params": {"node": "PC1"},
@@ -20,22 +20,22 @@ class TestFormatFailingCheck:
                 "actual": {"received": 0},
             }
 
-        with autotest.step("Форматируем"):
+        with autotest.step("Format"):
             result = format_failing_check(fc, "ru")
 
-        with autotest.step("Проверяем строку с node"):
+        with autotest.step("Assert the string with node"):
             assert_equal(
                 result,
                 "Провалившаяся проверка vpcs.ping на PC1: "
                 "ожидалось {'received': '>=4'}, получено {'received': 0}.",
-                "формат с узлом",
+                "format with node",
             )
 
     @autotest.num("421")
     @autotest.external_id("9a72bff4-b63c-4502-88fb-9c847ab61fe3")
-    @autotest.name("format_failing_check: без node в params")
+    @autotest.name("format_failing_check: without node in params")
     def test_9a72bff4_without_node(self):
-        with autotest.step("Провалившаяся проверка без params.node"):
+        with autotest.step("Failing check without params.node"):
             fc = {
                 "kind": "cisco.route",
                 "params": {},
@@ -43,29 +43,29 @@ class TestFormatFailingCheck:
                 "actual": "down",
             }
 
-        with autotest.step("Форматируем"):
+        with autotest.step("Format"):
             result = format_failing_check(fc, "ru")
 
-        with autotest.step("Проверяем строку без ' на ...'"):
+        with autotest.step("Assert the string without ' on ...'"):
             assert_equal(
                 result,
                 "Провалившаяся проверка cisco.route: ожидалось up, получено down.",
-                "формат без узла",
+                "format without node",
             )
 
     @autotest.num("422")
     @autotest.external_id("6a8096ca-382e-4e19-8736-1f504e578501")
-    @autotest.name("format_failing_check: params не dict, узел не подставляется")
+    @autotest.name("format_failing_check: params is not a dict, node is not substituted")
     def test_6a8096ca_params_not_dict(self):
-        with autotest.step("params строкой, а не dict"):
+        with autotest.step("params as a string, not a dict"):
             fc = {"kind": "generic.check", "params": "n/a", "expected": 1, "actual": 2}
 
-        with autotest.step("Форматируем"):
+        with autotest.step("Format"):
             result = format_failing_check(fc, "ru")
 
-        with autotest.step("Проверяем: узел не подставлен"):
+        with autotest.step("Assert: node is not substituted"):
             assert_equal(
                 result,
                 "Провалившаяся проверка generic.check: ожидалось 1, получено 2.",
-                "params не dict → без узла",
+                "params not dict → without node",
             )

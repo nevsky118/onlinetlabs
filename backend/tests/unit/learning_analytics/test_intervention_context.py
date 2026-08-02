@@ -102,22 +102,22 @@ def _make_monitor(observer, config_model) -> SessionMonitor:
 class TestInterventionContextFromObserver:
     @autotest.num("590")
     @autotest.external_id("43761398-95bd-4fb0-89c0-0cb55fd04297")
-    @autotest.name("SessionMonitor: context содержит step_slug из observer")
+    @autotest.name("SessionMonitor: context carries step_slug from observer")
     async def test_43761398_step_slug_from_observer(self, config_model):
         # Arrange
-        with autotest.step("Создаём монитор с observer-стабом"):
+        with autotest.step("Create a monitor with an observer stub"):
             observer = _make_observer_stub()
             monitor = _make_monitor(observer, config_model)
             features = _make_struggle_features()
 
         # Act
-        with autotest.step("Вызываем _decide_intervention"):
+        with autotest.step("Call _decide_intervention"):
             analysis = identify_regime(features, LearningAnalyticsConfig())
             pending = await monitor._decide_intervention(analysis, features)
 
         # Assert
         with autotest.step("step_slug == 'connectivity'"):
-            assert pending is not None, "интервенция должна быть создана"
+            assert pending is not None, "an intervention must be created"
             ctx = pending.payload.context
             assert ctx["step_slug"] == "connectivity", (
                 f"ожидали 'connectivity', получили {ctx['step_slug']!r}"
@@ -125,37 +125,37 @@ class TestInterventionContextFromObserver:
 
     @autotest.num("591")
     @autotest.external_id("6ee4410b-7b96-4701-9873-124eb1a6cbe3")
-    @autotest.name("SessionMonitor: context содержит failing_check из observer")
+    @autotest.name("SessionMonitor: context carries failing_check from observer")
     async def test_6ee4410b_failing_check_from_observer(self, config_model):
         # Arrange
-        with autotest.step("Создаём монитор с observer-стабом"):
+        with autotest.step("Create a monitor with an observer stub"):
             observer = _make_observer_stub()
             monitor = _make_monitor(observer, config_model)
             features = _make_struggle_features()
 
         # Act
-        with autotest.step("Вызываем _decide_intervention"):
+        with autotest.step("Call _decide_intervention"):
             analysis = identify_regime(features, LearningAnalyticsConfig())
             pending = await monitor._decide_intervention(analysis, features)
 
         # Assert
         with autotest.step("failing_check[kind] == 'vpcs.ping'"):
-            assert pending is not None, "интервенция должна быть создана"
+            assert pending is not None, "an intervention must be created"
             fc = pending.payload.context["failing_check"]
-            assert fc is not None, "failing_check не должен быть None"
+            assert fc is not None, "failing_check must not be None"
             assert fc["kind"] == "vpcs.ping", f"ожидали 'vpcs.ping', получили {fc['kind']!r}"
 
     @autotest.num("592")
     @autotest.external_id("628fdb85-06ee-4dd6-9256-14fdfa57837b")
-    @autotest.name("SessionMonitor: без observer step_slug='current', failing_check=None")
+    @autotest.name("SessionMonitor: without an observer step_slug='current', failing_check=None")
     async def test_628fdb85_no_observer_fallback(self, config_model):
         # Arrange
-        with autotest.step("Создаём монитор без observer"):
+        with autotest.step("Create a monitor without an observer"):
             monitor = _make_monitor(None, config_model)
             features = _make_struggle_features()
 
         # Act
-        with autotest.step("Вызываем _decide_intervention"):
+        with autotest.step("Call _decide_intervention"):
             analysis = identify_regime(features, LearningAnalyticsConfig())
             pending = await monitor._decide_intervention(analysis, features)
 

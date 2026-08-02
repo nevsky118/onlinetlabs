@@ -10,11 +10,11 @@ pytestmark = [pytest.mark.unit]
 class TestConsentModel:
     @autotest.num("1740")
     @autotest.external_id("bd3454ca-6bff-4d27-a239-3a95e7f44677")
-    @autotest.name("Consent: модель study с полями observe/act")
+    @autotest.name("Consent: study model with observe/act fields")
     def test_bd3454ca_fields(self):
-        with autotest.step("Act: создать study-согласие"):
+        with autotest.step("Act: create study consent"):
             c = Consent(id="c1", user_id="u1", scope="study", observe=True, act=True)
-        with autotest.step("Assert: поля заданы, не отозвано"):
+        with autotest.step("Assert: fields set, not revoked"):
             assert_equal(c.scope, "study", "scope")
             assert_equal(c.observe, True, "observe")
-            assert_is_none(c.revoked_at, "не отозвано")
+            assert_is_none(c.revoked_at, "not revoked")

@@ -28,29 +28,29 @@ def _steps(*step_specs: list[bool]) -> list[dict]:
 class TestScoreFromSteps:
     @autotest.num("760")
     @autotest.external_id("92bd3bb2-4981-481f-b3b0-3e8272a45bca")
-    @autotest.name("score_from_steps: доля пройденных проверок, полное прохождение")
+    @autotest.name("score_from_steps: share of checks passed, full pass")
     def test_all_checks_passed(self):
-        with autotest.step("Act: 2 шага по 2 успешных проверки"):
+        with autotest.step("Act: 2 steps of 2 successful checks each"):
             score, all_passed = score_from_steps(_steps([True, True], [True, True]))
-        with autotest.step("Assert: 100 и all_passed"):
+        with autotest.step("Assert: 100 and all_passed"):
             assert_equal(score, 100.0, "score")
             assert_true(all_passed, "all_passed")
 
     @autotest.num("761")
     @autotest.external_id("7b9c375d-4d9b-4d28-8d17-116c1d5be5e8")
-    @autotest.name("score_from_steps: частичное, 3 из 4 проверок = 75")
+    @autotest.name("score_from_steps: partial, 3 of 4 checks = 75")
     def test_partial_checks(self):
-        with autotest.step("Act: 3 из 4 проверок пройдены"):
+        with autotest.step("Act: 3 of 4 checks passed"):
             score, all_passed = score_from_steps(_steps([True, True], [True, False]))
-        with autotest.step("Assert: 75 и не all_passed"):
+        with autotest.step("Assert: 75 and not all_passed"):
             assert_equal(score, 75.0, "score")
             assert_true(not all_passed, "not all_passed")
 
     @autotest.num("762")
     @autotest.external_id("9fb96f02-f65a-4ca2-bcdf-d03970b35531")
-    @autotest.name("score_from_steps: нет шагов → 0 и не пройдено")
+    @autotest.name("score_from_steps: no steps -> 0 and not passed")
     def test_no_steps(self):
-        with autotest.step("Act: пустой список"):
+        with autotest.step("Act: empty list"):
             score, all_passed = score_from_steps([])
         with autotest.step("Assert: 0.0, not all_passed"):
             assert_equal(score, 0.0, "score")
@@ -84,41 +84,41 @@ class TestRecordLabValidation:
 
     @autotest.num("763")
     @autotest.external_id("fe763752-c2c6-4d9b-97b6-3d77f68ae4c8")
-    @autotest.name("record_lab_validation: полное прохождение → completed, score 100")
+    @autotest.name("record_lab_validation: full pass -> completed, score 100")
     async def test_full_pass_marks_completed(self):
-        with autotest.step("Act: записываем полный успех"):
+        with autotest.step("Act: record a full pass"):
             async with self.session_factory() as db:
                 await record_lab_validation(db, "u1", "dhcp-basics", _steps([True, True], [True]))
-        with autotest.step("Assert: completed, score 100, есть completed_at"):
+        with autotest.step("Assert: completed, score 100, completed_at is set"):
             lp = await self._get()
             assert_equal(lp.status, "completed", "status")
             assert_equal(lp.score, 100.0, "score")
-            assert_true(lp.completed_at is not None, "completed_at установлен")
+            assert_true(lp.completed_at is not None, "completed_at is set")
 
     @autotest.num("764")
     @autotest.external_id("e8eaa45a-e613-426b-860e-482672b24429")
-    @autotest.name("record_lab_validation: частично → in_progress, дробная оценка")
+    @autotest.name("record_lab_validation: partial -> in_progress, fractional score")
     async def test_partial_stays_in_progress(self):
-        with autotest.step("Act: 1 из 2 проверок"):
+        with autotest.step("Act: 1 of 2 checks"):
             async with self.session_factory() as db:
                 await record_lab_validation(db, "u1", "dhcp-basics", _steps([True, False]))
-        with autotest.step("Assert: in_progress, score 50, без completed_at"):
+        with autotest.step("Assert: in_progress, score 50, no completed_at"):
             lp = await self._get()
             assert_equal(lp.status, "in_progress", "status")
             assert_equal(lp.score, 50.0, "score")
-            assert_true(lp.completed_at is None, "completed_at пуст")
+            assert_true(lp.completed_at is None, "completed_at is empty")
 
     @autotest.num("765")
     @autotest.external_id("8a2b206e-9389-4562-94fb-a8a8d03b90e7")
-    @autotest.name("record_lab_validation: лучшая оценка сохраняется, completed не сбрасывается")
+    @autotest.name("record_lab_validation: best score is kept, completed does not reset")
     async def test_best_score_kept_and_completed_sticky(self):
-        with autotest.step("Arrange: сначала полный успех"):
+        with autotest.step("Arrange: full pass first"):
             async with self.session_factory() as db:
                 await record_lab_validation(db, "u1", "dhcp-basics", _steps([True], [True]))
-        with autotest.step("Act: затем неудачный повтор (1 из 2)"):
+        with autotest.step("Act: then a failed retry (1 of 2)"):
             async with self.session_factory() as db:
                 await record_lab_validation(db, "u1", "dhcp-basics", _steps([True, False]))
-        with autotest.step("Assert: остаётся completed и score 100"):
+        with autotest.step("Assert: stays completed and score 100"):
             lp = await self._get()
-            assert_equal(lp.status, "completed", "status остаётся completed")
-            assert_equal(lp.score, 100.0, "лучшая оценка сохранена")
+            assert_equal(lp.status, "completed", "status stays completed")
+            assert_equal(lp.score, 100.0, "best score kept")

@@ -28,29 +28,29 @@ class TestSessionsSmokeApi:
     async def test_f2a3b4c5_get_sessions(self):
         """Fetching the list of sessions returns 200."""
         # Act
-        with autotest.step("Отправляем GET /users/me/sessions"):
+        with autotest.step("Send GET /users/me/sessions"):
             response = await self.sessions_api.get_sessions()
 
         # Assert
-        with autotest.step("Проверяем статус код 200"):
+        with autotest.step("Check status code 200"):
             check_response_status(response, 200)
 
     @autotest.num("13")
     @autotest.external_id("a3b4c5d6-e7f8-9012-abcd-123456789012")
-    @autotest.name("Smoke: POST /users/me/sessions — 201 создание сессии")
+    @autotest.name("Smoke: POST /users/me/sessions — 201 session creation")
     async def test_a3b4c5d6_create_session(self):
         """Creating a session returns 201."""
         # Arrange
         session_data = SessionCreateData(lab_slug="autotest-lab")
 
         # Act
-        with autotest.step("Создаём сессию"):
+        with autotest.step("Create the session"):
             response = await self.sessions_api.post_session(data=session_data.data)
 
         # Assert
-        with autotest.step("Проверяем статус код 201"):
+        with autotest.step("Check status code 201"):
             check_response_status(response, 201)
 
-        with autotest.step("Проверяем наличие session_id в ответе"):
+        with autotest.step("Check session_id is present in the response"):
             body = response.json()
-            assert_is_not_none(body.get("session_id"), "session_id сессии не должен быть None")
+            assert_is_not_none(body.get("session_id"), "session's session_id must not be None")

@@ -36,7 +36,7 @@ class TestLaunchSessionDisabledLab:
     async def test_ac2ec268_disabled_lab_raises(self, monkeypatch):
         import sessions.services.launch as launch_mod
 
-        with autotest.step("Создаём отключённую лабу"):
+        with autotest.step("Create a disabled lab"):
             await self._insert_lab("test-lab", enabled=False)
 
         async def _no_session(*a, **kw):
@@ -45,11 +45,11 @@ class TestLaunchSessionDisabledLab:
         async def _zero_count(*a, **kw):
             return 0
 
-        with autotest.step("Патчим get_active_session и count_active_sessions"):
+        with autotest.step("Patch get_active_session and count_active_sessions"):
             monkeypatch.setattr(launch_mod, "get_active_session", _no_session)
             monkeypatch.setattr(launch_mod, "count_active_sessions", _zero_count)
 
-        with autotest.step("Вызываем launch_session, ожидаем LocalizedError"):
+        with autotest.step("Call launch_session, expect LocalizedError"):
             async with self.session_factory() as db:
                 with pytest.raises(LocalizedError) as exc_info:
                     await launch_session(

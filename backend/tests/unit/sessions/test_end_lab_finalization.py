@@ -38,12 +38,12 @@ def _patch_queue():
 class TestEndLabFinalization:
     @autotest.num("2013")
     @autotest.external_id("278a94ca-ff0b-4be0-817f-0303eec9b85f")
-    @autotest.name("end_lab: финализирует измерения эксперимента (метрики не теряются)")
+    @autotest.name("end_lab: finalizes experiment measurements (metrics are not lost)")
     async def test_278a94ca_finalizes_experiment_measurements(self):
-        with autotest.step("Arrange: живая сессия, монитор и gns3-клиент"):
+        with autotest.step("Arrange: live session, monitor, and gns3 client"):
             db, monitor_registry, gns3_client = AsyncMock(), AsyncMock(), AsyncMock()
 
-        with autotest.step("Act: студент завершает лабу"):
+        with autotest.step("Act: student finishes the lab"):
             with (
                 patch(
                     "sessions.services.lifecycle.get_owned_session",
@@ -56,16 +56,18 @@ class TestEndLabFinalization:
             ):
                 ok = await end_lab(db, _SESSION_ID, _USER_ID, gns3_client, monitor_registry)
 
-        with autotest.step("Assert: финализация вызвана со статусом ended"):
-            assert_true(ok, "end_lab вернул True")
+        with autotest.step("Assert: finalization called with status ended"):
+            assert_true(ok, "end_lab returned True")
             finalize.assert_awaited_once()
             assert_equal(finalize.await_args.kwargs["status"], "ended", "status")
 
     @autotest.num("2014")
     @autotest.external_id("a3c8ef40-7a93-45ca-a520-81272012159c")
-    @autotest.name("end_lab: монитор гасится ДО снятия метрик (поздние интервенции не теряются)")
+    @autotest.name(
+        "end_lab: monitor stops BEFORE metrics are captured (late interventions not lost)"
+    )
     async def test_a3c8ef40_stops_monitor_before_finalizing(self):
-        with autotest.step("Arrange: записываем порядок вызовов"):
+        with autotest.step("Arrange: record the call order"):
             calls: list[str] = []
             db, gns3_client = AsyncMock(), AsyncMock()
             monitor_registry = AsyncMock()
@@ -74,7 +76,7 @@ class TestEndLabFinalization:
             async def _finalize(*_args, **_kwargs):
                 calls.append("finalize")
 
-        with autotest.step("Act: завершаем лабу"):
+        with autotest.step("Act: finish the lab"):
             with (
                 patch(
                     "sessions.services.lifecycle.get_owned_session",
@@ -88,14 +90,14 @@ class TestEndLabFinalization:
             ):
                 await end_lab(db, _SESSION_ID, _USER_ID, gns3_client, monitor_registry)
 
-        with autotest.step("Assert: сначала стоп монитора, затем финализация"):
-            assert_equal(calls, ["stop_monitor", "finalize"], "порядок шагов")
+        with autotest.step("Assert: monitor stops first, then finalization"):
+            assert_equal(calls, ["stop_monitor", "finalize"], "step order")
 
     @autotest.num("2015")
     @autotest.external_id("f427fd95-53c4-4ed0-b438-87cd4b44ee61")
-    @autotest.name("end_lab: измерения снимаются ДО teardown'а GNS3")
+    @autotest.name("end_lab: measurements are captured BEFORE GNS3 teardown")
     async def test_f427fd95_finalizes_before_gns3_teardown(self):
-        with autotest.step("Arrange: пишем порядок финализации и teardown'а"):
+        with autotest.step("Arrange: record finalization and teardown order"):
             calls: list[str] = []
             db, monitor_registry = AsyncMock(), AsyncMock()
             gns3_client = AsyncMock()
@@ -104,7 +106,7 @@ class TestEndLabFinalization:
             async def _finalize(*_args, **_kwargs):
                 calls.append("finalize")
 
-        with autotest.step("Act: завершаем лабу"):
+        with autotest.step("Act: finish the lab"):
             with (
                 patch(
                     "sessions.services.lifecycle.get_owned_session",
@@ -118,19 +120,19 @@ class TestEndLabFinalization:
             ):
                 await end_lab(db, _SESSION_ID, _USER_ID, gns3_client, monitor_registry)
 
-        with autotest.step("Assert: метрики сняты раньше сноса GNS3"):
-            assert_equal(calls, ["finalize", "teardown"], "порядок шагов")
+        with autotest.step("Assert: metrics captured before GNS3 teardown"):
+            assert_equal(calls, ["finalize", "teardown"], "step order")
 
     @autotest.num("2016")
     @autotest.external_id("8209e3be-b9a6-4515-b48a-8e06030a2453")
-    @autotest.name("end_lab: сбой teardown'а GNS3 не теряет измерения")
+    @autotest.name("end_lab: GNS3 teardown failure does not lose measurements")
     async def test_8209e3be_gns3_teardown_failure_keeps_measurements(self):
-        with autotest.step("Arrange: gns3-клиент падает на удалении сессии"):
+        with autotest.step("Arrange: gns3 client fails on session deletion"):
             db, monitor_registry = AsyncMock(), AsyncMock()
             gns3_client = AsyncMock()
             gns3_client.delete_session = AsyncMock(side_effect=RuntimeError("gns3 down"))
 
-        with autotest.step("Act: завершаем лабу"):
+        with autotest.step("Act: finish the lab"):
             with (
                 patch(
                     "sessions.services.lifecycle.get_owned_session",
@@ -143,6 +145,6 @@ class TestEndLabFinalization:
             ):
                 ok = await end_lab(db, _SESSION_ID, _USER_ID, gns3_client, monitor_registry)
 
-        with autotest.step("Assert: лаба завершена, измерения записаны несмотря на сбой"):
-            assert_true(ok, "end_lab вернул True")
+        with autotest.step("Assert: lab finished, measurements recorded despite the failure"):
+            assert_true(ok, "end_lab returned True")
             finalize.assert_awaited_once()

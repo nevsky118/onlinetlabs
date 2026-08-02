@@ -61,19 +61,19 @@ def _ctx():
 class TestExecVtysh:
     @autotest.num("817")
     @autotest.external_id("gns3-exec-vtysh-posts-to-service")
-    @autotest.name("exec_vtysh: POST /v1/exec/vtysh на gns3-service, возвращает вывод")
+    @autotest.name("exec_vtysh: POST /v1/exec/vtysh to gns3-service, returns output")
     async def test_exec_vtysh_posts_to_service(self):
-        with autotest.step("Arrange: tool зарегистрирован с service_url"):
+        with autotest.step("Arrange: tool registered with service_url"):
             server = _register(SERVICE_URL)
 
-        with autotest.step("Act: exec_vtysh с замоканным gns3-service"):
+        with autotest.step("Act: exec_vtysh against a mocked gns3-service"):
             with respx.mock:
                 route = respx.post(f"{SERVICE_URL}/v1/exec/vtysh").mock(
                     return_value=httpx.Response(200, json={"output": "10.0.0.1 is up"})
                 )
                 result = await server.tools["exec_vtysh"](_ctx(), NODE_ID, CMD)
 
-        with autotest.step("Assert: успех, вывод проброшен, payload корректен"):
+        with autotest.step("Assert: success, output passed through, payload correct"):
             assert route.called
             assert result["success"] is True
             assert result["data"]["output"] == "10.0.0.1 is up"
@@ -85,19 +85,19 @@ class TestExecVtysh:
 
     @autotest.num("818")
     @autotest.external_id("gns3-exec-vtysh-no-service-url")
-    @autotest.name("exec_vtysh: без service_url → success=False")
+    @autotest.name("exec_vtysh: without service_url → success=False")
     async def test_exec_vtysh_no_service_url(self):
-        with autotest.step("Arrange: tool без service_url"):
+        with autotest.step("Arrange: tool without service_url"):
             server = _register(None)
 
-        with autotest.step("Act+Assert: ошибка конфигурации, без исключения"):
+        with autotest.step("Act+Assert: configuration error, no exception raised"):
             result = await server.tools["exec_vtysh"](_ctx(), NODE_ID, CMD)
             assert result["success"] is False
             assert result["data"] is None
 
     @autotest.num("819")
     @autotest.external_id("f0c9d4b7-7a3f-4a26-8a54-9c3a1f7de2b1")
-    @autotest.name("exec_vtysh: without an internal token -> success=False, no request sent")
+    @autotest.name("exec_vtysh: without an internal token → success=False, no request sent")
     async def test_exec_vtysh_no_internal_token(self):
         with autotest.step("Arrange: tool registered without a token"):
             server = _register(SERVICE_URL, internal_api_token=None)

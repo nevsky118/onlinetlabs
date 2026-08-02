@@ -41,15 +41,15 @@ def _collector(sf, *, evidence_enabled):
 class TestEvidenceCapture:
     @autotest.num("1977")
     @autotest.external_id("87aa2cb9-d207-4028-9a72-02c16d3f6e05")
-    @autotest.name("capture_snapshot: пишет снимок, приводит datetime к JSON-safe")
+    @autotest.name("capture_snapshot: writes a snapshot, coerces datetime to JSON-safe")
     async def test_87aa2cb9_capture_snapshot_json_safe(self):
-        with autotest.step("Arrange: реальная sqlite"):
+        with autotest.step("Arrange: real sqlite"):
             from learning_analytics.evidence import capture_snapshot
 
             sf = await _sqlite_factory()
             ts = datetime(2026, 6, 21, 12, 0, tzinfo=UTC)
 
-        with autotest.step("Act: записать снимок с datetime в payload"):
+        with autotest.step("Act: write a snapshot with datetime in the payload"):
             async with sf() as db:
                 await capture_snapshot(
                     db,
@@ -60,25 +60,27 @@ class TestEvidenceCapture:
                     payload={"events": [{"action": "ping", "timestamp": ts}]},
                 )
 
-        with autotest.step("Assert: 1 снимок, kind верный, datetime стал строкой"):
+        with autotest.step("Assert: 1 snapshot, correct kind, datetime became a string"):
             async with sf() as db:
                 rows = (await db.execute(select(SessionEvidenceSnapshot))).scalars().all()
-            assert_equal(len(rows), 1, f"1 снимок; получено {len(rows)}")
+            assert_equal(len(rows), 1, f"1 snapshot; got {len(rows)}")
             assert_equal(rows[0].kind, "mcp_events", "kind == mcp_events")
             ev = rows[0].payload["events"][0]
-            assert_equal(ev["action"], "ping", "payload сохранён")
-            assert_true(isinstance(ev["timestamp"], str), "datetime приведён к строке (JSON-safe)")
+            assert_equal(ev["action"], "ping", "payload preserved")
+            assert_true(
+                isinstance(ev["timestamp"], str), "datetime coerced to a string (JSON-safe)"
+            )
 
     @autotest.num("1978")
     @autotest.external_id("428437ae-f3d6-4f75-8b22-9ddd7d8aa879")
-    @autotest.name("Коллектор: evidence_capture_enabled=True → poll-цикл пишет снимок")
+    @autotest.name("Collector: evidence_capture_enabled=True → poll cycle writes a snapshot")
     async def test_428437ae_poll_captures_when_enabled(self):
-        with autotest.step("Arrange: коллектор с захватом, _persist замокан, есть события"):
+        with autotest.step("Arrange: collector with capture, _persist mocked, events present"):
             sf = await _sqlite_factory()
             c = _collector(sf, evidence_enabled=True)
             c._persist = AsyncMock()
 
-        with autotest.step("Act: _poll_cycle с одним action"):
+        with autotest.step("Act: _poll_cycle with one action"):
             with (
                 patch.object(c, "_fetch_actions", AsyncMock(return_value=[{"action": "ping"}])),
                 patch.object(c, "_fetch_logs", AsyncMock(return_value=[])),
@@ -86,21 +88,21 @@ class TestEvidenceCapture:
             ):
                 await c._poll_cycle()
 
-        with autotest.step("Assert: ровно 1 evidence-снимок"):
+        with autotest.step("Assert: exactly 1 evidence snapshot"):
             async with sf() as db:
                 rows = (await db.execute(select(SessionEvidenceSnapshot))).scalars().all()
-            assert_equal(len(rows), 1, f"1 снимок; получено {len(rows)}")
+            assert_equal(len(rows), 1, f"1 snapshot; got {len(rows)}")
 
     @autotest.num("1979")
     @autotest.external_id("ea2133f1-54f3-4b7c-aacb-d13130cbfb73")
-    @autotest.name("Коллектор: evidence_capture_enabled=False → снимки НЕ пишутся")
+    @autotest.name("Collector: evidence_capture_enabled=False → snapshots are NOT written")
     async def test_ea2133f1_poll_no_capture_when_disabled(self):
-        with autotest.step("Arrange: коллектор без захвата"):
+        with autotest.step("Arrange: collector without capture"):
             sf = await _sqlite_factory()
             c = _collector(sf, evidence_enabled=False)
             c._persist = AsyncMock()
 
-        with autotest.step("Act: _poll_cycle с одним action"):
+        with autotest.step("Act: _poll_cycle with one action"):
             with (
                 patch.object(c, "_fetch_actions", AsyncMock(return_value=[{"action": "ping"}])),
                 patch.object(c, "_fetch_logs", AsyncMock(return_value=[])),
@@ -108,7 +110,7 @@ class TestEvidenceCapture:
             ):
                 await c._poll_cycle()
 
-        with autotest.step("Assert: ноль evidence-снимков"):
+        with autotest.step("Assert: zero evidence snapshots"):
             async with sf() as db:
                 rows = (await db.execute(select(SessionEvidenceSnapshot))).scalars().all()
-            assert_equal(len(rows), 0, "захват выключен → 0 снимков")
+            assert_equal(len(rows), 0, "capture disabled → 0 snapshots")

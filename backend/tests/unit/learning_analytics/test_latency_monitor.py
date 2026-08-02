@@ -124,13 +124,13 @@ def _latency(cap):
 class TestLatencyMonitor:
     @autotest.num("1994")
     @autotest.external_id("40130b1d-dbd8-48d1-be6c-3b4acf4f518f")
-    @autotest.name("Latency on: _run_analysis пишет сэмпл стадии analysis")
+    @autotest.name("Latency on: _run_analysis writes an analysis-stage sample")
     async def test_40130b1d_records_when_enabled(self):
-        with autotest.step("Arrange: монитор latency_capture_enabled=True, productive-анализ"):
+        with autotest.step("Arrange: monitor latency_capture_enabled=True, productive analysis"):
             cap = _Cap()
             m = _monitor(cap, latency_enabled=True)
 
-        with autotest.step("Act: _run_analysis с одним событием"):
+        with autotest.step("Act: _run_analysis with one event"):
             ev = SimpleNamespace(timestamp=datetime(2026, 6, 21, 12, 0, tzinfo=UTC))
             with (
                 patch.object(m, "_load_new_events", AsyncMock(return_value=[ev])),
@@ -141,21 +141,21 @@ class TestLatencyMonitor:
             ):
                 await m._run_analysis()
 
-        with autotest.step("Assert: записан CycleLatencySample стадии analysis, duration>=0"):
+        with autotest.step("Assert: analysis-stage CycleLatencySample recorded, duration>=0"):
             samples = _latency(cap)
-            assert_equal(len(samples), 1, f"1 сэмпл латентности; получено {len(samples)}")
-            assert_equal(samples[0].stage, "analysis", "стадия == analysis")
+            assert_equal(len(samples), 1, f"1 latency sample; got {len(samples)}")
+            assert_equal(samples[0].stage, "analysis", "stage == analysis")
             assert_true(samples[0].duration_ms >= 0.0, "duration_ms >= 0")
 
     @autotest.num("1995")
     @autotest.external_id("ef99386a-699e-441b-8c8a-b6e525226c16")
-    @autotest.name("Latency off: сэмплы латентности НЕ пишутся")
+    @autotest.name("Latency off: latency samples are NOT written")
     async def test_ef99386a_no_record_when_disabled(self):
-        with autotest.step("Arrange: монитор latency_capture_enabled=False"):
+        with autotest.step("Arrange: monitor latency_capture_enabled=False"):
             cap = _Cap()
             m = _monitor(cap, latency_enabled=False)
 
-        with autotest.step("Act: _run_analysis с одним событием"):
+        with autotest.step("Act: _run_analysis with one event"):
             ev = SimpleNamespace(timestamp=datetime(2026, 6, 21, 12, 0, tzinfo=UTC))
             with (
                 patch.object(m, "_load_new_events", AsyncMock(return_value=[ev])),
@@ -166,5 +166,5 @@ class TestLatencyMonitor:
             ):
                 await m._run_analysis()
 
-        with autotest.step("Assert: ноль сэмплов латентности"):
-            assert_equal(len(_latency(cap)), 0, "выключено → 0 сэмплов")
+        with autotest.step("Assert: zero latency samples"):
+            assert_equal(len(_latency(cap)), 0, "disabled → 0 samples")

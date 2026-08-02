@@ -232,29 +232,29 @@ async def censored_db():
 class TestComputeCohortMetrics:
     @autotest.num("942")
     @autotest.external_id("59097021-e803-4fa6-b200-28abd59f0517")
-    @autotest.name("compute_cohort_metrics: цензурированный учащийся, reach_rate=0, медиана=None")
+    @autotest.name("compute_cohort_metrics: censored learner, reach_rate=0, median=None")
     async def test_59097021_censored_learner(self, censored_db):
         from cohort.service import compute_cohort_metrics
 
-        with autotest.step("Act: вычислить метрики когорты для цензурированного учащегося"):
+        with autotest.step("Act: compute cohort metrics for a censored learner"):
             out = await compute_cohort_metrics(
                 censored_db, horizon_seconds=30 * 86400.0, by_arm=False
             )
 
-        with autotest.step("Assert: headline_arm и by_arm"):
+        with autotest.step("Assert: headline_arm and by_arm"):
             assert_equal(out["headline_arm"], "closed", "headline_arm=closed")
-            assert_is_none(out["by_arm"], "by_arm=None при by_arm=False")
+            assert_is_none(out["by_arm"], "by_arm=None when by_arm=False")
 
-        with autotest.step("Assert: скилл присутствует в by_skill"):
+        with autotest.step("Assert: the skill is present in by_skill"):
             skills = {c.skill: c for c in out["by_skill"]}
-            assert_true(_SKILL in skills, "скилл найден в by_skill")
+            assert_true(_SKILL in skills, "skill found in by_skill")
 
-        with autotest.step("Assert: метрики цензурированной ячейки"):
+        with autotest.step("Assert: metrics of the censored cell"):
             cell = skills[_SKILL]
             assert_equal(cell.n, 1, "n=1")
             assert_equal(cell.time_to_competence.reach_rate, 0.0, "reach_rate=0")
             assert_equal(cell.time_to_competence.censored, 1, "censored=1")
-            assert_is_none(cell.time_to_competence.median_calendar_seconds, "медиана=None")
+            assert_is_none(cell.time_to_competence.median_calendar_seconds, "median=None")
             assert_equal(
                 cell.time_to_competence.reach_rate_at_horizon, 0.0, "reach_rate_at_horizon=0"
             )
@@ -262,28 +262,30 @@ class TestComputeCohortMetrics:
     @autotest.num("943")
     @autotest.external_id("9b201865-1bce-43b4-8b3b-2f5509941ded")
     @autotest.name(
-        "compute_cohort_metrics: один учащийся достиг L2, reach_rate=1, by_arm содержит closed"
+        "compute_cohort_metrics: one learner reached L2, reach_rate=1, by_arm contains closed"
     )
     async def test_9b201865_one_learner(self, cohort_db):
         from cohort.service import compute_cohort_metrics
 
-        with autotest.step("Act: вычислить метрики когорты для одного учащегося"):
+        with autotest.step("Act: compute cohort metrics for one learner"):
             out = await compute_cohort_metrics(cohort_db, horizon_seconds=30 * 86400.0, by_arm=True)
 
         with autotest.step("Assert: headline_arm"):
             assert_equal(out["headline_arm"], "closed", "headline_arm=closed")
 
-        with autotest.step("Assert: скилл присутствует в by_skill"):
+        with autotest.step("Assert: the skill is present in by_skill"):
             skills = {c.skill: c for c in out["by_skill"]}
-            assert_true(_SKILL in skills, "скилл найден в by_skill")
+            assert_true(_SKILL in skills, "skill found in by_skill")
 
-        with autotest.step("Assert: метрики ячейки учащегося достигшего L2"):
+        with autotest.step("Assert: metrics of the cell for a learner who reached L2"):
             cell = skills[_SKILL]
             assert_equal(cell.n, 1, "n=1")
-            assert_equal(cell.time_to_competence.reach_rate, 1.0, "reach_rate=1 (дошёл до L2)")
-            assert_is_not_none(cell.time_to_competence.median_calendar_seconds, "медиана не None")
+            assert_equal(cell.time_to_competence.reach_rate, 1.0, "reach_rate=1 (reached L2)")
+            assert_is_not_none(
+                cell.time_to_competence.median_calendar_seconds, "median is not None"
+            )
 
-        with autotest.step("Assert: by_arm содержит closed"):
-            assert_is_not_none(out["by_arm"], "by_arm не None")
+        with autotest.step("Assert: by_arm contains closed"):
+            assert_is_not_none(out["by_arm"], "by_arm is not None")
             arms = {c.arm for c in out["by_arm"]}
-            assert_true("closed" in arms, "closed присутствует в by_arm")
+            assert_true("closed" in arms, "closed is present in by_arm")

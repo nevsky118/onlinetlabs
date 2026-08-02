@@ -23,9 +23,9 @@ class TestDataRecordingE2E:
 
     @autotest.num("710")
     @autotest.external_id("d1e2f3a4-b5c6-7890-defa-710000000001")
-    @autotest.name("E2E: чат пишет chat_messages (user+assistant) в БД")
+    @autotest.name("E2E: chat writes chat_messages (user+assistant) to DB")
     async def test_d1e2f3a4_chat_persisted(self):
-        with autotest.step("Launch + чат"):
+        with autotest.step("Launch + chat"):
             launched = await self.sessions_helper.launch_session("autotest-lab")
             session_id = launched["session_id"]
             await self.chat_api.post_chat_stream(
@@ -33,9 +33,9 @@ class TestDataRecordingE2E:
                 messages=[{"role": "user", "parts": [{"type": "text", "text": "Что такое trunk?"}]}],
             )
 
-        with autotest.step("Read-back БД — есть user и assistant сообщения"):
+        with autotest.step("Read-back DB — user and assistant messages present"):
             rows = await fetch_chat_messages(session_id)
             roles = [r.role for r in rows]
-            assert_greater_equal(len(rows), 2, "минимум 2 сообщения")
-            assert_in("user", roles, "есть user")
-            assert_in("assistant", roles, "есть assistant")
+            assert_greater_equal(len(rows), 2, "at least 2 messages")
+            assert_in("user", roles, "user present")
+            assert_in("assistant", roles, "assistant present")

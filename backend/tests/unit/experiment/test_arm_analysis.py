@@ -34,92 +34,92 @@ def _make_dataset() -> list:
 class TestArmAnalysis:
     @autotest.num("1092")
     @autotest.external_id("fb22080e-7c17-4b6d-abf6-165896b9c075")
-    @autotest.name("compute_arm_analysis: mentor_hours_saved > 0 когда open эскалирует больше")
+    @autotest.name("compute_arm_analysis: mentor_hours_saved > 0 when open escalates more")
     def test_fb22080e_mentor_hours_saved_positive(self):
-        with autotest.step("Создаём датасет"):
+        with autotest.step("Build the dataset"):
             metrics = _make_dataset()
 
-        with autotest.step("Запускаем анализ"):
+        with autotest.step("Run the analysis"):
             result = compute_arm_analysis(metrics, mentor_seconds=900.0)
 
         with autotest.step("mentor_hours_saved > 0"):
-            assert_greater(result.mentor_hours_saved, 0, "closed сохраняет часы ментора")
+            assert_greater(result.mentor_hours_saved, 0, "closed saves mentor hours")
 
     @autotest.num("1093")
     @autotest.external_id("3a04493e-33c6-48e3-89ff-803d66905cca")
     @autotest.name("compute_arm_analysis: l2_pass_rate_closed >= l2_pass_rate_open")
     def test_3a04493e_l2_pass_rate_closed_higher(self):
-        with autotest.step("Создаём датасет"):
+        with autotest.step("Build the dataset"):
             metrics = _make_dataset()
 
-        with autotest.step("Запускаем анализ"):
+        with autotest.step("Run the analysis"):
             result = compute_arm_analysis(metrics)
 
-        with autotest.step("closed L2 pass rate выше"):
+        with autotest.step("closed L2 pass rate is higher"):
             assert_true(
                 result.l2_pass_rate_closed >= result.l2_pass_rate_open,
-                "closed arm проходит L2 лучше",
+                "closed arm passes L2 better",
             )
 
     @autotest.num("1094")
     @autotest.external_id("3367a7c1-07fc-4369-a4b2-a389ba4d03ab")
     @autotest.name("compute_arm_analysis: escalations_mean_open > escalations_mean_closed")
     def test_3367a7c1_escalations_open_higher(self):
-        with autotest.step("Создаём датасет"):
+        with autotest.step("Build the dataset"):
             metrics = _make_dataset()
 
-        with autotest.step("Запускаем анализ"):
+        with autotest.step("Run the analysis"):
             result = compute_arm_analysis(metrics)
 
-        with autotest.step("open эскалирует больше"):
+        with autotest.step("open escalates more"):
             assert_greater(
                 result.escalations_mean_open,
                 result.escalations_mean_closed,
-                "open arm mean escalations выше",
+                "open arm mean escalations is higher",
             )
 
     @autotest.num("1095")
     @autotest.external_id("2de2ecef-c4df-4cf8-8b87-5bd82670c47d")
-    @autotest.name("compute_arm_analysis: repeated_errors comparison содержит t-тест")
+    @autotest.name("compute_arm_analysis: repeated_errors comparison includes a t-test")
     def test_2de2ecef_repeated_errors_comparison(self):
-        with autotest.step("Создаём датасет"):
+        with autotest.step("Build the dataset"):
             metrics = _make_dataset()
 
-        with autotest.step("Запускаем анализ"):
+        with autotest.step("Run the analysis"):
             result = compute_arm_analysis(metrics)
 
-        with autotest.step("repeated_errors_comparison содержит ключи Welch t-test"):
+        with autotest.step("repeated_errors_comparison has Welch t-test keys"):
             cmp = result.repeated_errors_comparison
-            assert_true("t_statistic" in cmp, "есть t_statistic")
-            assert_true("p_value" in cmp, "есть p_value")
-            assert_true("cohens_d" in cmp, "есть cohens_d")
+            assert_true("t_statistic" in cmp, "has t_statistic")
+            assert_true("p_value" in cmp, "has p_value")
+            assert_true("cohens_d" in cmp, "has cohens_d")
 
     @autotest.num("1096")
     @autotest.external_id("aec72172-d3f2-43da-b805-7a6218aab6e1")
-    @autotest.name("compute_arm_analysis: пустой вход не падает")
+    @autotest.name("compute_arm_analysis: empty input doesn't crash")
     def test_aec72172_empty_input_no_crash(self):
-        with autotest.step("Пустой список"):
+        with autotest.step("Empty list"):
             result = compute_arm_analysis([])
 
-        with autotest.step("Все rate = 0.0, hours = 0.0"):
+        with autotest.step("All rates = 0.0, hours = 0.0"):
             assert_equal(result.l2_pass_rate_open, 0.0, "open L2 rate = 0")
             assert_equal(result.l2_pass_rate_closed, 0.0, "closed L2 rate = 0")
             assert_equal(result.escalations_mean_open, 0.0, "open esc mean = 0")
             assert_equal(result.escalations_mean_closed, 0.0, "closed esc mean = 0")
-            assert_equal(result.mentor_hours_saved, 0.0, "0 часов сохранено")
+            assert_equal(result.mentor_hours_saved, 0.0, "0 hours saved")
 
     @autotest.num("1097")
     @autotest.external_id("b17ee300-bedc-4843-9208-4065d2596dd4")
-    @autotest.name("compute_arm_analysis: только один arm не падает")
+    @autotest.name("compute_arm_analysis: a single arm doesn't crash")
     def test_b17ee300_single_arm_no_crash(self):
-        with autotest.step("Только open arm"):
+        with autotest.step("Only open arm"):
             metrics = [_m("open", esc=3, l2_pass=True, repeated=4) for _ in range(5)]
             result = compute_arm_analysis(metrics)
 
-        with autotest.step("closed = 0.0, insufficient_data в repeated_errors"):
+        with autotest.step("closed = 0.0, insufficient_data in repeated_errors"):
             assert_equal(result.l2_pass_rate_closed, 0.0, "closed L2 rate = 0")
             assert_equal(result.escalations_mean_closed, 0.0, "closed esc mean = 0")
             assert_true(
                 "error" in result.repeated_errors_comparison,
-                "insufficient data при одном arm",
+                "insufficient data with a single arm",
             )

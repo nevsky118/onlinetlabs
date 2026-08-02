@@ -29,7 +29,7 @@ class ProgressHelperApi:
         :param lab_slug: Lab slug.
         :return: Progress data.
         """
-        with autotest.step("Начинаем лабораторную"):
+        with autotest.step("Start the lab"):
             response = await self.progress_api.post_start_lab(lab_slug=lab_slug)
 
         check_response_status(response, 201)

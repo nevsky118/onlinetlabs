@@ -38,7 +38,7 @@ class Gns3SessionsHelperApi:
                 lab_template_project_id=self.config.gns3_lab_template_project_id or None,
             ).data
 
-        with autotest.step("Создаём GNS3 сессию"):
+        with autotest.step("Create the GNS3 session"):
             response = await self.gns3_sessions_api.post_session(data=session_data)
 
         check_response_status(response, 201)
@@ -59,7 +59,7 @@ class Gns3SessionsHelperApi:
         :param session_id: Session UUID.
         :return: JSON snapshot of the state.
         """
-        with autotest.step("Получить состояние сессии"):
+        with autotest.step("Get the session state"):
             response = await self.gns3_sessions_api.get_state(session_id)
             check_response_status(response, 200)
             return response.json()
@@ -82,7 +82,7 @@ class Gns3SessionsHelperApi:
         """
         import asyncio
 
-        with autotest.step(f"Ждём node {node_id} в статусе {expected}"):
+        with autotest.step(f"Wait for node {node_id} to reach status {expected}"):
             deadline = asyncio.get_event_loop().time() + timeout
             last_status = None
             while asyncio.get_event_loop().time() < deadline:
@@ -107,5 +107,5 @@ class Gns3SessionsHelperApi:
 
         state = await self.get_state_and_verify(session_id)
         if not state["nodes"]:
-            pytest.skip("Шаблонный проект autotest-lab без узлов; добавь узлы для node-тестов")
+            pytest.skip("The autotest-lab template project has no nodes; add nodes to run the node tests")
         return state["nodes"][0]["id"]

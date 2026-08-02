@@ -25,7 +25,7 @@ class TestAuthExchangeSmokeApi:
 
     @autotest.num("1")
     @autotest.external_id("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
-    @autotest.name("Smoke: POST /auth/exchange — 200 и JWT-токен в ответе")
+    @autotest.name("Smoke: POST /auth/exchange — 200 and JWT token in response")
     async def test_a1b2c3d4_exchange_token(self):
         """Exchange of credentials -> JWT token."""
         # Arrange
@@ -33,15 +33,15 @@ class TestAuthExchangeSmokeApi:
         exchange_data = {"user_id": account.sub, "email": account.email}
 
         # Act
-        with autotest.step("Отправляем POST /auth/exchange"):
+        with autotest.step("Send POST /auth/exchange"):
             response = await self.auth_api.post_exchange(data=exchange_data)
 
         # Assert
-        with autotest.step("Проверяем статус код 200"):
+        with autotest.step("Verify status code 200"):
             check_response_status(response, 200)
 
         body = response.json()
-        with autotest.step("Проверяем наличие access_token и тип bearer"):
-            assert_is_not_none(body.get("access_token"), "access_token не должен быть None")
+        with autotest.step("Verify access_token present and type bearer"):
+            assert_is_not_none(body.get("access_token"), "access_token must not be None")
             assert_equal(body["token_type"], "bearer",
-                         f"token_type: ожидался bearer, получен {body['token_type']}")
+                         f"token_type: expected bearer, got {body['token_type']}")

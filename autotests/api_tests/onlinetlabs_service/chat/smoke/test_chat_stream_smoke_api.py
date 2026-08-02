@@ -38,16 +38,16 @@ class TestChatStreamSmokeApi:
 
     @autotest.num("59")
     @autotest.external_id("e0f1a2b3-c4d5-6789-efab-890123456789")
-    @autotest.name("Smoke: chat/stream — v1 события (start, text-delta, [DONE])")
+    @autotest.name("Smoke: chat/stream — v1 events (start, text-delta, [DONE])")
     async def test_e0f1a2b3_chat_stream_v1_events(self):
         """POST /chat/stream returns a v1 SSE stream with start, text-delta and [DONE]."""
         # Arrange
-        with autotest.step("Запускаем сессию autotest-lab"):
+        with autotest.step("Launch autotest-lab session"):
             launched = await self.sessions_helper.launch_session("autotest-lab")
             session_id = launched["session_id"]
 
         # Act
-        with autotest.step("Отправляем сообщение пользователя в чат-стрим"):
+        with autotest.step("Send user message to chat stream"):
             lines = await self.chat_api.post_chat_stream(
                 session_id,
                 messages=[{"role": "user", "parts": [{"type": "text", "text": "привет"}]}],
@@ -57,17 +57,17 @@ class TestChatStreamSmokeApi:
         types = [e.get("type") for e in events]
 
         # Assert
-        with autotest.step("Проверяем наличие события start"):
-            assert "start" in types, f"Ожидали событие start, получили типы: {types}"
+        with autotest.step("Verify start event present"):
+            assert "start" in types, f"Expected start event, got types: {types}"
 
-        with autotest.step("Проверяем наличие хотя бы одного text-delta"):
-            assert "text-delta" in types, f"Ожидали хотя бы один text-delta, получили типы: {types}"
+        with autotest.step("Verify at least one text-delta present"):
+            assert "text-delta" in types, f"Expected at least one text-delta, got types: {types}"
 
-        with autotest.step("Проверяем финальный сигнал [DONE]"):
-            assert done, "Ожидали финальный SSE-сигнал [DONE]"
+        with autotest.step("Verify final [DONE] signal"):
+            assert done, "Expected final SSE signal [DONE]"
 
-        with autotest.step("Проверяем отсутствие события error"):
+        with autotest.step("Verify no error event"):
             assert "error" not in types, (
-                f"Стрим завершился ошибкой: "
+                f"Stream ended with error: "
                 f"{[e for e in events if e.get('type') == 'error']}"
             )

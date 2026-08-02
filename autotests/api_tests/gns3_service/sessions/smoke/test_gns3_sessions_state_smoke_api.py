@@ -27,36 +27,36 @@ class TestGns3SessionsStateSmokeApi:
     async def test_a1111111_state_200(self):
         """GET /sessions/{id}/state returns 200 for an active session."""
         # Arrange
-        with autotest.step("Создаём GNS3 сессию"):
+        with autotest.step("Create GNS3 session"):
             session_dict = await self.gns3_sessions_helper.create_session()
         session_id = session_dict["session_id"]
 
         # Act
-        with autotest.step("Запрашиваем состояние сессии"):
+        with autotest.step("Request session state"):
             response = await self.gns3_sessions_api.get_state(session_id)
 
         # Assert
-        with autotest.step("Проверяем статус код 200"):
+        with autotest.step("Verify status code 200"):
             check_response_status(response, 200)
 
     @autotest.num("161")
     @autotest.external_id("a2222222-aaaa-4aaa-aaaa-aaaaaaaaaaaa")
-    @autotest.name("Gns3 Smoke: state содержит nodes/links/metrics")
+    @autotest.name("Gns3 Smoke: state contains nodes/links/metrics")
     async def test_a2222222_state_shape(self):
         """The state response contains the fields nodes, links, metrics."""
         # Arrange
-        with autotest.step("Создаём GNS3 сессию"):
+        with autotest.step("Create GNS3 session"):
             session_dict = await self.gns3_sessions_helper.create_session()
         session_id = session_dict["session_id"]
 
         # Act
-        with autotest.step("Получаем состояние сессии"):
+        with autotest.step("Get session state"):
             body = await self.gns3_sessions_helper.get_state_and_verify(session_id)
 
         # Assert
-        with autotest.step("Проверяем структуру ответа"):
-            assert_is_not_none(body.get("session_id"), "session_id отсутствует")
-            assert_in("nodes", body, "поле nodes отсутствует")
-            assert_in("links", body, "поле links отсутствует")
-            assert_in("metrics", body, "поле metrics отсутствует")
-            assert_in("nodes_total", body["metrics"], "metrics.nodes_total отсутствует")
+        with autotest.step("Verify response structure"):
+            assert_is_not_none(body.get("session_id"), "session_id missing")
+            assert_in("nodes", body, "nodes field missing")
+            assert_in("links", body, "links field missing")
+            assert_in("metrics", body, "metrics field missing")
+            assert_in("nodes_total", body["metrics"], "metrics.nodes_total missing")

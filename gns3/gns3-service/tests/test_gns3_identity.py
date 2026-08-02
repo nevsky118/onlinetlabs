@@ -18,7 +18,7 @@ class TestGns3UsernameFor:
         c = gns3_username_for("sim-12000-49")
 
         assert a != b != c
-        assert len({a, b, c}) == 3, "имена должны различаться при общем префиксе"
+        assert len({a, b, c}) == 3, "names must differ despite a shared prefix"
 
     def test_is_deterministic(self):
         """Same student → same name (otherwise cleanup of their stray accounts breaks)."""

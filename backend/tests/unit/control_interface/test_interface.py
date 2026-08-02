@@ -49,7 +49,7 @@ class TestControlInterface:
 
     @autotest.num("1770")
     @autotest.external_id("8d4e6106-a42a-42a4-ac83-587b9ca6830f")
-    @autotest.name("observe: classify+consent+owner → _call_tool вызван, audit(success=True)")
+    @autotest.name("observe: classify+consent+owner → _call_tool called, audit(success=True)")
     async def test_8d4e6106_observe_happy(self):
         mcp = _make_mcp()
         factory, db = _make_db_factory()
@@ -67,10 +67,10 @@ class TestControlInterface:
                 _TOOL_OBS, ctx=None, arguments={}, user_id=_USER, session_id=_SESSION
             )
 
-        with autotest.step("Assert: типизированная обёртка вызвана с ctx"):
+        with autotest.step("Assert: typed wrapper called with ctx"):
             mcp.list_user_actions.assert_awaited_once_with(None)
-        with autotest.step("Assert: audit записан с success=True"):
-            assert_true(mock_record.called, "record вызван")
+        with autotest.step("Assert: audit recorded with success=True"):
+            assert_true(mock_record.called, "record called")
             call_kwargs = mock_record.call_args.kwargs
             assert_equal(call_kwargs["success"], True, "success")
             assert_equal(call_kwargs["kind"], "observe", "kind")
@@ -79,7 +79,7 @@ class TestControlInterface:
 
     @autotest.num("1771")
     @autotest.external_id("c21fc83a-4d93-4c05-bfcc-667a29b2e159")
-    @autotest.name("act: первый вызов → execute_action; второй < cooldown → rate-denied")
+    @autotest.name("act: first call → execute_action; second < cooldown → rate-denied")
     async def test_c21fc83a_act_then_rate(self):
         mcp = _make_mcp()
         factory, db = _make_db_factory()
@@ -104,7 +104,7 @@ class TestControlInterface:
                 arm=ControlArm.CLOSED,
             )
 
-        with autotest.step("Assert: execute_action вызван первый раз"):
+        with autotest.step("Assert: execute_action called the first time"):
             mcp.execute_action.assert_awaited_once()
 
         # second call immediately should fail with rate limit
@@ -126,14 +126,14 @@ class TestControlInterface:
                     arm=ControlArm.CLOSED,
                 )
 
-        with autotest.step("Assert: причина rate"):
+        with autotest.step("Assert: reason is rate"):
             assert_equal(exc_info.value.reason, "rate", "reason")
 
     # ── act in open arm → open_arm ────────────────────────────────────────
 
     @autotest.num("1772")
     @autotest.external_id("e896a19f-9527-4485-8534-fb6bc2de6ece")
-    @autotest.name("act в OPEN плече → InterfaceDenied(open_arm), execute_action не вызван")
+    @autotest.name("act in OPEN arm → InterfaceDenied(open_arm), execute_action not called")
     async def test_e896a19f_act_open_arm(self):
         mcp = _make_mcp()
         factory, db = _make_db_factory()
@@ -157,7 +157,7 @@ class TestControlInterface:
                     arm=ControlArm.OPEN,
                 )
 
-        with autotest.step("Assert: reason=open_arm, execute_action не тронут"):
+        with autotest.step("Assert: reason=open_arm, execute_action untouched"):
             assert_equal(exc_info.value.reason, "open_arm", "reason")
             mcp.execute_action.assert_not_awaited()
 
@@ -165,7 +165,7 @@ class TestControlInterface:
 
     @autotest.num("1773")
     @autotest.external_id("3f314b4d-7ba2-4615-9889-24a00f12e5e8")
-    @autotest.name("observe: неклассифицированный tool → InterfaceDenied(unclassified)")
+    @autotest.name("observe: unclassified tool → InterfaceDenied(unclassified)")
     async def test_3f314b4d_unclassified(self):
         mcp = _make_mcp()
         factory, _ = _make_db_factory()
@@ -184,7 +184,7 @@ class TestControlInterface:
 
     @autotest.num("1774")
     @autotest.external_id("aa9acc55-89a8-4137-9094-2d6ab2c34102")
-    @autotest.name("observe: чужая сессия (get_owned_session→None) → InterfaceDenied(isolation)")
+    @autotest.name("observe: foreign session (get_owned_session→None) → InterfaceDenied(isolation)")
     async def test_aa9acc55_isolation(self):
         mcp = _make_mcp()
         factory, _ = _make_db_factory()
@@ -208,7 +208,7 @@ class TestControlInterface:
 
     @autotest.num("1775")
     @autotest.external_id("881af810-b603-4689-b511-e03c76db5616")
-    @autotest.name("act: нет согласия → InterfaceDenied(consent)")
+    @autotest.name("act: no consent → InterfaceDenied(consent)")
     async def test_881af810_no_consent(self):
         mcp = _make_mcp()
         factory, _ = _make_db_factory()
@@ -239,7 +239,7 @@ class TestControlInterface:
 
     @autotest.num("1776")
     @autotest.external_id("507643b8-80b1-4f98-b42a-a1b346faade5")
-    @autotest.name("observe: нет согласия → InterfaceDenied(consent)")
+    @autotest.name("observe: no consent → InterfaceDenied(consent)")
     async def test_507643b8_observe_no_consent(self):
         mcp = _make_mcp()
         factory, _ = _make_db_factory()

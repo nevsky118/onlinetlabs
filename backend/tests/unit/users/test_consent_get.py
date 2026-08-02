@@ -63,20 +63,18 @@ class TestConsentGet:
 
     @autotest.num("1949")
     @autotest.external_id("48fe4a5d-8f48-44d1-9d89-a63d220acd29")
-    @autotest.name("GET /consent: без аутентификации → 401/403")
+    @autotest.name("GET /consent: without authentication → 401/403")
     async def test_48fe4a5d_unauthenticated_rejected(self):
-        with autotest.step("Act: GET /users/me/consent без токена"):
+        with autotest.step("Act: GET /users/me/consent without a token"):
             async with self._unauth_client() as client:
                 resp = await client.get("/users/me/consent")
 
-        with autotest.step("Assert: 401 или 403"):
-            assert_true(
-                resp.status_code in (401, 403), f"ожидали 401/403, получили {resp.status_code}"
-            )
+        with autotest.step("Assert: 401 or 403"):
+            assert_true(resp.status_code in (401, 403), f"expected 401/403, got {resp.status_code}")
 
     @autotest.num("1950")
     @autotest.external_id("99ff576e-a9d6-44b9-a721-26b4ca3736b0")
-    @autotest.name("GET /consent: возвращает только активные (не отозванные) согласия")
+    @autotest.name("GET /consent: returns only active (non-revoked) consents")
     async def test_99ff576e_returns_only_active_consents(self):
         async with self.session_factory() as db:
             await grant(db, "user-consent-test", "study", observe=True, act=True)
@@ -87,11 +85,11 @@ class TestConsentGet:
             async with self._client() as client:
                 resp = await client.get("/users/me/consent")
 
-        with autotest.step("Assert: 200, только study (product отозван)"):
+        with autotest.step("Assert: 200, only study (product revoked)"):
             assert_equal(resp.status_code, 200, "status 200")
             items = resp.json()
-            assert_equal(len(items), 1, "одно активное согласие")
+            assert_equal(len(items), 1, "one active consent")
             assert_equal(items[0]["scope"], "study", "scope=study")
             assert_equal(items[0]["observe"], True, "observe=True")
             assert_equal(items[0]["act"], True, "act=True")
-            assert_true("granted_at" in items[0], "granted_at присутствует")
+            assert_true("granted_at" in items[0], "granted_at present")

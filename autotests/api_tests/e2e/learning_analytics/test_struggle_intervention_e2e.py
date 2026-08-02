@@ -29,7 +29,7 @@ def _error_events(n: int):
 class TestStruggleInterventionE2E:
     @autotest.num("711")
     @autotest.external_id("e1f2a3b4-c5d6-7890-efab-711000000001")
-    @autotest.name("E2E: 3 одинаковые ошибки -> struggle REPEATING_ERRORS -> HINT")
+    @autotest.name("E2E: 3 identical errors -> struggle REPEATING_ERRORS -> HINT")
     async def test_e1f2a3b4_detection(self):
         from agents.analytics.agent import AnalyticsAgent
         from agents.analytics.models import StruggleType, SuggestedIntervention
@@ -39,11 +39,11 @@ class TestStruggleInterventionE2E:
 
         backend_config = EnvConfigLoader().load(str(env_file("backend")))
         la_cfg = LearningAnalyticsConfig()
-        with autotest.step("FeatureExtractor по 3 одинаковым ошибкам"):
+        with autotest.step("FeatureExtractor on 3 identical errors"):
             features = FeatureExtractor(la_cfg).compute("s1", _error_events(3))
             assert features.error_repeat_count >= la_cfg.error_repeat_threshold
 
-        with autotest.step("AnalyticsAgent детектит REPEATING_ERRORS -> HINT"):
+        with autotest.step("AnalyticsAgent detects REPEATING_ERRORS -> HINT"):
             result = AnalyticsAgent(backend_config, None).analyze_session(features, la_cfg)
             assert result.struggle_detected is True
             assert result.struggle_type == StruggleType.REPEATING_ERRORS
@@ -51,7 +51,7 @@ class TestStruggleInterventionE2E:
 
     @autotest.num("712")
     @autotest.external_id("f1a2b3c4-d5e6-7890-fabc-712000000002")
-    @autotest.name("E2E: monitor._run_analysis шлёт интервенцию в gateway")
+    @autotest.name("E2E: monitor._run_analysis sends intervention to gateway")
     async def test_f1a2b3c4_intervention_sent(self):
         from agents.analytics.agent import AnalyticsAgent
         from config.config_model import LearningAnalyticsConfig
@@ -121,10 +121,10 @@ class TestStruggleInterventionE2E:
 
         monitor._log_intervention = AsyncMock()
 
-        with autotest.step("Запускаем один цикл анализа"):
+        with autotest.step("Run one analysis cycle"):
             await monitor._run_analysis()
 
-        with autotest.step("Интервенция отправлена в gateway"):
+        with autotest.step("Intervention sent to gateway"):
             gateway.send_intervention.assert_awaited()
             args = gateway.send_intervention.await_args.args
             assert args[0] == "s1"

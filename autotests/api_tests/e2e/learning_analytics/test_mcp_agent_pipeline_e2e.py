@@ -56,30 +56,30 @@ class TestMCPAgentPipelineE2E:
 
     @autotest.num("700")
     @autotest.external_id("a1b2c3d4-e5f6-4789-abcd-700000000001")
-    @autotest.name("E2E: MCP list_components возвращает ноды GNS3 проекта")
+    @autotest.name("E2E: MCP list_components returns GNS3 project nodes")
     async def test_a1b2c3d4_mcp_list_components(self):
-        with autotest.step("Подготовка GNS3 проекта"):
+        with autotest.step("Prepare GNS3 project"):
             await self._ensure_project()
 
-        with autotest.step("Вызываем MCP list_components"):
+        with autotest.step("Call MCP list_components"):
             mcp = self.helper.get_mcp_client()
             ctx = self.helper.get_session_context()
             components = await mcp.list_components(ctx)
 
-        with autotest.step("Проверяем компоненты"):
-            assert_greater_equal(len(components), 2, "минимум 2 компонента")
+        with autotest.step("Verify components"):
+            assert_greater_equal(len(components), 2, "at least 2 components")
             names = {c.name for c in components}
-            assert_true("PC1" in names, "PC1 присутствует")
-            assert_true("PC2" in names, "PC2 присутствует")
+            assert_true("PC1" in names, "PC1 present")
+            assert_true("PC2" in names, "PC2 present")
 
     @autotest.num("701")
     @autotest.external_id("b2c3d4e5-f6a7-4890-bcde-701000000002")
-    @autotest.name("E2E: MCPContextBuilder собирает контекст из GNS3")
+    @autotest.name("E2E: MCPContextBuilder builds context from GNS3")
     async def test_b2c3d4e5_context_builder(self):
-        with autotest.step("Подготовка GNS3 проекта"):
+        with autotest.step("Prepare GNS3 project"):
             await self._ensure_project()
 
-        with autotest.step("Собираем AgentContext"):
+        with autotest.step("Build AgentContext"):
             mcp = self.helper.get_mcp_client()
             ctx = self.helper.get_session_context()
             builder = MCPContextBuilder(mcp)
@@ -89,24 +89,24 @@ class TestMCPAgentPipelineE2E:
                 self.test_data.dominant_error,
             )
 
-        with autotest.step("Проверяем контекст"):
-            assert_true(len(agent_ctx.topology_summary) > 0, "топология не пустая")
-            assert_true("PC1" in agent_ctx.topology_summary, "PC1 в топологии")
-            assert_equal(agent_ctx.struggle_type, "repeating_errors", "тип struggle")
+        with autotest.step("Verify context"):
+            assert_true(len(agent_ctx.topology_summary) > 0, "topology not empty")
+            assert_true("PC1" in agent_ctx.topology_summary, "PC1 in topology")
+            assert_equal(agent_ctx.struggle_type, "repeating_errors", "struggle type")
 
-        with autotest.step("to_prompt содержит данные"):
+        with autotest.step("to_prompt contains data"):
             prompt = agent_ctx.to_prompt()
-            assert_true("СОСТОЯНИЕ СРЕДЫ" in prompt, "заголовок")
-            assert_true("PC1" in prompt, "PC1 в промпте")
+            assert_true("СОСТОЯНИЕ СРЕДЫ" in prompt, "header")
+            assert_true("PC1" in prompt, "PC1 in prompt")
 
     @autotest.num("702")
     @autotest.external_id("c3d4e5f6-a7b8-4901-cdef-702000000003")
-    @autotest.name("E2E: TutorAgent отвечает с MCP контекстом через YandexGPT")
+    @autotest.name("E2E: TutorAgent responds with MCP context via YandexGPT")
     async def test_c3d4e5f6_tutor_agent_with_context(self):
-        with autotest.step("Подготовка GNS3 проекта"):
+        with autotest.step("Prepare GNS3 project"):
             await self._ensure_project()
 
-        with autotest.step("Собираем контекст"):
+        with autotest.step("Build context"):
             mcp = self.helper.get_mcp_client()
             ctx = self.helper.get_session_context()
             builder = MCPContextBuilder(mcp)
@@ -116,7 +116,7 @@ class TestMCPAgentPipelineE2E:
                 self.test_data.dominant_error,
             )
 
-        with autotest.step("Вызываем TutorAgent"):
+        with autotest.step("Call TutorAgent"):
             config = EnvConfigLoader().load(str(env_file("backend")))
             tutor = TutorAgent(config, mcp_client=mcp)
             result = await tutor.run(TutorInput(
@@ -126,19 +126,19 @@ class TestMCPAgentPipelineE2E:
                 agent_context=agent_ctx,
             ))
 
-        with autotest.step("Ответ содержателен"):
-            assert_true(len(result.answer) > 20, "ответ больше 20 символов")
+        with autotest.step("Answer is substantive"):
+            assert_true(len(result.answer) > 20, "answer longer than 20 characters")
 
     @autotest.num("703")
     @autotest.external_id("d4e5f6a7-b8c9-4012-defa-703000000004")
-    @autotest.name("E2E: HintAgent выдаёт подсказку с MCP контекстом")
+    @autotest.name("E2E: HintAgent gives a hint with MCP context")
     async def test_d4e5f6a7_hint_agent_with_context(self):
         hint_data = HintTestData(attempts_count=4)
 
-        with autotest.step("Подготовка GNS3 проекта"):
+        with autotest.step("Prepare GNS3 project"):
             await self._ensure_project()
 
-        with autotest.step("Собираем контекст"):
+        with autotest.step("Build context"):
             mcp = self.helper.get_mcp_client()
             ctx = self.helper.get_session_context()
             builder = MCPContextBuilder(mcp)
@@ -148,7 +148,7 @@ class TestMCPAgentPipelineE2E:
                 hint_data.last_error,
             )
 
-        with autotest.step("Вызываем HintAgent"):
+        with autotest.step("Call HintAgent"):
             config = EnvConfigLoader().load(str(env_file("backend")))
             hint_agent = HintAgent(config)
             result = await hint_agent.run(HintInput(
@@ -161,23 +161,23 @@ class TestMCPAgentPipelineE2E:
                 agent_context=agent_ctx,
             ))
 
-        with autotest.step("Подсказка уровня 3"):
-            assert_equal(result.hint_level, 3, "уровень 3 при 4 попытках")
-            assert_true(len(result.hint) > 10, "подсказка не пустая")
-            assert_equal(result.remaining_hints, 0, "подсказок не осталось")
+        with autotest.step("Hint level 3"):
+            assert_equal(result.hint_level, 3, "level 3 at 4 attempts")
+            assert_true(len(result.hint) > 10, "hint not empty")
+            assert_equal(result.remaining_hints, 0, "no hints remaining")
 
     @autotest.num("704")
     @autotest.external_id("e5f6a7b8-c9d0-4123-efab-704000000005")
-    @autotest.name("E2E: get_system_overview возвращает сводку проекта")
+    @autotest.name("E2E: get_system_overview returns project summary")
     async def test_e5f6a7b8_system_overview(self):
-        with autotest.step("Подготовка GNS3 проекта"):
+        with autotest.step("Prepare GNS3 project"):
             await self._ensure_project()
 
-        with autotest.step("Вызываем MCP get_system_overview"):
+        with autotest.step("Call MCP get_system_overview"):
             mcp = self.helper.get_mcp_client()
             ctx = self.helper.get_session_context()
             overview = await mcp.get_system_overview(ctx)
 
-        with autotest.step("Проверяем сводку"):
-            assert_greater_equal(overview.component_count, 2, "минимум 2 компонента")
-            assert_true(len(overview.summary) > 0, "summary не пустой")
+        with autotest.step("Verify summary"):
+            assert_greater_equal(overview.component_count, 2, "at least 2 components")
+            assert_true(len(overview.summary) > 0, "summary not empty")

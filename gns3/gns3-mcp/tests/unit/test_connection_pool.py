@@ -69,87 +69,87 @@ def clock(monkeypatch):
 class TestConnectionPool:
     @autotest.num("819")
     @autotest.external_id("a393b03d-2e5a-4479-b37c-af88997605ec")
-    @autotest.name("ConnectionPool: повторный запрос того же юзера переиспользует соединение")
+    @autotest.name("ConnectionPool: a repeated request for the same user reuses the connection")
     async def test_a393b03d_reuses_connection_for_same_user(self, clock):
         mgr = _FakeManager()
         pool = ConnectionPool(manager=mgr, max_size=5)
 
-        with autotest.step("Дважды берём соединение одного пользователя"):
+        with autotest.step("Take a connection for the same user twice"):
             first = await pool.get_connection(_ctx("u1"))
             second = await pool.get_connection(_ctx("u1"))
 
-        with autotest.step("Соединение то же, connect был один раз"):
+        with autotest.step("Same connection, connect was called once"):
             assert first is second
             assert mgr.connects == 1
             assert pool.size == 1
 
     @autotest.num("820")
     @autotest.external_id("c52447e4-e48c-422d-9c0d-4f7fc7f9e329")
-    @autotest.name("ConnectionPool: при нехватке места вытесняет LRU, а не падает")
+    @autotest.name("ConnectionPool: evicts LRU instead of raising when out of room")
     async def test_c52447e4_evicts_lru_instead_of_raising(self, clock):
         mgr = _FakeManager()
         pool = ConnectionPool(manager=mgr, max_size=2, min_evict_idle=30.0)
 
-        with autotest.step("Заполняем пул двумя пользователями и даём им остыть"):
+        with autotest.step("Fill the pool with two users and let them go cold"):
             u1 = await pool.get_connection(_ctx("u1"))
             await pool.get_connection(_ctx("u2"))
             clock.advance(60.0)  # both connections are no longer "hot"
 
-        with autotest.step("Третий пользователь получает соединение без ошибки"):
+        with autotest.step("A third user gets a connection with no error"):
             third = await pool.get_connection(_ctx("u3"))
             assert third is not None
 
-        with autotest.step("Вытеснен LRU (u1), размер пула не превышен"):
+        with autotest.step("LRU (u1) was evicted, pool size stays within limit"):
             assert pool.size == 2
             assert u1 in mgr.disconnected
             assert mgr.connects == 3
 
     @autotest.num("821")
     @autotest.external_id("d84ce065-0784-4beb-801c-40b1270e20e4")
-    @autotest.name("ConnectionPool: обслуживает больше уникальных юзеров, чем max_size")
+    @autotest.name("ConnectionPool: serves more unique users than max_size")
     async def test_d84ce065_survives_more_unique_users_than_max_size(self, clock):
         mgr = _FakeManager()
         pool = ConnectionPool(manager=mgr, max_size=3, min_evict_idle=1.0)
 
-        with autotest.step("Прогоняем 10 разных пользователей через пул на 3 слота"):
+        with autotest.step("Run 10 different users through a 3-slot pool"):
             for i in range(10):
                 conn = await pool.get_connection(_ctx(f"u{i}"))
                 assert conn is not None
                 clock.advance(5.0)  # the previous ones have time to cool down
 
-        with autotest.step("Пул не «закирпичился»: размер в пределах max_size"):
+        with autotest.step("Pool did not brick itself: size stays within max_size"):
             assert pool.size <= 3
             assert mgr.connects == 10
 
     @autotest.num("822")
     @autotest.external_id("f981bc7a-942a-4444-bbdd-5a68731c6b8b")
-    @autotest.name("ConnectionPool: закрывает соединения, простаивающие дольше idle_ttl")
+    @autotest.name("ConnectionPool: closes connections idle longer than idle_ttl")
     async def test_f981bc7a_drops_idle_connections(self, clock):
         mgr = _FakeManager()
         pool = ConnectionPool(manager=mgr, max_size=5, idle_ttl=100.0)
 
-        with autotest.step("Берём соединение и ждём дольше idle_ttl"):
+        with autotest.step("Take a connection and wait longer than idle_ttl"):
             stale = await pool.get_connection(_ctx("u1"))
             clock.advance(150.0)
 
-        with autotest.step("Обращение другого юзера вычищает протухшее"):
+        with autotest.step("Another user's request purges the stale connection"):
             await pool.get_connection(_ctx("u2"))
             assert stale in mgr.disconnected
             assert pool.size == 1
 
     @autotest.num("823")
     @autotest.external_id("1d5d45cd-fcc2-477e-ad4c-e38392942ecf")
-    @autotest.name("ConnectionPool: мёртвое соединение переоткрывается по health-check")
+    @autotest.name("ConnectionPool: a dead connection is reopened on health-check")
     async def test_1d5d45cd_reconnects_dead_connection(self, clock):
         mgr = _FakeManager()
         pool = ConnectionPool(manager=mgr, max_size=5, health_check_interval=10.0)
 
-        with autotest.step("Берём соединение, ждём дольше health_check_interval"):
+        with autotest.step("Take a connection, wait longer than health_check_interval"):
             dead = await pool.get_connection(_ctx("u1"))
             clock.advance(20.0)
             mgr.alive = False  # the connection died
 
-        with autotest.step("Повторный запрос переоткрывает соединение"):
+        with autotest.step("The repeat request reopens the connection"):
             fresh = await pool.get_connection(_ctx("u1"))
             assert fresh is not dead
             assert dead in mgr.disconnected
@@ -157,49 +157,51 @@ class TestConnectionPool:
 
     @autotest.num("824")
     @autotest.external_id("d0437fbb-b818-44e3-9dc2-b0385c987880")
-    @autotest.name("ConnectionPool: не дёргает health-check чаще health_check_interval")
+    @autotest.name(
+        "ConnectionPool: does not call health-check more often than health_check_interval"
+    )
     async def test_d0437fbb_skips_health_check_within_interval(self, clock):
         mgr = _FakeManager()
         pool = ConnectionPool(manager=mgr, max_size=5, health_check_interval=60.0)
 
-        with autotest.step("Берём соединение дважды подряд"):
+        with autotest.step("Take a connection twice in a row"):
             await pool.get_connection(_ctx("u1"))
             await pool.get_connection(_ctx("u1"))
 
-        with autotest.step("health_check не вызывался — лишнего round-trip нет"):
+        with autotest.step("health_check was not called -- no extra round-trip"):
             assert mgr.health_calls == 0
 
     @autotest.num("825")
     @autotest.external_id("9d1fdb67-6aef-450e-b9de-ef0de67d6e52")
-    @autotest.name("ConnectionPool: если ВСЕ соединения активны — честный backpressure")
+    @autotest.name("ConnectionPool: honest backpressure when ALL connections are hot")
     async def test_9d1fdb67_raises_when_all_connections_hot(self, clock):
         mgr = _FakeManager()
         pool = ConnectionPool(manager=mgr, max_size=2, min_evict_idle=30.0)
 
-        with autotest.step("Заполняем пул только что использованными соединениями"):
+        with autotest.step("Fill the pool with just-used connections"):
             await pool.get_connection(_ctx("u1"))
             await pool.get_connection(_ctx("u2"))
 
-        with autotest.step("Третий падает: рвать живое соединение нельзя"):
+        with autotest.step("A third one fails: a live connection must not be torn down"):
             with pytest.raises(MCPServerError, match="exhausted"):
                 await pool.get_connection(_ctx("u3"))
 
-        with autotest.step("Живые соединения не тронуты"):
+        with autotest.step("Live connections are untouched"):
             assert mgr.disconnected == []
             assert pool.size == 2
 
     @autotest.num("826")
     @autotest.external_id("99c7fa94-23fc-47b7-a391-5ed69ad43938")
-    @autotest.name("ConnectionPool.release: освобождает слот пользователя")
+    @autotest.name("ConnectionPool.release: frees the user's slot")
     async def test_99c7fa94_release_frees_slot(self, clock):
         mgr = _FakeManager()
         pool = ConnectionPool(manager=mgr, max_size=1, min_evict_idle=30.0)
 
-        with autotest.step("Занимаем единственный слот и освобождаем его"):
+        with autotest.step("Occupy the only slot, then release it"):
             conn = await pool.get_connection(_ctx("u1"))
             await pool.release(_ctx("u1"))
 
-        with autotest.step("Соединение закрыто, слот свободен для другого юзера"):
+        with autotest.step("Connection closed, slot free for another user"):
             assert conn in mgr.disconnected
             assert pool.size == 0
             other = await pool.get_connection(_ctx("u2"))

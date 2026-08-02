@@ -31,7 +31,7 @@ class TestBackendSessionWsE2E:
 
     @autotest.num("92")
     @autotest.external_id("92111111-9999-4999-9999-999999999999")
-    @autotest.name("Backend e2e: WS закрывается 4401 без токена")
+    @autotest.name("Backend e2e: WS closes 4401 without a token")
     async def test_92111111_unauthorized_4401(self):
         """Connecting without a token results in close 4401."""
         ws_client = WSClient(self.config.base_url)  # no token

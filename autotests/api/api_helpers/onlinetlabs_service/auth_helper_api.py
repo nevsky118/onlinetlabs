@@ -35,7 +35,7 @@ class AuthHelperApi:
         if register_data is None:
             register_data = AuthRegisterData().data
 
-        with autotest.step("Регистрация пользователя"):
+        with autotest.step("Register the user"):
             response = await self.auth_api.post_register(data=register_data)
 
         check_response_status(response, 201)
@@ -58,7 +58,7 @@ class AuthHelperApi:
         if login_data is None:
             login_data = AuthLoginData().data
 
-        with autotest.step("Логин пользователя"):
+        with autotest.step("Log in the user"):
             response = await self.auth_api.post_login(data=login_data)
 
         check_response_status(response, 200)
@@ -74,7 +74,7 @@ class AuthHelperApi:
         if exchange_data is None:
             exchange_data = AuthExchangeData().data
 
-        with autotest.step("Обмен токена"):
+        with autotest.step("Exchange the token"):
             response = await self.auth_api.post_exchange(data=exchange_data)
 
         check_response_status(response, 200)

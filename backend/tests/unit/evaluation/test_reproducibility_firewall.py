@@ -28,9 +28,9 @@ async def _sqlite_factory():
 class TestReproducibilityFirewall:
     @autotest.num("2010")
     @autotest.external_id("dc7d6b51-9331-4c12-ad0c-6b7185638582")
-    @autotest.name("Firewall: bundle не включает точки решения и gold сим-юзеров")
+    @autotest.name("Firewall: bundle excludes decision points and gold for simulated users")
     async def test_dc7d6b51_bundle_excludes_simulated(self):
-        with autotest.step("Arrange: реальный и сим юзер, у каждого сессия/решение/gold"):
+        with autotest.step("Arrange: real and simulated user, each with session/decision/gold"):
             from evaluation.reproducibility import build_reproducibility_bundle
 
             sf = await _sqlite_factory()
@@ -67,11 +67,11 @@ class TestReproducibilityFirewall:
                     )
                 await db.commit()
 
-        with autotest.step("Act: собрать bundle"):
+        with autotest.step("Act: build the bundle"):
             async with sf() as db:
                 bundle = await build_reproducibility_bundle(db)
 
-        with autotest.step("Assert: только реальные данные (сим отрезаны)"):
-            assert_equal(len(bundle["intervention_decisions"]), 1, "1 решение (реальное)")
-            assert_equal(len(bundle["regime_annotations"]), 1, "1 аннотация (реальная)")
-            assert_equal(bundle["gold_label_count"], 1, "1 gold (реальный)")
+        with autotest.step("Assert: only real data (simulated excluded)"):
+            assert_equal(len(bundle["intervention_decisions"]), 1, "1 decision (real)")
+            assert_equal(len(bundle["regime_annotations"]), 1, "1 annotation (real)")
+            assert_equal(bundle["gold_label_count"], 1, "1 gold (real)")

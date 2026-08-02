@@ -36,7 +36,7 @@ class GNS3MCPHelper:
 
     async def authenticate(self) -> str:
         """Obtain a JWT from the GNS3 server."""
-        with autotest.step("Аутентификация в GNS3"):
+        with autotest.step("Authenticate in GNS3"):
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     f"{self.gns3_url}/v3/access/users/authenticate",
@@ -51,7 +51,7 @@ class GNS3MCPHelper:
     async def create_project(self, name: str) -> str:
         """Create a GNS3 project with a unique name and register it for cleanup."""
         unique_name = f"{name}-{uuid.uuid4().hex[:8]}"
-        with autotest.step(f"Создание GNS3 проекта '{unique_name}'"):
+        with autotest.step(f"Create a GNS3 project '{unique_name}'"):
             async with httpx.AsyncClient(
                 base_url=self.gns3_url,
                 headers={"Authorization": f"Bearer {self._jwt}"},
@@ -68,7 +68,7 @@ class GNS3MCPHelper:
 
     async def create_vpcs_nodes(self, names: list[str]) -> list[dict]:
         """Create VPCS nodes in the project."""
-        with autotest.step(f"Создание VPCS нод: {names}"):
+        with autotest.step(f"Create VPCS nodes: {names}"):
             async with httpx.AsyncClient(
                 base_url=self.gns3_url,
                 headers={"Authorization": f"Bearer {self._jwt}"},

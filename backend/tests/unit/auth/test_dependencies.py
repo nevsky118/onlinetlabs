@@ -25,42 +25,42 @@ pytestmark = [pytest.mark.unit, pytest.mark.auth]
 class TestBackendTokenRoundTrip:
     @autotest.num("700")
     @autotest.external_id("ea058cb9-7fd4-49ee-b60b-15ed534b1659")
-    @autotest.name("create_backend_token + decode_backend_token: успешный round-trip")
+    @autotest.name("create_backend_token + decode_backend_token: successful round-trip")
     def test_ea058cb9_encode_decode_returns_sub_and_role(self):
-        with autotest.step("Arrange: формируем user_id и role"):
+        with autotest.step("Arrange: build user_id and role"):
             user_id = "user-700"
             role = "student"
 
-        with autotest.step("Act: encode → decode тем же секретом"):
+        with autotest.step("Act: encode → decode with the same secret"):
             token = create_backend_token(user_id, role)
             payload = decode_backend_token(token, settings.api.jwt_secret)
 
-        with autotest.step("Assert: sub и role совпадают"):
+        with autotest.step("Assert: sub and role match"):
             assert_equal(payload["sub"], user_id, "sub claim")
             assert_equal(payload["role"], role, "role claim")
-            assert_in("exp", payload, "exp claim присутствует")
+            assert_in("exp", payload, "exp claim is present")
 
     @autotest.num("701")
     @autotest.external_id("1b8a1618-2d54-4664-b10d-925546ba3c69")
-    @autotest.name("decode_backend_token: неверный секрет → JWTError")
+    @autotest.name("decode_backend_token: wrong secret → JWTError")
     def test_1b8a1618_wrong_secret_raises_jwterror(self):
-        with autotest.step("Arrange: выпускаем токен реальным секретом"):
+        with autotest.step("Arrange: issue a token with the real secret"):
             token = create_backend_token("user-701", "student")
 
-        with autotest.step("Act + Assert: decode чужим секретом падает с JWTError"):
+        with autotest.step("Act + Assert: decode with the wrong secret fails with JWTError"):
             with pytest.raises(jwt.InvalidTokenError):
                 decode_backend_token(token, "wrong-secret")
 
     @autotest.num("702")
     @autotest.external_id("b1750eef-43fb-4a71-9227-a8f1e8642e3b")
-    @autotest.name("decode_backend_token: истёкший токен → JWTError")
+    @autotest.name("decode_backend_token: expired token → JWTError")
     def test_b1750eef_expired_token_raises_jwterror(self):
-        with autotest.step("Arrange: вручную выпускаем токен с exp в прошлом"):
+        with autotest.step("Arrange: manually issue a token with exp in the past"):
             past = datetime.now(UTC) - timedelta(minutes=10)
             payload = {"sub": "user-702", "role": "student", "exp": past}
             expired_token = jwt.encode(payload, settings.api.jwt_secret, algorithm="HS256")
 
-        with autotest.step("Act + Assert: decode падает с JWTError"):
+        with autotest.step("Act + Assert: decode fails with JWTError"):
             with pytest.raises(jwt.InvalidTokenError):
                 decode_backend_token(expired_token, settings.api.jwt_secret)
 
@@ -70,60 +70,60 @@ class TestVerifyJwtForWs:
     @autotest.external_id("38733e56-6409-4501-93ec-083612d3e79e")
     @autotest.name("verify_jwt_for_ws: None → None")
     async def test_38733e56_none_returns_none(self):
-        with autotest.step("Act: вызываем без токена"):
+        with autotest.step("Act: call without a token"):
             result = await verify_jwt_for_ws(None)
 
-        with autotest.step("Assert: возвращает None"):
+        with autotest.step("Assert: returns None"):
             assert_is_none(result, "result is None")
 
     @autotest.num("704")
     @autotest.external_id("6e9070aa-94f4-4c1b-911d-b41229f98708")
-    @autotest.name("verify_jwt_for_ws: валидный токен → dict с id и role")
+    @autotest.name("verify_jwt_for_ws: valid token → dict with id and role")
     async def test_6e9070aa_valid_token_returns_user_dict(self):
-        with autotest.step("Arrange: выпускаем валидный токен"):
+        with autotest.step("Arrange: issue a valid token"):
             token = create_backend_token("user-704", "admin")
 
-        with autotest.step("Act: верифицируем"):
+        with autotest.step("Act: verify"):
             result = await verify_jwt_for_ws(token)
 
-        with autotest.step("Assert: dict содержит id и role"):
-            assert_true(result is not None, "result не None")
+        with autotest.step("Assert: dict contains id and role"):
+            assert_true(result is not None, "result is not None")
             assert_equal(result["id"], "user-704", "id claim")
             assert_equal(result["role"], "admin", "role claim")
 
     @autotest.num("705")
     @autotest.external_id("87ace33f-5246-4ca8-8de2-31390950a020")
-    @autotest.name("verify_jwt_for_ws: мусорная строка → None")
+    @autotest.name("verify_jwt_for_ws: garbage string → None")
     async def test_87ace33f_garbage_returns_none(self):
-        with autotest.step("Act: пытаемся верифицировать мусор"):
+        with autotest.step("Act: attempt to verify garbage"):
             result = await verify_jwt_for_ws("not-a-real-jwt")
 
-        with autotest.step("Assert: None, исключение проглочено"):
+        with autotest.step("Assert: None, exception is swallowed"):
             assert_is_none(result, "result is None")
 
 
 class TestRequireAdmin:
     @autotest.num("706")
     @autotest.external_id("0708090a-0b0c-4d0e-8f56-890abcdef012")
-    @autotest.name("require_admin: admin проходит, возвращает того же user")
+    @autotest.name("require_admin: admin passes through, returns the same user")
     def test_0708090a_admin_passes_through(self):
-        with autotest.step("Arrange: dict с role=admin"):
+        with autotest.step("Arrange: dict with role=admin"):
             user = {"id": "user-706", "role": "admin"}
 
-        with autotest.step("Act: вызываем зависимость напрямую"):
+        with autotest.step("Act: call the dependency directly"):
             result = require_admin(current_user=user)
 
-        with autotest.step("Assert: получаем тот же объект"):
+        with autotest.step("Assert: get the same object"):
             assert_equal(result, user, "returns the same user dict")
 
     @autotest.num("707")
     @autotest.external_id("08090a0b-0c0d-4e0f-8067-90abcdef0123")
     @autotest.name("require_admin: student → HTTPException 403")
     def test_08090a0b_non_admin_raises_403(self):
-        with autotest.step("Arrange: dict с role=student"):
+        with autotest.step("Arrange: dict with role=student"):
             user = {"id": "user-707", "role": "student"}
 
-        with autotest.step("Act + Assert: ожидаем 403"):
+        with autotest.step("Act + Assert: expect 403"):
             with pytest.raises(HTTPException) as exc_info:
                 require_admin(current_user=user)
             assert_equal(exc_info.value.status_code, 403, "status_code = 403")

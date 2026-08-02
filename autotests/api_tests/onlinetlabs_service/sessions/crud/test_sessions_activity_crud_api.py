@@ -19,18 +19,18 @@ class TestSessionsActivityCrudApi:
 
     @autotest.num("77")
     @autotest.external_id("77111111-7777-4777-7777-777777777777")
-    @autotest.name("Sessions CRUD: activity limit=0 → 422 или 404")
+    @autotest.name("Sessions CRUD: activity limit=0 → 422 or 404")
     async def test_77111111_limit_0_422(self):
         """limit=0 gives 422 from FastAPI Query, or 404 for an unknown session, and both are valid."""
         # Act
-        with autotest.step("GET activity с limit=0"):
+        with autotest.step("GET activity with limit=0"):
             response = await self.sessions_api.get_session_activity(
                 "00000000-0000-0000-0000-000000000000",
                 {"limit": 0},
             )
 
         # Assert
-        with autotest.step("Проверяем статус код 422 или 404"):
+        with autotest.step("Check status code 422 or 404"):
             assert response.status_code in (422, 404), (
-                f"Ожидали 422 или 404, получили {response.status_code}"
+                f"Expected 422 or 404, got {response.status_code}"
             )

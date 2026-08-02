@@ -27,14 +27,14 @@ class TestApiClientRequests:
     @autotest.external_id("gns3-api-client-get-version")
     @autotest.name("GNS3ApiClient.get_version: GET /v3/version")
     async def test_get_version(self, api_client):
-        with autotest.step("Мокаем /v3/version"):
+        with autotest.step("Mock /v3/version"):
             data = build_gns3_version()
             respx.get(f"{BASE_URL}/v3/version").mock(return_value=httpx.Response(200, json=data))
 
-        with autotest.step("Вызываем get_version"):
+        with autotest.step("Call get_version"):
             result = await api_client.get_version()
 
-        with autotest.step("Проверяем"):
+        with autotest.step("Assert"):
             assert result["version"] == "3.0.0"
 
     @respx.mock
@@ -42,16 +42,16 @@ class TestApiClientRequests:
     @autotest.external_id("gns3-api-client-list-nodes")
     @autotest.name("GNS3ApiClient.list_nodes: GET /v3/projects/{id}/nodes")
     async def test_list_nodes(self, api_client):
-        with autotest.step("Мокаем list_nodes"):
+        with autotest.step("Mock list_nodes"):
             nodes = [build_gns3_node()]
             respx.get(f"{BASE_URL}/v3/projects/{PROJECT_ID}/nodes").mock(
                 return_value=httpx.Response(200, json=nodes)
             )
 
-        with autotest.step("Вызываем"):
+        with autotest.step("Call"):
             result = await api_client.list_nodes(PROJECT_ID)
 
-        with autotest.step("Проверяем"):
+        with autotest.step("Assert"):
             assert len(result) == 1
             assert result[0]["name"] == "R1"
 
@@ -60,15 +60,15 @@ class TestApiClientRequests:
     @autotest.external_id("gns3-api-client-start-node")
     @autotest.name("GNS3ApiClient.start_node: POST start")
     async def test_start_node(self, api_client):
-        with autotest.step("Мокаем start_node"):
+        with autotest.step("Mock start_node"):
             respx.post(f"{BASE_URL}/v3/projects/{PROJECT_ID}/nodes/{NODE_ID}/start").mock(
                 return_value=httpx.Response(200, json={"status": "started"})
             )
 
-        with autotest.step("Вызываем"):
+        with autotest.step("Call"):
             result = await api_client.start_node(PROJECT_ID, NODE_ID)
 
-        with autotest.step("Проверяем"):
+        with autotest.step("Assert"):
             assert result["status"] == "started"
 
     @respx.mock
@@ -76,7 +76,7 @@ class TestApiClientRequests:
     @autotest.external_id("gns3-api-client-create-link")
     @autotest.name("GNS3ApiClient.create_link: POST link")
     async def test_create_link(self, api_client):
-        with autotest.step("Мокаем create_link"):
+        with autotest.step("Mock create_link"):
             link_nodes = [
                 {"node_id": "node-1", "adapter_number": 0, "port_number": 0},
                 {"node_id": "node-2", "adapter_number": 0, "port_number": 0},
@@ -85,10 +85,10 @@ class TestApiClientRequests:
                 return_value=httpx.Response(201, json={"link_id": "new-link"})
             )
 
-        with autotest.step("Вызываем"):
+        with autotest.step("Call"):
             result = await api_client.create_link(PROJECT_ID, link_nodes)
 
-        with autotest.step("Проверяем"):
+        with autotest.step("Assert"):
             assert result["link_id"] == "new-link"
 
     @respx.mock
@@ -96,15 +96,15 @@ class TestApiClientRequests:
     @autotest.external_id("gns3-api-client-delete-link-204")
     @autotest.name("GNS3ApiClient.delete_link: 204 → None")
     async def test_delete_link(self, api_client):
-        with autotest.step("Мокаем delete_link 204"):
+        with autotest.step("Mock delete_link 204"):
             respx.delete(f"{BASE_URL}/v3/projects/{PROJECT_ID}/links/{LINK_ID}").mock(
                 return_value=httpx.Response(204)
             )
 
-        with autotest.step("Вызываем"):
+        with autotest.step("Call"):
             result = await api_client.delete_link(PROJECT_ID, LINK_ID)
 
-        with autotest.step("None при 204"):
+        with autotest.step("None on 204"):
             assert result is None
 
 
@@ -114,12 +114,12 @@ class TestApiClientErrors:
     @autotest.external_id("gns3-api-client-404")
     @autotest.name("GNS3ApiClient: 404 → TargetSystemAPIError")
     async def test_404(self, api_client):
-        with autotest.step("Мокаем 404"):
+        with autotest.step("Mock 404"):
             respx.get(f"{BASE_URL}/v3/version").mock(
                 return_value=httpx.Response(404, text="Not Found")
             )
 
-        with autotest.step("Проверяем исключение"):
+        with autotest.step("Assert the exception"):
             with pytest.raises(TargetSystemAPIError) as exc_info:
                 await api_client.get_version()
             assert exc_info.value.status_code == 404
@@ -129,12 +129,12 @@ class TestApiClientErrors:
     @autotest.external_id("gns3-api-client-500")
     @autotest.name("GNS3ApiClient: 500 → TargetSystemAPIError")
     async def test_500(self, api_client):
-        with autotest.step("Мокаем 500"):
+        with autotest.step("Mock 500"):
             respx.get(f"{BASE_URL}/v3/version").mock(
                 return_value=httpx.Response(500, text="Internal Server Error")
             )
 
-        with autotest.step("Проверяем исключение"):
+        with autotest.step("Assert the exception"):
             with pytest.raises(TargetSystemAPIError) as exc_info:
                 await api_client.get_version()
             assert exc_info.value.status_code == 500
@@ -144,10 +144,10 @@ class TestApiClientErrors:
     @autotest.external_id("gns3-api-client-connection-error")
     @autotest.name("GNS3ApiClient: ConnectError → TargetSystemConnectionError")
     async def test_connection_error(self, api_client):
-        with autotest.step("Мокаем ConnectError"):
+        with autotest.step("Mock ConnectError"):
             respx.get(f"{BASE_URL}/v3/version").mock(side_effect=httpx.ConnectError("refused"))
 
-        with autotest.step("Проверяем исключение"):
+        with autotest.step("Assert the exception"):
             with pytest.raises(TargetSystemConnectionError):
                 await api_client.get_version()
 
@@ -156,9 +156,9 @@ class TestApiClientErrors:
     @autotest.external_id("gns3-api-client-timeout")
     @autotest.name("GNS3ApiClient: ReadTimeout → TargetSystemConnectionError")
     async def test_timeout(self, api_client):
-        with autotest.step("Мокаем ReadTimeout"):
+        with autotest.step("Mock ReadTimeout"):
             respx.get(f"{BASE_URL}/v3/version").mock(side_effect=httpx.ReadTimeout("timeout"))
 
-        with autotest.step("Проверяем исключение"):
+        with autotest.step("Assert the exception"):
             with pytest.raises(TargetSystemConnectionError):
                 await api_client.get_version()

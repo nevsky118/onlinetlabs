@@ -14,9 +14,9 @@ pytestmark = [pytest.mark.unit]
 
 @autotest.num("300")
 @autotest.external_id("d8f8a39f-ecb0-451c-bd04-42a14c6862e3")
-@autotest.name("struggle_detected: форма события с правильными полями")
+@autotest.name("struggle_detected: event shape has the right fields")
 def test_d8f8a39f_struggle_event_shape():
-    with autotest.step("Создаём событие затруднения"):
+    with autotest.step("Create a struggle event"):
         e = event_struggle_detected(
             "s1",
             "u1",
@@ -24,30 +24,30 @@ def test_d8f8a39f_struggle_event_shape():
             confidence=0.8,
             crossed=["error_repeat_count>=3"],
         )
-    with autotest.step("Проверяем source и kind"):
+    with autotest.step("Check source and kind"):
         assert e.source == ActivitySource.INTERVENTION
         assert e.kind == ActivityKind.STRUGGLE_DETECTED
-    with autotest.step("Проверяем agent"):
+    with autotest.step("Check agent"):
         assert e.agent == "analytics"
-    with autotest.step("Проверяем summary на русский/английский текст"):
+    with autotest.step("Check summary for Russian/English text"):
         assert "повтор" in e.summary.lower() or "repeating" in e.summary.lower()
-    with autotest.step("Проверяем detail"):
+    with autotest.step("Check detail"):
         assert e.detail["confidence"] == 0.8
-    with autotest.step("Проверяем автогенерированные поля"):
+    with autotest.step("Check auto-generated fields"):
         assert e.id
         assert e.ts is not None
 
 
 @autotest.num("301")
 @autotest.external_id("ed2c4224-35bd-474c-a129-f3bdc9bcaee4")
-@autotest.name("model_selected: событие выбора модели")
+@autotest.name("model_selected: model selection event")
 def test_ed2c4224_model_selected_event_shape():
-    with autotest.step("Создаём событие выбора модели"):
+    with autotest.step("Create a model selection event"):
         e = event_model_selected("s1", "u1", model_id="yandex-gpt-5.1", provider="yandex")
-    with autotest.step("Проверяем source и kind"):
+    with autotest.step("Check source and kind"):
         assert e.source == ActivitySource.CHAT
         assert e.kind == ActivityKind.MODEL_SELECTED
-    with autotest.step("Проверяем summary и detail"):
+    with autotest.step("Check summary and detail"):
         assert e.summary
         assert e.detail["model_id"] == "yandex-gpt-5.1"
         assert e.detail["provider"] == "yandex"
@@ -55,14 +55,14 @@ def test_ed2c4224_model_selected_event_shape():
 
 @autotest.num("302")
 @autotest.external_id("3d9406cb-c4ac-495d-9bd8-2b74fc1736fc")
-@autotest.name("tool_call: событие вызова инструмента")
+@autotest.name("tool_call: tool call event")
 def test_3d9406cb_tool_call_event_shape():
-    with autotest.step("Создаём событие вызова инструмента"):
+    with autotest.step("Create a tool call event"):
         e = event_tool_call("s1", "u1", name="gns3_get_nodes", args_preview='{"project_id": "abc"}')
-    with autotest.step("Проверяем source и kind"):
+    with autotest.step("Check source and kind"):
         assert e.source == ActivitySource.CHAT
         assert e.kind == ActivityKind.TOOL_CALL
-    with autotest.step("Проверяем summary и detail"):
+    with autotest.step("Check summary and detail"):
         assert e.summary
         assert e.detail["name"] == "gns3_get_nodes"
         assert e.detail["args_preview"]

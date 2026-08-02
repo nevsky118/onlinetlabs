@@ -31,9 +31,9 @@ class FakeContextMCPClient:
 class TestAgentContext:
     @autotest.num("550")
     @autotest.external_id("44f74056-027a-4293-b00c-0e500dee5d38")
-    @autotest.name("AgentContext.to_prompt: форматирует контекст")
+    @autotest.name("AgentContext.to_prompt: formats the context")
     def test_44f74056_to_prompt(self):
-        with autotest.step("Создаём AgentContext"):
+        with autotest.step("Create an AgentContext"):
             ctx = AgentContext(
                 topology_summary="2 ноды (R1 running, R2 stopped), 1 линк",
                 recent_errors=["Interface Gi0/0 down"],
@@ -43,17 +43,17 @@ class TestAgentContext:
                 features_summary="10 событий, 3 повтора ошибки",
             )
 
-        with autotest.step("Проверяем to_prompt"):
+        with autotest.step("Check to_prompt"):
             prompt = ctx.to_prompt("en")
-            assert_true("R1 running" in prompt, "содержит топологию")
-            assert_true("Interface Gi0/0 down" in prompt, "содержит ошибку")
-            assert_true("repeating_errors" in prompt, "содержит тип struggle")
+            assert_true("R1 running" in prompt, "contains the topology")
+            assert_true("Interface Gi0/0 down" in prompt, "contains the error")
+            assert_true("repeating_errors" in prompt, "contains the struggle type")
 
     @autotest.num("551")
     @autotest.external_id("468c37ba-9575-4399-aef8-423e249b9902")
-    @autotest.name("AgentContext.to_prompt: пустой контекст не падает")
+    @autotest.name("AgentContext.to_prompt: empty context does not crash")
     def test_468c37ba_to_prompt_empty(self):
-        with autotest.step("Создаём пустой AgentContext"):
+        with autotest.step("Create an empty AgentContext"):
             ctx = AgentContext(
                 topology_summary="",
                 recent_errors=[],
@@ -63,18 +63,18 @@ class TestAgentContext:
                 features_summary="",
             )
 
-        with autotest.step("to_prompt возвращает строку"):
+        with autotest.step("to_prompt returns a string"):
             prompt = ctx.to_prompt("en")
-            assert_true(isinstance(prompt, str), "строка")
+            assert_true(isinstance(prompt, str), "string")
 
 
 class TestMCPContextBuilder:
     @autotest.num("552")
     @autotest.external_id("c362feb3-de89-49b5-b627-cc4daec9ee89")
-    @autotest.name("MCPContextBuilder.build: собирает контекст из MCP")
+    @autotest.name("MCPContextBuilder.build: assembles context from MCP")
     async def test_c362feb3_build(self):
         now = datetime.now(tz=UTC)
-        with autotest.step("Создаём фейк MCP с данными"):
+        with autotest.step("Create a fake MCP with data"):
             mcp = FakeContextMCPClient(
                 components=[
                     Component(id="n1", name="R1", type="qemu", status="running", summary=""),
@@ -100,19 +100,19 @@ class TestMCPContextBuilder:
             )
             builder = MCPContextBuilder(mcp)
 
-        with autotest.step("Собираем контекст"):
+        with autotest.step("Build the context"):
             ctx = await builder.build(None, None, "repeating_errors", "OSPF timeout", "en")
 
-        with autotest.step("Проверяем AgentContext"):
-            assert_true("R1" in ctx.topology_summary, "содержит R1")
-            assert_equal(len(ctx.recent_errors), 1, "1 ошибка")
-            assert_equal(ctx.struggle_type, "repeating_errors", "тип struggle")
+        with autotest.step("Check the AgentContext"):
+            assert_true("R1" in ctx.topology_summary, "contains R1")
+            assert_equal(len(ctx.recent_errors), 1, "1 error")
+            assert_equal(ctx.struggle_type, "repeating_errors", "struggle type")
 
     @autotest.num("553")
     @autotest.external_id("be858141-1e28-43dc-809b-062c505903e0")
-    @autotest.name("MCPContextBuilder.build: MCP недоступен → пустой контекст")
+    @autotest.name("MCPContextBuilder.build: MCP unavailable → empty context")
     async def test_be858141_build_mcp_down(self):
-        with autotest.step("Создаём MCP который бросает исключения"):
+        with autotest.step("Create an MCP that raises exceptions"):
 
             class FailingMCP:
                 async def list_components(self, ctx):
@@ -126,9 +126,9 @@ class TestMCPContextBuilder:
 
             builder = MCPContextBuilder(FailingMCP())
 
-        with autotest.step("build не падает"):
+        with autotest.step("build does not crash"):
             ctx = await builder.build(None, None, None, None, "en")
 
-        with autotest.step("Контекст пустой но валидный"):
-            assert_equal(ctx.topology_summary, "", "пустая топология")
-            assert_equal(ctx.recent_errors, [], "нет ошибок")
+        with autotest.step("Context is empty but valid"):
+            assert_equal(ctx.topology_summary, "", "empty topology")
+            assert_equal(ctx.recent_errors, [], "no errors")

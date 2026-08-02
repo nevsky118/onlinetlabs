@@ -23,30 +23,30 @@ class TestSessionsLaunchSmokeApi:
 
     @autotest.num("50")
     @autotest.external_id("b1c2d3e4-f5a6-7890-bcde-f01234567890")
-    @autotest.name("Smoke: POST /users/me/sessions — 201 launch autotest-lab, тело содержит session_id/gns3_*/status=active")
+    @autotest.name("Smoke: POST /users/me/sessions — 201 launch autotest-lab, body contains session_id/gns3_*/status=active")
     async def test_b1c2d3e4_launch_autotest_lab(self):
         """Launching autotest-lab returns 201 with a full response body and status=active."""
         # Act
-        with autotest.step("Запускаем сессию для autotest-lab через хелпер"):
+        with autotest.step("Launch the session for autotest-lab via the helper"):
             body = await self.sessions_helper.launch_session("autotest-lab")
 
         # Assert
-        with autotest.step("Проверяем наличие session_id"):
-            assert_is_not_none(body.get("session_id"), "session_id не должен быть None")
+        with autotest.step("Check session_id is present"):
+            assert_is_not_none(body.get("session_id"), "session_id must not be None")
 
-        with autotest.step("Проверяем status=active"):
-            assert body.get("status") == "active", f"Ожидали status=active, получили: {body.get('status')}"
+        with autotest.step("Check status=active"):
+            assert body.get("status") == "active", f"Expected status=active, got: {body.get('status')}"
 
-        with autotest.step("Проверяем наличие gns3_username"):
-            assert_is_not_none(body.get("gns3_username"), "gns3_username не должен быть None")
+        with autotest.step("Check gns3_username is present"):
+            assert_is_not_none(body.get("gns3_username"), "gns3_username must not be None")
 
-        with autotest.step("Проверяем наличие gns3_password"):
-            assert_is_not_none(body.get("gns3_password"), "gns3_password не должен быть None")
+        with autotest.step("Check gns3_password is present"):
+            assert_is_not_none(body.get("gns3_password"), "gns3_password must not be None")
 
-        with autotest.step("Проверяем наличие gns3_url"):
-            assert_is_not_none(body.get("gns3_url"), "gns3_url не должен быть None")
+        with autotest.step("Check gns3_url is present"):
+            assert_is_not_none(body.get("gns3_url"), "gns3_url must not be None")
 
-        with autotest.step("Проверяем gns3_url использует публичный хост, не Docker-internal"):
+        with autotest.step("Check gns3_url uses a public host, not Docker-internal"):
             assert "gns3-server" not in body["gns3_url"], (
-                f"gns3_url должен быть browser-reachable (public), получили: {body['gns3_url']}"
+                f"gns3_url must be browser-reachable (public), got: {body['gns3_url']}"
             )

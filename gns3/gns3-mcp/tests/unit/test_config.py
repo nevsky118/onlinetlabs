@@ -11,12 +11,12 @@ pytestmark = [pytest.mark.unit, pytest.mark.config]
 class TestConfigModel:
     @autotest.num("320")
     @autotest.external_id("gns3-config-defaults")
-    @autotest.name("GNS3MCPConfigModel: дефолтные значения")
+    @autotest.name("GNS3MCPConfigModel: default values")
     def test_defaults(self):
-        with autotest.step("Создаём конфиг по умолчанию"):
+        with autotest.step("Create the default config"):
             cfg = GNS3MCPConfigModel()
 
-        with autotest.step("Проверяем дефолты"):
+        with autotest.step("Assert the defaults"):
             assert cfg.mcp.server_name == "gns3"
             assert cfg.mcp.transport == "streamable-http"
             assert cfg.mcp.host == "127.0.0.1"
@@ -31,9 +31,9 @@ class TestConfigModel:
 
     @autotest.num("321")
     @autotest.external_id("gns3-config-invalid-transport")
-    @autotest.name("MCPConfig: невалидный transport")
+    @autotest.name("MCPConfig: invalid transport")
     def test_invalid_transport(self):
-        with autotest.step("Создаём конфиг с invalid transport"):
+        with autotest.step("Create a config with an invalid transport"):
             with pytest.raises(ValidationError):
                 MCPConfig(transport="grpc")
 
@@ -41,21 +41,21 @@ class TestConfigModel:
 class TestEnvConfigLoader:
     @autotest.num("322")
     @autotest.external_id("gns3-config-loader-defaults")
-    @autotest.name("EnvConfigLoader: пустой dict → дефолтные значения")
+    @autotest.name("EnvConfigLoader: empty dict → default values")
     def test_build_defaults(self):
-        with autotest.step("Строим из пустого dict"):
+        with autotest.step("Build from an empty dict"):
             cfg = EnvConfigLoader._build({})
 
-        with autotest.step("Проверяем дефолты"):
+        with autotest.step("Assert the defaults"):
             assert cfg.mcp.server_name == "gns3"
             assert cfg.mcp.port == 8100
             assert cfg.pool.max_size == 200
 
     @autotest.num("323")
     @autotest.external_id("gns3-config-loader-overrides")
-    @autotest.name("EnvConfigLoader: переопределение через env vars")
+    @autotest.name("EnvConfigLoader: overrides via env vars")
     def test_build_overrides(self):
-        with autotest.step("Строим с кастомными значениями"):
+        with autotest.step("Build with custom values"):
             cfg = EnvConfigLoader._build(
                 {
                     "MCP_SERVER_NAME": "custom",
@@ -66,7 +66,7 @@ class TestEnvConfigLoader:
                 }
             )
 
-        with autotest.step("Проверяем переопределения"):
+        with autotest.step("Assert the overrides"):
             assert cfg.mcp.server_name == "custom"
             assert cfg.mcp.port == 9000
             assert cfg.pool.max_size == 10
@@ -77,8 +77,8 @@ class TestEnvConfigLoader:
     @autotest.external_id("gns3-config-loader-stdio-transport")
     @autotest.name("EnvConfigLoader: stdio transport")
     def test_stdio_transport(self):
-        with autotest.step("Строим с transport=stdio"):
+        with autotest.step("Build with transport=stdio"):
             cfg = EnvConfigLoader._build({"MCP_TRANSPORT": "stdio"})
 
-        with autotest.step("Проверяем"):
+        with autotest.step("Assert"):
             assert cfg.mcp.transport == "stdio"

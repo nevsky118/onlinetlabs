@@ -97,16 +97,16 @@ async def db_factory():
 class TestEndSessionFinalizes:
     @autotest.num("1302")
     @autotest.external_id("9c5b5efc-c9a0-4d89-9508-196d8785783f")
-    @autotest.name("end_session: создаёт строку ExperimentMetrics с корректными полями")
+    @autotest.name("end_session: creates an ExperimentMetrics row with correct fields")
     async def test_9c5b5efc_inserts_experiment_metrics_row(self, db_factory):
         engine, session_factory = db_factory
-        with autotest.step("Act: вызов end_session"):
+        with autotest.step("Act: call end_session"):
             async with session_factory() as db:
                 result = await end_session(db, "sess-1", "u1", "ended")
-        with autotest.step("Assert: сессия завершена и статус корректен"):
-            assert_is_not_none(result, "результат не None")
-            assert_equal(result.status, "ended", "статус = ended")
-        with autotest.step("Assert: строка ExperimentMetrics создана с правильными полями"):
+        with autotest.step("Assert: session ended and status is correct"):
+            assert_is_not_none(result, "result is not None")
+            assert_equal(result.status, "ended", "status = ended")
+        with autotest.step("Assert: ExperimentMetrics row created with correct fields"):
             async with session_factory() as db:
                 rows = (
                     (
@@ -119,7 +119,7 @@ class TestEndSessionFinalizes:
                     .scalars()
                     .all()
                 )
-            assert_equal(len(rows), 1, "ровно одна строка метрик")
+            assert_equal(len(rows), 1, "exactly one metrics row")
             m = rows[0]
             assert_equal(m.session_id, "sess-1", "session_id")
             assert_equal(m.user_id, "u1", "user_id")
@@ -129,30 +129,30 @@ class TestEndSessionFinalizes:
             assert_equal(m.control_arm, "closed", "control_arm = closed")
             # base_arm = the user's persistent training arm (User.control_arm)
             assert_equal(m.base_arm, "closed", "base_arm = closed")
-            assert_equal(m.interventions_received, 1, "1 интервенция")
-            assert_equal(m.total_errors, 1, "1 ошибка")
+            assert_equal(m.interventions_received, 1, "1 intervention")
+            assert_equal(m.total_errors, 1, "1 error")
             assert_true(m.total_time_seconds > 0, "total_time_seconds > 0")
             # current_step=1 of 2 (LabStep fallback, no spec) → not completed
-            assert_false(m.completed, "не завершено")
+            assert_false(m.completed, "not completed")
 
     @autotest.num("1303")
     @autotest.external_id("4750257f-ef70-4e5b-8b1d-e6c106b90512")
-    @autotest.name("end_session: ошибка финализации не ломает завершение сессии")
+    @autotest.name("end_session: finalization error does not break session end")
     async def test_4750257f_finalization_failure_does_not_break_end_session(
         self, db_factory, monkeypatch
     ):
         engine, session_factory = db_factory
-        with autotest.step("Arrange: патчим _finalize_experiment_metrics на исключение"):
+        with autotest.step("Arrange: patch _finalize_experiment_metrics to raise"):
             import sessions.services.lifecycle as lc
 
             async def _boom(*args, **kwargs):
                 raise RuntimeError("финализация упала")
 
             monkeypatch.setattr(lc, "_finalize_experiment_metrics", _boom)
-        with autotest.step("Act: вызов end_session несмотря на падение финализации"):
+        with autotest.step("Act: call end_session despite finalization failure"):
             async with session_factory() as db:
                 session = await end_session(db, "sess-1", "u1", "ended")
-        with autotest.step("Assert: сессия завершилась корректно"):
-            assert_is_not_none(session, "сессия не None")
-            assert_equal(session.status, "ended", "статус = ended")
-            assert_is_not_none(session.ended_at, "ended_at проставлен")
+        with autotest.step("Assert: session ended correctly"):
+            assert_is_not_none(session, "session is not None")
+            assert_equal(session.status, "ended", "status = ended")
+            assert_is_not_none(session.ended_at, "ended_at is set")

@@ -93,13 +93,13 @@ class TestProgressResponses:
 
     @autotest.num("2505")
     @autotest.external_id("0155438f-4bde-4e28-9aa5-57921a6a4779")
-    @autotest.name("GET /progress: полный JSON прогресса по курсам и лабам пиксель-в-пиксель")
+    @autotest.name("GET /progress: full course/lab progress JSON, pixel-for-pixel")
     async def test_0155438f_get_progress_exact_json(self):
         with autotest.step("Act: GET /progress"):
             async with self._client() as client:
                 resp = await client.get("/progress")
 
-        with autotest.step("Assert: 200 и полный JSON равен ожидаемому"):
+        with autotest.step("Assert: 200 and full JSON matches the expected value"):
             assert_equal(resp.status_code, 200, "status 200")
             assert_equal(
                 resp.json(),
@@ -126,18 +126,18 @@ class TestProgressResponses:
                         }
                     ],
                 },
-                "полный JSON прогресса",
+                "full progress JSON",
             )
 
     @autotest.num("2506")
     @autotest.external_id("2a344044-f0ba-45e3-8cfd-df8eb011ee71")
-    @autotest.name("GET /progress/labs/{slug}: полный JSON прогресса лабы с попытками")
+    @autotest.name("GET /progress/labs/{slug}: full lab progress JSON with attempts")
     async def test_2a344044_get_lab_progress_exact_json(self):
         with autotest.step("Act: GET /progress/labs/ospf-lab"):
             async with self._client() as client:
                 resp = await client.get("/progress/labs/ospf-lab")
 
-        with autotest.step("Assert: 200 и полный JSON равен ожидаемому"):
+        with autotest.step("Assert: 200 and full JSON matches the expected value"):
             assert_equal(resp.status_code, 200, "status 200")
             assert_equal(
                 resp.json(),
@@ -161,18 +161,18 @@ class TestProgressResponses:
                         }
                     ],
                 },
-                "полный JSON прогресса лабы с попытками",
+                "full lab progress JSON with attempts",
             )
 
     @autotest.num("2507")
     @autotest.external_id("b628b96a-a6c7-4c6f-8660-a76f406ae2dc")
-    @autotest.name("POST /progress/labs/{slug}/start: полный JSON начатого прогресса")
+    @autotest.name("POST /progress/labs/{slug}/start: full JSON of the started progress")
     async def test_b628b96a_start_lab_exact_json(self):
         with autotest.step("Act: POST /progress/labs/bgp-lab/start"):
             async with self._client() as client:
                 resp = await client.post("/progress/labs/bgp-lab/start")
 
-        with autotest.step("Assert: 200 и JSON новой записи прогресса лабы"):
+        with autotest.step("Assert: 200 and JSON of the new lab progress record"):
             assert_equal(resp.status_code, 200, "status 200")
             body = resp.json()
             assert_equal(
@@ -185,7 +185,7 @@ class TestProgressResponses:
                     "started_at": body["started_at"],
                     "completed_at": None,
                 },
-                "поля нового прогресса лабы",
+                "fields of the new lab progress",
             )
             assert_equal(
                 set(body.keys()),
@@ -198,21 +198,21 @@ class TestProgressResponses:
                     "started_at",
                     "completed_at",
                 },
-                "набор полей ответа",
+                "set of response fields",
             )
 
     @autotest.num("2508")
     @autotest.external_id("d4e4685d-6253-43e2-aeea-fee865fa3616")
-    @autotest.name("POST /progress/labs/{slug}/steps/{slug}/attempt: полный JSON попытки")
+    @autotest.name("POST /progress/labs/{slug}/steps/{slug}/attempt: full attempt JSON")
     async def test_d4e4685d_record_attempt_exact_json(self):
-        with autotest.step("Act: POST попытки прохождения шага"):
+        with autotest.step("Act: POST a step attempt"):
             async with self._client() as client:
                 resp = await client.post(
                     "/progress/labs/ospf-lab/steps/step-2/attempt",
                     json={"result": "fail", "score": 25.0, "error_details": {"reason": "timeout"}},
                 )
 
-        with autotest.step("Assert: 200 и JSON новой попытки"):
+        with autotest.step("Assert: 200 and JSON of the new attempt"):
             assert_equal(resp.status_code, 200, "status 200")
             body = resp.json()
             assert_equal(
@@ -225,7 +225,7 @@ class TestProgressResponses:
                     "started_at": body["started_at"],
                     "ended_at": None,
                 },
-                "поля новой попытки (error_details не в ответе)",
+                "fields of the new attempt (error_details not in the response)",
             )
             assert_equal(
                 set(body.keys()),
@@ -238,5 +238,5 @@ class TestProgressResponses:
                     "started_at",
                     "ended_at",
                 },
-                "набор полей ответа",
+                "set of response fields",
             )

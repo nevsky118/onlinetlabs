@@ -46,7 +46,7 @@ def _write_lab_mdx(labs_dir: Path, slug: str, environment: str = "gns3") -> None
 class TestSyncContent:
     @autotest.num("1824")
     @autotest.external_id("9b9e4305-4f22-479f-9635-fc5b1a87e1e9")
-    @autotest.name("sync_content: environment_type проставляется из frontmatter")
+    @autotest.name("sync_content: environment_type is set from frontmatter")
     async def test_9b9e4305_environment_type_from_frontmatter(self, tmp_path, monkeypatch):
         labs_dir = tmp_path / "labs"
         _write_lab_mdx(labs_dir, "demo-lab", environment="gns3")
@@ -55,24 +55,24 @@ class TestSyncContent:
         engine = await _make_db()
         factory = async_sessionmaker(engine, expire_on_commit=False)
 
-        with autotest.step("Act: sync_labs на tmp content"):
+        with autotest.step("Act: sync_labs on tmp content"):
             async with factory() as db:
                 count = await sc.sync_labs(db)
 
-        with autotest.step("Assert: одна лаба создана"):
+        with autotest.step("Assert: one lab created"):
             assert_equal(count, 1, "count=1")
 
         with autotest.step("Assert: environment_type == gns3"):
             async with factory() as db:
                 lab = await db.get(Lab, "demo-lab")
-            assert_true(lab is not None, "лаба найдена")
+            assert_true(lab is not None, "lab found")
             assert_equal(lab.environment_type, "gns3", "environment_type=gns3")
 
         await engine.dispose()
 
     @autotest.num("1825")
     @autotest.external_id("b1dc0f5d-af40-46b6-86fb-c96091c23529")
-    @autotest.name("sync_content: повторный прогон не создаёт дубль (idempotent upsert)")
+    @autotest.name("sync_content: re-running does not create a duplicate (idempotent upsert)")
     async def test_b1dc0f5d_idempotent_upsert(self, tmp_path, monkeypatch):
         labs_dir = tmp_path / "labs"
         _write_lab_mdx(labs_dir, "demo-lab", environment="gns3")
@@ -81,21 +81,21 @@ class TestSyncContent:
         engine = await _make_db()
         factory = async_sessionmaker(engine, expire_on_commit=False)
 
-        with autotest.step("Act: запустить sync_labs дважды"):
+        with autotest.step("Act: run sync_labs twice"):
             async with factory() as db:
                 await sc.sync_labs(db)
             async with factory() as db:
                 await sc.sync_labs(db)
 
-        with autotest.step("Assert: ровно одна строка в таблице"):
+        with autotest.step("Assert: exactly one row in the table"):
             from sqlalchemy import func, select
 
             async with factory() as db:
                 result = await db.execute(select(func.count()).select_from(Lab))
                 row_count = result.scalar()
-            assert_equal(row_count, 1, "ровно 1 строка после двух прогонов")
+            assert_equal(row_count, 1, "exactly 1 row after two runs")
 
-        with autotest.step("Assert: environment_type == gns3 после второго прогона"):
+        with autotest.step("Assert: environment_type == gns3 after the second run"):
             async with factory() as db:
                 lab = await db.get(Lab, "demo-lab")
             assert_equal(lab.environment_type, "gns3", "environment_type=gns3")

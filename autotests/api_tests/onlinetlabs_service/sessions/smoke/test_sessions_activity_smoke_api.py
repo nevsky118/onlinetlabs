@@ -36,10 +36,10 @@ class TestSessionsActivitySmokeApi:
             response = await self.sessions_api.get_session_activity(session_id, query.data)
 
         # Assert
-        with autotest.step("Проверяем статус код 200"):
+        with autotest.step("Check status code 200"):
             check_response_status(response, 200)
 
-        with autotest.step("Проверяем наличие полей events и nextCursor"):
+        with autotest.step("Check fields events and nextCursor are present"):
             body = response.json()
-            assert_in("events", body, "поле events отсутствует")
-            assert_in("nextCursor", body, "поле nextCursor отсутствует")
+            assert_in("events", body, "field events is missing")
+            assert_in("nextCursor", body, "field nextCursor is missing")

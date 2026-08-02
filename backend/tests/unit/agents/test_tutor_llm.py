@@ -15,9 +15,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.agents]
 class TestTutorAgentLLM:
     @autotest.num("560")
     @autotest.external_id("77ad961e-74be-494c-9f9f-81712382decd")
-    @autotest.name("TutorAgent: LLM failure re-raise, шаблонного ответа нет")
+    @autotest.name("TutorAgent: LLM failure re-raise, no canned fallback response")
     async def test_77ad961e_run_llm_failure_raises(self, config_model, monkeypatch):
-        with autotest.step("Мок LLM выбрасывает"):
+        with autotest.step("Mock LLM raises"):
             agent = TutorAgent(config_model)
             monkeypatch.setattr(
                 agent,
@@ -30,14 +30,16 @@ class TestTutorAgentLLM:
                 question="Что такое OSPF?",
             )
 
-        with autotest.step("Ожидаем re-raise"), pytest.raises(Exception):
+        with autotest.step("Expect re-raise"), pytest.raises(Exception):
             await agent.run(inp)
 
     @autotest.num("561")
     @autotest.external_id("65e37fbf-3605-4faa-a9d1-65a2ebe1d8b7")
-    @autotest.name("TutorAgent: run с agent_context, реальный Agent.run даёт ответ из output")
+    @autotest.name(
+        "TutorAgent: run with agent_context, real Agent.run produces an answer from output"
+    )
     async def test_65e37fbf_run_with_context(self, config_model, monkeypatch):
-        with autotest.step("Создаём агент с контекстом, подменяем _build_model на TestModel"):
+        with autotest.step("Create agent with context, patch _build_model to TestModel"):
             agent = TutorAgent(config_model)
             context = AgentContextData().context
             mid = config_model.agents.intervention_model
@@ -52,9 +54,9 @@ class TestTutorAgentLLM:
                 agent_context=context,
             )
 
-        with autotest.step("Вызываем run (без сети, модель подменена на TestModel)"):
+        with autotest.step("Call run (no network, model patched to TestModel)"):
             result = await agent.run(inp, model_id=mid)
 
-        with autotest.step("Ответ собран из result.output реального прогона"):
-            assert_true(isinstance(result, TutorResponse), f"тип: {type(result)}")
+        with autotest.step("Answer is built from result.output of a real run"):
+            assert_true(isinstance(result, TutorResponse), f"type: {type(result)}")
             assert_equal(result.answer, canned, "answer == canned output")

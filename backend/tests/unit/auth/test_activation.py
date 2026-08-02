@@ -33,60 +33,60 @@ _ADMIN_USER = {"id": "admin-001", "role": "admin", "is_active": True}
 class TestRequireActiveUser:
     @autotest.num("1956")
     @autotest.external_id("ed94fd09-5b5f-4345-b41f-5364f08d945c")
-    @autotest.name("require_active_user: активный пользователь проходит")
+    @autotest.name("require_active_user: active user passes")
     def test_ed94fd09_active_passes(self):
-        with autotest.step("Arrange: dict с is_active=True"):
+        with autotest.step("Arrange: dict with is_active=True"):
             user = {"id": "u1", "role": "student", "is_active": True}
 
-        with autotest.step("Act: вызываем зависимость напрямую"):
+        with autotest.step("Act: call the dependency directly"):
             result = require_active_user(current_user=user)
 
-        with autotest.step("Assert: возвращает тот же объект"):
-            assert_true(result is user, "тот же dict")
+        with autotest.step("Assert: returns the same object"):
+            assert_true(result is user, "same dict")
 
     @autotest.num("1957")
     @autotest.external_id("fd2b3b80-0116-4ef5-92b3-b23626fc27c1")
-    @autotest.name("require_active_user: неактивный пользователь → 403")
+    @autotest.name("require_active_user: inactive user → 403")
     def test_fd2b3b80_inactive_raises_403(self):
-        with autotest.step("Arrange: dict с is_active=False"):
+        with autotest.step("Arrange: dict with is_active=False"):
             user = {"id": "u2", "role": "student", "is_active": False}
 
-        with autotest.step("Act + Assert: ожидаем 403"):
+        with autotest.step("Act + Assert: expect 403"):
             raised = False
             try:
                 require_active_user(current_user=user)
             except LocalizedError as exc:
                 raised = True
-                assert_equal(exc.status_code, 403, "статус 403")
+                assert_equal(exc.status_code, 403, "status 403")
                 assert_equal(exc.key, "error.auth.inactive_account", "code")
-            assert_true(raised, "LocalizedError был поднят")
+            assert_true(raised, "LocalizedError was raised")
 
 
 class TestTokenIsActiveRoundTrip:
     @autotest.num("1958")
     @autotest.external_id("362e970f-def2-4815-a07a-bd6f7d870adf")
-    @autotest.name("JWT round-trip: is_active=True сохраняется в токене")
+    @autotest.name("JWT round-trip: is_active=True is preserved in the token")
     def test_362e970f_is_active_true_round_trip(self):
         from auth.dependencies import decode_backend_token
 
-        with autotest.step("Act: создать токен с is_active=True"):
+        with autotest.step("Act: create a token with is_active=True"):
             token = create_backend_token("u-1958", "student", is_active=True)
             payload = decode_backend_token(token, settings.api.jwt_secret)
 
-        with autotest.step("Assert: is_active=True в payload"):
+        with autotest.step("Assert: is_active=True in payload"):
             assert_true(payload.get("is_active") is True, "is_active=True")
 
     @autotest.num("1959")
     @autotest.external_id("83f2ecf0-dbd8-4d56-ad9d-20541258de8e")
-    @autotest.name("JWT round-trip: is_active=False сохраняется в токене")
+    @autotest.name("JWT round-trip: is_active=False is preserved in the token")
     def test_83f2ecf0_is_active_false_round_trip(self):
         from auth.dependencies import decode_backend_token
 
-        with autotest.step("Act: создать токен с is_active=False (дефолт)"):
+        with autotest.step("Act: create a token with is_active=False (default)"):
             token = create_backend_token("u-1959", "student")
             payload = decode_backend_token(token, settings.api.jwt_secret)
 
-        with autotest.step("Assert: is_active=False в payload"):
+        with autotest.step("Assert: is_active=False in payload"):
             assert_true(payload.get("is_active") is False, "is_active=False")
 
 
@@ -103,9 +103,9 @@ class TestNewUserActivation:
 
     @autotest.num("1960")
     @autotest.external_id("38cd1a38-0865-4086-b579-84272e64eded")
-    @autotest.name("create_user (credentials): пользователь активен (is_active=True)")
+    @autotest.name("create_user (credentials): user is active (is_active=True)")
     async def test_38cd1a38_credential_user_is_active(self):
-        with autotest.step("Act: создать credential-пользователя"):
+        with autotest.step("Act: create a credential user"):
             async with self.session_factory() as db:
                 user = await create_user(
                     db=db,
@@ -113,14 +113,14 @@ class TestNewUserActivation:
                     password_hash="hash",
                 )
 
-        with autotest.step("Assert: is_active is True (credential-путь активен)"):
-            assert_true(user.is_active is True, "credential-пользователь активен")
+        with autotest.step("Assert: is_active is True (credential path is active)"):
+            assert_true(user.is_active is True, "credential user is active")
 
     @autotest.num("1961")
     @autotest.external_id("a0f6bba4-e63d-48c5-adb5-dd910b3a3831")
-    @autotest.name("upsert_github_user (OAuth): новый пользователь is_active=False")
+    @autotest.name("upsert_github_user (OAuth): new user is_active=False")
     async def test_a0f6bba4_oauth_user_is_inactive(self):
-        with autotest.step("Act: создать OAuth-пользователя через GitHub"):
+        with autotest.step("Act: create an OAuth user via GitHub"):
             async with self.session_factory() as db:
                 user = await upsert_github_user(
                     db=db,
@@ -131,7 +131,7 @@ class TestNewUserActivation:
                 )
 
         with autotest.step("Assert: is_active is False"):
-            assert_true(user.is_active is False, "новый oauth-пользователь неактивен")
+            assert_true(user.is_active is False, "new oauth user is inactive")
 
 
 class TestAdminPatchIsActive:
@@ -187,13 +187,15 @@ class TestAdminPatchIsActive:
 
     @autotest.num("1962")
     @autotest.external_id("2dca5dd0-b8fc-4db7-90a0-f08fec473681")
-    @autotest.name("PATCH /admin/users/{id}: is_active=True флипает и ответ содержит is_active")
+    @autotest.name(
+        "PATCH /admin/users/{id}: is_active=True flips and the response contains is_active"
+    )
     async def test_2dca5dd0_patch_is_active_flips(self):
-        with autotest.step("Act: PATCH is_active=true для u1"):
+        with autotest.step("Act: PATCH is_active=true for u1"):
             async with self._client() as client:
                 resp = await client.patch("/admin/users/u1", json={"is_active": True})
 
-        with autotest.step("Assert: 200, is_active=True в ответе"):
+        with autotest.step("Assert: 200, is_active=True in response"):
             assert_equal(resp.status_code, 200, "status 200")
             body = resp.json()
             assert_true(body["is_active"] is True, "is_active=True")
@@ -251,9 +253,9 @@ class TestActivateEndpoint:
 
     @autotest.num("1963")
     @autotest.external_id("68fd3512-9759-4ff8-a21e-2e31cac808a9")
-    @autotest.name("POST /auth/activate: без internal token → 401")
+    @autotest.name("POST /auth/activate: without internal token → 401")
     async def test_68fd3512_activate_no_token_returns_401(self):
-        with autotest.step("Act: вызываем без Authorization"):
+        with autotest.step("Act: call without Authorization"):
             async with self._client() as client:
                 resp = await client.post("/auth/activate", json={"email": "inactive@test.local"})
 
@@ -262,9 +264,9 @@ class TestActivateEndpoint:
 
     @autotest.num("1964")
     @autotest.external_id("169d16f8-8530-4988-96f1-89aa7de43714")
-    @autotest.name("POST /auth/activate: с токеном → пользователь активирован (200)")
+    @autotest.name("POST /auth/activate: with token → user activated (200)")
     async def test_169d16f8_activate_with_token_succeeds(self):
-        with autotest.step("Act: активировать inactive@test.local"):
+        with autotest.step("Act: activate inactive@test.local"):
             async with self._client() as client:
                 resp = await client.post(
                     "/auth/activate",
@@ -276,18 +278,18 @@ class TestActivateEndpoint:
             assert_equal(resp.status_code, 200, "status 200")
             body = resp.json()
             assert_true(body["is_active"] is True, "is_active=True")
-            assert_equal(body["email"], "inactive@test.local", "email совпадает")
+            assert_equal(body["email"], "inactive@test.local", "email matches")
 
-        with autotest.step("Assert: пользователь в БД активен"):
+        with autotest.step("Assert: user is active in DB"):
             async with self.session_factory() as db:
                 user = await db.get(User, "inactive-001")
-            assert_true(user.is_active is True, "is_active в БД = True")
+            assert_true(user.is_active is True, "is_active in DB = True")
 
     @autotest.num("1965")
     @autotest.external_id("2e20911e-1c9a-4487-8938-132394f688bd")
-    @autotest.name("POST /auth/activate: неизвестный email → 404")
+    @autotest.name("POST /auth/activate: unknown email → 404")
     async def test_2e20911e_activate_unknown_email_returns_404(self):
-        with autotest.step("Act: активировать несуществующий email"):
+        with autotest.step("Act: activate a nonexistent email"):
             async with self._client() as client:
                 resp = await client.post(
                     "/auth/activate",

@@ -100,25 +100,25 @@ EXPECTED_TOOL_NAMES = {
 class TestRegistration:
     @autotest.num("810")
     @autotest.external_id("gns3-domain-tools-registered")
-    @autotest.name("register_domain_tools: регистрирует полный набор GNS3 инструментов")
+    @autotest.name("register_domain_tools: registers the full set of GNS3 tools")
     def test_all_expected_tools_registered(self, registered):
-        with autotest.step("Получаем зарегистрированные имена"):
+        with autotest.step("Get the registered names"):
             server, _ = registered
             registered_names = set(server.tools.keys())
 
-        with autotest.step("Проверяем, что ожидаемые tools присутствуют"):
+        with autotest.step("Assert the expected tools are present"):
             assert EXPECTED_TOOL_NAMES.issubset(registered_names), (
                 f"missing: {EXPECTED_TOOL_NAMES - registered_names}"
             )
 
     @autotest.num("811")
     @autotest.external_id("gns3-domain-tools-descriptions-non-empty")
-    @autotest.name("register_domain_tools: каждый tool имеет непустое description")
+    @autotest.name("register_domain_tools: every tool has a non-empty description")
     def test_each_tool_has_description(self, registered):
-        with autotest.step("Берём описания"):
+        with autotest.step("Get the descriptions"):
             server, _ = registered
 
-        with autotest.step("Все описания непустые"):
+        with autotest.step("All descriptions are non-empty"):
             for name in EXPECTED_TOOL_NAMES:
                 assert server.descriptions[name], f"tool {name} has empty description"
 
@@ -126,16 +126,16 @@ class TestRegistration:
 class TestDispatch:
     @autotest.num("812")
     @autotest.external_id("gns3-domain-tools-dispatch-start-node")
-    @autotest.name("start_node: вызывает api_client.start_node с project_id и node_id")
+    @autotest.name("start_node: calls api_client.start_node with project_id and node_id")
     async def test_start_node_dispatch(self, registered):
-        with autotest.step("Готовим api mock"):
+        with autotest.step("Set up the api mock"):
             server, api = registered
             api.start_node.return_value = {"status": "started"}
 
-        with autotest.step("Вызываем start_node"):
+        with autotest.step("Call start_node"):
             result = await server.tools["start_node"](_make_ctx_dict(), node_id=NODE_ID)
 
-        with autotest.step("Проверяем диспатч и формат ответа"):
+        with autotest.step("Assert the dispatch and response shape"):
             api.start_node.assert_awaited_once_with(PROJECT_ID, NODE_ID)
             assert result["success"] is True
             assert NODE_ID in result["message"]
@@ -143,16 +143,16 @@ class TestDispatch:
 
     @autotest.num("813")
     @autotest.external_id("gns3-domain-tools-dispatch-isolate-node")
-    @autotest.name("isolate_node: вызывает api_client.isolate_node")
+    @autotest.name("isolate_node: calls api_client.isolate_node")
     async def test_isolate_node_dispatch(self, registered):
-        with autotest.step("Готовим api mock"):
+        with autotest.step("Set up the api mock"):
             server, api = registered
             api.isolate_node.return_value = {"isolated_links": ["l1", "l2"]}
 
-        with autotest.step("Вызываем isolate_node"):
+        with autotest.step("Call isolate_node"):
             result = await server.tools["isolate_node"](_make_ctx_dict(), node_id=NODE_ID)
 
-        with autotest.step("Проверяем дипатч и payload"):
+        with autotest.step("Assert the dispatch and payload"):
             api.isolate_node.assert_awaited_once_with(PROJECT_ID, NODE_ID)
             assert result["success"] is True
             assert "isolated" in result["message"]
@@ -160,9 +160,9 @@ class TestDispatch:
 
     @autotest.num("814")
     @autotest.external_id("gns3-domain-tools-dispatch-get-console-info")
-    @autotest.name("get_console_info: возвращает console-поля ноды без флага success")
+    @autotest.name("get_console_info: returns the node's console fields with no success flag")
     async def test_get_console_info_returns_node_fields(self, registered):
-        with autotest.step("Готовим api mock"):
+        with autotest.step("Set up the api mock"):
             server, api = registered
             api.get_node.return_value = {
                 "console": 5000,
@@ -170,10 +170,10 @@ class TestDispatch:
                 "console_host": "127.0.0.1",
             }
 
-        with autotest.step("Вызываем get_console_info"):
+        with autotest.step("Call get_console_info"):
             result = await server.tools["get_console_info"](_make_ctx_dict(), NODE_ID)
 
-        with autotest.step("Проверяем форму ответа"):
+        with autotest.step("Assert the response shape"):
             api.get_node.assert_awaited_once_with(PROJECT_ID, NODE_ID)
             assert result == {
                 "node_id": NODE_ID,
@@ -184,32 +184,32 @@ class TestDispatch:
 
     @autotest.num("815")
     @autotest.external_id("gns3-domain-tools-dispatch-delete-link")
-    @autotest.name("delete_link: вызывает api_client.delete_link, success=True")
+    @autotest.name("delete_link: calls api_client.delete_link, success=True")
     async def test_delete_link_dispatch(self, registered):
-        with autotest.step("Готовим api mock"):
+        with autotest.step("Set up the api mock"):
             server, api = registered
             api.delete_link.return_value = None
 
-        with autotest.step("Вызываем delete_link"):
+        with autotest.step("Call delete_link"):
             result = await server.tools["delete_link"](_make_ctx_dict(), link_id=LINK_ID)
 
-        with autotest.step("Проверяем"):
+        with autotest.step("Assert"):
             api.delete_link.assert_awaited_once_with(PROJECT_ID, LINK_ID)
             assert result["success"] is True
             assert LINK_ID in result["message"]
 
     @autotest.num("816")
     @autotest.external_id("gns3-domain-tools-dispatch-create-snapshot")
-    @autotest.name("create_snapshot: проксирует имя в api_client.create_snapshot")
+    @autotest.name("create_snapshot: passes the name through to api_client.create_snapshot")
     async def test_create_snapshot_dispatch(self, registered):
-        with autotest.step("Готовим api mock"):
+        with autotest.step("Set up the api mock"):
             server, api = registered
             api.create_snapshot.return_value = {"snapshot_id": "s9"}
 
-        with autotest.step("Вызываем create_snapshot"):
+        with autotest.step("Call create_snapshot"):
             result = await server.tools["create_snapshot"](_make_ctx_dict(), name="backup-1")
 
-        with autotest.step("Проверяем диспатч и сообщение"):
+        with autotest.step("Assert the dispatch and message"):
             api.create_snapshot.assert_awaited_once_with(PROJECT_ID, "backup-1")
             assert result["success"] is True
             assert "backup-1" in result["message"]
@@ -217,30 +217,30 @@ class TestDispatch:
 
     @autotest.num("817")
     @autotest.external_id("gns3-domain-tools-dispatch-start-all-nodes")
-    @autotest.name("start_all_nodes: вызывает api_client.start_all_nodes, ответ без data")
+    @autotest.name("start_all_nodes: calls api_client.start_all_nodes, response has no data")
     async def test_start_all_nodes_dispatch(self, registered):
-        with autotest.step("Готовим api mock"):
+        with autotest.step("Set up the api mock"):
             server, api = registered
             api.start_all_nodes.return_value = None
 
-        with autotest.step("Вызываем start_all_nodes"):
+        with autotest.step("Call start_all_nodes"):
             result = await server.tools["start_all_nodes"](_make_ctx_dict())
 
-        with autotest.step("Проверяем диспатч и форму ответа без data"):
+        with autotest.step("Assert the dispatch and the data-less response shape"):
             api.start_all_nodes.assert_awaited_once_with(PROJECT_ID)
             assert result == {"success": True, "message": "All nodes started"}
 
     @autotest.num("818")
     @autotest.external_id("gns3-domain-tools-dispatch-list-templates")
-    @autotest.name("list_templates: возвращает список шаблонов как есть, без обёртки")
+    @autotest.name("list_templates: returns the template list as-is, unwrapped")
     async def test_list_templates_dispatch(self, registered):
-        with autotest.step("Готовим api mock"):
+        with autotest.step("Set up the api mock"):
             server, api = registered
             api.list_templates.return_value = [{"template_id": "tpl-1"}]
 
-        with autotest.step("Вызываем list_templates"):
+        with autotest.step("Call list_templates"):
             result = await server.tools["list_templates"](_make_ctx_dict())
 
-        with autotest.step("Проверяем bare list passthrough"):
+        with autotest.step("Assert the bare list passthrough"):
             api.list_templates.assert_awaited_once_with()
             assert result == [{"template_id": "tpl-1"}]

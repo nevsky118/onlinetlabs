@@ -119,9 +119,9 @@ def _make_monitor(db_factory) -> SessionMonitor:
 class TestInterventionAudit:
     @autotest.num("1800")
     @autotest.external_id("971f4132-1699-45e5-bab6-4ffa8891522b")
-    @autotest.name("intervention audit: closed-arm dispatch пишет act-запись в mcp_audit")
+    @autotest.name("intervention audit: closed-arm dispatch writes an act row to mcp_audit")
     async def test_971f4132_closed_arm_writes_act_audit(self, audit_engine):
-        with autotest.step("Arrange: монитор CLOSED с реальной БД mcp_audit"):
+        with autotest.step("Arrange: CLOSED monitor with a real mcp_audit db"):
             session_factory = async_sessionmaker(audit_engine, expire_on_commit=False)
 
             # Factory: stub for behavioral events, real session for audit
@@ -212,21 +212,21 @@ class TestInterventionAudit:
                     lab_slug=m._lab_slug,
                 )
 
-        with autotest.step("Assert: mcp_audit содержит act-запись с tool=intervention"):
+        with autotest.step("Assert: mcp_audit contains an act row with tool=intervention"):
             async with session_factory() as db:
                 rows = (await db.execute(select(MCPAudit))).scalars().all()
-            assert_equal(len(rows), 1, f"ожидалась 1 запись mcp_audit, получено {len(rows)}")
+            assert_equal(len(rows), 1, f"expected 1 mcp_audit row, got {len(rows)}")
             assert_equal(rows[0].kind, "act", "kind == act")
             assert_equal(rows[0].tool, "intervention", "tool == intervention")
             assert_true(rows[0].success, "success == True")
             assert_equal(rows[0].session_id, "s1", "session_id == s1")
-            assert_equal(rows[0].lab_slug, "lan-static-ip", "lab_slug совпадает")
+            assert_equal(rows[0].lab_slug, "lan-static-ip", "lab_slug matches")
 
     @autotest.num("1801")
     @autotest.external_id("a56f5633-0466-4e49-9b83-97a733b05b1a")
-    @autotest.name("intervention audit: open-arm НЕ пишет act-аудит (подавление)")
+    @autotest.name("intervention audit: open-arm does NOT write act audit (suppressed)")
     async def test_a56f5633_open_arm_no_act_audit(self, audit_engine):
-        with autotest.step("Arrange: монитор OPEN, dispatch не вызывается"):
+        with autotest.step("Arrange: OPEN monitor, dispatch not invoked"):
             session_factory = async_sessionmaker(audit_engine, expire_on_commit=False)
 
             class _Cap:
@@ -295,7 +295,7 @@ class TestInterventionAudit:
             ):
                 await m._run_analysis()
 
-        with autotest.step("Assert: mcp_audit пуст (dispatch не вызван)"):
+        with autotest.step("Assert: mcp_audit is empty (dispatch not called)"):
             async with session_factory() as db:
                 rows = (await db.execute(select(MCPAudit))).scalars().all()
-            assert_equal(len(rows), 0, f"open-arm не должен писать act-аудит; записей: {len(rows)}")
+            assert_equal(len(rows), 0, f"open-arm must not write act audit; rows: {len(rows)}")

@@ -27,34 +27,34 @@ class TestPreferencesSmokeApi:
     async def test_c1edee66_get_preferences(self):
         """Reading the preferences returns 200 with the default_model_id field."""
         # Act
-        with autotest.step("Отправляем GET /users/me/preferences"):
+        with autotest.step("Send GET /users/me/preferences"):
             response = await self.preferences_api.get_preferences()
 
         # Assert
-        with autotest.step("Проверяем статус код 200"):
+        with autotest.step("Check status code 200"):
             check_response_status(response, 200)
-        with autotest.step("Проверяем наличие поля default_model_id"):
+        with autotest.step("Check field default_model_id is present"):
             assert_in(
                 "default_model_id",
                 response.json(),
-                "поле default_model_id присутствует",
+                "field default_model_id is present",
             )
 
     @autotest.num("802")
     @autotest.external_id("d924753b-1a0f-4006-9eca-231618d7f838")
-    @autotest.name("Smoke: PATCH /users/me/preferences — очистка модели (200)")
+    @autotest.name("Smoke: PATCH /users/me/preferences — clear model (200)")
     async def test_d924753b_clear_default_model(self):
         """Clearing the default model (null) is available to everyone and returns 200."""
         # Act
-        with autotest.step("Отправляем PATCH default_model_id=null"):
+        with autotest.step("Send PATCH default_model_id=null"):
             response = await self.preferences_api.patch_preferences(
                 {"default_model_id": None}
             )
 
         # Assert
-        with autotest.step("Проверяем статус код 200"):
+        with autotest.step("Check status code 200"):
             check_response_status(response, 200)
-        with autotest.step("Проверяем, что default_model_id очищен (null)"):
+        with autotest.step("Check that default_model_id is cleared (null)"):
             assert_is_none(
                 response.json()["default_model_id"], "default_model_id == null"
             )

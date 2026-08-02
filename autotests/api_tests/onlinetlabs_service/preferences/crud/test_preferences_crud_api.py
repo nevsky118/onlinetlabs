@@ -22,15 +22,15 @@ class TestPreferencesCrudApi:
 
     @autotest.num("803")
     @autotest.external_id("bbaf4a63-0451-480f-8dff-4f2b491c93b4")
-    @autotest.name("CRUD: PATCH /users/me/preferences — выбор модели без права → 403")
+    @autotest.name("CRUD: PATCH /users/me/preferences — model selection without permission → 403")
     async def test_bbaf4a63_set_model_without_permission_forbidden(self):
         """Setting the model from an account without the right to choose returns 403."""
         # Act
-        with autotest.step("PATCH default_model_id для аккаунта без can_select"):
+        with autotest.step("PATCH default_model_id for an account without can_select"):
             response = await self.preferences_api.patch_preferences(
                 {"default_model_id": "yandex-gpt-5.1"}
             )
 
         # Assert
-        with autotest.step("Проверяем статус код 403"):
+        with autotest.step("Check status code 403"):
             check_response_status(response, 403)

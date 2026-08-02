@@ -36,38 +36,38 @@ _CATALOG = [
 class TestBuildModelsResponse:
     @autotest.num("790")
     @autotest.external_id("a88e6991-1166-4f5f-a99e-9e399f0fd9b6")
-    @autotest.name("build_models_response: can_select=True → только tools-capable модели")
+    @autotest.name("build_models_response: can_select=True → only tools-capable models")
     def test_a88e6991_can_select_returns_tools_models(self, monkeypatch):
         monkeypatch.setattr(
             "chat.router.settings",
             _FakeSettings("yandex-gpt-5.1", _CATALOG),
         )
-        with autotest.step("Вызов с can_select=True"):
+        with autotest.step("Call with can_select=True"):
             result = build_models_response(can_select=True)
-        with autotest.step("Возвращает только tools-capable модели"):
+        with autotest.step("Returns only tools-capable models"):
             assert result["can_select"] is True
             assert result["default_model_id"] == "yandex-gpt-5.1"
             models = result["models"]
             assert len(models) == 2
             ids = {m["id"] for m in models}
             assert ids == {"claude-opus-4.8", "claude-sonnet-4.5"}
-        with autotest.step("Каждый элемент содержит id и label"):
+        with autotest.step("Each item contains id and label"):
             for m in models:
                 assert "id" in m
                 assert "label" in m
 
     @autotest.num("791")
     @autotest.external_id("708e1b78-2ba9-4ab5-bcd1-b87a735de6a5")
-    @autotest.name("build_models_response: can_select=False → models пустой список")
+    @autotest.name("build_models_response: can_select=False → models is an empty list")
     def test_708e1b78_cannot_select_returns_empty(self, monkeypatch):
         monkeypatch.setattr(
             "chat.router.settings",
             _FakeSettings("yandex-gpt-5.1", _CATALOG),
         )
-        with autotest.step("Вызов с can_select=False"):
+        with autotest.step("Call with can_select=False"):
             result = build_models_response(can_select=False)
         with autotest.step("can_select=False, models=[]"):
             assert result["can_select"] is False
             assert result["models"] == []
-        with autotest.step("default_model_id присутствует"):
+        with autotest.step("default_model_id is present"):
             assert result["default_model_id"] == "yandex-gpt-5.1"

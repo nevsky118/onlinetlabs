@@ -24,31 +24,31 @@ async def consent_db():
 class TestConsentService:
     @autotest.num("1750")
     @autotest.external_id("a3f2c1d4-7e89-4b56-9c01-2d3e4f5a6b7c")
-    @autotest.name("consent: study покрывает observe и act")
+    @autotest.name("consent: study covers observe and act")
     async def test_a3f2c1d4_study_covers_all(self, consent_db):
-        with autotest.step("Arrange: study-согласие"):
+        with autotest.step("Arrange: study consent"):
             await grant(consent_db, "u1", "study", observe=True, act=True)
-        with autotest.step("Assert: и observe, и act разрешены"):
+        with autotest.step("Assert: both observe and act allowed"):
             assert_true(await has_consent(consent_db, "u1", ToolKind.OBSERVE), "observe")
             assert_true(await has_consent(consent_db, "u1", ToolKind.ACT), "act")
 
     @autotest.num("1751")
     @autotest.external_id("6aa6be22-d787-4a58-8dab-859e0cd22ab4")
-    @autotest.name("consent: product гранулярно (observe да, act нет)")
+    @autotest.name("consent: product is granular (observe yes, act no)")
     async def test_6aa6be22_product_granular(self, consent_db):
         with autotest.step("Arrange: product observe=True act=False"):
             await grant(consent_db, "u2", "product", observe=True, act=False)
-        with autotest.step("Assert: observe разрешён, act нет"):
+        with autotest.step("Assert: observe allowed, act not"):
             assert_true(await has_consent(consent_db, "u2", ToolKind.OBSERVE), "observe")
-            assert_false(await has_consent(consent_db, "u2", ToolKind.ACT), "act-нет")
+            assert_false(await has_consent(consent_db, "u2", ToolKind.ACT), "act-denied")
 
     @autotest.num("1752")
     @autotest.external_id("bf9e3fd5-7f19-4732-b87d-ec19e0c264b1")
-    @autotest.name("consent: отзыв прекращает согласие")
+    @autotest.name("consent: revoke ends consent")
     async def test_bf9e3fd5_revoke(self, consent_db):
-        with autotest.step("Arrange+Act: дать study, затем отозвать"):
+        with autotest.step("Arrange+Act: grant study, then revoke"):
             await grant(consent_db, "u3", "study", observe=True, act=True)
             n = await revoke(consent_db, "u3", "study")
-        with autotest.step("Assert: отозвано 1, согласия нет"):
-            assert_equal(n, 1, "отозвано")
-            assert_false(await has_consent(consent_db, "u3", ToolKind.OBSERVE), "нет после отзыва")
+        with autotest.step("Assert: 1 revoked, no consent remains"):
+            assert_equal(n, 1, "revoked")
+            assert_false(await has_consent(consent_db, "u3", ToolKind.OBSERVE), "none after revoke")

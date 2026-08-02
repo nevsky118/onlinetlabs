@@ -7,7 +7,7 @@ from config import settings
 pytestmark = [pytest.mark.unit, pytest.mark.auth]
 
 
-@autotest.name("create_backend_token: can_select=True кладётся в payload")
+@autotest.name("create_backend_token: can_select=True lands in the payload")
 def test_token_carries_can_select():
     tok = create_backend_token("u1", "student", can_select=True)
     payload = decode_backend_token(tok, settings.api.jwt_secret)
@@ -15,7 +15,7 @@ def test_token_carries_can_select():
     assert payload["sub"] == "u1"
 
 
-@autotest.name("create_backend_token: can_select по умолчанию False")
+@autotest.name("create_backend_token: can_select defaults to False")
 def test_token_can_select_defaults_false():
     tok = create_backend_token("u2", "instructor")
     payload = decode_backend_token(tok, settings.api.jwt_secret)

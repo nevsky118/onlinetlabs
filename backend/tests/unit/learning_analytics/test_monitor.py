@@ -57,11 +57,11 @@ class CapturingSession:
 class TestSessionMonitor:
     @autotest.num("540")
     @autotest.external_id("78b9c0d1-e2f3-4a4b-8c5d-7e8f9a0b1c2d")
-    @autotest.name("SessionMonitor: инициализация")
+    @autotest.name("SessionMonitor: initialization")
     def test_78b9c0d1_init(self):
         # Arrange
         # Act
-        with autotest.step("Создаём SessionMonitor"):
+        with autotest.step("Create a SessionMonitor"):
             monitor = SessionMonitor(
                 mcp_client=MagicMock(),
                 db_factory=MagicMock(),
@@ -70,15 +70,15 @@ class TestSessionMonitor:
             )
 
         # Assert
-        with autotest.step("Проверяем начальное состояние"):
-            assert_true(monitor._running is False, "не запущен")
+        with autotest.step("Check the initial state"):
+            assert_true(monitor._running is False, "not running")
 
     @autotest.num("541")
     @autotest.external_id("89c0d1e2-f3a4-4b5c-9d6e-8f9a0b1c2d3e")
-    @autotest.name("SessionMonitor: первая интервенция разрешена")
+    @autotest.name("SessionMonitor: first intervention is allowed")
     def test_89c0d1e2_should_intervene_first_time(self):
         # Arrange
-        with autotest.step("Создаём монитор без предыдущих интервенций"):
+        with autotest.step("Create a monitor with no prior interventions"):
             monitor = SessionMonitor(
                 mcp_client=MagicMock(),
                 db_factory=MagicMock(),
@@ -88,18 +88,18 @@ class TestSessionMonitor:
 
         # Act
         # Assert
-        with autotest.step("Проверяем разрешение"):
+        with autotest.step("Check it is allowed"):
             assert_true(
                 monitor._should_trigger_intervention(),
-                "первая интервенция разрешена",
+                "first intervention is allowed",
             )
 
     @autotest.num("542")
     @autotest.external_id("9ad1e2f3-a4b5-4c6d-8e7f-9a0b1c2d3e4f")
-    @autotest.name("SessionMonitor: cooldown блокирует повторную интервенцию")
+    @autotest.name("SessionMonitor: cooldown blocks a repeat intervention")
     def test_9ad1e2f3_should_intervene_respects_cooldown(self):
         # Arrange
-        with autotest.step("Создаём монитор с недавней интервенцией"):
+        with autotest.step("Create a monitor with a recent intervention"):
             monitor = SessionMonitor(
                 mcp_client=MagicMock(),
                 db_factory=MagicMock(),
@@ -110,15 +110,15 @@ class TestSessionMonitor:
 
         # Act
         # Assert
-        with autotest.step("Проверяем блокировку"):
-            assert_true(not monitor._should_trigger_intervention(), "cooldown блокирует")
+        with autotest.step("Check it is blocked"):
+            assert_true(not monitor._should_trigger_intervention(), "cooldown blocks it")
 
     @autotest.num("543")
     @autotest.external_id("ab0e2f3a-b5c6-4d7e-9f8a-0b1c2d3e4f5a")
-    @autotest.name("SessionMonitor: enabled=False блокирует интервенции")
+    @autotest.name("SessionMonitor: enabled=False blocks interventions")
     def test_ab0e2f3a_disabled_config_blocks_intervention(self):
         # Arrange
-        with autotest.step("Создаём монитор с enabled=False"):
+        with autotest.step("Create a monitor with enabled=False"):
             monitor = SessionMonitor(
                 mcp_client=MagicMock(),
                 db_factory=MagicMock(),
@@ -128,15 +128,15 @@ class TestSessionMonitor:
 
         # Act
         # Assert
-        with autotest.step("Проверяем блокировку"):
-            assert_true(not monitor._should_trigger_intervention(), "disabled блокирует")
+        with autotest.step("Check it is blocked"):
+            assert_true(not monitor._should_trigger_intervention(), "disabled blocks it")
 
     @autotest.num("544")
     @autotest.external_id("bc1f3a4b-c6d7-4e8f-8a9b-1c2d3e4f5a6b")
-    @autotest.name("SessionMonitor: enabled=True разрешает интервенции")
+    @autotest.name("SessionMonitor: enabled=True allows interventions")
     def test_bc1f3a4b_enabled_config_allows_intervention(self):
         # Arrange
-        with autotest.step("Создаём монитор с enabled=True"):
+        with autotest.step("Create a monitor with enabled=True"):
             monitor = SessionMonitor(
                 mcp_client=MagicMock(),
                 db_factory=MagicMock(),
@@ -146,15 +146,15 @@ class TestSessionMonitor:
 
         # Act
         # Assert
-        with autotest.step("Проверяем разрешение"):
-            assert_true(monitor._should_trigger_intervention(), "enabled разрешает")
+        with autotest.step("Check it is allowed"):
+            assert_true(monitor._should_trigger_intervention(), "enabled allows it")
 
     @autotest.num("545")
     @autotest.external_id("f6370a44-284a-4005-b9a7-49db179c694c")
-    @autotest.name("SessionMonitor: логирует experiment backend metadata")
+    @autotest.name("SessionMonitor: logs experiment backend metadata")
     async def test_f6370a44_log_intervention_backend_metadata(self):
         # Arrange
-        with autotest.step("Готовим монитор и response metadata"):
+        with autotest.step("Prepare the monitor and response metadata"):
             db_session = CapturingSession()
             monitor = SessionMonitor(
                 mcp_client=MagicMock(),
@@ -185,11 +185,11 @@ class TestSessionMonitor:
             )
 
         # Act
-        with autotest.step("Логируем интервенцию"):
+        with autotest.step("Log the intervention"):
             await monitor._log_intervention_in(db_session, analysis, response)
 
         # Assert
-        with autotest.step("Проверяем metadata события"):
+        with autotest.step("Check the event metadata"):
             event = db_session.added[0]
             assert_equal(event.extra_data["experiment_group"], "unknown", "group")
             assert_equal(event.extra_data["agent_backend"], "tutor", "backend")

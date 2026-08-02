@@ -13,11 +13,9 @@ pytestmark = [pytest.mark.unit]
 class TestCohortResponseFullJson:
     @autotest.num("2509")
     @autotest.external_id("fab912be-943a-4d23-a650-d857d1a669c0")
-    @autotest.name(
-        "cohort_response_from_result: полный model_dump() двух записей пиксель-в-пиксель"
-    )
+    @autotest.name("cohort_response_from_result: full model_dump() of two records, pixel-for-pixel")
     def test_fab912be_full_model_dump_exact(self):
-        with autotest.step("Arrange: один достигший L2, один цензурированный, разные arm"):
+        with autotest.step("Arrange: one reaching L2, one censored, different arms"):
             records = [
                 LearnerOutcome(
                     user_id="u1",
@@ -55,11 +53,11 @@ class TestCohortResponseFullJson:
                 ),
             ]
 
-        with autotest.step("Act: агрегировать (by_arm=True) и построить ответ"):
+        with autotest.step("Act: aggregate (by_arm=True) and build the response"):
             out = aggregate_cohort(records, horizon_seconds=7200.0, by_arm=True)
             resp = cohort_response_from_result(out)
 
-        with autotest.step("Assert: полный model_dump() равен ожидаемому"):
+        with autotest.step("Assert: full model_dump() equals expected"):
             assert_equal(
                 resp.model_dump(),
                 {
@@ -193,5 +191,5 @@ class TestCohortResponseFullJson:
                     ],
                     "headline_arm": "closed",
                 },
-                "полный model_dump() ответа",
+                "full response model_dump()",
             )

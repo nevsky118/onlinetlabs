@@ -20,15 +20,15 @@ class TestSessionsStateCrudApi:
 
     @autotest.num("74")
     @autotest.external_id("74111111-7777-4777-7777-777777777777")
-    @autotest.name("Sessions CRUD: state 404 для неизвестной сессии")
+    @autotest.name("Sessions CRUD: state 404 for an unknown session")
     async def test_74111111_state_404(self):
         """GET state with a nonexistent session_id returns 404."""
         # Act
-        with autotest.step("GET state с UUID нулей"):
+        with autotest.step("GET state with an all-zero UUID"):
             response = await self.sessions_api.get_session_state(
                 "00000000-0000-0000-0000-000000000000",
             )
 
         # Assert
-        with autotest.step("Проверяем статус код 404"):
+        with autotest.step("Check status code 404"):
             check_response_status(response, 404)

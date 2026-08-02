@@ -30,7 +30,7 @@ def _rec(skill, arm, reached, ttl):
 class TestStrata:
     @autotest.num("882")
     @autotest.external_id("c83f9522-b9b1-48f2-9f85-a0311b5422a0")
-    @autotest.name("Strata: by_skill и pooled с корректным n")
+    @autotest.name("Strata: by_skill and pooled with the correct n")
     def test_c83f9522_by_skill_and_pooled_with_n(self):
         with autotest.step("Arrange: ip×2 + dhcp×1"):
             recs = [
@@ -40,23 +40,23 @@ class TestStrata:
             ]
         with autotest.step("Act: aggregate_cohort horizon=50"):
             out = aggregate_cohort(recs, horizon_seconds=50.0)
-        with autotest.step("Assert: by_skill n корректен, pooled=3, by_arm=None"):
+        with autotest.step("Assert: by_skill n is correct, pooled=3, by_arm=None"):
             skills = {c.skill: c for c in out["by_skill"]}
             assert_equal(skills["ip"].n, 2, "ip.n == 2")
             assert_equal(skills["dhcp"].n, 1, "dhcp.n == 1")
             assert_equal(out["pooled"].n, 3, "pooled.n == 3")
             assert_equal(out["headline_arm"], "closed", "headline_arm == closed")
-            assert_is_none(out["by_arm"], "by_arm не запрошен → None")
+            assert_is_none(out["by_arm"], "by_arm not requested → None")
 
     @autotest.num("883")
     @autotest.external_id("a0feb36f-5c7b-4d8f-b6f6-70d29d0e6c64")
-    @autotest.name("Strata: by_arm опциональная страта")
+    @autotest.name("Strata: by_arm is an optional stratum")
     def test_a0feb36f_by_arm_optional_stratum(self):
         with autotest.step("Arrange: ip closed + ip open"):
             recs = [_rec("ip", "closed", True, 10.0), _rec("ip", "open", False, None)]
         with autotest.step("Act: aggregate_cohort by_arm=True"):
             out = aggregate_cohort(recs, horizon_seconds=50.0, by_arm=True)
-        with autotest.step("Assert: by_arm содержит closed и open"):
+        with autotest.step("Assert: by_arm contains closed and open"):
             arms = {c.arm: c for c in out["by_arm"]}
-            assert_equal(set(arms), {"closed", "open"}, "оба плеча присутствуют")
+            assert_equal(set(arms), {"closed", "open"}, "both arms are present")
             assert_equal(out["headline_arm"], "closed", "headline_arm == closed")

@@ -47,14 +47,14 @@ class TestModelConstraints:
 
     @autotest.num("750")
     @autotest.external_id("15fb7122-b250-4e00-b806-558c9290761f")
-    @autotest.name("User.email UNIQUE: дубликат email вызывает IntegrityError")
+    @autotest.name("User.email UNIQUE: duplicate email raises IntegrityError")
     @pytest.mark.asyncio
     async def test_15fb7122_user_email_unique(self, session: AsyncSession):
-        with autotest.step("Добавляем первого пользователя"):
+        with autotest.step("Add the first user"):
             session.add(User(id="u1", email="dup@example.com"))
             await session.commit()
 
-        with autotest.step("Вставка второго с тем же email должна упасть"):
+        with autotest.step("Inserting a second one with the same email must fail"):
             session.add(User(id="u2", email="dup@example.com"))
             with pytest.raises(IntegrityError):
                 await session.commit()
@@ -62,10 +62,10 @@ class TestModelConstraints:
 
     @autotest.num("751")
     @autotest.external_id("4cad75ea-2c64-40d1-896c-a22e62fc8d55")
-    @autotest.name("Account.user_id FK CASCADE: удаление User удаляет его Account-ы")
+    @autotest.name("Account.user_id FK CASCADE: deleting a User deletes its Accounts")
     @pytest.mark.asyncio
     async def test_4cad75ea_account_cascade_on_user_delete(self, session: AsyncSession):
-        with autotest.step("Создаём User + два Account"):
+        with autotest.step("Create a User + two Accounts"):
             user = User(id="u-cascade", email="cascade@example.com")
             session.add(user)
             session.add(
@@ -88,53 +88,53 @@ class TestModelConstraints:
             )
             await session.commit()
 
-        with autotest.step("Удаляем User"):
+        with autotest.step("Delete the User"):
             await session.delete(user)
             await session.commit()
 
-        with autotest.step("Account-ы должны исчезнуть"):
+        with autotest.step("Accounts must be gone"):
             rows = (await session.execute(select(Account))).scalars().all()
             assert_equal(len(rows), 0, "no accounts after user delete")
 
     @autotest.num("752")
     @autotest.external_id("939fbc74-61db-45ec-b93c-3fb053c9c285")
-    @autotest.name("User.role: дефолт = 'student'")
+    @autotest.name("User.role: default = 'student'")
     @pytest.mark.asyncio
     async def test_939fbc74_user_role_default_student(self, session: AsyncSession):
-        with autotest.step("Создаём User без явной роли"):
+        with autotest.step("Create a User with no explicit role"):
             user = User(id="u-role", email="role@example.com")
             session.add(user)
             await session.commit()
             await session.refresh(user)
 
-        with autotest.step("role должна быть 'student'"):
+        with autotest.step("role must be 'student'"):
             assert_equal(user.role, "student", "role default")
             assert_equal(user.role, UserRole.STUDENT.value, "role == UserRole.STUDENT.value")
 
     @autotest.num("753")
     @autotest.external_id("a7a2ff3d-9868-4bc1-988b-076191fd4a59")
-    @autotest.name("LearningSession.status дефолт = 'active' и FK к user работает CASCADE")
+    @autotest.name("LearningSession.status default = 'active' and FK to user CASCADEs")
     @pytest.mark.asyncio
     async def test_a7a2ff3d_learning_session_defaults_and_cascade(self, session: AsyncSession):
-        with autotest.step("Создаём User и Lab"):
+        with autotest.step("Create a User and a Lab"):
             user = User(id="u-ls", email="ls@example.com")
             lab = Lab(slug="lab-1", title_i18n={"en": "Lab 1"})
             session.add(user)
             session.add(lab)
             await session.commit()
 
-        with autotest.step("Создаём LearningSession без явного status/started_at"):
+        with autotest.step("Create a LearningSession with no explicit status/started_at"):
             ls = LearningSession(user_id="u-ls", lab_slug="lab-1")
             session.add(ls)
             await session.commit()
             await session.refresh(ls)
 
-        with autotest.step("status='active', started_at заполнен, ended_at=None"):
+        with autotest.step("status='active', started_at set, ended_at=None"):
             assert_equal(ls.status, "active", "status default")
             assert_true(isinstance(ls.started_at, datetime), "started_at is datetime")
             assert_is_none(ls.ended_at, "ended_at is None")
 
-        with autotest.step("Удаляем User, LearningSession должен исчезнуть"):
+        with autotest.step("Delete the User, the LearningSession must be gone"):
             await session.delete(user)
             await session.commit()
             rows = (await session.execute(select(LearningSession))).scalars().all()
@@ -142,26 +142,26 @@ class TestModelConstraints:
 
     @autotest.num("754")
     @autotest.external_id("b774dcda-915e-4548-b743-b1a822a85fce")
-    @autotest.name("User.id auto-генерируется UUID при отсутствии явного значения")
+    @autotest.name("User.id auto-generates a UUID when no explicit value is given")
     @pytest.mark.asyncio
     async def test_b774dcda_user_id_auto_uuid(self, session: AsyncSession):
-        with autotest.step("Создаём User без id"):
+        with autotest.step("Create a User with no id"):
             user = User(email="autoid@example.com")
             session.add(user)
             await session.commit()
             await session.refresh(user)
 
-        with autotest.step("id заполнен и похож на UUID"):
+        with autotest.step("id is set and looks like a UUID"):
             assert_true(user.id is not None, "id is set")
             assert_equal(len(user.id), 36, "uuid length 36")
             assert_equal(user.id.count("-"), 4, "uuid has 4 dashes")
 
     @autotest.num("755")
     @autotest.external_id("b6c7d8e9-f0a1-4b2c-d3e4-5f6071829304")
-    @autotest.name("Account.id auto-генерируется UUID при отсутствии явного значения")
+    @autotest.name("Account.id auto-generates a UUID when no explicit value is given")
     @pytest.mark.asyncio
     async def test_b6c7d8e9_account_id_auto_uuid(self, session: AsyncSession):
-        with autotest.step("Создаём User + Account без id"):
+        with autotest.step("Create a User + Account with no id"):
             session.add(User(id="u-acc-uuid", email="acc-uuid@example.com"))
             await session.commit()
 
@@ -175,17 +175,17 @@ class TestModelConstraints:
             await session.commit()
             await session.refresh(acc)
 
-        with autotest.step("id заполнен и похож на UUID"):
+        with autotest.step("id is set and looks like a UUID"):
             assert_true(acc.id is not None, "id is set")
             assert_equal(len(acc.id), 36, "uuid length 36")
             assert_equal(acc.id.count("-"), 4, "uuid has 4 dashes")
 
     @autotest.num("756")
     @autotest.external_id("c7d8e9f0-a1b2-4c3d-e4f5-607182930415")
-    @autotest.name("Account без существующего user_id вызывает IntegrityError (FK enforced)")
+    @autotest.name("Account with a nonexistent user_id raises IntegrityError (FK enforced)")
     @pytest.mark.asyncio
     async def test_c7d8e9f0_account_fk_enforced(self, session: AsyncSession):
-        with autotest.step("Account, ссылающийся на несуществующего user"):
+        with autotest.step("Account referencing a nonexistent user"):
             session.add(
                 Account(
                     id="orphan",

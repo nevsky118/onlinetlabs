@@ -13,7 +13,7 @@ pytestmark = [pytest.mark.unit]
 # ── can_view_session_activity matrix ─────────────────────────────────────────
 
 
-@autotest.name("can_view_session_activity: матрица прав на просмотр активности сессии")
+@autotest.name("can_view_session_activity: permission matrix for viewing session activity")
 @pytest.mark.parametrize(
     "user,expected",
     [
@@ -47,7 +47,7 @@ class _FakeActivityLog:
         return self._events
 
 
-@autotest.name("get_agent_activity: возвращает события при наличии прав")
+@autotest.name("get_agent_activity: returns events when permission is granted")
 @pytest.mark.asyncio
 async def test_get_agent_activity_entitled():
     from sessions.routers.queries import get_agent_activity
@@ -73,7 +73,7 @@ async def test_get_agent_activity_entitled():
     assert result == events
 
 
-@autotest.name("get_agent_activity: 403 при отсутствии прав")
+@autotest.name("get_agent_activity: 403 when permission is missing")
 @pytest.mark.asyncio
 async def test_get_agent_activity_forbidden():
     from i18n import LocalizedError
@@ -99,7 +99,7 @@ async def test_get_agent_activity_forbidden():
     assert exc_info.value.status_code == 403
 
 
-@autotest.name("get_agent_activity: 404 при отсутствии сессии")
+@autotest.name("get_agent_activity: 404 when the session is missing")
 @pytest.mark.asyncio
 async def test_get_agent_activity_not_found():
     from i18n import LocalizedError

@@ -72,37 +72,37 @@ def _make_full_config(**overrides):
 class TestAgentsConfig:
     @autotest.num("100")
     @autotest.external_id("c014205c-b5cb-4eff-a773-9b83d2a3e01a")
-    @autotest.name("AgentsConfig: минимальная валидная конфигурация")
+    @autotest.name("AgentsConfig: minimal valid configuration")
     def test_a1b2c3d4_defaults(self):
-        with autotest.step("Создаём AgentsConfig с минимальными полями"):
+        with autotest.step("Create an AgentsConfig with minimal fields"):
             cfg = _agents()
 
-        with autotest.step("Проверяем дефолтные значения"):
+        with autotest.step("Check default values"):
             assert_equal(cfg.chat_model, "yandex-gpt-5.1", "chat_model")
             assert_equal(
                 cfg.interventions_follow_session,
                 False,
-                "interventions_follow_session по умолчанию False",
+                "interventions_follow_session defaults to False",
             )
             assert_equal(
                 cfg.selectable_roles, {"student", "instructor", "admin"}, "selectable_roles"
             )
-            assert_equal(cfg.temperature, 0.3, "temperature по умолчанию 0.3")
-            assert_equal(cfg.max_tokens, 4096, "max_tokens по умолчанию 4096")
-            assert_equal(cfg.request_timeout, 30, "request_timeout по умолчанию 30")
+            assert_equal(cfg.temperature, 0.3, "temperature defaults to 0.3")
+            assert_equal(cfg.max_tokens, 4096, "max_tokens defaults to 4096")
+            assert_equal(cfg.request_timeout, 30, "request_timeout defaults to 30")
 
     @autotest.num("101")
     @autotest.external_id("b45d78d1-981d-4953-9498-2b0b78b4aebc")
-    @autotest.name("AgentsConfig: неизвестная chat_model отклоняется")
+    @autotest.name("AgentsConfig: unknown chat_model is rejected")
     def test_b2c3d4e5_rejects_unknown_chat_model(self):
-        with autotest.step("Передаём несуществующий chat_model"), pytest.raises(ValueError):
+        with autotest.step("Pass a nonexistent chat_model"), pytest.raises(ValueError):
             _agents(chat_model="does-not-exist")
 
     @autotest.num("102")
     @autotest.external_id("2fbf3e89-ed62-4467-9c66-45c4fe34b6f6")
-    @autotest.name("AgentsConfig: ModelEntry с неизвестным provider_ref отклоняется")
+    @autotest.name("AgentsConfig: ModelEntry with an unknown provider_ref is rejected")
     def test_2fbf3e89_rejects_model_with_unknown_provider_ref(self):
-        with autotest.step("Передаём ModelEntry с отсутствующим provider_ref"):
+        with autotest.step("Pass a ModelEntry with a missing provider_ref"):
             with pytest.raises(ValueError):
                 _agents(
                     catalog=[ModelEntry(id="x", label="X", provider_ref="ghost", model="m")],
@@ -112,22 +112,22 @@ class TestAgentsConfig:
 
     @autotest.num("103")
     @autotest.external_id("b20b522c-26e8-4b7f-9714-471423873ab4")
-    @autotest.name("AgentsConfig: get_entry возвращает запись по id")
+    @autotest.name("AgentsConfig: get_entry returns the entry by id")
     def test_d4e5f6a7_get_entry(self):
-        with autotest.step("Создаём конфиг"):
+        with autotest.step("Create a config"):
             cfg = _agents()
 
-        with autotest.step("Ищем существующую и несуществующую запись"):
+        with autotest.step("Look up an existing and a nonexistent entry"):
             entry = cfg.get_entry("yandex-gpt-5.1")
             assert entry is not None
-            assert_equal(entry.id, "yandex-gpt-5.1", "id записи")
-            assert_is_none(cfg.get_entry("nope"), "несуществующая запись → None")
+            assert_equal(entry.id, "yandex-gpt-5.1", "entry id")
+            assert_is_none(cfg.get_entry("nope"), "nonexistent entry → None")
 
     @autotest.num("105")
     @autotest.external_id("bb640a7c-1fc9-4df8-aea3-ada6b5765180")
-    @autotest.name("AgentsConfig: Ollama base_url подставляется автоматически")
+    @autotest.name("AgentsConfig: Ollama base_url is substituted automatically")
     def test_f6a7b8c9_ollama_base_url_default(self):
-        with autotest.step("Создаём ProviderCreds для OLLAMA без base_url"):
+        with autotest.step("Create ProviderCreds for OLLAMA without base_url"):
             creds = ProviderCreds(provider=LlmProvider.OLLAMA)
             catalog = [
                 ModelEntry(id="llama3", label="Llama3", provider_ref="ollama", model="llama3")
@@ -139,11 +139,11 @@ class TestAgentsConfig:
                 intervention_model="llama3",
             )
 
-        with autotest.step("Проверяем подстановку base_url"):
+        with autotest.step("Check the base_url substitution"):
             assert_equal(
                 cfg.providers["ollama"].base_url,
                 "http://localhost:11434/v1",
-                "base_url для Ollama по умолчанию",
+                "base_url defaults for Ollama",
             )
 
 
@@ -151,60 +151,60 @@ class TestAgentsConfig:
 class TestConfigModel:
     @autotest.num("106")
     @autotest.external_id("75456dc1-509e-4e0e-8d67-24d05a96f24e")
-    @autotest.name("ConfigModel: полная сборка конфигурации")
+    @autotest.name("ConfigModel: full config assembly")
     def test_a7b8c9d0_full_config(self):
-        with autotest.step("Создаём полную конфигурацию"):
+        with autotest.step("Create a full configuration"):
             cfg = _make_full_config()
 
-        with autotest.step("Проверяем поля конфигурации"):
+        with autotest.step("Check the config fields"):
             assert_equal(
                 cfg.database.host,
                 "localhost",
-                f"host некорректен: {cfg.database.host!r}",
+                f"host is incorrect: {cfg.database.host!r}",
             )
             assert_equal(
                 cfg.agents.chat_model,
                 "yandex-gpt-5.1",
-                f"chat_model некорректен: {cfg.agents.chat_model!r}",
+                f"chat_model is incorrect: {cfg.agents.chat_model!r}",
             )
 
     @autotest.num("107")
     @autotest.external_id("b8c9d0e1-f2a3-4b4c-5d6e-f7a8b9c0d1e2")
-    @autotest.name("ConfigModel: отсутствие поля llm")
+    @autotest.name("ConfigModel: no llm field")
     def test_b8c9d0e1_no_llm_field(self):
-        with autotest.step("Проверяем, что поле 'llm' отсутствует в ConfigModel"):
+        with autotest.step("Check that the 'llm' field is absent from ConfigModel"):
             assert_true(
                 "llm" not in ConfigModel.model_fields,
-                "ConfigModel не должен содержать поле 'llm'",
+                "ConfigModel must not contain an 'llm' field",
             )
 
 
 class TestLearningAnalyticsConfig:
     @autotest.num("108")
     @autotest.external_id("7196861d-5ca3-439a-b0ab-baff1ab1b27b")
-    @autotest.name("LearningAnalyticsConfig: значения по умолчанию")
+    @autotest.name("LearningAnalyticsConfig: default values")
     def test_7196861d_defaults(self):
-        with autotest.step("Создаём LearningAnalyticsConfig без параметров"):
+        with autotest.step("Create a LearningAnalyticsConfig with no parameters"):
             cfg = LearningAnalyticsConfig()
 
-        with autotest.step("Проверяем значения по умолчанию"):
+        with autotest.step("Check default values"):
             assert_equal(cfg.poll_interval, 5.0, "poll_interval = 5.0")
             assert_equal(cfg.analysis_interval, 15.0, "analysis_interval = 15.0")
             assert_equal(cfg.cooldown_period, 60.0, "cooldown_period = 60.0")
-            assert_true(cfg.enabled, "enabled по умолчанию True")
+            assert_true(cfg.enabled, "enabled defaults to True")
             assert_equal(cfg.error_repeat_threshold, 3, "error_repeat_threshold = 3")
 
     @autotest.num("109")
     @autotest.external_id("31da00e8-cfb5-4352-9265-eabc5108cf0c")
-    @autotest.name("ConfigModel: содержит поле learning_analytics")
+    @autotest.name("ConfigModel: contains the learning_analytics field")
     def test_31da00e8_config_model_has_learning_analytics(self):
-        with autotest.step("Создаём ConfigModel без явного learning_analytics"):
+        with autotest.step("Create a ConfigModel without explicit learning_analytics"):
             config = _make_full_config()
 
-        with autotest.step("Проверяем learning_analytics"):
-            assert_true(config.learning_analytics is not None, "learning_analytics не None")
+        with autotest.step("Check learning_analytics"):
+            assert_true(config.learning_analytics is not None, "learning_analytics is not None")
             assert_equal(
                 config.learning_analytics.poll_interval,
                 5.0,
-                "poll_interval по умолчанию",
+                "poll_interval default",
             )

@@ -50,10 +50,10 @@ def _make_collector(control_interface):
 class TestCollectorSeam:
     @autotest.num("1790")
     @autotest.external_id("d08a21cd-84b2-4989-9a90-603b803e2bf8")
-    @autotest.name("collector: observe идёт через шов (ControlInterface.observe вызван)")
+    @autotest.name("collector: observe goes through the seam (ControlInterface.observe called)")
     @pytest.mark.asyncio
     async def test_d08a21cd_observe_routed_through_seam(self):
-        with autotest.step("Arrange: ControlInterface.observe возвращает список действий"):
+        with autotest.step("Arrange: ControlInterface.observe returns a list of actions"):
             ci = MagicMock()
             ci.observe = AsyncMock(return_value=[_ACTION])
             col = _make_collector(ci)
@@ -61,7 +61,7 @@ class TestCollectorSeam:
         with autotest.step("Act: _fetch_actions"):
             result = await col._fetch_actions()
 
-        with autotest.step("Assert: observe вызван с правильными аргументами, mcp не трогался"):
+        with autotest.step("Assert: observe called with correct args, mcp untouched"):
             ci.observe.assert_awaited_once()
             call_kwargs = ci.observe.await_args
             assert_equal(call_kwargs.args[0], "list_user_actions", "tool")
@@ -69,55 +69,53 @@ class TestCollectorSeam:
             assert_equal(call_kwargs.kwargs["session_id"], _SESSION_ID, "session_id")
             assert_equal(call_kwargs.kwargs["lab_slug"], _LAB_SLUG, "lab_slug")
             col._mcp.list_user_actions.assert_not_called()
-            assert_equal(len(result), 1, "одно событие")
+            assert_equal(len(result), 1, "one event")
 
     @autotest.num("1791")
     @autotest.external_id("8f755f33-ea16-49f6-b3da-fa7683d62a04")
-    @autotest.name("collector: InterfaceDenied(consent) → наблюдение пропускается, нет краша")
+    @autotest.name("collector: InterfaceDenied(consent) → observation skipped, no crash")
     @pytest.mark.asyncio
     async def test_8f755f33_denied_consent_skips_without_crash(self):
-        with autotest.step("Arrange: observe выбрасывает InterfaceDenied(consent)"):
+        with autotest.step("Arrange: observe raises InterfaceDenied(consent)"):
             ci = MagicMock()
             ci.observe = AsyncMock(side_effect=InterfaceDenied("consent"))
             col = _make_collector(ci)
 
-        with autotest.step("Act: _fetch_actions не должно упасть"):
+        with autotest.step("Act: _fetch_actions must not raise"):
             result = await col._fetch_actions()
 
-        with autotest.step("Assert: пустой список, mcp не трогался"):
-            assert_equal(result, [], "пустой при отказе")
+        with autotest.step("Assert: empty list, mcp untouched"):
+            assert_equal(result, [], "empty on denial")
             col._mcp.list_user_actions.assert_not_called()
 
     @autotest.num("1792")
     @autotest.external_id("3621d315-3606-4638-9a11-d3c06bb03bfb")
-    @autotest.name("collector: без шва (None) → fallback на mcp_client напрямую")
+    @autotest.name("collector: no seam (None) → falls back to mcp_client directly")
     @pytest.mark.asyncio
     async def test_3621d315_no_seam_fallback_to_mcp(self):
-        with autotest.step(
-            "Arrange: control_interface=None, mcp.list_user_actions возвращает список"
-        ):
+        with autotest.step("Arrange: control_interface=None, mcp.list_user_actions returns a list"):
             col = _make_collector(None)
             col._mcp.list_user_actions = AsyncMock(return_value=[_ACTION])
 
         with autotest.step("Act: _fetch_actions"):
             result = await col._fetch_actions()
 
-        with autotest.step("Assert: mcp.list_user_actions вызван, событие возвращено"):
+        with autotest.step("Assert: mcp.list_user_actions called, event returned"):
             col._mcp.list_user_actions.assert_awaited_once()
-            assert_equal(len(result), 1, "одно событие через fallback")
+            assert_equal(len(result), 1, "one event via fallback")
 
     @autotest.num("1793")
     @autotest.external_id("7d41615e-37c2-4f82-8f3c-82bf3bbeaafe")
-    @autotest.name("collector: InterfaceDenied(isolation) в get_logs → пропуск без краша")
+    @autotest.name("collector: InterfaceDenied(isolation) in get_logs → skipped, no crash")
     @pytest.mark.asyncio
     async def test_7d41615e_denied_isolation_logs_skips(self):
-        with autotest.step("Arrange: observe выбрасывает InterfaceDenied(isolation) на get_logs"):
+        with autotest.step("Arrange: observe raises InterfaceDenied(isolation) on get_logs"):
             ci = MagicMock()
             ci.observe = AsyncMock(side_effect=InterfaceDenied("isolation"))
             col = _make_collector(ci)
 
-        with autotest.step("Act: _fetch_logs не должно упасть"):
+        with autotest.step("Act: _fetch_logs must not raise"):
             result = await col._fetch_logs()
 
-        with autotest.step("Assert: пустой список"):
-            assert_equal(result, [], "пустой при изоляции")
+        with autotest.step("Assert: empty list"):
+            assert_equal(result, [], "empty on isolation")

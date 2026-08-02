@@ -41,38 +41,38 @@ class TestSessionInterventionsWsOwnership:
     @autotest.num("2410")
     @autotest.external_id("c205bb8c-ae3f-43d3-9d4b-b277f1d154ea")
     @autotest.name(
-        "session_interventions_ws: чужая сессия, close(4404), gateway.connect не вызывается"
+        "session_interventions_ws: someone else's session, close(4404), gateway.connect not called"
     )
     async def test_c205bb8c_rejects_session_not_owned_by_user(self):
         with autotest.step(
-            "Arrange: валидный токен, get_session возвращает None (сессия не принадлежит user-1)"
+            "Arrange: valid token, get_session returns None (session not owned by user-1)"
         ):
             gateway = _fake_gateway()
             fake_ws = _FakeWebSocket(gateway)
 
-        with autotest.step("Act: подключение к чужому session_id"):
+        with autotest.step("Act: connect to someone else's session_id"):
             with (
                 patch("sessions.routers.ws.decode_backend_token", return_value={"sub": "user-1"}),
                 patch("sessions.routers.ws.get_session", new=AsyncMock(return_value=None)),
             ):
                 await session_interventions_ws(fake_ws, "someone-elses-session", token="t")
 
-        with autotest.step("Assert: закрыто с 4404, gateway.connect ни разу не вызван"):
+        with autotest.step("Assert: closed with 4404, gateway.connect never called"):
             fake_ws.close.assert_awaited_once_with(code=4404)
             gateway.connect.assert_not_awaited()
 
     @autotest.num("2411")
     @autotest.external_id("9a0f526e-eedd-4701-9d72-0e996f5c8c95")
     @autotest.name(
-        "session_interventions_ws: владелец сессии, gateway.connect вызывается, disconnect по обрыву"
+        "session_interventions_ws: session owner, gateway.connect is called, disconnect on drop"
     )
     async def test_9a0f526e_connects_owner_to_gateway(self):
-        with autotest.step("Arrange: валидный токен, get_session возвращает сессию user-1"):
+        with autotest.step("Arrange: valid token, get_session returns user-1's session"):
             gateway = _fake_gateway()
             fake_ws = _FakeWebSocket(gateway)
             owned_session = SimpleNamespace(id="session-1", user_id="user-1")
 
-        with autotest.step("Act: подключение владельца к своей сессии"):
+        with autotest.step("Act: owner connects to their own session"):
             with (
                 patch("sessions.routers.ws.decode_backend_token", return_value={"sub": "user-1"}),
                 patch("sessions.routers.ws.get_session", new=AsyncMock(return_value=owned_session)),
@@ -80,7 +80,7 @@ class TestSessionInterventionsWsOwnership:
                 await session_interventions_ws(fake_ws, "session-1", token="t")
 
         with autotest.step(
-            "Assert: gateway.connect вызван с (session_id, websocket), disconnect при обрыве связи"
+            "Assert: gateway.connect called with (session_id, websocket), disconnect on drop"
         ):
             gateway.connect.assert_awaited_once_with("session-1", fake_ws)
             gateway.disconnect.assert_called_once_with("session-1", fake_ws)

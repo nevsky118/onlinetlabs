@@ -15,13 +15,13 @@ pytestmark = [pytest.mark.unit, pytest.mark.auth]
         ("student", True, True),  # explicit toggle enabled grants access
     ],
 )
-@autotest.name("may_select_model: матрица роль/тоггл/selectable_roles")
+@autotest.name("may_select_model: role/toggle/selectable_roles matrix")
 def test_may_select_model(role, toggle, expected):
     roles = {"student", "instructor", "admin"}
     assert may_select_model(role, toggle, roles) is expected
 
 
-@autotest.name("may_select_model: роль не в selectable_roles и toggle None → False")
+@autotest.name("may_select_model: role not in selectable_roles and toggle None → False")
 def test_may_select_model_role_not_in_selectable_roles():
     """Role NOT in selectable_roles, toggle None → False."""
     assert may_select_model("student", None, {"instructor", "admin"}) is False

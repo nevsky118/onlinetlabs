@@ -66,13 +66,13 @@ class TestLabResponses:
 
     @autotest.num("2502")
     @autotest.external_id("63376ebc-c27c-4ec3-8e85-432a02ff7ab8")
-    @autotest.name("GET /labs: полный JSON списка лаб пиксель-в-пиксель")
+    @autotest.name("GET /labs: full lab list JSON matches pixel-for-pixel")
     async def test_63376ebc_list_labs_exact_json(self):
         with autotest.step("Act: GET /labs"):
             async with self._client() as client:
                 resp = await client.get("/labs")
 
-        with autotest.step("Assert: 200 и полный JSON равен ожидаемому"):
+        with autotest.step("Assert: 200 and the full JSON matches the expected value"):
             assert_equal(resp.status_code, 200, "status 200")
             assert_equal(
                 resp.json(),
@@ -88,18 +88,18 @@ class TestLabResponses:
                         "meta": {"vendor": "cisco"},
                     }
                 ],
-                "полный JSON списка лаб",
+                "full lab list JSON",
             )
 
     @autotest.num("2503")
     @autotest.external_id("0e3e8332-e4f7-45d6-85f9-a81ec9ca3adc")
-    @autotest.name("GET /labs/{slug}: полный JSON лабы со степами пиксель-в-пиксель")
+    @autotest.name("GET /labs/{slug}: full lab-with-steps JSON matches pixel-for-pixel")
     async def test_0e3e8332_get_lab_detail_exact_json(self):
         with autotest.step("Act: GET /labs/ospf-lab"):
             async with self._client() as client:
                 resp = await client.get("/labs/ospf-lab")
 
-        with autotest.step("Assert: 200 и полный JSON равен ожидаемому"):
+        with autotest.step("Assert: 200 and the full JSON matches the expected value"):
             assert_equal(resp.status_code, 200, "status 200")
             assert_equal(
                 resp.json(),
@@ -121,14 +121,14 @@ class TestLabResponses:
                         }
                     ],
                 },
-                "полный JSON лабы со степами",
+                "full lab-with-steps JSON",
             )
 
     @autotest.num("2504")
     @autotest.external_id("69e350fc-43a1-47f1-951d-c2dfceb3a6fd")
-    @autotest.name("POST /labs: полный JSON созданной лабы пиксель-в-пиксель")
+    @autotest.name("POST /labs: full created-lab JSON matches pixel-for-pixel")
     async def test_69e350fc_create_lab_exact_json(self):
-        with autotest.step("Act: POST /labs с новой лабой"):
+        with autotest.step("Act: POST /labs with a new lab"):
             async with self._client() as client:
                 resp = await client.post(
                     "/labs",
@@ -141,7 +141,7 @@ class TestLabResponses:
                     },
                 )
 
-        with autotest.step("Assert: 201 и полный JSON равен ожидаемому"):
+        with autotest.step("Assert: 201 and the full JSON matches the expected value"):
             assert_equal(resp.status_code, 201, "status 201")
             assert_equal(
                 resp.json(),
@@ -155,7 +155,7 @@ class TestLabResponses:
                     "order_in_course": 0,
                     "meta": None,
                 },
-                "полный JSON созданной лабы",
+                "full created-lab JSON",
             )
 
 

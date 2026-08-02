@@ -141,49 +141,49 @@ class TestInstructorService:
 
     @autotest.num("743")
     @autotest.external_id("6f531b65-31f8-4783-bff5-ceec98b773b6")
-    @autotest.name("get_students_overview: только students, подсказки = intervention")
+    @autotest.name("get_students_overview: students only, hints = intervention")
     async def test_overview_counts_hints_and_excludes_non_students(self):
-        with autotest.step("Arrange: сеем учеников, препода и события"):
+        with autotest.step("Arrange: seed students, instructor, and events"):
             await self._seed()
 
-        with autotest.step("Act: получаем сводку"):
+        with autotest.step("Act: fetch overview"):
             async with self.session_factory() as db:
                 result = await get_students_overview(db)
 
-        with autotest.step("Assert: 2 ученика, препод исключён, подсказки=2"):
-            assert_equal(result["total_students"], 2, "только students")
-            assert_equal(result["total_hints"], 2, "всего подсказок")
+        with autotest.step("Assert: 2 students, instructor excluded, hints=2"):
+            assert_equal(result["total_students"], 2, "students only")
+            assert_equal(result["total_hints"], 2, "total hints")
             by_id = {s["user_id"]: s for s in result["students"]}
-            assert_equal(by_id["stud-1"]["total_hints"], 2, "подсказки stud-1")
-            assert_equal(by_id["stud-1"]["labs_completed"], 1, "завершённых лаб")
-            assert_equal(by_id["stud-1"]["avg_score"], 90.0, "средняя оценка")
-            assert_equal(by_id["stud-2"]["total_hints"], 0, "у stud-2 нет подсказок")
+            assert_equal(by_id["stud-1"]["total_hints"], 2, "stud-1 hints")
+            assert_equal(by_id["stud-1"]["labs_completed"], 1, "completed labs")
+            assert_equal(by_id["stud-1"]["avg_score"], 90.0, "average score")
+            assert_equal(by_id["stud-2"]["total_hints"], 0, "stud-2 has no hints")
 
     @autotest.num("744")
     @autotest.external_id("d62eb287-869b-4d68-b2c8-5827e4927f92")
-    @autotest.name("get_student_detail: разбивка по лабам с названием и подсказками")
+    @autotest.name("get_student_detail: breakdown by lab with title and hints")
     async def test_detail_breaks_down_by_lab(self):
-        with autotest.step("Arrange: сеем данные"):
+        with autotest.step("Arrange: seed data"):
             await self._seed()
 
-        with autotest.step("Act: получаем детали stud-1"):
+        with autotest.step("Act: fetch stud-1 detail"):
             async with self.session_factory() as db:
                 detail = await get_student_detail(db, "stud-1")
 
-        with autotest.step("Assert: лаба с названием, подсказками и попытками"):
-            assert_equal(detail["total_hints"], 2, "всего подсказок")
-            assert_equal(len(detail["labs"]), 1, "одна лаба")
+        with autotest.step("Assert: lab with title, hints, and attempts"):
+            assert_equal(detail["total_hints"], 2, "total hints")
+            assert_equal(len(detail["labs"]), 1, "one lab")
             lab = detail["labs"][0]
-            assert_equal(lab["lab_title"], "DHCP Basics", "название лабы")
-            assert_equal(lab["hints"], 2, "подсказок по лабе")
-            assert_equal(lab["sessions"], 1, "сессий по лабе")
-            assert_equal(lab["attempts"], 1, "попыток по лабе")
+            assert_equal(lab["lab_title"], "DHCP Basics", "lab title")
+            assert_equal(lab["hints"], 2, "hints for lab")
+            assert_equal(lab["sessions"], 1, "sessions for lab")
+            assert_equal(lab["attempts"], 1, "attempts for lab")
 
     @autotest.num("745")
     @autotest.external_id("fc258598-ea8f-4e9c-8310-cf5d9740cae7")
-    @autotest.name("get_student_detail: неизвестный ученик → None")
+    @autotest.name("get_student_detail: unknown student → None")
     async def test_detail_unknown_user_returns_none(self):
-        with autotest.step("Act: запрашиваем несуществующего ученика"):
+        with autotest.step("Act: request nonexistent student"):
             async with self.session_factory() as db:
                 detail = await get_student_detail(db, "ghost")
 
@@ -192,9 +192,9 @@ class TestInstructorService:
 
     @autotest.num("746")
     @autotest.external_id("f148d464-0220-428f-b136-a2dbce7639b3")
-    @autotest.name("get_student_detail: sessions с message_count и hint_count")
+    @autotest.name("get_student_detail: sessions with message_count and hint_count")
     async def test_detail_sessions_message_and_hint_counts(self):
-        with autotest.step("Arrange: студент с сессией, 2 сообщениями, 1 интервенцией"):
+        with autotest.step("Arrange: student with one session, 2 messages, 1 intervention"):
             await self._seed_with_chat()
 
         with autotest.step("Act"):
@@ -202,8 +202,8 @@ class TestInstructorService:
                 detail = await get_student_detail(db, "stud-c")
 
         with autotest.step("Assert"):
-            assert "sessions" in detail, "sessions есть в детали"
-            assert_equal(len(detail["sessions"]), 1, "одна сессия")
+            assert "sessions" in detail, "sessions is present in the detail"
+            assert_equal(len(detail["sessions"]), 1, "one session")
             s = detail["sessions"][0]
-            assert_equal(s["message_count"], 2, "два сообщения")
-            assert_equal(s["hint_count"], 1, "одна подсказка")
+            assert_equal(s["message_count"], 2, "two messages")
+            assert_equal(s["hint_count"], 1, "one hint")

@@ -13,9 +13,11 @@ pytestmark = [pytest.mark.unit]
 class TestMetrics:
     @autotest.num("1670")
     @autotest.external_id("e44cc247-9f18-407c-b2fd-7ba446e6ae37")
-    @autotest.name("metrics: TP/recall/latency/ложные-час по детекциям")
+    @autotest.name("metrics: TP/recall/latency/false-per-hour from detections")
     def test_e44cc247_evaluate(self):
-        with autotest.step("Arrange: 1 струггл детектнут в окне, 1 пропущен, 1 нормальная ложная"):
+        with autotest.step(
+            "Arrange: 1 struggle detected in window, 1 missed, 1 normal false positive"
+        ):
             s_hit = make_struggle_scenario(
                 ProcessRegime.REPEATING_ERRORS, onset_index=4, n=12, step=15.0
             )  # onset 60
@@ -31,18 +33,18 @@ class TestMetrics:
             ]
         with autotest.step("Act"):
             m = evaluate(pairs)
-        with autotest.step("Assert: recall 0.5, 1 ложное, latency=15"):
-            assert_equal(m.n_struggle, 2, "струггл-сценариев")
+        with autotest.step("Assert: recall 0.5, 1 false positive, latency=15"):
+            assert_equal(m.n_struggle, 2, "struggle scenarios")
             assert_equal(m.n_tp, 1, "TP")
             assert_equal(m.recall, 0.5, "recall")
             assert_equal(m.latency_median, 15.0, "latency 75-60")
-            assert_true(m.false_per_hour > 0.0, "ложные/час>0")
+            assert_true(m.false_per_hour > 0.0, "false/hour>0")
 
     @autotest.num("1671")
     @autotest.external_id("14b97f36-3d40-474a-ab1b-eab2fa49aa84")
-    @autotest.name("metrics: бутстрэп-CI None на одном значении")
+    @autotest.name("metrics: bootstrap CI is None for a single value")
     def test_14b97f36_ci_small(self):
         with autotest.step("Act+Assert"):
-            assert_is_none(bootstrap_ci([5.0]), "одно значение, нет CI")
+            assert_is_none(bootstrap_ci([5.0]), "single value, no CI")
             lo, hi = bootstrap_ci([10.0, 12.0, 14.0, 16.0, 18.0])
-            assert_true(lo <= hi, "CI упорядочен")
+            assert_true(lo <= hi, "CI ordered")

@@ -8,14 +8,14 @@ pytestmark = [pytest.mark.unit]
 class TestInterventionDecision:
     @autotest.num("1966")
     @autotest.external_id("ff5ef85c-5fd8-4c3f-9706-c604f0828a8b")
-    @autotest.name("InterventionDecision: таблица содержит все обязательные колонки")
+    @autotest.name("InterventionDecision: table has all required columns")
     def test_ff5ef85c_model_columns_present(self):
-        with autotest.step("Act: получить имена колонок модели"):
+        with autotest.step("Act: get the model's column names"):
             from models.intervention_decision import InterventionDecision
 
             cols = set(InterventionDecision.__table__.columns.keys())
 
-        with autotest.step("Assert: все обязательные колонки присутствуют, имя таблицы верно"):
+        with autotest.step("Assert: all required columns present, table name correct"):
             assert_true(
                 {
                     "id",
@@ -33,8 +33,6 @@ class TestInterventionDecision:
                     "created_at",
                 }
                 <= cols,
-                f"все обязательные колонки присутствуют; есть: {cols}",
+                f"all required columns present; have: {cols}",
             )
-            assert_equal(
-                InterventionDecision.__tablename__, "intervention_decisions", "имя таблицы"
-            )
+            assert_equal(InterventionDecision.__tablename__, "intervention_decisions", "table name")
