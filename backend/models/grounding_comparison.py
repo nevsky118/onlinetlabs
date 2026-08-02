@@ -15,13 +15,9 @@ class GroundingComparison(Base):
     """
 
     __tablename__ = "grounding_comparisons"
-    __table_args__ = (
-        Index("ix_grounding_comparisons_session", "session_id"),
-    )
+    __table_args__ = (Index("ix_grounding_comparisons_session", "session_id"),)
 
-    id: Mapped[str] = mapped_column(
-        String(255), primary_key=True, default=lambda: str(uuid4())
-    )
+    id: Mapped[str] = mapped_column(String(255), primary_key=True, default=lambda: str(uuid4()))
     session_id: Mapped[str] = mapped_column(
         String(255), ForeignKey("learning_sessions.id", ondelete="CASCADE")
     )

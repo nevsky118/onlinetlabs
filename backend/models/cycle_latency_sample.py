@@ -11,13 +11,9 @@ class CycleLatencySample(Base):
     """Latency of a single cycle stage (for p50/p95/p99 under load, not the mean)."""
 
     __tablename__ = "cycle_latency_samples"
-    __table_args__ = (
-        Index("ix_cycle_latency_samples_session_stage", "session_id", "stage"),
-    )
+    __table_args__ = (Index("ix_cycle_latency_samples_session_stage", "session_id", "stage"),)
 
-    id: Mapped[str] = mapped_column(
-        String(255), primary_key=True, default=lambda: str(uuid4())
-    )
+    id: Mapped[str] = mapped_column(String(255), primary_key=True, default=lambda: str(uuid4()))
     session_id: Mapped[str] = mapped_column(
         String(255), ForeignKey("learning_sessions.id", ondelete="CASCADE")
     )

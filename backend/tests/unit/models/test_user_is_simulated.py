@@ -12,6 +12,7 @@ class TestUserIsSimulated:
     def test_db42e7b5_user_has_is_simulated(self):
         with autotest.step("Act+Assert: колонка присутствует, дефолт False"):
             from models.user import User
+
             col = User.__table__.columns.get("is_simulated")
             assert_true(col is not None, "колонка is_simulated присутствует")
             assert_equal(col.default.arg, False, "дефолт False")

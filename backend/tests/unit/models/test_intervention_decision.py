@@ -12,15 +12,27 @@ class TestInterventionDecision:
     def test_ff5ef85c_model_columns_present(self):
         with autotest.step("Act: получить имена колонок модели"):
             from models.intervention_decision import InterventionDecision
+
             cols = set(InterventionDecision.__table__.columns.keys())
 
         with autotest.step("Assert: все обязательные колонки присутствуют, имя таблицы верно"):
             assert_true(
                 {
-                    "id", "session_id", "user_id", "lab_slug", "spell_id", "ts",
-                    "regime", "dwell_seconds", "t_k_applied", "assignment",
-                    "subsequent_exit_ts", "censored", "created_at",
-                } <= cols,
+                    "id",
+                    "session_id",
+                    "user_id",
+                    "lab_slug",
+                    "spell_id",
+                    "ts",
+                    "regime",
+                    "dwell_seconds",
+                    "t_k_applied",
+                    "assignment",
+                    "subsequent_exit_ts",
+                    "censored",
+                    "created_at",
+                }
+                <= cols,
                 f"все обязательные колонки присутствуют; есть: {cols}",
             )
             assert_equal(

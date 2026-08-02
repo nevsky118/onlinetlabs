@@ -12,11 +12,13 @@ class TestSessionEvidenceSnapshot:
     def test_811b4689_model_columns_present(self):
         with autotest.step("Act: получить имена колонок модели"):
             from models.session_evidence_snapshot import SessionEvidenceSnapshot
+
             cols = set(SessionEvidenceSnapshot.__table__.columns.keys())
 
         with autotest.step("Assert: обязательные колонки присутствуют, имя таблицы верно"):
             assert_true(
-                {"id", "session_id", "user_id", "lab_slug", "ts", "kind", "payload", "created_at"} <= cols,
+                {"id", "session_id", "user_id", "lab_slug", "ts", "kind", "payload", "created_at"}
+                <= cols,
                 f"обязательные колонки присутствуют; есть {cols}",
             )
             assert_equal(

@@ -1,4 +1,5 @@
 """Reproducibility bundle: anonymized export of real MRT data for re-analysis."""
+
 import hashlib
 
 from sqlalchemy import func, select
@@ -23,22 +24,36 @@ async def build_reproducibility_bundle(db: AsyncSession) -> dict:
     """
     sim_users = select(User.id).where(User.is_simulated.is_(True)).scalar_subquery()
     sim_sessions = (
-        select(LearningSession.id)
-        .where(LearningSession.user_id.in_(sim_users))
-        .scalar_subquery()
+        select(LearningSession.id).where(LearningSession.user_id.in_(sim_users)).scalar_subquery()
     )
-    decisions = (await db.execute(
-        select(InterventionDecision).where(InterventionDecision.user_id.notin_(sim_users))
-    )).scalars().all()
-    annotations = (await db.execute(
-        select(RegimeAnnotation).where(RegimeAnnotation.session_id.notin_(sim_sessions))
-    )).scalars().all()
-    gold = (await db.execute(
-        select(func.count()).select_from(RegimeAnnotation).where(
-            RegimeAnnotation.is_gold.is_(True),
-            RegimeAnnotation.session_id.notin_(sim_sessions),
+    decisions = (
+        (
+            await db.execute(
+                select(InterventionDecision).where(InterventionDecision.user_id.notin_(sim_users))
+            )
         )
-    )).scalar_one()
+        .scalars()
+        .all()
+    )
+    annotations = (
+        (
+            await db.execute(
+                select(RegimeAnnotation).where(RegimeAnnotation.session_id.notin_(sim_sessions))
+            )
+        )
+        .scalars()
+        .all()
+    )
+    gold = (
+        await db.execute(
+            select(func.count())
+            .select_from(RegimeAnnotation)
+            .where(
+                RegimeAnnotation.is_gold.is_(True),
+                RegimeAnnotation.session_id.notin_(sim_sessions),
+            )
+        )
+    ).scalar_one()
     return {
         "intervention_decisions": [
             {

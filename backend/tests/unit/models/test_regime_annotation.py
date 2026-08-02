@@ -12,11 +12,21 @@ class TestRegimeAnnotation:
     def test_51f61070_model_columns_present(self):
         with autotest.step("Act: получить имена колонок модели"):
             from models.regime_annotation import RegimeAnnotation
+
             cols = set(RegimeAnnotation.__table__.columns.keys())
 
         with autotest.step("Assert: обязательные колонки присутствуют, имя таблицы верно"):
             assert_true(
-                {"id", "session_id", "coder_id", "window_index", "regime_label", "is_gold", "created_at"} <= cols,
+                {
+                    "id",
+                    "session_id",
+                    "coder_id",
+                    "window_index",
+                    "regime_label",
+                    "is_gold",
+                    "created_at",
+                }
+                <= cols,
                 f"обязательные колонки присутствуют; есть {cols}",
             )
             assert_equal(RegimeAnnotation.__tablename__, "regime_annotations", "имя таблицы")

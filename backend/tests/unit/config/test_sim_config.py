@@ -13,4 +13,6 @@ class TestSimConfig:
     @autotest.name("Config: sim_llm_help_enabled по умолчанию False")
     def test_7b08b35d_sim_llm_help_default(self):
         with autotest.step("Act+Assert: дефолт выключен"):
-            assert_equal(LearningAnalyticsConfig().sim_llm_help_enabled, False, "по умолчанию False")
+            assert_equal(
+                LearningAnalyticsConfig().sim_llm_help_enabled, False, "по умолчанию False"
+            )

@@ -15,13 +15,9 @@ class RegimeAnnotation(Base):
     """
 
     __tablename__ = "regime_annotations"
-    __table_args__ = (
-        Index("ix_regime_annotations_session_window", "session_id", "window_index"),
-    )
+    __table_args__ = (Index("ix_regime_annotations_session_window", "session_id", "window_index"),)
 
-    id: Mapped[str] = mapped_column(
-        String(255), primary_key=True, default=lambda: str(uuid4())
-    )
+    id: Mapped[str] = mapped_column(String(255), primary_key=True, default=lambda: str(uuid4()))
     session_id: Mapped[str] = mapped_column(
         String(255), ForeignKey("learning_sessions.id", ondelete="CASCADE")
     )

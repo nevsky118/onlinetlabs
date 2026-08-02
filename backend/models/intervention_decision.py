@@ -20,15 +20,11 @@ class InterventionDecision(Base):
         Index("ix_intervention_decisions_spell", "spell_id"),
     )
 
-    id: Mapped[str] = mapped_column(
-        String(255), primary_key=True, default=lambda: str(uuid4())
-    )
+    id: Mapped[str] = mapped_column(String(255), primary_key=True, default=lambda: str(uuid4()))
     session_id: Mapped[str] = mapped_column(
         String(255), ForeignKey("learning_sessions.id", ondelete="CASCADE")
     )
-    user_id: Mapped[str] = mapped_column(
-        String(255), ForeignKey("users.id", ondelete="CASCADE")
-    )
+    user_id: Mapped[str] = mapped_column(String(255), ForeignKey("users.id", ondelete="CASCADE"))
     lab_slug: Mapped[str] = mapped_column(String(255))
     spell_id: Mapped[str] = mapped_column(String(255))
     ts: Mapped[datetime] = mapped_column(DateTime(timezone=True))
