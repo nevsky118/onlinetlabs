@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 
-from agents.analytics.models import (
+from agents.identifier.models import (
     AnalyticsResult,
     DifficultyLevel,
     DifficultyRecommendation,

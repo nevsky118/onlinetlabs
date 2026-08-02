@@ -30,7 +30,7 @@ help:
 	@printf "  $(Y)%-20s$(N) %s\n" "serve"              "Start gns3-service (ENV=local|dev|prod)"
 	@printf "  $(Y)%-20s$(N) %s\n" "serve-mcp"          "Start MCP server"
 	@printf "\n  $(B)Testing$(N)\n"
-	@printf "  $(Y)%-20s$(N) %s\n" "test"               "Run gns3-mcp unit tests"
+	@printf "  $(Y)%-20s$(N) %s\n" "test"               "Run gns3-mcp + gns3-service unit tests"
 	@printf "\n  $(B)Code Quality$(N)\n"
 	@printf "  $(Y)%-20s$(N) %s\n" "lint"               "Lint both services with ruff"
 	@printf "\n  $(B)Docker$(N)\n"
@@ -51,23 +51,23 @@ help:
 
 # ── Development ──────────────────────────────────────────────
 install:
-	cd $(MCP_DIR) && poetry install
-	cd $(SERVICE_DIR) && poetry install
+	uv sync --package gns3-mcp-server --package gns3-service
 
 serve:
-	cd $(SERVICE_DIR) && ENV_FILE=$(ENV_FILE) poetry run uvicorn src.main:app --reload --host 0.0.0.0 --port 8101
+	cd $(SERVICE_DIR) && ENV_FILE=$(ENV_FILE) uv run --package gns3-service uvicorn src.main:app --reload --host 0.0.0.0 --port 8101
 
 serve-mcp:
-	cd $(MCP_DIR) && ENV_FILE=$(ENV_FILE) poetry run python -m src.main
+	cd $(MCP_DIR) && ENV_FILE=$(ENV_FILE) uv run --package gns3-mcp-server python -m src.main
 
 # ── Testing ──────────────────────────────────────────────────
 test:
-	cd $(MCP_DIR) && poetry run python -m pytest -v
+	cd $(MCP_DIR) && uv run --package gns3-mcp-server pytest tests -v
+	cd $(SERVICE_DIR) && uv run --package gns3-service pytest tests -v
 
 # ── Code Quality ─────────────────────────────────────────────
 lint:
-	cd $(MCP_DIR) && poetry run ruff check src/ tests/
-	cd $(SERVICE_DIR) && poetry run ruff check src/ tests/
+	cd $(MCP_DIR) && uv run --package gns3-mcp-server ruff check src/ tests/
+	cd $(SERVICE_DIR) && uv run --package gns3-service ruff check src/ tests/
 
 # ── Docker ───────────────────────────────────────────────────
 up:
@@ -88,13 +88,13 @@ psql:
 
 # ── Migrations ──────────────────────────────────────────────
 migrate:
-	cd $(SERVICE_DIR) && ENV_FILE=$(ENV_FILE) poetry run alembic upgrade head
+	cd $(SERVICE_DIR) && ENV_FILE=$(ENV_FILE) uv run --package gns3-service alembic upgrade head
 
 migrate-create:
-	cd $(SERVICE_DIR) && ENV_FILE=$(ENV_FILE) poetry run alembic revision --autogenerate -m "$(msg)"
+	cd $(SERVICE_DIR) && ENV_FILE=$(ENV_FILE) uv run --package gns3-service alembic revision --autogenerate -m "$(msg)"
 
 migrate-rollback:
-	cd $(SERVICE_DIR) && ENV_FILE=$(ENV_FILE) poetry run alembic downgrade -1
+	cd $(SERVICE_DIR) && ENV_FILE=$(ENV_FILE) uv run --package gns3-service alembic downgrade -1
 
 # ── Encryption ───────────────────────────────────────────────
 encrypt:

@@ -220,6 +220,7 @@ def register_domain_tools(
     get_client: Callable[[SessionContext], Awaitable[GNS3ApiClient]],
     get_project_id: Callable[[SessionContext], str],
     service_url: str | None = None,
+    internal_api_token: str | None = None,
 ) -> None:
     """Registers all GNS3 domain tools.
 
@@ -252,8 +253,15 @@ def register_domain_tools(
             "node_id": node_id,
             "command": command,
         }
+        if not internal_api_token:
+            return {
+                "success": False,
+                "message": "INTERNAL_API_TOKEN not configured for gns3-service exec",
+                "data": None,
+            }
+        headers = {"Authorization": f"Bearer {internal_api_token}"}
         async with httpx.AsyncClient(base_url=service_url, timeout=30) as client:
-            resp = await client.post("/v1/exec/vtysh", json=payload)
+            resp = await client.post("/v1/exec/vtysh", json=payload, headers=headers)
         if resp.status_code != 200:
             return {
                 "success": False,

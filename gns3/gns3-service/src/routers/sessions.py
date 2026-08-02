@@ -1,6 +1,5 @@
 # REST endpoints for lab sessions: CRUD and node operations.
 
-import uuid
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Path
@@ -8,12 +7,10 @@ from pydantic import BaseModel, Field
 
 from src.models import (
     ErrorResponse,
-    PasswordResetResponse,
     ProjectResetResponse,
     SessionCreate,
     SessionResponse,
     SessionStateResponse,
-    SessionStatus,
 )
 
 from ._deps import get_db, get_service
@@ -44,36 +41,6 @@ async def create_session(body: SessionCreate, service=Depends(get_service), db=D
 
 
 @router.get(
-    "/sessions/{session_id}",
-    response_model=SessionStatus,
-    tags=["sessions"],
-    summary="Получить статус сессии",
-    description="Возвращает текущее состояние лабораторной сессии по её UUID.",
-    responses={
-        404: {"model": ErrorResponse, "description": "Сессия не найдена"},
-    },
-)
-async def get_session(
-    session_id: str = Path(
-        description="UUID сессии", examples=["f47ac10b-58cc-4372-a567-0e02b2c3d479"]
-    ),
-    db=Depends(get_db),
-):
-    from src.db.models import Session
-
-    session = await db.get(Session, uuid.UUID(session_id))
-    if session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
-    return SessionStatus(
-        session_id=str(session.id),
-        status=session.status.value,
-        project_id=session.gns3_project_id,
-        gns3_username=session.gns3_username,
-        created_at=session.created_at,
-    )
-
-
-@router.get(
     "/sessions/{session_id}/state",
     response_model=SessionStateResponse,
     tags=["sessions"],
@@ -100,29 +67,6 @@ async def get_session_state(
         raise
     except Exception:
         raise HTTPException(status_code=502, detail="GNS3 unreachable")
-
-
-@router.post(
-    "/sessions/{session_id}/reset-password",
-    response_model=PasswordResetResponse,
-    tags=["sessions"],
-    summary="Сбросить пароль GNS3",
-    description=(
-        "Генерирует новый пароль для GNS3-пользователя сессии, "
-        "обновляет его в GNS3 и возвращает новые учётные данные с JWT. "
-        "Пароль возвращается один раз."
-    ),
-    responses={
-        404: {"model": ErrorResponse, "description": "Сессия не найдена"},
-        409: {"model": ErrorResponse, "description": "Сессия закрыта"},
-    },
-)
-async def reset_password(
-    session_id: str = Path(description="UUID сессии"),
-    service=Depends(get_service),
-    db=Depends(get_db),
-):
-    return await service.reset_password(db=db, session_id=session_id)
 
 
 class ProjectResetRequest(BaseModel):

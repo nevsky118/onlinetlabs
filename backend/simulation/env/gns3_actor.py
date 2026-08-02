@@ -1,16 +1,13 @@
-"""GNS3 executor: student action → real device console / chat / idle.
+"""GNS3 executor: turns a simulated student action into console input, chat or idle.
 
-HOW THE LOOP CLOSES. The regime detector is fed by spec-check failures:
-`LabProgressObserver` periodically runs the lab's checks (`vpcs.show_ip`, `vpcs.ping`,
-they telnet into the node's console) and emits `check_failing` / `check_retry` / `check_regressed`
-as behavioral events with event_type=error. From these come `error_repeat_count`,
-`distinct_failing_actuals`, `cycles_failing_unchanged`, 4 of the detector's 6 rules.
+The detector is fed by spec-check failures: LabProgressObserver telnets into the
+node console, runs the lab checks and emits check_failing / check_retry /
+check_regressed as error events. Those produce error_repeat_count,
+distinct_failing_actuals and cycles_failing_unchanged, i.e. 4 of the 6 rules.
 
-That's why the student CONFIGURES the device in the console (correct command → check
-passes, wrong → fails), and the nodes stay running: a stopped node means an
-unreachable console, meaning checks just hang and there's no signal.
-
-The help request goes to the real chat (+ tutor's reply → a full dialogue in the chat log).
+So the actor must configure the device for real and the nodes must stay running:
+a stopped node has no console, the checks hang and the detector gets no signal.
+Help requests go through the real chat, so the dialogue is persisted too.
 """
 
 import asyncio
@@ -53,9 +50,7 @@ class GNS3Actor:
         self._last_cmd: str | None = None
         self._last_node: str | None = None
 
-    async def execute(
-        self, action: Action, cmd: str = "", help_context: dict | None = None
-    ) -> None:
+    async def execute(self, action: Action, help_context: dict | None = None) -> None:
         if action in _CONSOLE_ACTIONS:
             await self._configure(action)
         elif action == Action.ASK_HELP:

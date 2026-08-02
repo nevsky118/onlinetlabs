@@ -1,6 +1,7 @@
 """Control criterion J: policy cost over historical state logs."""
 
 import statistics
+from bisect import bisect_right
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -27,6 +28,15 @@ class JResult:
 BAD_REGIMES = {"stuck_on_step", "repeating_errors", "idle", "trial_and_error"}
 
 
+def costs_from_config(cfg) -> "Costs":
+    """Cost vector from LearningAnalyticsConfig, so callers stop hardcoding it."""
+    return Costs(
+        c_stuck=cfg.cost_stuck,
+        c_intervention=cfg.cost_intervention,
+        c_false=cfg.cost_false_intervention,
+    )
+
+
 def is_bad_regime(regime: str) -> bool:
     return regime in BAD_REGIMES
 
@@ -38,18 +48,39 @@ def _to_sec(x) -> float:
     return float(x)
 
 
-def _count_false(samples, interventions) -> int:
-    """False intervention: an intervention after which the bad regime ended
-    faster than the median "clean" self-exit (without intervention).
+def _interventions_outside_bad_regime(samples, intervention_ts) -> int:
+    """Counts interventions fired while the process was not in a bad regime.
 
-    Spline assumption: state is piecewise-constant between polls.
-    If there are no clean exits, we don't count any false ones (conservative).
+    Left-edge rule, as for bad_duration. An intervention before the first sample
+    isn't counted: the state there is unknown.
+    """
+    if not samples:
+        return 0
+    ts = [_to_sec(s["ts"]) for s in samples]
+    n_false = 0
+    for ivt in intervention_ts:
+        idx = bisect_right(ts, ivt) - 1
+        if idx < 0:
+            continue
+        if not is_bad_regime(samples[idx]["regime"]):
+            n_false += 1
+    return n_false
+
+
+def _count_false(samples, interventions) -> int:
+    """False interventions, two disjoint kinds:
+
+    (a) fired outside any bad regime;
+    (b) fired inside a bad spell that ended faster than the median clean self-exit.
+
+    (b) alone misses false alarms on sessions where nothing ever went wrong.
     """
     if not interventions:
         return 0
 
     ts = [_to_sec(s["ts"]) for s in samples]
     intervention_ts = sorted(_to_sec(iv["ts"]) for iv in interventions)
+    n_false = _interventions_outside_bad_regime(samples, intervention_ts)
 
     # Find all intervals spent in the bad regime (contiguous spells)
     # A spell = a sequence of adjacent bad samples (by the left-edge rule).
@@ -83,12 +114,12 @@ def _count_false(samples, interventions) -> int:
     # Median duration of "clean" exits (no intervention, ended productively)
     clean_durations = [sp["duration"] for sp in spells if not sp["had_iv"] and sp["recovered"]]
     if not clean_durations:
-        return 0  # no basis for estimation -- don't count false ones
+        return n_false  # no basis for the spline estimate -- keep only kind (a)
 
     median_clean = statistics.median(clean_durations)
 
-    # False intervention: a spell with an intervention that ended faster than the median
-    n_false = sum(
+    # Kind (b): a spell with an intervention that ended faster than the median
+    n_false += sum(
         1 for sp in spells if sp["had_iv"] and sp["recovered"] and sp["duration"] < median_clean
     )
     return n_false
@@ -97,17 +128,13 @@ def _count_false(samples, interventions) -> int:
 def compute_J(samples, interventions, costs, *, bad_duration_samples=None):
     """Policy cost over a session state log.
 
-    samples: list of dicts {ts: float|datetime, regime: str, dwell: float}, ascending by ts.
-    interventions: list of dicts {ts: float|datetime}.
-    bad_duration_samples: if given, bad_duration is computed from it (truncated samples
-      for the offline optimizer), while n_false uses the original samples.
-    bad_duration = total duration of intervals between adjacent samples where
-      the left sample is in a bad regime (piecewise-constant state between polls).
-    False intervention (default strategy, documented as a spline assumption):
-      an intervention after which the process returned to the productive regime
-      faster than the median time of spontaneous exit from that regime over
-      intervals WITHOUT an intervention. If the median can't be estimated
-      (no "clean" exits), we don't count any false ones (conservative).
+    samples: [{ts, regime, dwell}] ascending by ts. interventions: [{ts}].
+    bad_duration_samples: when given, bad_duration is measured on it (the
+    truncated stream the offline optimizer builds) while n_false stays on
+    `samples`.
+
+    bad_duration sums the gaps whose left sample is in a bad regime
+    (piecewise-constant between polls). See _count_false for the false-alarm rule.
     """
     dur_samples = bad_duration_samples if bad_duration_samples is not None else samples
     ts = [_to_sec(s["ts"]) for s in dur_samples]

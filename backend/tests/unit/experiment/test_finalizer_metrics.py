@@ -189,7 +189,7 @@ class TestFinalizerMetrics:
                 steps_completed=3,
                 total_steps=5,
                 experiment_group="group_b",
-                agent_backend="openclaw",
+                agent_backend="tutor",
             )
         with autotest.step("Assert: старые поля на месте"):
             assert_equal(metrics["interventions_received"], 3, "3 интервенции")
@@ -200,7 +200,7 @@ class TestFinalizerMetrics:
             assert_equal(metrics["final_score"], 60.0, "60%")
             assert_equal(metrics["completed"], False, "не завершено")
             assert_equal(metrics["experiment_group"], "group_b", "group_b")
-            assert_equal(metrics["agent_backend"], "openclaw", "openclaw")
+            assert_equal(metrics["agent_backend"], "tutor", "backend")
 
     @autotest.num("1219")
     @autotest.external_id("6df0c600-b76b-4b28-ae1a-967bde85fdc9")

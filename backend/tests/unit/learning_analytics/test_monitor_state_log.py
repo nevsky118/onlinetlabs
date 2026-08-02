@@ -6,7 +6,7 @@ import pytest
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal
 
-from agents.analytics.models import StruggleType
+from agents.identifier.models import StruggleType
 from config.config_model import LearningAnalyticsConfig
 from learning_analytics.monitor import SessionMonitor
 from learning_analytics.process_state import ProcessRegime

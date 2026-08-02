@@ -147,16 +147,16 @@ class TestSessionMonitor:
                 confidence=0.8,
             )
             response = OrchestratorResponse(
-                agent_used="openclaw",
-                agent_backend="openclaw",
+                agent_used="tutor",
+                agent_backend="tutor",
                 success=False,
-                error="openclaw_timeout: timeout",
+                error="agent_timeout: timeout",
                 latency_ms=250,
                 metadata={
-                    "experiment_group": "group_b",
-                    "error_code": "openclaw_timeout",
-                    "model": "openclaw",
-                    "provider": "openclaw",
+                    "experiment_group": "unknown",
+                    "error_code": "agent_timeout",
+                    "model": "tutor",
+                    "provider": "tutor",
                 },
             )
 
@@ -167,8 +167,8 @@ class TestSessionMonitor:
         # Assert
         with autotest.step("Проверяем metadata события"):
             event = db_session.added[0]
-            assert_equal(event.extra_data["experiment_group"], "group_b", "group")
-            assert_equal(event.extra_data["agent_backend"], "openclaw", "backend")
+            assert_equal(event.extra_data["experiment_group"], "unknown", "group")
+            assert_equal(event.extra_data["agent_backend"], "tutor", "backend")
             assert_equal(event.extra_data["latency_ms"], 250, "latency")
-            assert_equal(event.extra_data["error_code"], "openclaw_timeout", "error")
-            assert_equal(event.message, "openclaw_timeout: timeout", "message")
+            assert_equal(event.extra_data["error_code"], "agent_timeout", "error")
+            assert_equal(event.message, "agent_timeout: timeout", "message")

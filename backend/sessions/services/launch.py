@@ -2,7 +2,7 @@ import logging
 
 from sqlalchemy import func, select
 
-from experiment.assignment import assign_experiment_group_if_needed
+from labs.service import template_project_id_for
 from models.lab import Lab
 from models.session import LearningSession
 from security.secrets import decrypt_secret, encrypt_secret
@@ -28,7 +28,6 @@ async def count_active_sessions(db, user_id: str) -> int:
 async def _create_provisioning_row(db_factory, user_id: str, lab_slug: str):
     """Creates a session row with status provisioning in a separate transaction."""
     async with db_factory() as db:
-        await assign_experiment_group_if_needed(db, user_id)
         session = LearningSession(user_id=user_id, lab_slug=lab_slug, status="provisioning")
         db.add(session)
         await db.commit()
@@ -81,21 +80,7 @@ async def launch_session(
     if not lab.enabled:
         raise ValueError("Лаба отключена")
 
-    if lab_slug.endswith("-ccna"):
-        template_pid = lab.gns3_template_project_id_iosvl2
-        if not template_pid:
-            raise ValueError(
-                f"Lab '{lab_slug}' требует IOSvL2 template, но он не настроен "
-                "(deploy на x86_64 production host)"
-            )
-    elif lab_slug.endswith("-frr"):
-        template_pid = getattr(lab, "gns3_template_project_id_frr", None)
-        if not template_pid:
-            raise ValueError(f"Lab '{lab_slug}' не имеет настроенного template")
-    else:
-        template_pid = lab.gns3_template_project_id
-        if not template_pid:
-            raise ValueError(f"Lab '{lab_slug}' не имеет gns3_template_project_id")
+    template_pid = template_project_id_for(lab)
 
     # Production split-tx scenario. Release the DB transaction during the gns3 call.
     session = await _create_provisioning_row(db_factory, user_id, lab_slug)

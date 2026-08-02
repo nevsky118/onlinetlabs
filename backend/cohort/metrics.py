@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+from pydantic import BaseModel
+
 
 @dataclass
 class LearnerOutcome:
@@ -22,8 +24,7 @@ class LearnerOutcome:
     censored: bool
 
 
-@dataclass
-class TimeToCompetence:
+class TimeToCompetence(BaseModel):
     median_calendar_seconds: float | None
     median_active_seconds: float | None
     reach_rate: float
@@ -33,8 +34,7 @@ class TimeToCompetence:
     censored: int
 
 
-@dataclass
-class AutonomyMetrics:
+class AutonomyMetrics(BaseModel):
     mean_l1_interventions: float
     mean_l2_interventions: float | None
     mean_sessions_to_l2: float | None
@@ -171,8 +171,7 @@ SURVIVORSHIP_NOTE = (
 )
 
 
-@dataclass
-class OrgEffectTrend:
+class OrgEffectTrend(BaseModel):
     l1_escalations_mean: float
     l2_escalations_mean: float | None
     l1_repeated_errors_mean: float
@@ -196,14 +195,13 @@ def org_effect_trend(records: list["LearnerOutcome"]) -> "OrgEffectTrend":
 
 
 # Task 5: aggregation by strata (skill + optional arm) + pooled + headline=closed
-@dataclass
-class CohortCell:
+class CohortCell(BaseModel):
     skill: str | None
     arm: str | None
     n: int
-    time_to_competence: "TimeToCompetence"
-    autonomy: "AutonomyMetrics"
-    org_effect: "OrgEffectTrend"
+    time_to_competence: TimeToCompetence
+    autonomy: AutonomyMetrics
+    org_effect: OrgEffectTrend
 
 
 def _cell(

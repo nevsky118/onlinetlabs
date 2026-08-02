@@ -32,16 +32,10 @@ class ParticipantResponse(BaseModel):
     user_id: str
     email: str | None
     name: str | None
-    experiment_group: str | None
+    control_arm: str | None
     sessions_count: int
     completed: bool
     total_time_seconds: float | None
-
-
-class GroupUpdateRequest(BaseModel):
-    """Request to change group."""
-
-    group: str
 
 
 class TimelineEventResponse(BaseModel):

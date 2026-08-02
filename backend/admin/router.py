@@ -1,4 +1,5 @@
 """Admin router: /admin/overview, /admin/identifier-eval, /admin/tk-sensitivity, /admin/users."""
+
 from typing import Literal
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
@@ -10,6 +11,7 @@ from admin.schemas import (
     AdminDataResponse,
     AdminLab,
     AdminLabUpdate,
+    AnnotationIrrResponse,
     CurvePoint,
     IdentifierEvalResponse,
     OverviewAb,
@@ -25,7 +27,7 @@ from admin.schemas import (
 )
 from auth.dependencies import require_admin
 from config.config_model import LearningAnalyticsConfig
-from control.criterion import Costs
+from control.criterion import costs_from_config
 from control.derive_thresholds import sensitivity_curve
 from db.session import async_session, get_db
 from deps import get_gns3_client, get_session_factory
@@ -35,53 +37,16 @@ from evaluation.metrics import (
     j_optimal,
     operating_curve,
 )
-from evaluation.scenarios import make_normal_scenario, make_struggle_scenario
+from evaluation.scenarios import build_synthetic_scenarios, build_synthetic_sessions
 from labs.service import get_all_labs, get_lab_by_slug, update_lab
-from learning_analytics.process_state import ProcessRegime
 from models.experiment import ExperimentMetrics
 from models.session import LearningSession
 from models.user import User, UserRole
 
 router = APIRouter()
 
-# T_k grid for operating_curve (sec).
-_T_K_GRID = [0.0, 15.0, 30.0, 60.0, 90.0, 120.0, 150.0, 180.0, 240.0, 300.0]
-
 # Cost ratios for the sensitivity curve.
 _RATIOS = [0.2, 0.5, 1.0, 2.0, 5.0]
-
-
-def _build_synthetic_scenarios():
-    """Synthetic identifier scenarios (4 types x 3 onsets + 5 normal)."""
-    scns = []
-    for regime in [
-        ProcessRegime.REPEATING_ERRORS,
-        ProcessRegime.TRIAL_AND_ERROR,
-        ProcessRegime.STUCK_ON_STEP,
-        ProcessRegime.IDLE,
-    ]:
-        for onset in [4, 5, 6]:
-            scns.append(make_struggle_scenario(regime, onset_index=onset, n=14, step=15.0))
-    for _ in range(5):
-        scns.append(make_normal_scenario(n=14, step=15.0))
-    return scns
-
-
-def _build_synthetic_sessions():
-    """Synthetic sessions for the T_k curve (mirrors derive_thresholds.__main__)."""
-    def _session(spell_len: int, regime: str = "stuck_on_step", t_step: int = 15) -> dict:
-        samples, t, dwell = [], 0, 0.0
-        while t <= spell_len:
-            samples.append({"ts": float(t), "regime": regime, "dwell": dwell})
-            t += t_step
-            dwell += float(t_step)
-        samples.append({"ts": float(t), "regime": "productive", "dwell": 0.0})
-        return {"samples": samples}
-
-    return [
-        _session(30), _session(30), _session(60),
-        _session(120), _session(180), _session(300), _session(600),
-    ]
 
 
 def _default_la_config() -> LearningAnalyticsConfig:
@@ -94,17 +59,13 @@ def build_identifier_eval(cfg: LearningAnalyticsConfig | None = None) -> dict:
     if cfg is None:
         cfg = _default_la_config()
 
-    scns = _build_synthetic_scenarios()
-    costs = Costs(
-        c_stuck=cfg.cost_stuck,
-        c_intervention=cfg.cost_intervention,
-        c_false=cfg.cost_false_intervention,
-    )
-    curve = operating_curve(scns, _T_K_GRID, cfg, costs)
+    scns = build_synthetic_scenarios()
+    curve = operating_curve(scns, cfg.eval_t_k_grid, cfg, costs_from_config(cfg))
     opt = j_optimal(curve)
 
     # confusion_matrix: run harness @ j_optimal_t_k
     from evaluation.harness import run_identifier
+
     pairs = [(scn, run_identifier(scn, opt.t_k, cfg)) for scn in scns]
     cm_raw = confusion_matrix(pairs)
     # serialize keys to str
@@ -141,8 +102,8 @@ def build_tk_sensitivity(cfg: LearningAnalyticsConfig | None = None) -> dict:
     if cfg is None:
         cfg = _default_la_config()
 
-    sessions = _build_synthetic_sessions()
-    grid = {"stuck_on_step": _T_K_GRID}
+    sessions = build_synthetic_sessions()
+    grid = {"stuck_on_step": cfg.eval_t_k_grid}
 
     curve = sensitivity_curve(
         sessions,
@@ -172,7 +133,7 @@ def build_tk_sensitivity(cfg: LearningAnalyticsConfig | None = None) -> dict:
 async def build_overview(db: AsyncSession) -> dict:
     """KPI aggregate from the DB. Numbers come from pure functions."""
     from cohort.service import compute_cohort_metrics
-    from experiment.analysis import compute_arm_analysis
+    from evaluation.arm_analysis import compute_arm_analysis
 
     la_cfg = _default_la_config()
 
@@ -195,13 +156,17 @@ async def build_overview(db: AsyncSession) -> dict:
     eval_data = build_identifier_eval(la_cfg)
 
     # Ops
-    active = (await db.execute(
-        select(func.count(LearningSession.id)).where(LearningSession.status == "active")
-    )).scalar() or 0
-    total_ivs = (await db.execute(
-        select(func.coalesce(func.sum(ExperimentMetrics.interventions_received), 0))
-    )).scalar() or 0
-    labeled_n = len(metrics)  # real records with metrics
+    active = (
+        await db.execute(
+            select(func.count(LearningSession.id)).where(LearningSession.status == "active")
+        )
+    ).scalar() or 0
+    total_ivs = (
+        await db.execute(
+            select(func.coalesce(func.sum(ExperimentMetrics.interventions_received), 0))
+        )
+    ).scalar() or 0
+    finished_n = len(metrics)  # sessions with a metrics row, not labeled scenarios
 
     return {
         "ab": {
@@ -217,16 +182,19 @@ async def build_overview(db: AsyncSession) -> dict:
             "j_optimal_t_k": eval_data["j_optimal_t_k"],
             "recall_at_opt": eval_data["curve"][
                 next(
-                    i for i, p in enumerate(eval_data["curve"])
+                    i
+                    for i, p in enumerate(eval_data["curve"])
                     if p["t_k"] == eval_data["j_optimal_t_k"]
                 )
-            ]["recall"] if eval_data["curve"] else 0.0,
+            ]["recall"]
+            if eval_data["curve"]
+            else 0.0,
             "costs": eval_data["costs"],
         },
         "ops": {
             "active_sessions": active,
             "total_interventions": int(total_ivs),
-            "labeled_real_n": labeled_n,
+            "finished_sessions_n": finished_n,
         },
     }
 
@@ -296,8 +264,10 @@ async def list_users(
 
     offset = (page - 1) * page_size
     rows = (
-        await db.execute(base_q.order_by(order_col).offset(offset).limit(page_size))
-    ).scalars().all()
+        (await db.execute(base_q.order_by(order_col).offset(offset).limit(page_size)))
+        .scalars()
+        .all()
+    )
 
     return UserListResponse(
         items=[
@@ -364,10 +334,8 @@ async def update_user(
 def _to_admin_lab(lab) -> AdminLab:
     """Serialize Lab ORM object to AdminLab schema."""
     template_status = (lab.meta or {}).get("template_status", "unknown")
-    if lab.environment_type != "gns3":
-        template_ready = True
-    else:
-        template_ready = bool(lab.gns3_template_project_id)
+    # Non-gns3 labs need no template.
+    template_ready = True if lab.environment_type != "gns3" else bool(lab.gns3_template_project_id)
     return AdminLab(
         slug=lab.slug,
         title=lab.title,
@@ -478,8 +446,14 @@ async def get_admin_data(
     total = (await db.execute(select(func.count()).select_from(base_q.subquery()))).scalar() or 0
 
     rows = (
-        await db.execute(base_q.order_by(order_col).offset((page - 1) * page_size).limit(page_size))
-    ).scalars().all()
+        (
+            await db.execute(
+                base_q.order_by(order_col).offset((page - 1) * page_size).limit(page_size)
+            )
+        )
+        .scalars()
+        .all()
+    )
 
     return AdminDataResponse(
         items=[serialize_row(spec, r) for r in rows],
@@ -489,3 +463,39 @@ async def get_admin_data(
         columns=spec.columns,
         sortable=sorted(spec.sortable),
     )
+
+
+@router.get("/annotation-irr", response_model=AnnotationIrrResponse)
+async def get_annotation_irr(
+    session_id: str,
+    coder_a: str,
+    coder_b: str,
+    db: AsyncSession = Depends(get_db),
+    _: dict = Depends(require_admin),
+):
+    """Cohen's kappa between two annotators, plus the gold-label count.
+
+    Simulated ground truth is excluded by evaluation.annotation, so the count
+    reports human labels only.
+    """
+    from evaluation.annotation import gold_label_count, inter_rater_kappa
+
+    kappa = await inter_rater_kappa(db, session_id, coder_a, coder_b)
+    return AnnotationIrrResponse(
+        gold_label_count=await gold_label_count(db, session_id),
+        kappa=kappa,
+        coder_a=coder_a,
+        coder_b=coder_b,
+        note="Kappa over windows both coders labelled; sim-truth excluded.",
+    )
+
+
+@router.get("/reproducibility-bundle")
+async def get_reproducibility_bundle(
+    db: AsyncSession = Depends(get_db),
+    _: dict = Depends(require_admin),
+):
+    """Anonymised MRT bundle for independent re-analysis (simulated users excluded)."""
+    from evaluation.reproducibility import build_reproducibility_bundle
+
+    return await build_reproducibility_bundle(db)

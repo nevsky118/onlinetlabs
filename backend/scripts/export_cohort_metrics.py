@@ -2,13 +2,10 @@
 
 import asyncio
 
+from cohort.report import render_cohort_table
 from cohort.service import compute_cohort_metrics
 from config.env_config_loader import load_settings
 from db.session import async_session
-
-
-def _fmt_days(seconds):
-    return "—" if seconds is None else f"{seconds / 86400.0:.1f} дн"
 
 
 async def main():
@@ -18,17 +15,11 @@ async def main():
             db, horizon_seconds=cfg.cohort_horizon_days * 86400.0, by_arm=True
         )
     print(f"# Когортные орг-метрики (headline={out['headline_arm']})\n")
-    print("| Страта | n | reach L2 | медиана календ. | медиана актив. | воздейств. L1→L2 |")
-    print("|-|-|-|-|-|-|")
-    for cell in out["by_skill"] + [out["pooled"]]:
-        t, a = cell.time_to_competence, cell.autonomy
-        label = cell.skill or "ПУЛ"
-        l2i = "—" if a.mean_l2_interventions is None else f"{a.mean_l2_interventions:.1f}"
-        print(
-            f"| {label} | {t.n} | {t.reach_rate:.2f} (цензур {t.censored}) | "
-            f"{_fmt_days(t.median_calendar_seconds)} | {_fmt_days(t.median_active_seconds)} | "
-            f"{a.mean_l1_interventions:.1f}→{l2i} |"
-        )
+    for line in render_cohort_table(
+        out["by_skill"] + [out["pooled"]],
+        ["stratum", "n", "reach_censored", "median_calendar", "median_active", "interventions"],
+    ):
+        print(line)
     print("\n_D4-тренд — описательный (survivorship). Дельта open↔closed = Задача 4._")
 
 

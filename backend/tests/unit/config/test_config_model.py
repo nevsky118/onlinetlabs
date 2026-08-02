@@ -17,7 +17,6 @@ from config.config_model import (
     LogConfig,
     MCPConfig,
     ModelEntry,
-    OpenClawConfig,
     ProviderCreds,
     RedisConfig,
     SecurityConfig,
@@ -178,27 +177,6 @@ class TestConfigModel:
                 "llm" not in ConfigModel.model_fields,
                 "ConfigModel не должен содержать поле 'llm'",
             )
-
-    @autotest.num("113")
-    @autotest.external_id("c5dc2a4f-85be-4233-9765-92252f3f7dab")
-    @autotest.name("ConfigModel: содержит OpenClaw config")
-    def test_c5dc2a4f_config_model_has_openclaw(self):
-        with autotest.step("Создаём OpenClawConfig"):
-            openclaw = OpenClawConfig(
-                enabled=True,
-                base_url="http://localhost:18789",
-                token="secret",
-                model="openclaw",
-                timeout_seconds=5.0,
-            )
-
-        with autotest.step("Создаём полный ConfigModel"):
-            cfg = _make_full_config(openclaw=openclaw)
-
-        with autotest.step("Проверяем OpenClaw config"):
-            assert_true(cfg.openclaw.enabled, "openclaw enabled")
-            assert_equal(cfg.openclaw.base_url, "http://localhost:18789", "base_url")
-            assert_equal(cfg.openclaw.token, "secret", "token")
 
 
 class TestLearningAnalyticsConfig:

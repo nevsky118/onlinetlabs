@@ -18,7 +18,7 @@ class TestTutorAgentLLM:
     @autotest.name("TutorAgent: LLM failure re-raise, шаблонного ответа нет")
     async def test_77ad961e_run_llm_failure_raises(self, config_model, monkeypatch):
         with autotest.step("Мок LLM выбрасывает"):
-            agent = TutorAgent(config_model, mcp_client=None)
+            agent = TutorAgent(config_model)
             monkeypatch.setattr(
                 agent,
                 "_agent_for",
@@ -38,7 +38,7 @@ class TestTutorAgentLLM:
     @autotest.name("TutorAgent: run с agent_context, реальный Agent.run даёт ответ из output")
     async def test_65e37fbf_run_with_context(self, config_model, monkeypatch):
         with autotest.step("Создаём агент с контекстом, подменяем _build_model на TestModel"):
-            agent = TutorAgent(config_model, mcp_client=None)
+            agent = TutorAgent(config_model)
             context = AgentContextData().context
             mid = config_model.agents.intervention_model
             canned = "OSPF сессия не поднимается из-за неверной маски"

@@ -5,8 +5,6 @@ import logging
 from agents._shared import format_failing_check
 from agents.base import BaseAgent
 from agents.tutor.models import TutorInput, TutorResponse
-from agents.tutor.tools import TutorTools
-from config.config_model import ConfigModel
 
 logger = logging.getLogger(__name__)
 
@@ -24,11 +22,6 @@ TUTOR_AGENT_PROMPT = (
 
 class TutorAgent(BaseAgent):
     """Answers questions with MCP context via LLM."""
-
-    def __init__(self, config: ConfigModel, mcp_client=None):
-        """Initialize with config and MCP client."""
-        self.tools = TutorTools(mcp_client)
-        super().__init__(config)
 
     def system_prompt(self) -> str:
         """Mentor's system prompt."""

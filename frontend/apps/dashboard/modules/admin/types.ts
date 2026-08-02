@@ -57,7 +57,7 @@ export interface Overview {
   ops: {
     activeSessions: number
     totalInterventions: number
-    labeledRealN: number
+    finishedSessionsN: number
   }
 }
 

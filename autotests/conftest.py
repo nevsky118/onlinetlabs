@@ -139,41 +139,6 @@ async def _ensure_test_users(config):
                 logger.warning(f"Cannot delete user {user_id}: {response.text}")
 
 
-@pytest_asyncio.fixture(scope="session", loop_scope="session")
-async def _ensure_gns3_template_project(config):
-    """
-    Creates a template project in GNS3 through the gns3-service API.
-    After the tests it deletes it.
-    """
-    from autotests.api.api_methods.gns3_service.gns3_projects_api import Gns3ProjectsApi
-
-    project_id = None
-
-    async with AsyncClient(base_url=config.gns3_base_url) as client:
-        projects_api = Gns3ProjectsApi(client=client, config=config, base_url=config.gns3_base_url)
-        try:
-            response = await projects_api.post_project({"name": "autotest-template"})
-            if response.status_code == 201:
-                project_id = response.json()["project_id"]
-                config.gns3_lab_template_project_id = project_id
-                logger.info(f"Created GNS3 template project: {project_id}")
-            else:
-                logger.warning(f"Cannot create GNS3 project: {response.text}")
-        except Exception as exc:
-            logger.warning(f"GNS3 service unavailable: {exc}")
-
-    yield
-
-    if project_id:
-        async with AsyncClient(base_url=config.gns3_base_url) as client:
-            projects_api = Gns3ProjectsApi(client=client, config=config, base_url=config.gns3_base_url)
-            response = await projects_api.delete_project(project_id)
-            if response.status_code in (200, 204):
-                logger.info(f"Deleted GNS3 template project: {project_id}")
-            else:
-                logger.warning(f"Cannot delete GNS3 project: {response.text}")
-
-
 _TEST_LAB_SLUG = "autotest-lab"
 
 
@@ -245,7 +210,7 @@ async def _generate_tokens(config, _ensure_test_users):
 
 
 @pytest_asyncio.fixture()
-async def anon_client(config, _generate_tokens, _ensure_gns3_template_project, _ensure_test_lab):
+async def anon_client(config, _generate_tokens, _ensure_test_lab):
     """
     AsyncClient for requests made by an anonymous user.
 

@@ -1,4 +1,4 @@
-# GNS3 project management: create, duplicate, open, delete, list.
+# GNS3 project management: duplicate, open, delete.
 
 import asyncio
 
@@ -8,23 +8,6 @@ from ._http import _retry_on_401, _transient_retry
 
 
 class ProjectsMixin:
-    @_transient_retry
-    @_retry_on_401
-    async def create_project(self, name: str) -> dict:
-        response = await self._client.post(
-            "/v3/projects",
-            json={"name": name},
-            headers=self._auth_headers(),
-        )
-        response.raise_for_status()
-        return response.json()
-
-    @_retry_on_401
-    async def list_projects(self) -> list[dict]:
-        response = await self._client.get("/v3/projects", headers=self._auth_headers())
-        response.raise_for_status()
-        return response.json()
-
     @_transient_retry
     @_retry_on_401
     async def duplicate_project(self, project_id: str, name: str | None = None) -> dict:

@@ -45,26 +45,6 @@ class Gns3SessionsApi:
         with autotest.step("POST /sessions"):
             return await self.api_client.post("", json_data=data)
 
-    async def get_session(self, session_id: str) -> Response:
-        """
-        GET /sessions/{session_id}. Session status.
-
-        :param session_id: Session UUID.
-        :return: HTTP response.
-        """
-        with autotest.step(f"GET /sessions/{session_id}"):
-            return await self.api_client.get(session_id)
-
-    async def post_reset_password(self, session_id: str) -> Response:
-        """
-        POST /sessions/{session_id}/reset-password. Resets the password.
-
-        :param session_id: Session UUID.
-        :return: HTTP response.
-        """
-        with autotest.step(f"POST /sessions/{session_id}/reset-password"):
-            return await self.api_client.post(f"{session_id}/reset-password")
-
     async def delete_session(self, session_id: str) -> Response:
         """
         DELETE /sessions/{session_id}. Deletes the session.

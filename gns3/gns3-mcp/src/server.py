@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime
 
 import httpx
@@ -147,14 +148,17 @@ class GNS3Server:
     def __init__(
         self,
         api_client: GNS3ApiClient | None = None,
-        log_buffer: LogBuffer | None = None,
         history_url: str | None = None,
         pool: ConnectionPool | None = None,
+        log_buffer_factory: Callable[[], LogBuffer] | None = None,
     ) -> None:
         self._api = api_client
         self._pool = pool
-        self._log_buffer = log_buffer
         self._history_url = history_url  # gns3-service base URL
+        self._log_buffer_factory = log_buffer_factory or LogBuffer
+        # One buffer per (user, project). A single process-wide buffer served the
+        # first caller's project logs to every other student.
+        self._log_buffers: dict[tuple[str, str], LogBuffer] = {}
 
     async def _resolve_api(self, ctx: SessionContext) -> GNS3ApiClient:
         """Returns api_client: direct or from the pool."""
@@ -234,33 +238,35 @@ class GNS3Server:
         self, ctx: SessionContext, since: datetime | None = None
     ) -> list[ErrorEntry]:
         """Errors from the ring buffer."""
-        await self._ensure_log_buffer(ctx)
-        return self._log_buffer.get_errors(since=since)
+        buffer = await self._ensure_log_buffer(ctx)
+        return buffer.get_errors(since=since)
 
     async def get_logs(
         self, ctx: SessionContext, level: LogLevel = LogLevel.ALL, limit: int = 100
     ) -> list[LogEntry]:
         """Logs from the ring buffer, filtered."""
-        await self._ensure_log_buffer(ctx)
-        return self._log_buffer.get_logs(level=level, limit=limit)
+        buffer = await self._ensure_log_buffer(ctx)
+        return buffer.get_logs(level=level, limit=limit)
 
-    async def _ensure_log_buffer(self, ctx: SessionContext) -> None:
-        """Lazy initialization of LogBuffer + WS connection."""
-        if self._log_buffer is None:
-            from src.log_buffer import LogBuffer
-
-            self._log_buffer = LogBuffer()
-
+    async def _ensure_log_buffer(self, ctx: SessionContext) -> LogBuffer:
+        """Returns the caller's log buffer, connecting it on first use."""
         from urllib.parse import urlparse, urlunparse
+
+        pid = self._project_id(ctx)
+        key = (ctx.user_id, pid)
+        buffer = self._log_buffers.get(key)
+        if buffer is None:
+            buffer = self._log_buffer_factory()
+            self._log_buffers[key] = buffer
 
         parsed = urlparse(ctx.environment_url.rstrip("/"))
         ws_scheme = "wss" if parsed.scheme == "https" else "ws"
-        pid = self._project_id(ctx)
         ws_url = urlunparse(
             (ws_scheme, parsed.netloc, f"/v3/projects/{pid}/notifications/ws", "", "", "")
         )
         jwt = ctx.metadata.get("gns3_jwt") if ctx.metadata else None
-        await self._log_buffer.ensure_connected(ws_url, jwt)
+        await buffer.ensure_connected(ws_url, jwt)
+        return buffer
 
     # -- ActionProvider --
 

@@ -5,12 +5,27 @@ import math
 from collections import Counter
 from datetime import UTC, datetime
 
-from agents.analytics.models import SessionFeatures
+from agents.identifier.models import SessionFeatures
 from config.config_model import LearningAnalyticsConfig
 
 
 class FeatureExtractor:
     """Computing SessionFeatures from a list of events. Stateless."""
+
+    # LabProgressObserver heartbeat. It fires every poll while a check stays failing,
+    # so counting it as student activity keeps every gap under idle_gap_seconds.
+    _OBSERVER_ACTIONS = frozenset(
+        {"check_passed", "check_regressed", "check_failing", "check_retry"}
+    )
+
+    @staticmethod
+    def _student_events(events: list) -> list:
+        """Events originated by the student, excluding the observer heartbeat."""
+        return [
+            e
+            for e in events
+            if getattr(e, "action", None) not in FeatureExtractor._OBSERVER_ACTIONS
+        ]
 
     def __init__(self, learning_analytics_config: LearningAnalyticsConfig | None = None):
         """Takes a LearningAnalyticsConfig for thresholds; defaults if omitted."""
@@ -26,7 +41,7 @@ class FeatureExtractor:
         action_events = [e for e in sorted_events if e.event_type == "action"]
         error_events = [e for e in sorted_events if e.event_type == "error"]
 
-        latencies = self._inter_action_latencies(sorted_events)
+        latencies = self._inter_action_latencies(self._student_events(sorted_events), now=now)
         idle_gap = self._config.idle_gap_seconds
         max_consec_errors = self._current_error_run(sorted_events)
 
@@ -86,7 +101,19 @@ class FeatureExtractor:
         )
 
     @staticmethod
-    def _inter_action_latencies(events: list) -> list[float]:
+    def _inter_action_latencies(events: list, now: datetime | None = None) -> list[float]:
+        """Intervals between adjacent events (sec), plus the gap up to `now`.
+
+        The trailing gap is what makes ongoing silence visible: without it a student
+        who stops acting produces no new interval and can never accumulate idle time.
+        """
+        gaps = FeatureExtractor._adjacent_gaps(events)
+        if now is not None and events:
+            gaps.append(abs((now - events[-1].timestamp).total_seconds()))
+        return gaps
+
+    @staticmethod
+    def _adjacent_gaps(events: list) -> list[float]:
         """Intervals between adjacent events (sec)."""
         return [
             abs((events[i].timestamp - events[i - 1].timestamp).total_seconds())

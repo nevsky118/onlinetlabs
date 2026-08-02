@@ -80,7 +80,7 @@ class TestFinalizer:
                 steps_completed=3,
                 total_steps=5,
                 experiment_group="group_b",
-                agent_backend="openclaw",
+                agent_backend="tutor",
             )
 
         # Assert
@@ -88,7 +88,7 @@ class TestFinalizer:
             assert_equal(metrics["total_errors"], 3, "3 ошибки")
             assert_equal(metrics["repeated_errors"], 3, "3 повтора одной ошибки")
             assert_equal(metrics["experiment_group"], "group_b", "group_b")
-            assert_equal(metrics["agent_backend"], "openclaw", "backend")
+            assert_equal(metrics["agent_backend"], "tutor", "backend")
             assert_equal(metrics["interventions_received"], 2, "2 интервенции")
             assert_equal(metrics["interventions_succeeded"], 1, "1 успешная")
             assert_equal(metrics["interventions_failed"], 1, "1 неуспешная")

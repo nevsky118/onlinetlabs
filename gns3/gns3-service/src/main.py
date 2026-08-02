@@ -6,14 +6,18 @@ import os
 from contextlib import asynccontextmanager
 
 import uvicorn
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from src.config import settings
 from src.observability.logging import configure_logging
 from src.observability.sentry import configure_sentry
 
-configure_logging("gns3-service", level=getattr(getattr(settings, "service", None), "log_level", "INFO"))
+configure_logging(
+    "gns3-service",
+    level=getattr(getattr(settings, "service", None), "log_level", "INFO"),
+    environment=os.getenv("ENVIRONMENT", "production"),
+)
 configure_sentry("gns3-service", environment=os.getenv("ENVIRONMENT", "dev"))
 
 from src.clients.admin import GNS3AdminClient
@@ -28,11 +32,11 @@ from src.routers import (
     exec_router,
     health_router,
     history_router,
-    projects_router,
     sessions_router,
     templates_router,
     ws_router,
 )
+from src.routers._deps import verify_internal_token
 from src.services.session_lifecycle import SessionService
 from src.templates_bootstrap import ensure_lab_templates
 
@@ -81,6 +85,7 @@ async def lifespan(app: FastAPI):
 
     from src.db.models import Session as SessionModel
     from src.db.models import SessionStatus
+
     async with db_factory() as db:
         active = await db.execute(
             select(SessionModel).where(SessionModel.status == SessionStatus.ACTIVE)
@@ -90,7 +95,8 @@ async def lifespan(app: FastAPI):
         await ws_proxy.start_project(s.gns3_project_id, str(s.id))
         logger.info(
             "startup: re-attached project %s -> session %s",
-            s.gns3_project_id, s.id,
+            s.gns3_project_id,
+            s.id,
         )
 
     app.state.session_service = service
@@ -141,9 +147,9 @@ async def _session_closed_handler(request: Request, exc: SessionClosed):
     return JSONResponse(status_code=409, content={"detail": str(exc)})
 
 
-app.include_router(sessions_router)
-app.include_router(projects_router)
-app.include_router(history_router)
+# Health stays open for the container healthcheck; ws carries its own ?token= check.
+app.include_router(sessions_router, dependencies=[Depends(verify_internal_token)])
+app.include_router(history_router, dependencies=[Depends(verify_internal_token)])
 app.include_router(health_router)
 app.include_router(ws_router)
 app.include_router(exec_router)

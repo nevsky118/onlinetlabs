@@ -21,12 +21,21 @@ pool = ConnectionPool(
     health_check_interval=settings.pool.health_check_interval,
     min_evict_idle=settings.pool.min_evict_idle,
 )
-log_buffer = LogBuffer(
-    max_entries=settings.log_buffer.max_entries,
-    inactivity_timeout=settings.log_buffer.inactivity_timeout,
-)
 
-impl = GNS3Server(pool=pool, log_buffer=log_buffer, history_url=settings.gns3_service_url)
+
+def _new_log_buffer() -> LogBuffer:
+    """One buffer per (user, project); the server owns the keying."""
+    return LogBuffer(
+        max_entries=settings.log_buffer.max_entries,
+        inactivity_timeout=settings.log_buffer.inactivity_timeout,
+    )
+
+
+impl = GNS3Server(
+    pool=pool,
+    history_url=settings.gns3_service_url,
+    log_buffer_factory=_new_log_buffer,
+)
 server = OnlinetlabsMCPServer(
     name=settings.mcp.server_name,
     implementation=impl,
@@ -43,7 +52,13 @@ def _get_project_id(ctx):
     return impl._project_id(ctx)
 
 
-register_domain_tools(server, _get_client, _get_project_id, service_url=settings.gns3_service_url)
+register_domain_tools(
+    server,
+    _get_client,
+    _get_project_id,
+    service_url=settings.gns3_service_url,
+    internal_api_token=settings.internal_api_token,
+)
 
 
 def main() -> None:

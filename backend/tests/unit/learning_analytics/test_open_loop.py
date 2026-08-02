@@ -8,7 +8,7 @@ import pytest
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_is_not_none, assert_true
 
-from agents.analytics.models import StruggleType
+from agents.identifier.models import StruggleType
 from agents.orchestrator.models import OrchestratorResponse
 from config.config_model import LearningAnalyticsConfig
 from experiment.assignment import ControlArm
@@ -57,7 +57,7 @@ class _ScalarResult:
 
 
 def _make_features():
-    from agents.analytics.models import SessionFeatures
+    from agents.identifier.models import SessionFeatures
 
     return SessionFeatures(
         session_id="s1",
@@ -82,7 +82,7 @@ def _make_features():
 
 
 def _make_difficulty():
-    from agents.analytics.models import DifficultyRecommendation, StudentMetrics
+    from agents.identifier.models import DifficultyRecommendation, StudentMetrics
 
     return DifficultyRecommendation(
         current_difficulty="beginner",
@@ -98,7 +98,7 @@ def _make_difficulty():
 
 
 def _make_analysis(*, struggle=True):
-    from agents.analytics.models import AnalyticsResult, SuggestedIntervention
+    from agents.identifier.models import AnalyticsResult, SuggestedIntervention
 
     return AnalyticsResult(
         struggle_detected=struggle,
@@ -159,7 +159,7 @@ class TestOpenLoop:
             analysis = _make_analysis()
 
         with autotest.step("Act: вызвать _log_would_intervene"):
-            await m._log_would_intervene(analysis)
+            await m._log_would_intervene(analysis, "open_arm")
 
         with autotest.step("Assert: orchestrator не вызван, would_intervene записан"):
             m._orchestrator.intervene.assert_not_called()
@@ -168,6 +168,7 @@ class TestOpenLoop:
             wi = next(o for o in cap.added if getattr(o, "event_type", None) == "would_intervene")
             assert_equal(wi.action, "hint", "action == hint")
             assert_equal(wi.session_id, "s1", "session_id == s1")
+            assert_equal(wi.extra_data["withheld_because"], "open_arm", "reason recorded")
             assert_equal(wi.user_id, "u1", "user_id == u1")
             assert_equal(wi.extra_data["control_arm"], "open", "control_arm == open")
             assert_equal(wi.success, False, "success == False")

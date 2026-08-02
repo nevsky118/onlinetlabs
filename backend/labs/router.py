@@ -18,8 +18,11 @@ internal_router = APIRouter()
 
 @router.get("", response_model=list[LabResponse])
 async def list_labs(course_slug: str | None = None, db: AsyncSession = Depends(get_db)):
-    """Returns the list of labs, optionally filtered by course."""
-    return await get_all_labs(db, course_slug=course_slug)
+    """Returns the list of enabled labs, optionally filtered by course.
+
+    Disabled labs are hidden: launching one 400s. Admin listings stay unfiltered.
+    """
+    return await get_all_labs(db, course_slug=course_slug, enabled_only=True)
 
 
 @router.post("", response_model=LabResponse, status_code=status.HTTP_201_CREATED)

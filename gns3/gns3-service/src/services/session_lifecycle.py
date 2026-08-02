@@ -18,7 +18,6 @@ from src.db.models import Session, SessionStatus
 from src.exceptions import SessionClosed, SessionNotFound
 from src.gns3_identity import gns3_username_for
 from src.models import (
-    PasswordResetResponse,
     ProjectResetResponse,
     SessionResponse,
     SessionStateResponse,
@@ -172,26 +171,6 @@ class SessionService:
                 await self._admin.delete_user(user_id)
             except Exception:
                 logger.exception("Cleanup failed for user %s", user_id)
-
-    async def reset_password(self, db: AsyncSession, session_id: str) -> PasswordResetResponse:
-        session = await db.get(Session, uuid_module.UUID(session_id))
-        if session is None:
-            raise SessionNotFound(f"Session {session_id} not found")
-        if session.status == SessionStatus.CLOSED:
-            raise SessionClosed(f"Session {session_id} is closed")
-
-        new_password = secrets.token_urlsafe(16)
-        await self._admin.update_user_password(session.gns3_user_id, new_password)
-        jwt = await self._admin.get_user_token(session.gns3_username, new_password)
-
-        # We don't store the password: it's already given to the student above via jwt and new_password.
-
-        return PasswordResetResponse(
-            session_id=str(session.id),
-            gns3_jwt=jwt,
-            gns3_username=session.gns3_username,
-            gns3_password=new_password,
-        )
 
     async def reset_project(
         self,

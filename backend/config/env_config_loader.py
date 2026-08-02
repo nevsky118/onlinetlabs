@@ -1,9 +1,11 @@
+import json
 import logging
 import os
 from functools import lru_cache
 from pathlib import Path
 
 from dotenv import dotenv_values
+from mcp_sdk.config_bootstrap import LazySettings, resolve_env_path
 
 from config.config_model import (
     AgentsConfig,
@@ -11,18 +13,18 @@ from config.config_model import (
     ConfigModel,
     DatabaseConfig,
     GNS3Config,
+    LearningAnalyticsConfig,
     LlmProvider,
     LogConfig,
     MCPConfig,
     ModelEntry,
     ObservabilityConfig,
-    OpenClawConfig,
     ProviderCreds,
     RedisConfig,
     SecurityConfig,
 )
 from config.llm_catalog import default_catalog
-from tools.env_cipher import decrypt_file
+from control.criterion import BAD_REGIMES
 
 logger = logging.getLogger(__name__)
 
@@ -135,6 +137,70 @@ def build_agents_config(values: dict[str, str | None]) -> AgentsConfig:
     )
 
 
+def build_learning_analytics_config(values: dict[str, str | None]) -> LearningAnalyticsConfig:
+    """Builds LearningAnalyticsConfig from LA_* env vars.
+
+    Every key is optional and falls back to the Pydantic default. This is the only
+    delivery route for the T_k that control/derive_thresholds.py computes.
+    """
+    overrides: dict[str, object] = {}
+
+    def _take(env_key: str, field: str, cast) -> None:
+        raw = values.get(env_key)
+        if raw is None or raw == "":
+            return
+        overrides[field] = cast(raw)
+
+    def _floats(raw: str) -> list[float]:
+        return [float(part) for part in raw.split(",") if part.strip()]
+
+    def _thresholds(raw: str) -> dict[str, float]:
+        parsed = json.loads(raw)
+        if not isinstance(parsed, dict):
+            raise ValueError("LA_DWELL_THRESHOLDS must be a JSON object of regime -> seconds")
+        unknown = set(parsed) - BAD_REGIMES
+        if unknown:
+            raise ValueError(f"LA_DWELL_THRESHOLDS has unknown regimes: {sorted(unknown)}")
+        return {regime: float(seconds) for regime, seconds in parsed.items()}
+
+    # Cycles and the intervention switch
+    _take("LA_ENABLED", "enabled", _str2bool)
+    _take("LA_POLL_INTERVAL", "poll_interval", float)
+    _take("LA_ANALYSIS_INTERVAL", "analysis_interval", float)
+    _take("LA_COOLDOWN_PERIOD", "cooldown_period", float)
+
+    # MRT
+    _take("LA_MRT_ENABLED", "mrt_enabled", _str2bool)
+    _take("LA_MRT_HOLD_PROBABILITY", "mrt_hold_probability", float)
+    _take("LA_MRT_T_K_JITTER_FRAC", "mrt_t_k_jitter_frac", float)
+
+    # Research capture switches
+    _take("LA_EVIDENCE_CAPTURE_ENABLED", "evidence_capture_enabled", _str2bool)
+    _take("LA_LATENCY_CAPTURE_ENABLED", "latency_capture_enabled", _str2bool)
+    _take("LA_GROUNDING_ABLATION_ENABLED", "grounding_ablation_enabled", _str2bool)
+    _take("LA_SINGLE_AGENT_MODE", "single_agent_mode", _str2bool)
+    _take("LA_SIM_LLM_HELP_ENABLED", "sim_llm_help_enabled", _str2bool)
+
+    # Control law: T_k and the cost vector
+    _take("LA_DWELL_THRESHOLDS", "dwell_thresholds", _thresholds)
+    _take("LA_COST_STUCK", "cost_stuck", float)
+    _take("LA_COST_INTERVENTION", "cost_intervention", float)
+    _take("LA_COST_FALSE", "cost_false_intervention", float)
+
+    # Experiment and cohort parameters
+    _take("LA_ESCALATION_MAX_DWELL", "escalation_max_dwell", float)
+    _take("LA_MENTOR_HANDLING_SECONDS", "mentor_handling_seconds", float)
+    _take("LA_L2_INTERVENTION_CAP", "l2_intervention_cap", int)
+    _take("LA_COHORT_HORIZON_DAYS", "cohort_horizon_days", float)
+    _take("LA_AUTONOMY_INTERVENTION_THRESHOLD", "autonomy_intervention_threshold", int)
+
+    # Identifier evaluation
+    _take("LA_EVAL_T_K_GRID", "eval_t_k_grid", _floats)
+    _take("LA_EVAL_ONSET_WINDOW_SECONDS", "eval_onset_window_seconds", float)
+
+    return LearningAnalyticsConfig(**overrides)
+
+
 def _build(values: dict[str, str | None]) -> ConfigModel:
     """Builds and validates the root configuration from a dict of environment variables."""
     # Fail-fast: check all required URL keys upfront.
@@ -167,13 +233,6 @@ def _build(values: dict[str, str | None]) -> ConfigModel:
     )
     log = LogConfig(log_level=_req("LOG_LEVEL"))
     agents = build_agents_config(values)
-    openclaw = OpenClawConfig(
-        enabled=_str2bool(values.get("OPENCLAW_ENABLED", "false")),
-        base_url=values.get("OPENCLAW_BASE_URL") or "",  # Task 2: field will become str|None
-        token=values.get("OPENCLAW_TOKEN") or None,
-        model=values.get("OPENCLAW_MODEL", "openclaw"),
-        timeout_seconds=float(values.get("OPENCLAW_TIMEOUT_SECONDS", "30")),
-    )
     gns3 = GNS3Config(
         service_url=values["GNS3_SERVICE_URL"],
         public_url=values["GNS3_PUBLIC_URL"],
@@ -190,61 +249,29 @@ def _build(values: dict[str, str | None]) -> ConfigModel:
     observability = ObservabilityConfig(
         retention_per_session=int(values.get("OBSERVABILITY_RETENTION_PER_SESSION", "2000")),
     )
+    learning_analytics = build_learning_analytics_config(values)
     return ConfigModel(
         database=database,
         redis=redis,
         api=api,
         log=log,
         agents=agents,
-        openclaw=openclaw,
         gns3=gns3,
         mcp=mcp,
         security=security,
         observability=observability,
+        learning_analytics=learning_analytics,
     )
 
 
-def _resolve_env_file() -> Path | None:
-    """Resolves the path to the env file from ENV_FILE. Returns None if the variable isn't set."""
-    env_file_name = os.getenv("ENV_FILE")
-    if env_file_name is None:
-        return None
-    path = Path(env_file_name)
-    if not path.is_absolute():
-        path = Path(__file__).resolve().parent.parent / path
-    if not path.exists():
-        raise FileNotFoundError(f"ENV_FILE={env_file_name} not found: {path}")
-    return path
+_PACKAGE_ROOT = Path(__file__).resolve().parent.parent
 
 
 @lru_cache(maxsize=1)
 def load_settings() -> ConfigModel:
-    """Loads config from the environment or an env file, decrypting .aes if needed.
-
-    The result is cached for the lifetime of the process.
-    """
-    env_path = _resolve_env_file()
-    if env_path is None:
-        return _build(dict(os.environ))
-    path_str = str(env_path)
-    if path_str.endswith(".aes"):
-        password = os.getenv("CONFIG_PASSWORD")
-        if not password:
-            raise OSError("CONFIG_PASSWORD env var required to decrypt .aes file")
-        path_str = decrypt_file(path_str, password)
-    return _build(dotenv_values(path_str))
+    """Loads config from ENV_FILE when set, otherwise from the process environment."""
+    path = resolve_env_path(_PACKAGE_ROOT)
+    return _build(dict(os.environ) if path is None else dotenv_values(path))
 
 
-class _LazySettings:
-    """Lazy proxy to the config. Loads settings on first attribute access."""
-
-    _instance: ConfigModel | None = None
-
-    def __getattr__(self, name: str):
-        """Returns a config attribute, loading it on first access."""
-        if _LazySettings._instance is None:
-            _LazySettings._instance = load_settings()
-        return getattr(_LazySettings._instance, name)
-
-
-settings = _LazySettings()
+settings = LazySettings(load_settings)

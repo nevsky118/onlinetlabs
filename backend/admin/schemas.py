@@ -25,7 +25,7 @@ class OverviewIdentifier(BaseModel):
 class OverviewOps(BaseModel):
     active_sessions: int
     total_interventions: int
-    labeled_real_n: int
+    finished_sessions_n: int
 
 
 class OverviewResponse(BaseModel):
@@ -115,3 +115,13 @@ class AdminDataResponse(BaseModel):
     page_size: int
     columns: list[str]
     sortable: list[str]
+
+
+class AnnotationIrrResponse(BaseModel):
+    """Inter-rater agreement over the human-adjudicated annotations."""
+
+    gold_label_count: int
+    kappa: float | None
+    coder_a: str | None
+    coder_b: str | None
+    note: str

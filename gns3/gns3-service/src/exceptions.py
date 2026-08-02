@@ -1,7 +1,8 @@
-# Domain exceptions for gns3-service.
-#
-# Inherit from ValueError for backward compatibility with tests and old
-# router checks. Handlers in main.py translate them into HTTP 404 and 409.
+"""Domain exceptions for gns3-service.
+
+Subclass ValueError so existing router checks still catch them; main.py maps
+them to 404 and 409.
+"""
 
 
 class SessionNotFound(ValueError):

@@ -8,7 +8,7 @@ import pytest
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 
-from agents.analytics.models import StruggleType
+from agents.identifier.models import StruggleType
 from agents.orchestrator.models import OrchestratorResponse
 from config.config_model import LearningAnalyticsConfig
 from learning_analytics.monitor import SessionMonitor
@@ -56,7 +56,7 @@ class _ScalarResult:
 
 
 def _make_features():
-    from agents.analytics.models import SessionFeatures
+    from agents.identifier.models import SessionFeatures
 
     return SessionFeatures(
         session_id="s1",
@@ -81,7 +81,7 @@ def _make_features():
 
 
 def _make_difficulty():
-    from agents.analytics.models import DifficultyRecommendation, StudentMetrics
+    from agents.identifier.models import DifficultyRecommendation, StudentMetrics
 
     return DifficultyRecommendation(
         current_difficulty="beginner",
@@ -97,7 +97,7 @@ def _make_difficulty():
 
 
 def _make_analysis(*, struggle=True):
-    from agents.analytics.models import AnalyticsResult, SuggestedIntervention
+    from agents.identifier.models import AnalyticsResult, SuggestedIntervention
 
     return AnalyticsResult(
         struggle_detected=struggle,

@@ -9,7 +9,7 @@ from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from agents.analytics.models import StruggleType
+from agents.identifier.models import StruggleType
 from agents.orchestrator.models import OrchestratorResponse
 from config.config_model import LearningAnalyticsConfig
 from experiment.assignment import ControlArm
@@ -30,7 +30,7 @@ async def audit_engine():
 
 
 def _make_analysis():
-    from agents.analytics.models import (
+    from agents.identifier.models import (
         AnalyticsResult,
         DifficultyRecommendation,
         SessionFeatures,

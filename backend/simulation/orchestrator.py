@@ -13,17 +13,6 @@ from models.user import User
 from simulation.policy import StudentState, next_step
 from simulation.profiles import sample_cohort
 
-_CMD = {
-    "correct_cmd": "config-correct",
-    "wrong_cmd": "config-wrong",
-    "repeat_error": "config-wrong",
-}
-
-
-def _default_command_for(action, state) -> str:
-    """v1 command stub; real per-lab commands come from lab-config (T8.3)."""
-    return _CMD.get(action.value, "")
-
 
 @dataclass
 class RunReport:
@@ -41,7 +30,6 @@ async def run_cohort(
     db_factory,
     provision,
     record_truth=None,
-    command_for=_default_command_for,
     max_steps: int = 200,
     finalize=None,
 ) -> RunReport:
@@ -76,11 +64,7 @@ async def run_cohort(
                 window = 0
                 for _ in range(max_steps):
                     action, regime, state = next_step(profile, state, rng)
-                    await actor.execute(
-                        action,
-                        cmd=command_for(action, state),
-                        help_context={"step": state.step},
-                    )
+                    await actor.execute(action, help_context={"step": state.step})
                     if record_truth is not None:
                         await record_truth(session_id, window, regime.value)
                     window += 1

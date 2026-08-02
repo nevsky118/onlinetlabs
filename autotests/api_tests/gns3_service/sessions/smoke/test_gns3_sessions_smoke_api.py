@@ -51,48 +51,6 @@ class TestGns3SessionsSmokeApi:
                 ent_param=body["session_id"],
             )
 
-    @autotest.num("102")
-    @autotest.external_id("d52b0d65-d724-4520-b50a-e67806a8561d")
-    @autotest.name("Smoke: GET /sessions/{session_id} — 200 статус сессии")
-    async def test_d52b0d65_get_gns3_session(self):
-        """Fetching the status of a GNS3 session returns 200."""
-        # Arrange
-        with autotest.step("Создаём GNS3 сессию"):
-            session = await self.gns3_sessions_helper.create_session()
-
-        # Act
-        with autotest.step("Запрашиваем статус сессии"):
-            response = await self.gns3_sessions_api.get_session(session["session_id"])
-
-        # Assert
-        with autotest.step("Проверяем статус код 200"):
-            check_response_status(response, 200)
-
-        with autotest.step("Проверяем наличие status в ответе"):
-            body = response.json()
-            assert_is_not_none(body.get("status"), "status не должен быть None")
-
-    @autotest.num("103")
-    @autotest.external_id("42df50e2-3f08-4649-881b-95aa38536ac7")
-    @autotest.name("Smoke: POST /sessions/{session_id}/reset-password — 200 сброс пароля")
-    async def test_42df50e2_reset_gns3_password(self):
-        """Resetting the password of a GNS3 session returns 200."""
-        # Arrange
-        with autotest.step("Создаём GNS3 сессию"):
-            session = await self.gns3_sessions_helper.create_session()
-
-        # Act
-        with autotest.step("Сбрасываем пароль"):
-            response = await self.gns3_sessions_api.post_reset_password(session["session_id"])
-
-        # Assert
-        with autotest.step("Проверяем статус код 200"):
-            check_response_status(response, 200)
-
-        with autotest.step("Проверяем наличие gns3_password в ответе"):
-            body = response.json()
-            assert_is_not_none(body.get("gns3_password"), "gns3_password не должен быть None")
-
     @autotest.num("104")
     @autotest.external_id("43bece25-725e-4c93-9efb-a0b77342bd40")
     @autotest.name("Smoke: DELETE /sessions/{session_id} — 200 удаление сессии")

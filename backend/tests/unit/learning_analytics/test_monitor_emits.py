@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from mcp_sdk.testing import autotest
 
-from agents.analytics.agent import identify_regime
-from agents.analytics.models import SessionFeatures
+from agents.identifier.agent import identify_regime
+from agents.identifier.models import SessionFeatures
 from config.config_model import LearningAnalyticsConfig
 from learning_analytics.context import AgentContext
 from learning_analytics.monitor import SessionMonitor

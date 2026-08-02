@@ -115,12 +115,16 @@ class OperatingPoint:
 
 
 def operating_curve(scenarios, t_k_grid, config, costs) -> list[OperatingPoint]:
-    """Operating curve: metrics + J as a function of the dwell threshold T_k."""
+    """Operating curve: metrics + J as a function of the dwell threshold T_k.
+
+    J is realized: interventions fire from identifier output, costs are charged
+    against the labels. The minimum is therefore a claim about the detector.
+    """
     from control.criterion import BAD_REGIMES
     from control.derive_thresholds import total_J
-    from evaluation.harness import run_identifier
+    from evaluation.harness import identifier_trace, run_identifier
 
-    # build sessions once (structure doesn't depend on t_k)
+    # Built once: neither stream depends on t_k, which only gates firing.
     sessions: list[dict] = []
     for scn in scenarios:
         samples: list[dict] = []
@@ -132,7 +136,7 @@ def operating_curve(scenarios, t_k_grid, config, costs) -> list[OperatingPoint]:
                 regime = ProcessRegime.PRODUCTIVE.value
                 dwell = 0.0
             samples.append({"ts": snap.ts, "regime": regime, "dwell": dwell})
-        sessions.append({"samples": samples})
+        sessions.append({"samples": samples, "detections": identifier_trace(scn, config)})
 
     cooldown = getattr(config, "cooldown_period", 0.0)
 
@@ -161,7 +165,7 @@ def first_match_diagnostics(
     multi_match >=2 -> rule order determines the result (order-sensitive).
     Rates are computed over firing snapshots (where >=1 rule fired).
     """
-    from agents.analytics.agent import STRUGGLE_RULES  # deferred import -- avoids a cycle
+    from agents.identifier.agent import STRUGGLE_RULES  # deferred import -- avoids a cycle
 
     firing = 0  # snapshots where >=1 rule fired
     multi = 0  # snapshots where >=2 rules fired

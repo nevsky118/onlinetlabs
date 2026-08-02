@@ -1,10 +1,19 @@
 import type { Metadata } from "next"
-import { setRequestLocale } from "next-intl/server"
+import { getTranslations, setRequestLocale } from "next-intl/server"
 import { Suspense } from "react"
 import { LoginForm } from "@/modules/auth"
 
-export const metadata: Metadata = {
-  title: "Sign In",
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>
+}): Promise<Metadata> {
+  const { locale } = await params
+  const t = await getTranslations({
+    locale,
+    namespace: "dashboard.auth.loginForm",
+  })
+  return { title: t("title") }
 }
 
 export default async function SignInPage({

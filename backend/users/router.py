@@ -68,8 +68,9 @@ class RevokeResponse(BaseModel):
     revoked: int
 
 
-@router.get("/sessions", response_model=SessionsResponse)
-async def list_sessions(current_user=Depends(get_current_user), db=Depends(get_db)):
+# Login sessions. Path must stay distinct from /users/me/sessions, owned by sessions_router.
+@router.get("/auth-sessions", response_model=SessionsResponse)
+async def list_auth_sessions(current_user=Depends(get_current_user), db=Depends(get_db)):
     result = await db.execute(
         select(Session)
         .where(Session.user_id == current_user["id"])
@@ -79,8 +80,8 @@ async def list_sessions(current_user=Depends(get_current_user), db=Depends(get_d
     return SessionsResponse(sessions=sessions, count=len(sessions))
 
 
-@router.delete("/sessions/{session_id}", response_model=RevokeResponse)
-async def revoke_session(
+@router.delete("/auth-sessions/{session_id}", response_model=RevokeResponse)
+async def revoke_auth_session(
     session_id: str,
     current_user=Depends(get_current_user),
     db=Depends(get_db),
@@ -99,8 +100,8 @@ async def revoke_session(
     return RevokeResponse(revoked=1)
 
 
-@router.delete("/sessions", response_model=RevokeResponse)
-async def revoke_all_sessions(current_user=Depends(get_current_user), db=Depends(get_db)):
+@router.delete("/auth-sessions", response_model=RevokeResponse)
+async def revoke_all_auth_sessions(current_user=Depends(get_current_user), db=Depends(get_db)):
     result = await db.execute(delete(Session).where(Session.user_id == current_user["id"]))
     await db.commit()
     return RevokeResponse(revoked=result.rowcount)

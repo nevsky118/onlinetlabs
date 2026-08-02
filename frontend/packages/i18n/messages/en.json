@@ -258,7 +258,7 @@
           "jOptimalSub": "at costs: {costs}",
           "activeSessions": "Active sessions",
           "totalInterventions": "Total interventions",
-          "labeledRealN": "Real labeled N"
+          "finishedSessionsN": "Finished sessions"
         },
         "refreshButton": "Refresh"
       },
@@ -907,6 +907,9 @@
       "instructor": "Instructor area",
       "settings": "Settings",
       "signOut": "Sign out"
+    },
+    "localeSwitcher": {
+      "label": "Language"
     },
     "docsToc": {
       "title": "On this page"

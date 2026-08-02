@@ -50,9 +50,9 @@ class TestOrchestrator:
     @autotest.num("462")
     @autotest.external_id("ce96764d-cb45-4f43-95cd-11d671297249")
     @autotest.name("Orchestrator: инициализация")
-    def test_ce96764d_init(self, config_model, fake_mcp):
+    def test_ce96764d_init(self, config_model):
         with autotest.step("Создаём Orchestrator"):
-            orch = Orchestrator(config_model, mcp_client=fake_mcp, db=None)
+            orch = Orchestrator(config_model, db=None)
 
         with autotest.step("Проверяем атрибуты"):
             assert_equal(orch.config, config_model, "config")
@@ -82,9 +82,9 @@ class TestOrchestratorIntervene:
     @autotest.num("471")
     @autotest.external_id("e86a32fb-e590-409c-b6a6-e61728963738")
     @autotest.name("Orchestrator.intervene: маршрутизация к hint агенту")
-    async def test_e86a32fb_intervene_routes_to_hint(self, config_model, fake_mcp):
+    async def test_e86a32fb_intervene_routes_to_hint(self, config_model):
         with autotest.step("Создаём Orchestrator и InterventionInput с мок-агентом"):
-            orch = Orchestrator(config_model, mcp_client=fake_mcp, db=None)
+            orch = Orchestrator(config_model, db=None)
             _mock_hint_agent(orch)
             inp = InterventionInput(
                 session_id="s1",

@@ -1,6 +1,7 @@
 # Manage connections to the target system.
 
 import asyncio
+import hashlib
 import logging
 import time
 from abc import ABC, abstractmethod
@@ -13,7 +14,16 @@ from mcp_sdk.errors import MCPServerError
 
 logger = logging.getLogger(__name__)
 
-Key = tuple[str, str]
+Key = tuple[str, str, str]
+
+
+def _credential_fingerprint(ctx: SessionContext) -> str:
+    """Short stable hash of the session credential; never the credential itself."""
+    metadata = ctx.metadata or {}
+    raw = metadata.get("gns3_jwt") or metadata.get("token") or ""
+    if not raw:
+        return ""
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
 
 
 class BaseConnectionManager(ABC):
@@ -35,22 +45,15 @@ class _Entry:
 
 
 class ConnectionPool:
-    """LRU pool of connections per-(environment_url, user_id).
+    """LRU connection pool keyed by (environment_url, user_id, credential hash).
 
-    `max_size` limits SIMULTANEOUSLY alive connections, not the total number of
-    served users: connections idle longer than `idle_ttl` are closed, and when
-    space is short the least-recently-used one is evicted (LRU). Without this the
-    pool would permanently stop handing out connections after `max_size` unique
-    users, since connections were never released until the process stopped.
+    `max_size` bounds simultaneously live connections, not users served: entries
+    idle past `idle_ttl` are closed and the LRU is evicted under pressure.
+    Only entries idle longer than `min_evict_idle` are evictable, so when every
+    connection is hot the acquire fails and the caller retries.
 
-    A cached connection is checked via `health_check` no more often than
-    `health_check_interval`; a dead one is reopened. Only a connection unused
-    longer than `min_evict_idle` gets evicted: a live one must not be torn down,
-    so if ALL connections are "hot" that's genuine backpressure, and the call
-    fails (the caller retries).
-
-    Concurrent requests from the same user are serialized by a per-key lock, so
-    no duplicate connections occur.
+    Cached connections are health-checked at most every `health_check_interval`;
+    a dead one is reopened. A per-key lock serializes concurrent acquires.
     """
 
     def __init__(
@@ -70,18 +73,19 @@ class ConnectionPool:
         self._key_locks: dict[Key, asyncio.Lock] = {}
         self._lock = asyncio.Lock()
 
-    async def start(self) -> None:
-        self._entries = OrderedDict()
-        self._key_locks = {}
-
     @property
     def size(self) -> int:
         """Number of live connections in the pool (metrics/tests)."""
         return len(self._entries)
 
     def _key(self, ctx: SessionContext) -> Key:
-        """Pool key: (environment_url, user_id)."""
-        return (ctx.environment_url, ctx.user_id)
+        """Pool key: (environment_url, user_id, credential fingerprint).
+
+        The credential is part of the key: a re-launched session rotates the
+        student's token, and a pool keyed only on the user kept serving a client
+        with the stale one until the health check happened to run.
+        """
+        return (ctx.environment_url, ctx.user_id, _credential_fingerprint(ctx))
 
     def _key_lock(self, key: Key) -> asyncio.Lock:
         lock = self._key_locks.get(key)

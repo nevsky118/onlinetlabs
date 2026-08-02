@@ -22,7 +22,7 @@ class TestSessionServiceNodeAction:
 
     @pytest.mark.asyncio
     async def test_node_action_calls_admin_and_invalidates_cache(self, service, admin):
-        service._state_cache["11111111-1111-1111-1111-111111111111"] = (1.0, "stale")
+        service._state_cache.set("11111111-1111-1111-1111-111111111111", "stale")
 
         session = MagicMock(spec=Session)
         session.id = "11111111-1111-1111-1111-111111111111"
@@ -33,7 +33,7 @@ class TestSessionServiceNodeAction:
 
         await service.node_action(db, "11111111-1111-1111-1111-111111111111", "n1", "start")
         admin.node_action.assert_awaited_once_with("p1", "n1", "start")
-        assert "11111111-1111-1111-1111-111111111111" not in service._state_cache
+        assert service._state_cache.get("11111111-1111-1111-1111-111111111111") is None
 
     @pytest.mark.asyncio
     async def test_node_action_raises_when_session_closed(self, service):
@@ -181,38 +181,3 @@ class TestSessionServiceDeleteSession:
         assert session.status == SessionStatus.CLOSED
         assert session.closed_at is not None
         db.commit.assert_awaited_once()
-
-
-class TestSessionServiceResetPassword:
-    """Unit tests for SessionService.reset_password."""
-
-    @pytest.mark.asyncio
-    async def test_reset_password_calls_admin_without_storing_hash(self):
-        admin = AsyncMock()
-        admin.update_user_password.return_value = None
-        admin.get_user_token.return_value = "fresh-jwt"
-
-        service = SessionService(admin_client=admin, gns3_url="http://gns3:3080")
-
-        session_uuid = uuid.UUID("33333333-3333-3333-3333-333333333333")
-        session = MagicMock(spec=Session)
-        session.id = session_uuid
-        session.gns3_user_id = "u-42"
-        session.gns3_username = "student-abcdef12"
-        session.status = SessionStatus.ACTIVE
-        db = AsyncMock()
-        db.get.return_value = session
-
-        response = await service.reset_password(db, str(session_uuid))
-
-        admin.update_user_password.assert_awaited_once()
-        called_user_id, called_password = admin.update_user_password.await_args.args
-        assert called_user_id == "u-42"
-        # The password must be fresh plaintext, not a sha256 hash.
-        assert isinstance(called_password, str) and len(called_password) > 0
-        admin.get_user_token.assert_awaited_once_with("student-abcdef12", called_password)
-        # Nothing is written to the DB, commit is not called and hash fields are untouched.
-        db.commit.assert_not_awaited()
-        assert response.gns3_password == called_password
-        assert response.gns3_jwt == "fresh-jwt"
-        assert response.gns3_username == "student-abcdef12"

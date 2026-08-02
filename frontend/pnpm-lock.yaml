@@ -364,6 +364,12 @@ importers:
 
   packages/i18n:
     dependencies:
+      '@repo/design-system':
+        specifier: workspace:*
+        version: link:../design-system
+      lucide-react:
+        specifier: ^0.548.0
+        version: 0.548.0(react@19.2.0)
       next:
         specifier: ^16.2.12
         version: 16.2.12(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -380,6 +386,9 @@ importers:
       '@types/node':
         specifier: ^20
         version: 20.19.24
+      '@types/react':
+        specifier: ^19
+        version: 19.2.2
       typescript:
         specifier: ^5
         version: 5.9.3

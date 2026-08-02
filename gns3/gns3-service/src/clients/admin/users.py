@@ -16,15 +16,6 @@ class UsersMixin:
         return response.json()
 
     @_retry_on_401
-    async def update_user_password(self, user_id: str, new_password: str) -> None:
-        response = await self._client.put(
-            f"/v3/access/users/{user_id}",
-            json={"password": new_password},
-            headers=self._auth_headers(),
-        )
-        response.raise_for_status()
-
-    @_retry_on_401
     async def delete_user(self, user_id: str) -> None:
         response = await self._client.delete(
             f"/v3/access/users/{user_id}",

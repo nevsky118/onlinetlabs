@@ -294,23 +294,6 @@ class LearningAnalyticsConfig(BaseModel):
     )
 
 
-class OpenClawConfig(BaseModel):
-    """OpenClaw Gateway configuration for the experimental backend."""
-
-    enabled: bool = Field(default=False, description="Включить бэкенд OpenClaw")
-    base_url: str | None = Field(default=None, description="OpenClaw Gateway URL")
-    token: str | None = Field(default=None, description="Bearer token для Gateway")
-    model: str = Field(default="openclaw", description="Имя модели OpenClaw")
-    timeout_seconds: float = Field(default=30.0, ge=1.0, description="Таймаут запроса")
-
-    @model_validator(mode="after")
-    def validate_enabled(self) -> "OpenClawConfig":
-        """If OpenClaw is enabled, base_url is required."""
-        if self.enabled and not self.base_url:
-            raise ValueError("OPENCLAW_BASE_URL required when OpenClaw enabled")
-        return self
-
-
 class GNS3Config(BaseModel):
     """Integration with gns3-service and the GNS3 server."""
 
@@ -354,7 +337,6 @@ class ConfigModel(BaseModel):
     log: LogConfig
     agents: AgentsConfig
     learning_analytics: LearningAnalyticsConfig = Field(default_factory=LearningAnalyticsConfig)
-    openclaw: OpenClawConfig = Field(default_factory=OpenClawConfig)
     gns3: GNS3Config
     mcp: MCPConfig
     security: SecurityConfig

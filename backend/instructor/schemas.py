@@ -1,6 +1,8 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
+
+from cohort.metrics import CohortCell
 
 
 class MCPAuditRow(BaseModel):
@@ -102,76 +104,18 @@ class TimelineItem(BaseModel):
 
 
 # --- Cohort org metrics Task 8 ---
-
-
-class TimeToCompetenceSchema(BaseModel):
-    """Mirror of the TimeToCompetence dataclass."""
-
-    model_config = ConfigDict(from_attributes=True)
-
-    median_calendar_seconds: float | None
-    median_active_seconds: float | None
-    reach_rate: float
-    reach_rate_at_horizon: float
-    restricted_mean_calendar_seconds: float
-    n: int
-    censored: int
-
-
-class AutonomySchema(BaseModel):
-    """Mirror of the AutonomyMetrics dataclass."""
-
-    model_config = ConfigDict(from_attributes=True)
-
-    mean_l1_interventions: float
-    mean_l2_interventions: float | None
-    mean_sessions_to_l2: float | None
-
-
-class OrgEffectSchema(BaseModel):
-    """Mirror of the OrgEffectTrend dataclass; the note string passes through as-is."""
-
-    model_config = ConfigDict(from_attributes=True)
-
-    l1_escalations_mean: float
-    l2_escalations_mean: float | None
-    l1_repeated_errors_mean: float
-    l2_repeated_errors_mean: float | None
-    note: str
-
-
-class CohortCellSchema(BaseModel):
-    """Mirror of the CohortCell dataclass."""
-
-    model_config = ConfigDict(from_attributes=True)
-
-    skill: str | None
-    arm: str | None
-    n: int
-    time_to_competence: TimeToCompetenceSchema
-    autonomy: AutonomySchema
-    org_effect: OrgEffectSchema
+# The domain types are pydantic models, so the response composes them directly.
 
 
 class CohortMetricsResponse(BaseModel):
     """Response for GET /instructor/cohort-metrics."""
 
-    by_skill: list[CohortCellSchema]
-    pooled: CohortCellSchema
-    by_arm: list[CohortCellSchema] | None
+    by_skill: list[CohortCell]
+    pooled: CohortCell
+    by_arm: list[CohortCell] | None
     headline_arm: str
-
-
-def _cell_schema(cell) -> CohortCellSchema:
-    """Converts a CohortCell dataclass to CohortCellSchema."""
-    return CohortCellSchema.model_validate(cell)
 
 
 def cohort_response_from_result(out: dict) -> CohortMetricsResponse:
     """Maps the aggregate_cohort result to CohortMetricsResponse."""
-    return CohortMetricsResponse(
-        by_skill=[_cell_schema(c) for c in out["by_skill"]],
-        pooled=_cell_schema(out["pooled"]),
-        by_arm=[_cell_schema(c) for c in out["by_arm"]] if out["by_arm"] is not None else None,
-        headline_arm=out["headline_arm"],
-    )
+    return CohortMetricsResponse(**out)

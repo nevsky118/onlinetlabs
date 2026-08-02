@@ -6,7 +6,7 @@ import pytest
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_greater, assert_true
 
-from experiment.analysis import compute_arm_analysis
+from evaluation.arm_analysis import compute_arm_analysis
 
 pytestmark = [pytest.mark.unit]
 

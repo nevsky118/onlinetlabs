@@ -5,14 +5,44 @@ from sqlalchemy.orm import selectinload
 from models.lab import Lab
 
 
-async def get_all_labs(db: AsyncSession, course_slug: str | None = None) -> list[Lab]:
-    """Selects labs from the DB, optionally filtered by course, ordered by sort order."""
+async def get_all_labs(
+    db: AsyncSession, course_slug: str | None = None, *, enabled_only: bool = False
+) -> list[Lab]:
+    """Selects labs from the DB, optionally filtered by course, ordered by sort order.
+
+    `enabled_only` is opt-in: admin listings must keep seeing disabled labs.
+    """
     stmt = select(Lab)
     if course_slug is not None:
         stmt = stmt.where(Lab.course_slug == course_slug)
+    if enabled_only:
+        stmt = stmt.where(Lab.enabled.is_(True))
     stmt = stmt.order_by(Lab.order_in_course)
     result = await db.execute(stmt)
     return list(result.scalars().all())
+
+
+def template_project_id_for(lab: Lab) -> str:
+    """GNS3 template project id for the lab, chosen by slug suffix.
+
+    Single source for launch and reset; they used to branch differently.
+    """
+    if lab.slug.endswith("-ccna"):
+        template_pid = lab.gns3_template_project_id_iosvl2
+        if not template_pid:
+            raise ValueError(
+                f"Lab '{lab.slug}' требует IOSvL2 template, но он не настроен "
+                "(deploy на x86_64 production host)"
+            )
+    elif lab.slug.endswith("-frr"):
+        template_pid = getattr(lab, "gns3_template_project_id_frr", None)
+        if not template_pid:
+            raise ValueError(f"Lab '{lab.slug}' не имеет настроенного template")
+    else:
+        template_pid = lab.gns3_template_project_id
+        if not template_pid:
+            raise ValueError(f"Lab '{lab.slug}' не имеет gns3_template_project_id")
+    return template_pid
 
 
 async def create_lab(

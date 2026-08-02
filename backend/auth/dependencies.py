@@ -3,7 +3,7 @@ import secrets
 from datetime import UTC, datetime, timedelta
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from config import settings
@@ -66,22 +66,29 @@ def decode_backend_token(token: str, secret: str) -> dict:
 
 
 async def get_current_user(
+    request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> dict:
-    """FastAPI dependency. Extracts the user from the backend JWT."""
+    """FastAPI dependency. Extracts the user from the backend JWT.
+
+    Publishes the user on request.state for _rate_limit_key: slowapi computes the
+    key before the handler body runs.
+    """
     try:
         payload = decode_backend_token(credentials.credentials, settings.api.jwt_secret)
         user_id = payload.get("sub")
         role = payload.get("role")
         if user_id is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-        return {
+        user = {
             "id": user_id,
             "role": role,
             "can_select": bool(payload.get("can_select")),
             "can_view_logs": bool(payload.get("can_view_logs")),
             "is_active": bool(payload.get("is_active")),
         }
+        request.state.user = user
+        return user
     except jwt.InvalidTokenError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token"
@@ -89,9 +96,13 @@ async def get_current_user(
 
 
 async def get_current_user_optional(
+    request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(HTTPBearer(auto_error=False)),
 ) -> dict | None:
-    """FastAPI dependency. Returns the user from the JWT or None without raising."""
+    """FastAPI dependency. Returns the user from the JWT or None without raising.
+
+    Publishes the user on request.state for the rate limiter, as get_current_user does.
+    """
     if credentials is None:
         return None
     try:
@@ -100,13 +111,15 @@ async def get_current_user_optional(
         role = payload.get("role")
         if user_id is None:
             return None
-        return {
+        user = {
             "id": user_id,
             "role": role,
             "can_select": bool(payload.get("can_select")),
             "can_view_logs": bool(payload.get("can_view_logs")),
             "is_active": bool(payload.get("is_active")),
         }
+        request.state.user = user
+        return user
     except jwt.InvalidTokenError:
         return None
 

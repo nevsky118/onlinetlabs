@@ -38,10 +38,27 @@ HISTORY_ACTIONS = (
 )
 
 
+# Renew the lock only while we still own it; release only our own.
+_LUA_RENEW = """
+if redis.call('GET', KEYS[1]) == ARGV[1] then
+    return redis.call('EXPIRE', KEYS[1], ARGV[2])
+end
+return 0
+"""
+
+_LUA_RELEASE = """
+if redis.call('GET', KEYS[1]) == ARGV[1] then
+    return redis.call('DEL', KEYS[1])
+end
+return 0
+"""
+
+
 class Gns3WsProxy:
-    # 1h lock TTL, renewed every 30 min by heartbeat.
-    _LOCK_TTL_SECONDS = 3600
-    _HEARTBEAT_INTERVAL_SECONDS = 1800
+    # Short TTL with a heartbeat well inside it: on SIGKILL the lock expires in
+    # ~90s instead of stranding every active session for the rest of the hour.
+    _LOCK_TTL_SECONDS = 90
+    _HEARTBEAT_INTERVAL_SECONDS = 30
 
     def __init__(
         self,
@@ -59,6 +76,9 @@ class Gns3WsProxy:
         self._heartbeat_tasks: dict[str, asyncio.Task] = {}
         # redis_url can be omitted only in unit tests. In prod main.py passes it in.
         self._redis = aioredis.from_url(redis_url, decode_responses=True) if redis_url else None
+        # Identifies this process as the lock owner, so a restarted instance can
+        # take a project over instead of skipping it as "owned by someone else".
+        self._instance_id = uuid_module.uuid4().hex
 
     def _lock_key(self, project_id: str) -> str:
         return f"lock:ws_proxy:{project_id}"
@@ -82,7 +102,7 @@ class Gns3WsProxy:
             try:
                 locked = await self._redis.set(
                     self._lock_key(project_id),
-                    str(session_id),
+                    self._instance_id,
                     nx=True,
                     ex=self._LOCK_TTL_SECONDS,
                 )
@@ -110,7 +130,19 @@ class Gns3WsProxy:
                 await asyncio.sleep(self._HEARTBEAT_INTERVAL_SECONDS)
                 if self._redis is None:
                     return
-                await self._redis.expire(self._lock_key(project_id), self._LOCK_TTL_SECONDS)
+                renewed = await self._redis.eval(
+                    _LUA_RENEW,
+                    1,
+                    self._lock_key(project_id),
+                    self._instance_id,
+                    self._LOCK_TTL_SECONDS,
+                )
+                if not int(renewed or 0):
+                    # Another instance took the project over; stop forwarding so
+                    # the broker doesn't receive duplicates.
+                    logger.warning("ws_proxy: lost the lock for %s, stopping", project_id)
+                    await self.stop_project(project_id)
+                    return
             except asyncio.CancelledError:
                 return
             except Exception:
@@ -142,7 +174,9 @@ class Gns3WsProxy:
                 pass
         if self._redis is not None:
             try:
-                await self._redis.delete(self._lock_key(project_id))
+                await self._redis.eval(
+                    _LUA_RELEASE, 1, self._lock_key(project_id), self._instance_id
+                )
             except Exception:
                 logger.exception("ws_proxy: lock release failed for %s", project_id)
 
@@ -243,16 +277,9 @@ class Gns3WsProxy:
                     "status": gns_event.get("status"),
                 },
             }
-        if action in ("link.created", "link.deleted", "node.created", "node.deleted"):
-            return {
-                "type": "history.event",
-                "timestamp": ts,
-                "payload": {
-                    "event_type": action,
-                    "component_id": gns_event.get("link_id") or gns_event.get("node_id"),
-                    "data": gns_event,
-                },
-            }
+        # History actions are published by HistoryPgListener off the AFTER INSERT
+        # trigger. Publishing here too delivered every one of them twice, with no
+        # id on the envelope for subscribers to dedupe on.
         return None
 
     async def _publish_envelope(self, session_id: str, event_type: str, payload: dict) -> None:

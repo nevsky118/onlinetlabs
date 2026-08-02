@@ -17,8 +17,14 @@ pytestmark = [pytest.mark.unit, pytest.mark.connection]
 GNS3_URL = "http://gns3-test:3080"
 
 
-def _ctx(user_id: str) -> SessionContext:
-    return SessionContext(user_id=user_id, session_id=f"s-{user_id}", environment_url=GNS3_URL)
+def _ctx(user_id: str, jwt: str | None = None) -> SessionContext:
+    metadata = {"gns3_jwt": jwt} if jwt else {}
+    return SessionContext(
+        user_id=user_id,
+        session_id=f"s-{user_id}",
+        environment_url=GNS3_URL,
+        metadata=metadata,
+    )
 
 
 class _FakeTime:
@@ -199,3 +205,33 @@ class TestConnectionPool:
             other = await pool.get_connection(_ctx("u2"))
             assert other is not None
             assert pool.size == 1
+
+
+class TestPoolKeyCredentialRotation:
+    @autotest.num("862")
+    @autotest.external_id("b1d7c2ea-5f43-4b6e-9a2c-7d1e8f0a4c33")
+    @autotest.name("ConnectionPool: a rotated JWT does not reuse the stale connection")
+    async def test_b1d7c2ea_rotated_jwt_gets_new_connection(self):
+        with autotest.step("Arrange: pool over a manager that counts connects"):
+            pool = ConnectionPool(manager=_FakeManager())
+
+        with autotest.step("Act: same user, same environment, rotated token"):
+            first = await pool.get_connection(_ctx("u1", jwt="old-token"))
+            second = await pool.get_connection(_ctx("u1", jwt="new-token"))
+
+        with autotest.step("Assert: the stale client is not served again"):
+            assert first is not second
+
+    @autotest.num("863")
+    @autotest.external_id("c4a2f8b9-3e17-4d55-8b0a-6f2c9d1e7a48")
+    @autotest.name("ConnectionPool: an unchanged JWT reuses the connection")
+    async def test_c4a2f8b9_same_jwt_reuses_connection(self):
+        with autotest.step("Arrange: pool over a manager that counts connects"):
+            pool = ConnectionPool(manager=_FakeManager())
+
+        with autotest.step("Act: same user, same token, twice"):
+            first = await pool.get_connection(_ctx("u1", jwt="same-token"))
+            second = await pool.get_connection(_ctx("u1", jwt="same-token"))
+
+        with autotest.step("Assert: one connection is reused"):
+            assert first is second

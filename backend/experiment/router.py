@@ -3,19 +3,16 @@
 import csv
 import io
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.dependencies import require_admin
 from db.session import get_db
-from experiment.analysis import compute_arm_analysis, compute_experiment_analysis
-from experiment.assignment import ExperimentGroup
+from evaluation.arm_analysis import compute_arm_analysis
 from experiment.schemas import (
     ArmAnalysisResponse,
-    ExperimentStatusResponse,
-    GroupUpdateRequest,
     ParticipantResponse,
     TimelineEventResponse,
 )
@@ -45,21 +42,6 @@ METRICS_EXPORT_FIELDS = [
 ]
 
 
-def _build_status_response(
-    counts: dict[str, int], completed: int, in_progress: int
-) -> ExperimentStatusResponse:
-    """Build status for the final lettered groups of the OpenClaw study."""
-    group_a_count = counts.get(ExperimentGroup.GROUP_A.value, 0)
-    group_b_count = counts.get(ExperimentGroup.GROUP_B.value, 0)
-    return ExperimentStatusResponse(
-        total_participants=group_a_count + group_b_count,
-        group_a_count=group_a_count,
-        group_b_count=group_b_count,
-        completed_count=completed,
-        in_progress_count=in_progress,
-    )
-
-
 def _metric_to_export_row(metric) -> dict:
     """Convert a metrics object into an export row."""
     return {
@@ -80,42 +62,13 @@ def _metric_to_export_row(metric) -> dict:
     }
 
 
-@router.get("/status", response_model=ExperimentStatusResponse)
-async def get_status(
-    db: AsyncSession = Depends(get_db),
-    _: dict = Depends(require_admin),
-):
-    """Experiment status: participant counts by group."""
-    result = await db.execute(
-        select(
-            User.experiment_group,
-            func.count(User.id),
-        )
-        .where(User.experiment_group.isnot(None))
-        .group_by(User.experiment_group)
-    )
-    counts = {row[0]: row[1] for row in result.all()}
-
-    completed_result = await db.execute(
-        select(func.count(ExperimentMetrics.id)).where(ExperimentMetrics.completed.is_(True))
-    )
-    completed = completed_result.scalar() or 0
-
-    in_progress_result = await db.execute(
-        select(func.count(LearningSession.id)).where(LearningSession.status == "active")
-    )
-    in_progress = in_progress_result.scalar() or 0
-
-    return _build_status_response(counts, completed=completed, in_progress=in_progress)
-
-
 @router.get("/participants", response_model=list[ParticipantResponse])
 async def list_participants(
     db: AsyncSession = Depends(get_db),
     _: dict = Depends(require_admin),
 ):
     """List of experiment participants."""
-    result = await db.execute(select(User).where(User.experiment_group.isnot(None)))
+    result = await db.execute(select(User).where(User.control_arm.isnot(None)))
     users = result.scalars().all()
 
     participants = []
@@ -138,29 +91,13 @@ async def list_participants(
                 user_id=user.id,
                 email=user.email,
                 name=user.name,
-                experiment_group=user.experiment_group,
+                control_arm=user.control_arm,
                 sessions_count=sessions_count,
                 completed=latest.completed if latest else False,
                 total_time_seconds=latest.total_time_seconds if latest else None,
             )
         )
     return participants
-
-
-@router.patch("/participant/{user_id}/group")
-async def update_group(
-    user_id: str,
-    body: GroupUpdateRequest,
-    db: AsyncSession = Depends(get_db),
-    _: dict = Depends(require_admin),
-):
-    """Reassign a participant's group."""
-    if body.group not in (ExperimentGroup.GROUP_A.value, ExperimentGroup.GROUP_B.value):
-        raise HTTPException(status_code=400, detail="group must be 'group_a' or 'group_b'")
-
-    await db.execute(update(User).where(User.id == user_id).values(experiment_group=body.group))
-    await db.commit()
-    return {"ok": True}
 
 
 @router.get("/session/{session_id}/timeline", response_model=list[TimelineEventResponse])
@@ -214,17 +151,6 @@ async def export_metrics(
         )
 
     return [_metric_to_export_row(m) for m in metrics]
-
-
-@router.get("/analysis")
-async def get_analysis(
-    db: AsyncSession = Depends(get_db),
-    _: dict = Depends(require_admin),
-):
-    """Built-in statistical analysis."""
-    result = await db.execute(select(ExperimentMetrics))
-    metrics = result.scalars().all()
-    return compute_experiment_analysis(metrics)
 
 
 @router.get("/arm-analysis", response_model=ArmAnalysisResponse)

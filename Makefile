@@ -1,7 +1,7 @@
 .PHONY: help install serve dev up up-db down logs ps psql \
         migrate migrate-create migrate-rollback \
         test lint format check \
-        encrypt decrypt clean sync-content seed-lab-templates openclaw \
+        encrypt decrypt clean sync-content seed-lab-templates \
         export-cohort export-audit export-defense
 
 # ── Paths ────────────────────────────────────────────────────
@@ -11,9 +11,6 @@ SDK := mcp-sdk
 ENV ?= local
 ENV_FILE := ../deployment/$(ENV)/backend.env
 DC := docker compose -f deployment/local/compose.yaml
-OPENCLAW_PORT ?= 18789
-OPENCLAW_AUTH ?= none
-OPENCLAW_BIND ?= loopback
 
 # ── Colors ───────────────────────────────────────────────────
 B := \033[0;34m
@@ -33,7 +30,6 @@ help:
 	@printf "  $(Y)%-20s$(N) %s\n" "install"            "Install all dependencies (poetry + pnpm)"
 	@printf "  $(Y)%-20s$(N) %s\n" "serve"              "Backend API (ENV=local|dev|prod)"
 	@printf "  $(Y)%-20s$(N) %s\n" "dev"                "Frontend dev server (next dev)"
-	@printf "  $(Y)%-20s$(N) %s\n" "openclaw"           "OpenClaw Gateway (OPENCLAW_PORT=18789)"
 	@printf "\n  $(B)Docker$(N)\n"
 	@printf "  $(Y)%-20s$(N) %s\n" "up"                 "Start all services"
 	@printf "  $(Y)%-20s$(N) %s\n" "up-db"              "Start database only"
@@ -68,10 +64,9 @@ serve:
 	cd $(BE) && ENV_FILE=$(ENV_FILE) poetry run uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 dev:
-	cd $(FE) && ln -sf ../deployment/$(ENV)/frontend.env .env && pnpm dev
-
-openclaw:
-	openclaw gateway run --auth $(OPENCLAW_AUTH) --bind $(OPENCLAW_BIND) --port $(OPENCLAW_PORT) --force --allow-unconfigured
+	ln -sf ../../../deployment/$(ENV)/frontend.env $(FE)/apps/dashboard/.env
+	ln -sf ../../../deployment/$(ENV)/frontend-web.env $(FE)/apps/web/.env
+	cd $(FE) && pnpm dev
 
 # ── Docker ───────────────────────────────────────────────────
 up:

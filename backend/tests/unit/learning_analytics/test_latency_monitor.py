@@ -49,7 +49,7 @@ class _Res:
 
 
 def _features():
-    from agents.analytics.models import SessionFeatures
+    from agents.identifier.models import SessionFeatures
 
     return SessionFeatures(
         session_id="s1",
@@ -74,7 +74,7 @@ def _features():
 
 
 def _productive_analysis():
-    from agents.analytics.models import (
+    from agents.identifier.models import (
         AnalyticsResult,
         DifficultyRecommendation,
         StudentMetrics,

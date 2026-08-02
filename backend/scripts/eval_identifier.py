@@ -3,17 +3,14 @@
 import asyncio
 
 from config.env_config_loader import load_settings
-from control.criterion import Costs
+from control.criterion import costs_from_config
 from evaluation.metrics import (
     confusion_matrix,
     first_match_diagnostics,
     j_optimal,
     operating_curve,
 )
-from evaluation.scenarios import (
-    make_normal_scenario,
-    make_struggle_scenario,
-)
+from evaluation.scenarios import build_synthetic_scenarios
 from learning_analytics.process_state import ProcessRegime
 
 # Regime order for the 5×5 matrix
@@ -33,22 +30,6 @@ _LABELS = {
     ProcessRegime.STUCK_ON_STEP: "STUCK",
     ProcessRegime.IDLE: "IDLE",
 }
-
-
-def _build_synthetic():
-    """3-5 scenarios per type plus 5 normal ones."""
-    scns = []
-    for regime in [
-        ProcessRegime.REPEATING_ERRORS,
-        ProcessRegime.TRIAL_AND_ERROR,
-        ProcessRegime.STUCK_ON_STEP,
-        ProcessRegime.IDLE,
-    ]:
-        for onset in [4, 5, 6]:
-            scns.append(make_struggle_scenario(regime, onset_index=onset, n=14, step=15.0))
-    for _ in range(5):
-        scns.append(make_normal_scenario(n=14, step=15.0))
-    return scns
 
 
 def _per_type_recall(pairs, curve_t_k, config) -> dict[ProcessRegime, float]:
@@ -85,10 +66,10 @@ async def main():
 
         cfg = LearningAnalyticsConfig()
 
-    costs = Costs(c_stuck=1.0, c_intervention=1.0, c_false=5.0)
+    costs = costs_from_config(cfg)
 
     # Synthetic dataset (always)
-    scns = _build_synthetic()
+    scns = build_synthetic_scenarios()
 
     # Without real harvesting (not connected to the DB in this mode) labeled-real-N stays 0
     labeled_real_n = 0

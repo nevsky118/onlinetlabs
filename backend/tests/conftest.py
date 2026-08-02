@@ -38,28 +38,21 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-# Kill switch (see REFACTOR_ANALYSIS.md §5.8): unit tests must never hit a real
-# LLM. Agent tests swap in pydantic_ai.models.test.TestModel, which doesn't call
-# check_allow_model_requests(), so ALLOW_MODEL_REQUESTS=False doesn't affect them.
-# Real models (agents/base.py, the OpenAI-compatible client, incl. Yandex GPT)
-# call check_allow_model_requests() inside Model.request/request_stream and will
-# raise RuntimeError if a test accidentally forgets to swap the model.
+# Kill switch: unit tests must never reach a real LLM. Real models call
+# check_allow_model_requests() in Model.request/request_stream and raise if a test
+# forgets to swap them. TestModel skips that check, so agent tests are unaffected.
 pydantic_ai_models.ALLOW_MODEL_REQUESTS = False
 
 
 @pytest.fixture
 async def sqlite_session_factory():
-    """Factory for in-memory SQLite sessions for tests, parameterized by a list of tables.
-
-    Removes the copy-pasted engine+create boilerplate spread across ~36 files. Usage:
+    """In-memory SQLite session factory, created for the tables you pass in.
 
         factory = await sqlite_session_factory([User.__table__, Lab.__table__])
         async with factory() as db:
-            db.add(User(...))
-            await db.commit()
+            ...
 
-    Can be called multiple times in the same test; each call creates its own
-    independent engine, and all of them are disposed at the end of the test.
+    Each call builds an independent engine; all are disposed when the test ends.
     """
     engines: list = []
 

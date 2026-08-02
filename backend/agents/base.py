@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
+from pydantic_ai.settings import ModelSettings
 
 from config.config_model import ConfigModel, LlmProvider
 from core.llm.client import build_client, model_uri, resolve_model
@@ -18,7 +19,14 @@ class BaseAgent:
 
     def _agent_for(self, model_id: str) -> Agent:
         """Fresh pydantic-ai Agent for model_id (2.x supports model= per run, no cache needed)."""
-        return Agent(model=self._build_model(model_id), system_prompt=self.system_prompt())
+        return Agent(
+            model=self._build_model(model_id),
+            system_prompt=self.system_prompt(),
+            model_settings=ModelSettings(
+                temperature=self.agents_config.temperature,
+                max_tokens=self.agents_config.max_tokens,
+            ),
+        )
 
     def _build_model(self, model_id: str) -> OpenAIChatModel:
         """OpenAI-compatible model (yandex/openrouter) from provider credentials."""

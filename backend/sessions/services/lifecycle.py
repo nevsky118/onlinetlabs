@@ -5,6 +5,7 @@ from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from labs.service import template_project_id_for
 from models.lab import Lab
 from models.session import LearningSession
 from sessions.context import build_session_context
@@ -88,16 +89,35 @@ async def _finalize_experiment_metrics(db: AsyncSession, session: LearningSessio
     await db.commit()
 
 
+async def _release_slot(lab_slug: str) -> None:
+    """Releases the queue slot and decrements the active-sessions gauge."""
+    from sessions.queue import _get_or_create_singleton
+
+    try:
+        await _get_or_create_singleton().release(lab_slug)
+    except Exception:
+        logger.exception("Queue slot release failed for lab %s", lab_slug)
+    try:
+        from observability.metrics import active_sessions_gauge
+
+        active_sessions_gauge.labels(lab_slug=lab_slug).dec()
+    except Exception:
+        pass  # metrics optional
+
+
 async def _mark_ended_and_finalize(
     db: AsyncSession, session: LearningSession, status: str
 ) -> LearningSession:
-    """Marks the session ended and captures measurements (ExperimentMetrics and MRT censoring).
+    """Marks the session ended, captures measurements and frees the queue slot.
 
-    The single finalization point for ALL termination paths (`end_session`, `end_lab`);
-    otherwise the experiment measurement layer (A/B, cohort) stays empty.
-    Must be called AFTER stopping the monitor: otherwise late events/interventions
-    won't make it into the ExperimentMetrics snapshot.
+    The single finalization point for all termination paths (end_session, end_lab,
+    the orphan sweep in query.get_session_state).
+    Must be called AFTER stopping the monitor, or late interventions miss the snapshot.
+    Idempotent on ended_at: a repeat call cannot double-release or double-count.
     """
+    if session.ended_at is not None:
+        return session
+
     session.status = status
     session.ended_at = datetime.now(UTC)
     await db.commit()
@@ -117,6 +137,7 @@ async def _mark_ended_and_finalize(
     except Exception:
         logger.exception("Censoring of MRT points failed for session %s", session.id)
 
+    await _release_slot(session.lab_slug)
     return session
 
 
@@ -163,10 +184,7 @@ async def reset_lab(db, session_id: str, user_id: str, gns3_client) -> bool:
     if session is None:
         return False
     lab = await db.get(Lab, session.lab_slug)
-    if session.lab_slug.endswith("-ccna"):
-        template_pid = lab.gns3_template_project_id_iosvl2
-    else:
-        template_pid = lab.gns3_template_project_id
+    template_pid = template_project_id_for(lab)
     meta = dict(session.meta or {})
     result = await gns3_client.reset_project(meta["gns3_service_session_id"], template_pid)
     meta["gns3_project_id"] = result["project_id"]
@@ -176,22 +194,17 @@ async def reset_lab(db, session_id: str, user_id: str, gns3_client) -> bool:
 
 
 async def end_lab(db, session_id: str, user_id: str, gns3_client, monitor_registry) -> bool:
-    """Ends the lab. This is the path by which the student themself closes the session.
+    """Ends the lab. This is how a student closes their own session.
 
     Step order matters:
-    1. Stop the monitor. After this, the stream of behavioral events and
-       interventions is closed, so the metrics snapshot will be complete
-       (otherwise late interventions are lost).
-    2. Finalize measurements (ExperimentMetrics + censoring of open MRT
-       points), BEFORE GNS3 teardown, so an external system failure
-       doesn't lose experiment data.
-    3. Tear down the gns3-service session (best-effort), release the queue
-       and counter.
+    1. Stop the monitor, so no late intervention misses the metrics snapshot.
+    2. Finalize and release the slot, before teardown, so a GNS3 failure cannot
+       lose experiment data or strand the slot.
+    3. Tear down the gns3-service session (best-effort).
     """
     session = await get_owned_session(db, session_id, user_id)
     if session is None:
         return False
-    lab_slug = session.lab_slug
 
     await monitor_registry.stop(session_id)
     await _mark_ended_and_finalize(db, session, status="ended")
@@ -202,14 +215,4 @@ async def end_lab(db, session_id: str, user_id: str, gns3_client, monitor_regist
             await gns3_client.delete_session(meta["gns3_service_session_id"])
         except Exception:
             logger.exception("gns3-service teardown failed for %s", session_id)
-    from sessions.queue import _get_or_create_singleton
-
-    queue = _get_or_create_singleton()
-    await queue.release(lab_slug)
-    try:
-        from observability.metrics import active_sessions_gauge
-
-        active_sessions_gauge.labels(lab_slug=lab_slug).dec()
-    except Exception:
-        pass  # metrics optional
     return True

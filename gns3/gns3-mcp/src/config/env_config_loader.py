@@ -43,4 +43,5 @@ class EnvConfigLoader:
             pool=pool,
             log_buffer=log_buffer,
             gns3_service_url=values.get("GNS3_SERVICE_URL", "http://localhost:8101"),
+            internal_api_token=values.get("INTERNAL_API_TOKEN") or None,
         )

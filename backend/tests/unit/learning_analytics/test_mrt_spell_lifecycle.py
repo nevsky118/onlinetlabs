@@ -33,7 +33,7 @@ async def _sqlite_factory():
 
 
 def _features():
-    from agents.analytics.models import SessionFeatures
+    from agents.identifier.models import SessionFeatures
 
     return SessionFeatures(
         session_id="s1",
@@ -58,7 +58,7 @@ def _features():
 
 
 def _analysis(*, struggle):
-    from agents.analytics.models import (
+    from agents.identifier.models import (
         AnalyticsResult,
         DifficultyRecommendation,
         StruggleType,

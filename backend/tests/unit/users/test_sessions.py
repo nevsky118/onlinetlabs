@@ -1,4 +1,4 @@
-"""Tests for GET/DELETE /users/me/sessions."""
+"""Tests for GET/DELETE /users/me/auth-sessions."""
 
 import uuid
 from datetime import UTC, datetime
@@ -88,9 +88,9 @@ class TestSessionEndpoints:
         s3 = _make_session("s3", "user-b")  # belongs to someone else
         await self._seed(s1, s2, s3)
 
-        with autotest.step("Act: GET /users/me/sessions от user-a"):
+        with autotest.step("Act: GET /users/me/auth-sessions от user-a"):
             async with self._client() as client:
-                resp = await client.get("/users/me/sessions")
+                resp = await client.get("/users/me/auth-sessions")
 
         with autotest.step("Assert: 200, count=2, только сессии user-a"):
             assert_equal(resp.status_code, 200, "status 200")
@@ -109,9 +109,9 @@ class TestSessionEndpoints:
         s2 = _make_session("s2", "user-a")
         await self._seed(s1, s2)
 
-        with autotest.step("Act: DELETE /users/me/sessions/s1"):
+        with autotest.step("Act: DELETE /users/me/auth-sessions/s1"):
             async with self._client() as client:
-                resp = await client.delete("/users/me/sessions/s1")
+                resp = await client.delete("/users/me/auth-sessions/s1")
 
         with autotest.step("Assert: 200, revoked=1"):
             assert_equal(resp.status_code, 200, "status 200")
@@ -119,7 +119,7 @@ class TestSessionEndpoints:
 
         with autotest.step("Assert: GET возвращает только s2"):
             async with self._client() as client:
-                list_resp = await client.get("/users/me/sessions")
+                list_resp = await client.get("/users/me/auth-sessions")
             assert_equal(list_resp.json()["count"], 1, "осталась 1 сессия")
             assert_equal(list_resp.json()["sessions"][0]["id"], "s2", "id=s2")
 
@@ -132,14 +132,14 @@ class TestSessionEndpoints:
 
         with autotest.step("Act: user-a удаляет чужую сессию sb1"):
             async with self._client() as client:
-                resp_foreign = await client.delete("/users/me/sessions/sb1")
+                resp_foreign = await client.delete("/users/me/auth-sessions/sb1")
 
         with autotest.step("Assert: 404 для чужой сессии"):
             assert_equal(resp_foreign.status_code, 404, "чужая → 404")
 
         with autotest.step("Act: user-a удаляет несуществующую сессию"):
             async with self._client() as client:
-                resp_missing = await client.delete("/users/me/sessions/does-not-exist")
+                resp_missing = await client.delete("/users/me/auth-sessions/does-not-exist")
 
         with autotest.step("Assert: 404 для несуществующей"):
             assert_equal(resp_missing.status_code, 404, "несуществующая → 404")
@@ -152,9 +152,9 @@ class TestSessionEndpoints:
         s2 = _make_session("sa2", "user-a")
         await self._seed(s1, s2)
 
-        with autotest.step("Act: DELETE /users/me/sessions (all)"):
+        with autotest.step("Act: DELETE /users/me/auth-sessions (all)"):
             async with self._client() as client:
-                resp = await client.delete("/users/me/sessions")
+                resp = await client.delete("/users/me/auth-sessions")
 
         with autotest.step("Assert: revoked=2"):
             assert_equal(resp.status_code, 200, "status 200")
@@ -162,5 +162,5 @@ class TestSessionEndpoints:
 
         with autotest.step("Assert: GET возвращает count=0"):
             async with self._client() as client:
-                list_resp = await client.get("/users/me/sessions")
+                list_resp = await client.get("/users/me/auth-sessions")
             assert_equal(list_resp.json()["count"], 0, "count=0 после удаления всех")

@@ -1,16 +1,11 @@
-"""WS observer endpoint (/ws/observe/{session_id}): permission check + event forwarding.
+"""Test: /ws/observe/{session_id} permission check and event forwarding.
 
-Verifies can_view_session_activity (closes 4403 without the can_view_logs right) and
-that a real AgentActivityLog.emit reaches the subscribed observer as
-{"type": "agent_activity", ...}. Goes through the real ASGI stack (httpx-ws +
-ASGIWebSocketTransport) rather than a direct handler call, the same way a
-browser would (JWT in query, real accept/close).
+Runs through the real ASGI stack (httpx-ws) rather than calling the handler, so
+the JWT query param and accept/close behave as they do for a browser.
 
-The handler (sessions/routers/ws.py:session_activity_observe_ws) races _pump
-(activity queue) against _watch_disconnect (websocket.receive), so a client
-disconnect is noticed even with an empty queue and the subscription is removed
-(see the disconnect_cleans_up_subscription test). asyncio.timeout in the tests is
-a safeguard against a regression of this leak, not the expected path.
+The handler races the activity queue against websocket.receive, so a disconnect
+is noticed even with an empty queue. The asyncio.timeout calls guard against a
+regression of that leak; they are not the expected path.
 """
 
 import asyncio

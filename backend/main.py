@@ -25,7 +25,6 @@ configure_sentry("backend", environment=os.getenv("ENVIRONMENT", "dev"))
 
 from admin.router import router as admin_router
 from agents.orchestrator.agent import Orchestrator
-from analytics.router import router as analytics_router
 from auth.router import router as auth_router
 from chat.router import router as chat_router
 from control_interface.router import router as consent_router
@@ -50,6 +49,7 @@ from sessions.routers.queries import agent_activity_router
 from sessions.services.proxy import _BULK_GNS3_SEMAPHORE
 from sessions.state_cache import StateCache
 from sessions.ws import WebSocketGateway, close_all_connections
+from telemetry.router import router as analytics_router
 from users.router import router as users_router
 from validation.router import router as validation_router
 from validation.runs_router import router as validation_runs_router
@@ -96,14 +96,16 @@ async def lifespan(app: FastAPI):
     Creates the MCP client, the gateway, the orchestrator, the clients and the
     background tasks on startup, and closes the connections and tasks on exit.
     """
+
     mcp_client = MCPClient(settings.mcp.server_url)
     gateway = WebSocketGateway()
-    orchestrator = Orchestrator(settings, mcp_client=mcp_client)
+    orchestrator = Orchestrator(settings)
     gns3_client = Gns3ServiceClient(
         settings.gns3.service_url,
         internal_token=settings.security.internal_api_token,
     )
     activity_log = AgentActivityLog(async_session, settings.observability.retention_per_session)
+    await activity_log.start()
     monitor_registry = SessionMonitorRegistry(
         config=settings,
         mcp_client=mcp_client,
@@ -140,6 +142,7 @@ async def lifespan(app: FastAPI):
     except asyncio.CancelledError:
         pass
     await close_all_connections()
+    await activity_log.stop()
     await redis_client.close()
     await monitor_registry.stop_all()
     await gns3_client.close()

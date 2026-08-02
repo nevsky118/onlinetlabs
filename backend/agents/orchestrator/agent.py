@@ -2,7 +2,6 @@
 
 import logging
 
-from agents.hint.agent import HintAgent
 from agents.orchestrator.models import (
     InterventionInput,
     OrchestratorInput,
@@ -19,10 +18,9 @@ logger = logging.getLogger(__name__)
 class Orchestrator:
     """Orchestrator creates agents and routes requests."""
 
-    def __init__(self, config: ConfigModel, mcp_client=None, db=None):
+    def __init__(self, config: ConfigModel, db=None):
         """Stores config and dependencies; agent cache is created lazily."""
         self.config = config
-        self._mcp_client = mcp_client
         self._db = db
         self._agents = {}
 
@@ -35,13 +33,7 @@ class Orchestrator:
         if entry is None:
             return None
         agent_cls, _ = entry
-
-        # Agent constructors differ in dependencies, handle explicitly.
-        if agent_cls is HintAgent:
-            agent = agent_cls(self.config)
-        else:
-            agent = agent_cls(self.config, self._mcp_client)
-
+        agent = agent_cls(self.config)
         self._agents[agent_name] = agent
         return agent
 

@@ -35,10 +35,15 @@ class TestConstants:
     """Sanity checks of the constants."""
 
     def test_lock_ttl_seconds(self):
-        assert Gns3WsProxy._LOCK_TTL_SECONDS == 3600
+        assert Gns3WsProxy._LOCK_TTL_SECONDS == 90
 
     def test_heartbeat_interval_seconds(self):
-        assert Gns3WsProxy._HEARTBEAT_INTERVAL_SECONDS == 1800
+        assert Gns3WsProxy._HEARTBEAT_INTERVAL_SECONDS == 30
+
+    def test_heartbeat_runs_well_inside_the_ttl(self):
+        # A killed instance strands its projects for at most one TTL, and a live
+        # one must renew with room to spare.
+        assert Gns3WsProxy._HEARTBEAT_INTERVAL_SECONDS * 2 < Gns3WsProxy._LOCK_TTL_SECONDS
 
 
 class TestBackoffDelay:
@@ -157,7 +162,12 @@ class TestStopAll:
 
         await proxy.stop_project("project-1")
 
-        redis_mock.delete.assert_awaited_once_with("lock:ws_proxy:project-1")
+        # Released via CAS so we never delete a lock another instance took over.
+        redis_mock.eval.assert_awaited_once()
+        args = redis_mock.eval.await_args.args
+        assert args[1] == 1
+        assert args[2] == "lock:ws_proxy:project-1"
+        assert args[3] == proxy._instance_id
 
 
 class TestTranslate:
@@ -173,12 +183,13 @@ class TestTranslate:
         assert result["payload"]["node_id"] == "n1"
         assert result["payload"]["status"] == "started"
 
-    def test_translate_link_created_returns_history_event(self, proxy):
-        result = proxy._translate("link.created", {"link_id": "l1"})
-        assert result is not None
-        assert result["type"] == "history.event"
-        assert result["payload"]["event_type"] == "link.created"
-        assert result["payload"]["component_id"] == "l1"
+    @pytest.mark.parametrize(
+        "action", ["link.created", "link.deleted", "node.created", "node.deleted"]
+    )
+    def test_translate_returns_none_for_history_actions(self, proxy, action):
+        # HistoryPgListener is the sole publisher of history.event; publishing here
+        # too delivered every one of them twice.
+        assert proxy._translate(action, {"link_id": "l1"}) is None
 
     def test_translate_unknown_action_returns_none(self, proxy):
         assert proxy._translate("unknown.action", {}) is None

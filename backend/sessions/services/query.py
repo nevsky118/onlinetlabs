@@ -1,5 +1,3 @@
-from datetime import UTC, datetime
-
 import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -67,11 +65,11 @@ async def get_session_state(
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code == 404:
             # The GNS3 session disappeared (e.g. GNS3 infrastructure was restarted).
-            # The platform session is orphaned; mark it ended so the user
-            # doesn't get stuck and the next launch brings up a fresh environment.
-            session.status = "ended"
-            session.ended_at = datetime.now(UTC)
-            await db.commit()
+            # The platform session is orphaned; finalize it so the user doesn't get
+            # stuck, the next launch brings up a fresh environment and the slot frees.
+            from sessions.services.lifecycle import _mark_ended_and_finalize
+
+            await _mark_ended_and_finalize(db, session, status="ended")
             return None
         raise
     lab = await db.get(Lab, session.lab_slug)

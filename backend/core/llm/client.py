@@ -1,5 +1,7 @@
 """Resolve LLM provider and client by model_id from the catalog."""
 
+from functools import lru_cache
+
 from openai import AsyncOpenAI
 
 from config import settings
@@ -15,8 +17,13 @@ def resolve_model(model_id: str) -> tuple[ProviderCreds, ModelEntry]:
     return cfg.providers[entry.provider_ref], entry
 
 
+@lru_cache(maxsize=32)
 def build_client(model_id: str) -> AsyncOpenAI:
-    """AsyncOpenAI for the selected model's provider (base_url + key + headers)."""
+    """AsyncOpenAI for the selected model's provider (base_url + key + headers + timeout).
+
+    Cached per model: credentials are static after config load, and a fresh client
+    per request leaked its connection pool since nothing ever closed it.
+    """
     creds, _ = resolve_model(model_id)
     headers = dict(creds.extra_headers or {})
     base_url = creds.base_url
@@ -27,6 +34,7 @@ def build_client(model_id: str) -> AsyncOpenAI:
         api_key=creds.api_key or "ollama",
         base_url=base_url,
         default_headers=headers or None,
+        timeout=settings.agents.request_timeout,
     )
 
 

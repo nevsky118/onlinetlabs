@@ -24,10 +24,9 @@ ACTIVE_TTL = 7 * 24 * 3600  # 7d crash-safety on counters
 # Average provisioning duration of one session, used for the queue ETA.
 QUEUE_AVG_PROVISION_SEC = 30
 
-# Atomic slot acquisition. Under 50+/sec load, a plain GET/INCR pair leaks
-# the quota because a concurrent request can slip in between the read and
-# the increment. Lua runs atomically in Redis; counters either increment
-# together, or the request is rejected.
+# Atomic slot acquisition. A GET/INCR pair leaks quota under load: another
+# request slips between read and increment. Lua is atomic, so both counters
+# move together or the request is rejected.
 LUA_TRY_ACQUIRE = """
 local lab_key = KEYS[1]
 local total_key = KEYS[2]
@@ -46,6 +45,20 @@ redis.call('INCR', lab_key)
 redis.call('EXPIRE', lab_key, ttl)
 redis.call('INCR', total_key)
 redis.call('EXPIRE', total_key, ttl)
+return 1
+"""
+
+# Decrement both counters, never below zero.
+LUA_RELEASE = """
+local lab_key = KEYS[1]
+local total_key = KEYS[2]
+
+if tonumber(redis.call('GET', lab_key) or '0') > 0 then
+    redis.call('DECR', lab_key)
+end
+if tonumber(redis.call('GET', total_key) or '0') > 0 then
+    redis.call('DECR', total_key)
+end
 return 1
 """
 
@@ -88,11 +101,16 @@ class SessionQueueService:
         return int(result) == 1
 
     async def release(self, lab_slug: str) -> None:
-        """Releases a slot, decrementing the lab counter and the global one."""
-        async with self._redis.pipeline(transaction=True) as pipe:
-            await pipe.decr(self._active_key(lab_slug))
-            await pipe.decr(self._total_key())
-            await pipe.execute()
+        """Releases a slot, decrementing the lab counter and the global one.
+
+        Clamped at zero: a negative counter would stop the caps from bounding anything.
+        """
+        await self._redis.eval(
+            LUA_RELEASE,
+            2,
+            self._active_key(lab_slug),
+            self._total_key(),
+        )
 
     async def enqueue(self, user_id: str, lab_slug: str) -> int:
         """Appends the user to the end of the queue and returns its length."""
@@ -115,12 +133,9 @@ class SessionQueueService:
         return await self._redis.llen(self._queue_key(lab_slug))
 
 
-# Module-level singleton and DI provider.
-#
-# The service is created in lifespan and stored on app.state.session_queue.
-# get_queue_service() reads it via the FastAPI Request. If there's no state
-# (tests, background tasks without an app), fall back to a lazily
-# initialized module singleton so old callers don't break.
+# lifespan puts the service on app.state.session_queue; get_queue_service reads it
+# from the Request. Callers without an app (tests, background tasks) fall back to
+# this lazily created singleton.
 _queue_singleton: SessionQueueService | None = None
 
 
@@ -133,12 +148,7 @@ def _get_or_create_singleton() -> SessionQueueService:
 
 
 def get_queue_service(request: Request) -> SessionQueueService:
-    """Returns session_queue from app.state as a FastAPI dependency.
-
-    In lifespan we store SessionQueueService on app.state. If for some
-    reason it's not there (old code, migration), fall back to the lazy
-    module singleton so the request doesn't fail.
-    """
+    """Returns session_queue from app.state, falling back to the module singleton."""
     existing = getattr(request.app.state, "session_queue", None)
     if existing is not None:
         return existing

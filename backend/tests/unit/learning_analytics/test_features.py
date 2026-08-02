@@ -10,7 +10,7 @@ from mcp_sdk.testing.custom_assertions import (
     assert_true,
 )
 
-from agents.analytics.models import SessionFeatures
+from agents.identifier.models import SessionFeatures
 from learning_analytics.features import FeatureExtractor
 from tests.settings.data.analytics_data import EventData, EventSequenceData
 

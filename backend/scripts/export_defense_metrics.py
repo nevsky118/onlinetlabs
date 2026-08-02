@@ -4,17 +4,14 @@ import asyncio
 from pathlib import Path
 
 from config.env_config_loader import load_settings
-from control.criterion import Costs
+from control.criterion import costs_from_config
 from evaluation.metrics import (
     confusion_matrix,
     first_match_diagnostics,
     j_optimal,
     operating_curve,
 )
-from evaluation.scenarios import (
-    make_normal_scenario,
-    make_struggle_scenario,
-)
+from evaluation.scenarios import build_synthetic_scenarios, build_synthetic_sessions
 from learning_analytics.process_state import ProcessRegime
 
 _REGIMES = [
@@ -33,52 +30,9 @@ _LABELS = {
 }
 
 
-def _fmt_days(seconds):
-    return "—" if seconds is None else f"{seconds / 86400.0:.1f} дн"
-
-
-def _build_synthetic_scenarios():
-    """Identifier scenarios. 3 onsets × 4 types plus 5 normal ones (mirrors eval_identifier)."""
-    scns = []
-    for regime in [
-        ProcessRegime.REPEATING_ERRORS,
-        ProcessRegime.TRIAL_AND_ERROR,
-        ProcessRegime.STUCK_ON_STEP,
-        ProcessRegime.IDLE,
-    ]:
-        for onset in [4, 5, 6]:
-            scns.append(make_struggle_scenario(regime, onset_index=onset, n=14, step=15.0))
-    for _ in range(5):
-        scns.append(make_normal_scenario(n=14, step=15.0))
-    return scns
-
-
-def _build_synthetic_sessions():
-    """Synthetic sessions for the T_k curve (mirrors derive_thresholds.__main__)."""
-
-    def _session(spell_len, regime="stuck_on_step", t_step=15):
-        samples, t, dwell = [], 0, 0.0
-        while t <= spell_len:
-            samples.append({"ts": float(t), "regime": regime, "dwell": dwell})
-            t += t_step
-            dwell += float(t_step)
-        samples.append({"ts": float(t), "regime": "productive", "dwell": 0.0})
-        return {"samples": samples}
-
-    return [
-        _session(30),
-        _session(30),
-        _session(60),
-        _session(120),
-        _session(180),
-        _session(300),
-        _session(600),
-    ]
-
-
 def _section_ab(lines, db_metrics, cfg):
     """Section 1. A/B effect computed via compute_arm_analysis."""
-    from experiment.analysis import compute_arm_analysis
+    from evaluation.arm_analysis import compute_arm_analysis
 
     r = compute_arm_analysis(db_metrics, mentor_seconds=cfg.mentor_handling_seconds)
     lines += [
@@ -114,8 +68,82 @@ def _section_ab(lines, db_metrics, cfg):
     ]
 
 
+async def _section_latency(lines, db):
+    """Section 5. Closed-loop cycle latency."""
+    from learning_analytics.latency import stage_percentiles
+
+    pct = await stage_percentiles(db, "analysis", [50, 95, 99])
+    lines += [
+        "## 5. Латентность цикла",
+        "",
+        "| стадия | p50 (мс) | p95 (мс) | p99 (мс) |",
+        "|-|-|-|-|",
+        f"| analysis | {pct.get(50, 0.0):.1f} | {pct.get(95, 0.0):.1f} | {pct.get(99, 0.0):.1f} |",
+        "",
+        "_Пусто, если LA_LATENCY_CAPTURE_ENABLED выключен._",
+        "",
+    ]
+
+
+async def _section_help_dependence(lines, db):
+    """Section 6. Help-dependence trajectory (MRT secondary endpoint)."""
+    from sqlalchemy import select
+
+    from evaluation.help_dependence import help_dependence_trajectory, is_declining
+    from models.session import LearningSession
+
+    session_ids = [
+        str(sid)
+        for sid in (
+            await db.execute(select(LearningSession.id).order_by(LearningSession.started_at))
+        )
+        .scalars()
+        .all()
+    ]
+    counts = await help_dependence_trajectory(db, session_ids)
+    lines += [
+        "## 6. Help-dependence",
+        "",
+        f"_Сессий_: {len(counts)}; траектория: {counts if counts else '—'}",
+        f"_Убывает_: {'да' if counts and is_declining(counts) else 'нет'}",
+        "",
+    ]
+
+
+async def _section_retention(lines, db):
+    """Section 7. Retention (opportunistic, explicitly not a result)."""
+    from sqlalchemy import select
+
+    from cohort.metrics import retention_metric
+    from models.experiment import ExperimentMetrics
+
+    retests = [
+        bool(flag)
+        for flag in (
+            await db.execute(
+                select(ExperimentMetrics.l2_unassisted_pass).where(
+                    ExperimentMetrics.l2_unassisted_pass.isnot(None)
+                )
+            )
+        )
+        .scalars()
+        .all()
+    ]
+    r = retention_metric(retests)
+    rate = "—" if r.retest_pass_rate is None else f"{r.retest_pass_rate:.2f}"
+    lines += [
+        "## 7. Retention",
+        "",
+        f"_Ретестов_: {r.retest_count}; доля успешных: {rate}",
+        "",
+        f"> {r.note}",
+        "",
+    ]
+
+
 async def _section_cohort(lines, db, cfg):
     """Section 2. Cohort metrics per skill."""
+    from cohort.report import render_cohort_table
     from cohort.service import compute_cohort_metrics
 
     horizon = cfg.cohort_horizon_days * 86400.0
@@ -125,18 +153,11 @@ async def _section_cohort(lines, db, cfg):
         "",
         f"_Параметры_: horizon={cfg.cohort_horizon_days} дн., headline={out['headline_arm']}",
         "",
-        "| Страта | n | цензур | reach L2 | медиана кал. | медиана акт. | возд. L1→L2 |",
-        "|-|-|-|-|-|-|-|",
     ]
-    for cell in out["by_skill"] + [out["pooled"]]:
-        t, a = cell.time_to_competence, cell.autonomy
-        label = cell.skill or "ПУЛ"
-        l2i = "—" if a.mean_l2_interventions is None else f"{a.mean_l2_interventions:.1f}"
-        lines.append(
-            f"| {label} | {t.n} | {t.censored} | {t.reach_rate:.2f} | "
-            f"{_fmt_days(t.median_calendar_seconds)} | {_fmt_days(t.median_active_seconds)} | "
-            f"{a.mean_l1_interventions:.1f}→{l2i} |"
-        )
+    lines += render_cohort_table(
+        out["by_skill"] + [out["pooled"]],
+        ["stratum", "n", "censored", "reach", "median_calendar", "median_active", "interventions"],
+    )
     lines += [
         "",
         "_Survivorship-предупреждение. KM-медиана при <50% дошедших → reach@T / restricted-mean. Headline=closed._",
@@ -148,12 +169,7 @@ def _section_identifier(lines, cfg):
     """Section 3. Operating curve, confusion matrix and first-match (synthetic)."""
     from evaluation.harness import run_identifier
 
-    # costs from the config
-    costs = Costs(
-        c_stuck=cfg.cost_stuck,
-        c_intervention=cfg.cost_intervention,
-        c_false=cfg.cost_false_intervention,
-    )
+    costs = costs_from_config(cfg)
     lines += [
         "## 3. Идентификатор П1",
         "",
@@ -162,7 +178,7 @@ def _section_identifier(lines, cfg):
         "",
     ]
 
-    scns = _build_synthetic_scenarios()
+    scns = build_synthetic_scenarios()
     curve = operating_curve(scns, cfg.eval_t_k_grid, cfg, costs)
     best = j_optimal(curve)
 
@@ -214,7 +230,7 @@ def _section_tk(lines, cfg):
     """Section 4. T_k sensitivity curve."""
     from control.derive_thresholds import sensitivity_curve
 
-    sessions = _build_synthetic_sessions()
+    sessions = build_synthetic_sessions()
     grid = {"stuck_on_step": [0.0, 15.0, 30.0, 60.0, 90.0, 120.0, 150.0, 180.0, 240.0, 300.0]}
     ratios = [0.2, 0.5, 1.0, 2.0, 5.0]
 
@@ -298,6 +314,22 @@ async def main():
     # Sections 3+4 (synthetic, no DB) come after
     _section_identifier(lines, cfg)
     _section_tk(lines, cfg)
+
+    # Sections 5-7 need the DB; each degrades to a note rather than sinking the report.
+    try:
+        from db.session import async_session
+
+        async with async_session() as db:
+            await _section_latency(lines, db)
+            await _section_help_dependence(lines, db)
+            await _section_retention(lines, db)
+    except Exception as exc:
+        lines += [
+            "## 5-7. Латентность, help-dependence, retention",
+            "",
+            f"> БД недоступна: {exc}",
+            "",
+        ]
 
     report = "\n".join(lines)
     print(report)

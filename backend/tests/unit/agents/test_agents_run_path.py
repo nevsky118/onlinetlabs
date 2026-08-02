@@ -64,7 +64,7 @@ class TestAgentsRunPath:
     @autotest.name("TutorAgent: реальный Agent.run через TestModel даёт TutorResponse из output")
     async def test_75960d89_tutor_real_run_path(self, config_model, monkeypatch):
         with autotest.step("Создаём TutorAgent, подменяем _build_model на TestModel"):
-            agent = TutorAgent(config_model, mcp_client=None)
+            agent = TutorAgent(config_model)
             mid = config_model.agents.intervention_model
             canned = "OSPF сессия не поднимается из-за неверной маски"
             monkeypatch.setattr(

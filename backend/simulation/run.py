@@ -1,14 +1,13 @@
-"""CLI: run a sim cohort on the LIVE stack (real GNS3, pool+queue).
+"""CLI: runs a simulated cohort against the live stack (real GNS3, pool and queue).
 
-Requires the stack to be up: `make up-db` (root) + the gns3 stack (`cd gns3 && docker compose up -d`).
-_live_provision assembles live deps the same way the app does (main.py lifespan / deps.py):
-mcp_client / gateway / orchestrator / gns3_client / monitor_registry, then
-launch_session → build_session_context → monitor_registry.start → GNS3Actor from node_ids.
+Needs the stack up: `make up-db` plus `cd gns3 && docker compose up -d`.
+_build_deps assembles the same dependencies as main.py's lifespan.
 
-FIREWALL: all users are is_simulated=True; data is cut off from the reproducibility
-bundle. To remove: `rm -rf backend/simulation` + `DELETE FROM users WHERE is_simulated`.
+Every user is is_simulated=True, which is what keeps this data out of the
+reproducibility bundle.
 
-Run: `ENV_FILE=../deployment/local/backend.env poetry run python -m simulation.run --n 3 --concurrency 2`
+    ENV_FILE=../deployment/local/backend.env \\
+      uv run --package onlinetlabs-backend python -m simulation.run --n 3 --concurrency 2
 """
 
 import argparse
@@ -30,7 +29,7 @@ _QUEUE_ACQUIRE_WAIT_SEC = 2.0
 _CONSOLE_WARMUP_SEC = 6.0
 
 
-def _build_deps():
+async def _build_deps():
     """Live app dependencies (1:1 with main.py lifespan)."""
     from config import settings
 
@@ -39,10 +38,9 @@ def _build_deps():
     settings.learning_analytics.mrt_enabled = True
     settings.learning_analytics.evidence_capture_enabled = True
     settings.learning_analytics.latency_capture_enabled = True
-    # Time compression: a sim session is ~40s vs minutes for a live student. The idle
-    # detector is tuned for real time (idle_gap=60s) → in a compressed run idle
-    # periods never accumulate. We scale it for the sim so idle pauses register and
-    # struggle gets detected (de-risking the decision-log instrument; NOT detector validation).
+    # A sim session runs ~40s against a detector tuned for real time (idle_gap=60s),
+    # so idle never accumulates. Scaled down here to exercise the decision log.
+    # This is instrument de-risking, not detector validation.
     settings.learning_analytics.idle_gap_seconds = 0.5
     settings.learning_analytics.idle_threshold = 2
     settings.learning_analytics.rate_slope_threshold = 1.0
@@ -60,11 +58,12 @@ def _build_deps():
 
     mcp_client = MCPClient(settings.mcp.server_url)
     gateway = WebSocketGateway()
-    orchestrator = Orchestrator(settings, mcp_client=mcp_client)
+    orchestrator = Orchestrator(settings)
     gns3_client = Gns3ServiceClient(
         settings.gns3.service_url, internal_token=settings.security.internal_api_token
     )
     activity_log = AgentActivityLog(async_session, settings.observability.retention_per_session)
+    await activity_log.start()
     monitor_registry = SessionMonitorRegistry(
         config=settings,
         mcp_client=mcp_client,
@@ -113,7 +112,7 @@ def _make_provision(settings, gns3_client, monitor_registry, lab_slug, tutor_rep
                 break
             await asyncio.sleep(_QUEUE_ACQUIRE_WAIT_SEC)
         if not acquired:
-            raise RuntimeError(f"слот очереди не получен за {_QUEUE_ACQUIRE_TRIES} попыток")
+            raise RuntimeError(f"no queue slot after {_QUEUE_ACQUIRE_TRIES} attempts")
 
         try:
             async with async_session() as db:
@@ -125,7 +124,7 @@ def _make_provision(settings, gns3_client, monitor_registry, lab_slug, tutor_rep
             raise
         if session.status != "active":
             await queue.release(lab_slug)
-            raise RuntimeError(f"сессия не active: {session.status}")
+            raise RuntimeError(f"session is not active: {session.status}")
         ctx = build_session_context(session)
         await monitor_registry.start(session.id, session.user_id, session.lab_slug, ctx)
 
@@ -166,17 +165,15 @@ def _make_provision(settings, gns3_client, monitor_registry, lab_slug, tutor_rep
 
 
 def _make_finalize(lab_slug, l2_lab, gns3_client, monitor_registry, settle_sec: float = 12.0):
-    """Full study protocol: L1 (assisted) → L2 (near-transfer, WITHOUT assistance).
-    l2_lab is a pair of the same skill (or None → L1 only, if the skill has no pair).
+    """Study protocol: L1 assisted, then L2 near-transfer unassisted.
 
-    L1 closes via the SAME path as a real student, `end_lab`: stop the monitor →
-    ExperimentMetrics + MRT censoring → teardown GNS3 → release the queue slot.
-    L2 is a synthetic transfer session (no GNS3/monitor/slot), so `end_session`:
-    only measurements are taken.
+    l2_lab pairs the same skill; None means L1 only. L1 closes through `end_lab`,
+    the same path a student takes. L2 has no GNS3, monitor or slot, so it closes
+    through `end_session` and only records measurements.
 
-    INTEGRITY: L2-pass is modeled ONLY from the student's skill, WITHOUT a baked-in
-    arm effect (otherwise it's a "seeded A/B"). Arms should come out ≈equal on l2_pass,
-    an honest null for the simulation. is_simulated data is cut off from the reproducibility bundle."""
+    L2 pass is modelled from the student's skill alone, with no arm effect baked
+    in, so the arms come out roughly equal: an honest null, not a seeded A/B.
+    """
     from datetime import datetime
     from uuid import uuid4
 
@@ -224,10 +221,8 @@ def _make_finalize(lab_slug, l2_lab, gns3_client, monitor_registry, settle_sec: 
         l1_steps = total1 if profile.skill > 0.2 else max(0, total1 - 1)
         l1_done = await _write_progress(user_id, lab_slug, l1_steps, total1, l1_start, l1_end)
 
-        # A live student doesn't close the lab the same millisecond they stop
-        # acting: the monitor has time to pick up trailing events (poll_interval=5s)
-        # and intervene if needed. In a compressed run we give it that time explicitly,
-        # otherwise end_lab kills the monitor before events arrive from GNS3 history.
+        # Give the monitor its poll_interval to pick up trailing events, as it would
+        # have with a real student. Without the wait end_lab stops it first.
         await asyncio.sleep(settle_sec)
 
         async with async_session() as db:
@@ -362,7 +357,7 @@ async def _run(args) -> None:
     def db_factory():
         return async_session()
 
-    settings, gns3_client, monitor_registry = _build_deps()
+    settings, gns3_client, monitor_registry = await _build_deps()
     l2_lab = await _find_l2_pair(args.lab)
     if l2_lab:
         print(f"lab={args.lab} L2-пара={l2_lab} (near-transfer)")

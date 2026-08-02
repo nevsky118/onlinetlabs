@@ -4,11 +4,11 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from analytics.schemas import AnalyticsIngestRequest
 from auth.dependencies import get_current_user_optional
 from db.session import get_db
 from models.platform_event import PlatformEvent
 from rate_limit import limiter
+from telemetry.schemas import AnalyticsIngestRequest
 
 router = APIRouter()
 
@@ -23,7 +23,6 @@ async def ingest_events(
 ):
     """Accepts a batch of platform telemetry events and saves them to the DB."""
     user_id = current_user["id"] if current_user else None
-    request.state.user = current_user  # so the rate limiter can key by user_id
     now = datetime.now(UTC)
 
     for evt in body.events:

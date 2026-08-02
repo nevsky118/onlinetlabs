@@ -10,7 +10,7 @@ export async function DELETE(
 
   const { id } = await params
   const r = await fetch(
-    `${serverEnv.BACKEND_URL}/users/me/sessions/${encodeURIComponent(id)}`,
+    `${serverEnv.BACKEND_URL}/users/me/auth-sessions/${encodeURIComponent(id)}`,
     { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
   )
   return new Response(r.body, {

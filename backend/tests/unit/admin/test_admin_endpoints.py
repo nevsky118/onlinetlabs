@@ -106,8 +106,8 @@ class TestAdminEndpoints:
             for k in ("ab", "cohort", "identifier", "ops"):
                 assert_in(k, out, k)
 
-        with autotest.step("Assert: ops.labeled_real_n >= 1"):
-            assert_true(out["ops"]["labeled_real_n"] >= 1, "хотя бы одна метрика")
+        with autotest.step("Assert: ops.finished_sessions_n >= 1"):
+            assert_true(out["ops"]["finished_sessions_n"] >= 1, "хотя бы одна метрика")
 
     @autotest.num("1814")
     @autotest.external_id("e9e284ed-16e2-4481-a76e-908aef728a03")

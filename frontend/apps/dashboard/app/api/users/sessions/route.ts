@@ -5,7 +5,7 @@ export async function GET() {
   const token = await getBackendToken().catch(() => null)
   if (!token) return new Response("Unauthorized", { status: 401 })
 
-  const r = await fetch(`${serverEnv.BACKEND_URL}/users/me/sessions`, {
+  const r = await fetch(`${serverEnv.BACKEND_URL}/users/me/auth-sessions`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
   })
@@ -19,7 +19,7 @@ export async function DELETE() {
   const token = await getBackendToken().catch(() => null)
   if (!token) return new Response("Unauthorized", { status: 401 })
 
-  const r = await fetch(`${serverEnv.BACKEND_URL}/users/me/sessions`, {
+  const r = await fetch(`${serverEnv.BACKEND_URL}/users/me/auth-sessions`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   })

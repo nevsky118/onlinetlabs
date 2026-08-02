@@ -20,6 +20,8 @@ _REGISTRY: dict[str, ToolKind] = {
     "get_logs": ToolKind.OBSERVE,
     "list_user_actions": ToolKind.OBSERVE,
     "execute_action": ToolKind.ACT,
+    # LLM intervention delivered to the student; gated like any other act.
+    "intervention": ToolKind.ACT,
 }
 
 

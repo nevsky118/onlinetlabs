@@ -3,8 +3,6 @@
 import math
 from dataclasses import dataclass
 
-from experiment.assignment import ExperimentGroup
-
 
 @dataclass
 class ArmAnalysisResult:
@@ -56,34 +54,6 @@ def compute_arm_analysis(all_metrics: list, mentor_seconds: float = 900.0) -> Ar
         repeated_errors_comparison=errors_cmp,
         mentor_hours_saved=mentor_hours_saved,
     )
-
-
-def compute_experiment_analysis(all_metrics: list) -> dict:
-    """Metrics -> statistical analysis for hypotheses H1, H2."""
-    group_a = [m for m in all_metrics if m.experiment_group == ExperimentGroup.GROUP_A]
-    group_b = [m for m in all_metrics if m.experiment_group == ExperimentGroup.GROUP_B]
-
-    result = {
-        "sample_size": {
-            "group_a": len(group_a),
-            "group_b": len(group_b),
-        },
-    }
-
-    if len(group_a) >= 2 and len(group_b) >= 2:
-        result["h1_time_to_completion"] = _compare_groups(
-            [m.total_time_seconds for m in group_a],
-            [m.total_time_seconds for m in group_b],
-        )
-        result["h2_repeated_errors"] = _compare_groups(
-            [m.repeated_errors for m in group_a],
-            [m.repeated_errors for m in group_b],
-        )
-    else:
-        result["h1_time_to_completion"] = _insufficient_data()
-        result["h2_repeated_errors"] = _insufficient_data()
-
-    return result
 
 
 def _compare_groups(group_a_values: list[float], group_b_values: list[float]) -> dict:

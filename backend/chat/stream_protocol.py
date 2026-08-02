@@ -7,14 +7,7 @@ import uuid
 
 
 def sse_event(data: dict | str) -> str:
-    """Formats data as an SSE event `data: ...\n\n`.
-
-    Args:
-        data: dict (serialized to JSON) or a string.
-
-    Returns:
-        SSE string.
-    """
+    """Formats a dict (as JSON) or string as an SSE `data: ...` event."""
     if isinstance(data, str):
         return f"data: {data}\n\n"
     return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"

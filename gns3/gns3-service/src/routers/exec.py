@@ -1,39 +1,21 @@
-"""Exec endpoint: run commands inside GNS3 docker nodes (vtysh, ping, etc.).
+"""Exec endpoint: runs commands inside GNS3 docker nodes. Used to poll FRR.
 
-The online validation backend calls this endpoint to poll FRR nodes:
-- POST /v1/exec/vtysh runs `vtysh -c "<command>"` inside the node's container.
-
-Flow:
-1. GET /v3/projects/{pid}/nodes/{nid} (via the admin client) → properties.container_id.
-2. `docker exec <container_id> vtysh -c "<command>"` via the local docker.sock.
-3. Returns stdout/stderr/exit_code.
+POST /v1/exec/vtysh resolves properties.container_id via the admin client, then
+runs `docker exec <container_id> vtysh -c "<command>"` over the local docker.sock
+and returns stdout/stderr/exit_code.
 """
 
 import asyncio
 import logging
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from src.config import settings
+from src.routers._deps import verify_internal_token
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/v1/exec", tags=["exec"])
-
-
-def verify_internal_token(authorization: str | None = Header(default=None)) -> None:
-    """Rejects requests without an Authorization Bearer INTERNAL_API_TOKEN.
-
-    The only legitimate caller is the backend. Without this check any container
-    on the docker network could run vtysh inside FRR.
-    """
-    expected = settings.security.internal_api_token
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=403, detail="missing bearer token")
-    token = authorization.removeprefix("Bearer ").strip()
-    if not expected or token != expected:
-        raise HTTPException(status_code=403, detail="invalid internal token")
 
 
 class VtyshRequest(BaseModel):

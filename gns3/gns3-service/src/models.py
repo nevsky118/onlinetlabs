@@ -53,28 +53,6 @@ class SessionResponse(BaseModel):
     )
 
 
-class SessionStatus(BaseModel):
-    """Current state of the session."""
-
-    session_id: str = Field(
-        description="UUID сессии",
-        examples=["f47ac10b-58cc-4372-a567-0e02b2c3d479"],
-    )
-    status: str = Field(
-        description="Статус сессии",
-        examples=["active", "closed", "error"],
-    )
-    project_id: str = Field(
-        description="UUID проекта в GNS3",
-    )
-    gns3_username: str = Field(
-        description="Имя пользователя в GNS3",
-    )
-    created_at: datetime = Field(
-        description="Время создания сессии (UTC)",
-    )
-
-
 class HistoryEvent(BaseModel):
     """Event from the action history of a lab session."""
 
@@ -93,38 +71,6 @@ class HistoryEvent(BaseModel):
         description="Произвольные данные события",
         examples=[{"node_name": "R1", "status": "started"}],
     )
-
-
-class PasswordResetResponse(BaseModel):
-    """New credentials after password reset."""
-
-    session_id: str = Field(
-        description="UUID сессии",
-        examples=["f47ac10b-58cc-4372-a567-0e02b2c3d479"],
-    )
-    gns3_jwt: str = Field(
-        description="Новый JWT-токен для доступа к GNS3 API",
-    )
-    gns3_username: str = Field(
-        description="Имя пользователя в GNS3 (не меняется)",
-        examples=["student_user42"],
-    )
-    gns3_password: str = Field(
-        description="Новый пароль (plaintext) — возвращается один раз",
-    )
-
-
-class ProjectCreate(BaseModel):
-    """Request to create a project in GNS3."""
-
-    name: str = Field(description="Имя проекта", examples=["my-lab-template"])
-
-
-class ProjectResponse(BaseModel):
-    """Data of a GNS3 project."""
-
-    project_id: str = Field(description="UUID проекта")
-    name: str = Field(description="Имя проекта")
 
 
 class ProjectResetResponse(BaseModel):

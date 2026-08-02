@@ -126,30 +126,6 @@ def add_vpcs_node(
     )
 
 
-def get_node(client: httpx.Client, project_id: str, node_id: str) -> dict:
-    response = client.get(f"/v3/projects/{project_id}/nodes/{node_id}")
-    response.raise_for_status()
-    return response.json()
-
-
-def resolve_port(
-    client: httpx.Client,
-    project_id: str,
-    node_id: str,
-    port_name: str,
-) -> tuple[int, int]:
-    """Find (adapter_number, port_number) by the port name from ports[]."""
-    node = get_node(client, project_id, node_id)
-    for port in node.get("ports", []):
-        if port.get("name") == port_name:
-            return port["adapter_number"], port["port_number"]
-    available = ", ".join(p.get("name", "?") for p in node.get("ports", []))
-    raise SystemExit(
-        f"Port {port_name!r} not found on node {node.get('name')!r} "
-        f"({node_id}). Available ports: {available}"
-    )
-
-
 def link(
     client: httpx.Client,
     project_id: str,
@@ -172,63 +148,6 @@ def link(
         },
     )
     response.raise_for_status()
-
-
-def configure_switch_vlans(
-    client: httpx.Client,
-    project_id: str,
-    node_id: str,
-    *,
-    access_ports: dict[int, int] | None = None,
-    trunk_ports: tuple[int, ...] = (),
-) -> None:
-    """Configure an ethernet_switch, access ports and dot1q trunks.
-
-    access_ports: mapping of port_number -> vlan_id for access ports.
-    trunk_ports: list of port_number values to switch over to a dot1q trunk.
-    Defaults match our OSPF+VLAN target, Eth0->vlan10, Eth1->vlan20, Eth2 trunk.
-    """
-    if access_ports is None:
-        access_ports = {0: 10, 1: 20}
-    if not trunk_ports:
-        trunk_ports = (2,)
-
-    get_response = client.get(f"/v3/projects/{project_id}/nodes/{node_id}")
-    get_response.raise_for_status()
-    ports_mapping = list(get_response.json()["properties"]["ports_mapping"])
-
-    for port in ports_mapping:
-        port_number = port["port_number"]
-        if port_number in access_ports:
-            port["type"] = "access"
-            port["vlan"] = access_ports[port_number]
-            port["ethertype"] = "0x8100"
-        elif port_number in trunk_ports:
-            port["type"] = "dot1q"
-            port["vlan"] = 1
-            port["ethertype"] = "0x8100"
-
-    put_response = client.put(
-        f"/v3/projects/{project_id}/nodes/{node_id}",
-        json={"properties": {"ports_mapping": ports_mapping}},
-    )
-    put_response.raise_for_status()
-
-    verify_response = client.get(f"/v3/projects/{project_id}/nodes/{node_id}")
-    verify_response.raise_for_status()
-    ports_after = verify_response.json()["properties"]["ports_mapping"]
-    by_port = {p["port_number"]: p for p in ports_after}
-    for port_number, vlan in access_ports.items():
-        port_after = by_port[port_number]
-        if port_after["vlan"] != vlan or port_after["type"] != "access":
-            raise SystemExit(
-                f"Switch {node_id} port {port_number} access vlan {vlan} not persisted: {port_after}"
-            )
-    for port_number in trunk_ports:
-        if by_port[port_number]["type"] != "dot1q":
-            raise SystemExit(
-                f"Switch {node_id} port {port_number} trunk not persisted: {by_port[port_number]}"
-            )
 
 
 def set_console_type(

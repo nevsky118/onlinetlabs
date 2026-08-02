@@ -17,55 +17,6 @@ class TestGns3AdminClientProjects:
         client.set_admin_token("fake")
         return client
 
-    @pytest.mark.asyncio
-    @respx.mock
-    async def test_create_project_returns_payload(self, admin_client, gns3_project):
-        respx.post("http://gns3-server:3080/v3/projects").mock(
-            return_value=Response(201, json=gns3_project(project_id="p1", name="lab-1")),
-        )
-        result = await admin_client.create_project(name="lab-1")
-        assert result["project_id"] == "p1"
-        assert result["name"] == "lab-1"
-
-    @pytest.mark.asyncio
-    @respx.mock
-    async def test_create_project_raises_on_409(self, admin_client):
-        respx.post("http://gns3-server:3080/v3/projects").mock(
-            return_value=Response(409, json={"message": "duplicate"}),
-        )
-        with pytest.raises(httpx.HTTPStatusError) as exc_info:
-            await admin_client.create_project(name="lab-1")
-        assert exc_info.value.response.status_code == 409
-
-    @pytest.mark.asyncio
-    @respx.mock
-    async def test_list_projects_returns_list(self, admin_client, gns3_project):
-        respx.get("http://gns3-server:3080/v3/projects").mock(
-            return_value=Response(
-                200,
-                json=[
-                    gns3_project(project_id="p1", name="lab-1"),
-                    gns3_project(project_id="p2", name="lab-2"),
-                ],
-            ),
-        )
-        result = await admin_client.list_projects()
-        assert len(result) == 2
-        assert result[0]["project_id"] == "p1"
-
-    @pytest.mark.asyncio
-    @respx.mock
-    async def test_list_projects_raises_on_500(self, admin_client):
-        # _retry_on_401 does not retry a 500. transient_retry covers only network/5xx
-        # errors at the httpx level, and it is not applied to list_projects.
-        respx.get("http://gns3-server:3080/v3/projects").mock(
-            return_value=Response(500, json={"message": "boom"}),
-        )
-        with pytest.raises(httpx.HTTPStatusError) as exc_info:
-            await admin_client.list_projects()
-        assert exc_info.value.response.status_code == 500
-
-    @pytest.mark.asyncio
     @respx.mock
     async def test_duplicate_project_returns_payload(self, admin_client, gns3_project):
         respx.post("http://gns3-server:3080/v3/projects/p1/duplicate").mock(

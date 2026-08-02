@@ -14,10 +14,44 @@ logger = logging.getLogger(__name__)
 
 
 class AgentActivityLog:
-    def __init__(self, db_factory, retention_per_session: int):
+    # Prune every Nth insert per session instead of on every event: the scan is a
+    # SELECT ... OFFSET plus a DELETE, and a chat turn emits ~9 events.
+    _PRUNE_EVERY = 100
+
+    def __init__(self, db_factory, retention_per_session: int, queue_size: int = 2000):
         self._db_factory = db_factory
         self._retention = retention_per_session
         self._subs: dict[str, set[asyncio.Queue]] = {}
+        self._writes: asyncio.Queue[AgentActivityEvent] = asyncio.Queue(maxsize=queue_size)
+        self._writer_task: asyncio.Task | None = None
+        self._since_prune: dict[str, int] = {}
+
+    async def start(self) -> None:
+        """Starts the background writer. Owned by the app lifespan."""
+        if self._writer_task is None or self._writer_task.done():
+            self._writer_task = asyncio.create_task(self._writer_loop())
+
+    async def stop(self) -> None:
+        """Drains outstanding writes, then stops the writer."""
+        if self._writer_task is None:
+            return
+        await self._writes.join()
+        self._writer_task.cancel()
+        try:
+            await self._writer_task
+        except asyncio.CancelledError:
+            pass
+        self._writer_task = None
+
+    async def _writer_loop(self) -> None:
+        while True:
+            event = await self._writes.get()
+            try:
+                await self._persist(event)
+            except Exception:
+                logger.warning("activity persist failed", exc_info=True)
+            finally:
+                self._writes.task_done()
 
     def subscribe(self, session_id: str) -> asyncio.Queue:
         q: asyncio.Queue = asyncio.Queue(maxsize=500)
@@ -32,7 +66,12 @@ class AgentActivityLog:
                 self._subs.pop(session_id, None)
 
     def emit(self, event: AgentActivityEvent) -> None:
-        """Non-blocking: redacts, publishes to subscribers, schedules the write."""
+        """Non-blocking: redacts, publishes to subscribers, queues the write.
+
+        The write goes onto a bounded queue drained by one writer. A bare
+        create_task per event kept no reference, so the task could be garbage
+        collected mid-flight and the event lost.
+        """
         try:
             event.detail = redact(event.detail)
             for q in list(self._subs.get(event.session_id, ())):
@@ -40,7 +79,10 @@ class AgentActivityLog:
                     q.put_nowait(event)
                 except asyncio.QueueFull:
                     pass  # slow observer, drop the frame
-            asyncio.create_task(self._persist(event))
+            try:
+                self._writes.put_nowait(event)
+            except asyncio.QueueFull:
+                logger.warning("activity write queue full, dropping event")
         except Exception:
             logger.warning("activity emit failed", exc_info=True)
 
@@ -62,7 +104,12 @@ class AgentActivityLog:
                     )
                 )
                 await db.commit()
-                await self._prune(db, event.session_id)
+                count = self._since_prune.get(event.session_id, 0) + 1
+                if count >= self._PRUNE_EVERY:
+                    self._since_prune[event.session_id] = 0
+                    await self._prune(db, event.session_id)
+                else:
+                    self._since_prune[event.session_id] = count
         except Exception:
             logger.warning("activity persist failed", exc_info=True)
 

@@ -37,26 +37,6 @@ class TestGns3AdminClientUsers:
             await admin_client.create_user(username="student-1", password="x")
         assert exc_info.value.response.status_code == 409
 
-    @pytest.mark.asyncio
-    @respx.mock
-    async def test_update_user_password_ok(self, admin_client):
-        route = respx.put("http://gns3-server:3080/v3/access/users/u1").mock(
-            return_value=Response(200, json={"user_id": "u1"}),
-        )
-        await admin_client.update_user_password("u1", "new-pass")
-        assert route.called
-
-    @pytest.mark.asyncio
-    @respx.mock
-    async def test_update_user_password_raises_on_404(self, admin_client):
-        respx.put("http://gns3-server:3080/v3/access/users/missing").mock(
-            return_value=Response(404, json={"message": "not found"}),
-        )
-        with pytest.raises(httpx.HTTPStatusError) as exc_info:
-            await admin_client.update_user_password("missing", "new-pass")
-        assert exc_info.value.response.status_code == 404
-
-    @pytest.mark.asyncio
     @respx.mock
     async def test_delete_user_ok(self, admin_client):
         route = respx.delete("http://gns3-server:3080/v3/access/users/u1").mock(

@@ -10,12 +10,6 @@ class LearningSessionCreate(BaseModel):
     lab_slug: str
 
 
-class LearningSessionUpdate(BaseModel):
-    """Learning session status change."""
-
-    status: str
-
-
 class SessionMeta(BaseModel):
     """GNS3 session metadata with encrypted password and JWT."""
 

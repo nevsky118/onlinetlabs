@@ -1,4 +1,4 @@
--- Демо-студент для просмотра из кабинета инструктора. Идемпотентно: удаление по id (CASCADE снесёт зависимые).
+-- Demo student for the instructor view. Idempotent: delete by id, CASCADE clears dependents.
 DELETE FROM users WHERE id = 'demo-student-0001';
 
 INSERT INTO users (id, name, email, role)
@@ -23,7 +23,7 @@ INSERT INTO behavioral_events (id, session_id, user_id, lab_slug, timestamp, eve
  ('demo-hint-2', 'demo-sess-1', 'demo-student-0001', 'lan-static-ip',        now() - interval '3 days' + interval '8 minutes', 'intervention', 'hint',  true, 'info', 'Маска /24 задаёт диапазон адресов .1-.254.',               '{"hint_level": 2}',                                       now() - interval '3 days' + interval '8 minutes'),
  ('demo-hint-3', 'demo-sess-2', 'demo-student-0001', 'inter-subnet-routing', now() - interval '1 hour',                        'intervention', 'tutor', true, 'info', 'На R1 не хватает маршрута до второй подсети.',             '{"hint_level": 1, "struggle_type": "stuck"}',             now() - interval '1 hour');
 
--- Диалог студента с тьютором, переплетённый по времени с интервенциями выше.
+-- Student/tutor dialogue, interleaved in time with the interventions above.
 INSERT INTO chat_messages (id, session_id, role, parts, created_at) VALUES
  ('demo-msg-1', 'demo-sess-1', 'user',      '[{"type":"text","text":"PC1 не пингует PC2, что не так?"}]',            now() - interval '3 days' + interval '4 minutes'),
  ('demo-msg-2', 'demo-sess-1', 'assistant', '[{"type":"text","text":"Проверь IP-адреса обоих узлов и маску подсети."}]', now() - interval '3 days' + interval '4 minutes 30 seconds'),

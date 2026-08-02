@@ -46,6 +46,10 @@ async def session_interventions_ws(websocket: WebSocket, session_id: str, token:
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
+        pass
+    finally:
+        # finally, not just the except: a cancelled task would otherwise leak the
+        # socket in both the gateway and the global registry.
         gateway.disconnect(session_id, websocket)
 
 
@@ -55,13 +59,10 @@ async def session_events_ws(
     session_id: str,
     token: str | None = Query(default=None),
 ):
-    """Event stream from gns3-service for the client.
+    """Event stream from gns3-service for the client. Auth via ?token=<jwt>.
 
-    Authorization via ?token=<jwt>. Close codes:
-    4401: token missing or invalid,
-    4404: session doesn't belong to the user,
-    1011: internal forwarding error,
-    1012: server shutdown (via close_all_connections).
+    Close codes: 4401 bad token, 4404 not the user's session, 1011 forwarding
+    error, 1012 server shutdown.
     """
     user = await verify_jwt_for_ws(token)
     if user is None:

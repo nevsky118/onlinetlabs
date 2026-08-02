@@ -31,7 +31,6 @@ _EXPECTED_ROUTES = {
     ("GET", "/users/me/sessions/{session_id}/chat"),
     ("GET", "/users/me/sessions/{session_id}/credentials"),
     ("GET", "/users/me/sessions/{session_id}/state"),
-    ("PATCH", "/users/me/sessions/{session_id}"),
     ("POST", "/users/me/sessions"),
     ("POST", "/users/me/sessions/{session_id}/end"),
     ("POST", "/users/me/sessions/{session_id}/nodes/{action}"),

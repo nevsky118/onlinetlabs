@@ -44,7 +44,7 @@ class TestGNS3ServerInit:
             assert server._api is api
             assert server._history_url == "http://hist"
             assert server._pool is None
-            assert server._log_buffer is None
+            assert server._log_buffers == {}
 
 
 class TestActionSpecsRegistry:

@@ -1,11 +1,8 @@
-"""WebSocketGateway.disconnect: must not evict the new socket when the old one drops.
+"""Test: a stale disconnect must not evict the socket that replaced it.
 
-Regression: disconnect(session_id) removed the _connections entry keyed only by
-session_id, without checking which socket was actually stored there. On reconnect
-(page refresh), connect() overwrites _connections[session_id] with the new socket,
-but the old socket can send a delayed WebSocketDisconnect after the reconnect, and its
-disconnect(session_id) would evict the new (live) socket, and interventions would
-silently stop reaching the student.
+Regression: disconnect keyed only on session_id, so a delayed WebSocketDisconnect
+from a refreshed page removed the live socket and interventions stopped arriving.
+A session now holds a set, and a disconnect removes only the socket it names.
 """
 
 from unittest.mock import AsyncMock
@@ -46,7 +43,7 @@ class TestGatewayReconnect:
 
         with autotest.step("Assert: новый сокет остался в _connections"):
             assert_true(
-                gw._connections.get("s1") is ws_new, "новый сокет не вытеснен старым disconnect"
+                gw._connections.get("s1") == {ws_new}, "new socket survives the stale disconnect"
             )
 
     @autotest.num("2421")

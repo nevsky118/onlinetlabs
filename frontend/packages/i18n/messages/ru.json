@@ -258,7 +258,7 @@
           "jOptimalSub": "при стоимостях: {costs}",
           "activeSessions": "Активных сессий",
           "totalInterventions": "Интервенций всего",
-          "labeledRealN": "Реальная разметка N"
+          "finishedSessionsN": "Завершённых сессий"
         },
         "refreshButton": "Обновить"
       },
@@ -907,6 +907,9 @@
       "instructor": "Кабинет преподавателя",
       "settings": "Настройки",
       "signOut": "Выйти"
+    },
+    "localeSwitcher": {
+      "label": "Язык"
     },
     "docsToc": {
       "title": "Содержание"

@@ -1,16 +1,8 @@
-"""Loading the lab task's YAML spec and extracting expected values."""
+"""Extracting expected values from the lab task's YAML spec.
 
-from pathlib import Path
-
-import yaml
-
-
-def load_lab_spec(lab_slug: str) -> dict | None:
-    """Loads the lab task's YAML spec (steps and expected values)."""
-    yaml_path = Path(__file__).parent.parent / "validation" / "labs" / f"{lab_slug}.yaml"
-    if not yaml_path.exists():
-        return None
-    return yaml.safe_load(yaml_path.read_text(encoding="utf-8"))
+Loading lives in validation.runner, which caches by mtime; this module used to
+re-parse the YAML on the event loop for every chat request.
+"""
 
 
 def expected_vpcs_config(spec: dict | None) -> dict[str, dict]:

@@ -1,18 +1,12 @@
 """Session read endpoints for listing, details, state, chat, credentials, activity, and queue status.
 
-`/queue-status` is registered BEFORE the catch-all `/{session_id}` in this
-same file. Otherwise the `{session_id}` route would swallow the literal
-path (Starlette matches routes in registration order).
+`/queue-status` must stay registered before the catch-all `/{session_id}`:
+Starlette matches in registration order.
 
-`agent_activity_router` is a separate APIRouter, NOT included in `router`
-below. In main.py it's mounted with a separate include_router under the
-`/sessions` prefix (not `/users/me/sessions` like everything else here);
-that was the case even before the router consolidation. Folding it into
-the shared `router` would change the resulting path to
-`/users/me/sessions/{session_id}/agent-activity` and break the real
-consumer (the frontend hits `/sessions/{session_id}/agent-activity`
-directly), so the handler code was moved here, but its registration was
-not.
+`agent_activity_router` is deliberately separate and mounted by main.py under
+`/sessions`, not `/users/me/sessions`. The frontend calls
+`/sessions/{session_id}/agent-activity`, so folding it into `router` would
+change the path and break that caller.
 """
 
 import logging

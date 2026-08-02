@@ -5,7 +5,8 @@
 @source "../ui/**/*.tsx";
 @source "../components/**/*.tsx";
 @source "../hooks/**/*.tsx";
-@source "../../auth/components/**/*.tsx";
+/* Every package that renders UI. A missing path silently drops its utilities, no build error. */
+@source "../../*/components/**/*.tsx";
 
 @custom-variant dark (&:is(.dark *));
 

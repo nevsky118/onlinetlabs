@@ -54,7 +54,7 @@ export async function fetchOverview(): Promise<Overview> {
     ops: {
       activeSessions: d.ops.active_sessions as number,
       totalInterventions: d.ops.total_interventions as number,
-      labeledRealN: d.ops.labeled_real_n as number,
+      finishedSessionsN: d.ops.finished_sessions_n as number,
     },
   }
 }

@@ -297,9 +297,10 @@ export function ChatPanel() {
               <ChevronDownIcon className="text-muted-foreground size-3 shrink-0" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-64">
-              <DropdownMenuLabel>{t("sessionHistory")}</DropdownMenuLabel>
+              {/* base-ui throws when a label has no group ancestor. */}
               <DropdownMenuGroup>
-                <DropdownMenuItem onSelect={() => setArchive(null)}>
+                <DropdownMenuLabel>{t("sessionHistory")}</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => setArchive(null)}>
                   <span className="truncate">
                     {t("current", { domain, name })}
                   </span>
@@ -308,10 +309,7 @@ export function ChatPanel() {
                 {pastSessions.map((s) => {
                   const { domain: d, name: n } = getDomainLabel(s.labSlug)
                   return (
-                    <DropdownMenuItem
-                      key={s.id}
-                      onSelect={() => openArchive(s)}
-                    >
+                    <DropdownMenuItem key={s.id} onClick={() => openArchive(s)}>
                       <span className="truncate">
                         {d} / {n}
                       </span>

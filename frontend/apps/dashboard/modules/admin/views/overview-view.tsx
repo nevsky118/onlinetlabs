@@ -137,8 +137,8 @@ export function OverviewView() {
             value={data.ops.totalInterventions}
           />
           <KpiCard
-            label={t("kpis.labeledRealN")}
-            value={data.ops.labeledRealN}
+            label={t("kpis.finishedSessionsN")}
+            value={data.ops.finishedSessionsN}
           />
         </div>
       </div>

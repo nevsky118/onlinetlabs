@@ -5,13 +5,6 @@ from models.chat_message import ChatMessage
 from models.consent import Consent
 from models.course import Course
 from models.cycle_latency_sample import CycleLatencySample
-from models.enums import (
-    AttemptResult,
-    Difficulty,
-    EnvironmentType,
-    ProgressStatus,
-    SessionStatus,
-)
 from models.experiment import ExperimentMetrics  # noqa: F401
 from models.grounding_comparison import GroundingComparison
 from models.intervention_decision import InterventionDecision
@@ -28,7 +21,6 @@ from models.validation_run import ValidationRun
 
 __all__ = [
     "Account",
-    "AttemptResult",
     "Base",
     "BehavioralEvent",
     "ChatMessage",
@@ -36,8 +28,6 @@ __all__ = [
     "Course",
     "CourseProgress",
     "CycleLatencySample",
-    "Difficulty",
-    "EnvironmentType",
     "GroundingComparison",
     "InterventionDecision",
     "Lab",
@@ -46,11 +36,9 @@ __all__ = [
     "LearningSession",
     "PlatformEvent",
     "ProcessStateSample",
-    "ProgressStatus",
     "RegimeAnnotation",
     "Session",
     "SessionEvidenceSnapshot",
-    "SessionStatus",
     "StepAttempt",
     "User",
     "UserRole",

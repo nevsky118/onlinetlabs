@@ -20,10 +20,6 @@ class StateCache(Generic[T]):
         self._ttl = ttl_seconds
         self._data: dict[str, tuple[float, T]] = {}
 
-    @property
-    def ttl(self) -> float:
-        return self._ttl
-
     def get(self, key: str) -> T | None:
         entry = self._data.get(key)
         if entry is None:
@@ -47,22 +43,3 @@ class StateCache(Generic[T]):
         for k in stale:
             self._data.pop(k, None)
         return len(stale)
-
-    def keys(self) -> list[str]:
-        return list(self._data.keys())
-
-    def __contains__(self, key: object) -> bool:
-        return key in self._data
-
-    def __setitem__(self, key: str, value: tuple[float, T]) -> None:
-        # Compatibility with the old dict interface: value arrives as (ts, payload).
-        self._data[key] = value
-
-    def __getitem__(self, key: str) -> tuple[float, T]:
-        return self._data[key]
-
-    def items(self):
-        return self._data.items()
-
-    def pop(self, key: str, default=None):
-        return self._data.pop(key, default)

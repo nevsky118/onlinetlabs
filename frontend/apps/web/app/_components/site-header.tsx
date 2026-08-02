@@ -2,6 +2,7 @@ import { Icons } from "@repo/design-system/components/icons"
 import { ThemeSwitcher } from "@repo/design-system/components/theme-switcher"
 import { Button } from "@repo/design-system/ui/button"
 import { Separator } from "@repo/design-system/ui/separator"
+import { LocaleSwitcher } from "@repo/i18n/components/locale-switcher"
 import type { Root as FumaDocsPageTree } from "fumadocs-core/page-tree"
 import Link from "next/link"
 import { getLocale, getTranslations } from "next-intl/server"
@@ -57,6 +58,7 @@ export async function SiteHeader({
             <SiteConfig className="3xl:flex hidden" />
             <Separator orientation="vertical" />
             <ThemeSwitcher labelToggleTheme={tTheme("toggle")} />
+            <LocaleSwitcher />
             <AuthStatus />
           </div>
         </div>

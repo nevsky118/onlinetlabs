@@ -1,12 +1,10 @@
-"""Sim-student's help-request text: LLM (gated) + budget guard + templates.
+"""Help-request text for a simulated student: gated LLM with a template fallback.
 
-The only place LLM is used in the simulation. When the flag is off, the budget is
-exhausted, or a call errors, it falls back to a template.
+The only LLM use in the simulation. Falls back to a template when the flag is
+off, the budget is spent, or the call fails.
 
-The template must depend on CONTEXT and ATTEMPT NUMBER: previously it was chosen
-only by profile traits, so one student sent the exact same phrase all session,
-and the chat log turned into a looping feed. A real student, once stuck, rephrases
-and adds detail.
+Templates key on context and attempt number, not just profile traits: keying on
+traits alone made a student repeat one phrase for a whole session.
 """
 
 from collections.abc import Awaitable, Callable

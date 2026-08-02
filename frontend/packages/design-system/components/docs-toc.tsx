@@ -5,6 +5,7 @@ import { Button } from "@repo/design-system/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@repo/design-system/ui/dropdown-menu"
@@ -90,22 +91,25 @@ export function DocsTableOfContents({
           align="start"
           className="no-scrollbar max-h-[70svh]"
         >
-          {toc.map((item) => (
-            <DropdownMenuItem
-              key={item.url}
-              render={
-                // biome-ignore lint/a11y/useAnchorContent: content comes from the Base UI render slot
-                <a href={item.url} />
-              }
-              onClick={() => {
-                setOpen(false)
-              }}
-              data-depth={item.depth}
-              className="data-[depth=3]:pl-6 data-[depth=4]:pl-8"
-            >
-              {item.title}
-            </DropdownMenuItem>
-          ))}
+          {/* base-ui throws when an item has no group ancestor. */}
+          <DropdownMenuGroup>
+            {toc.map((item) => (
+              <DropdownMenuItem
+                key={item.url}
+                render={
+                  // biome-ignore lint/a11y/useAnchorContent: content comes from the Base UI render slot
+                  <a href={item.url} />
+                }
+                onClick={() => {
+                  setOpen(false)
+                }}
+                data-depth={item.depth}
+                className="data-[depth=3]:pl-6 data-[depth=4]:pl-8"
+              >
+                {item.title}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
     )

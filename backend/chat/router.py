@@ -33,8 +33,9 @@ from core.llm.client import build_client, model_supports_tools, model_uri
 from core.llm.prompts import LANGUAGE_REMINDER, TUTOR_SYSTEM_PROMPT
 from db.session import get_db
 from deps import get_mcp_client
-from labs.spec import expected_vpcs_config, load_lab_spec
+from labs.spec import expected_vpcs_config
 from models.lab import Lab
+from models.user import User
 from observability.models import (
     event_fallback,
     event_mcp_context_fetched,
@@ -45,6 +46,7 @@ from observability.models import (
 )
 from sessions.context import build_session_context
 from sessions.service import get_owned_session
+from validation.runner import load_lab_spec
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -60,38 +62,58 @@ def _activity_emit(app_state, event) -> None:
 # Max tool-call rounds in a single /chat response, guards against infinite recursion.
 MAX_TOOL_ROUNDS = 5
 
-# How many recent dialogue messages to send to the model. [Задание] and
-# [Текущее состояние лаб-среды] are rebuilt fresh on every request, so a
-# long history isn't needed and only amplifies a "snowball" of repeated
-# (possibly wrong) model claims about the environment state.
+# Recent dialogue messages sent to the model. The [Задание] and
+# [Текущее состояние лаб-среды] prompt sections are rebuilt every request, so
+# older turns add no context and repeat stale claims about the environment.
 MAX_HISTORY_MESSAGES = 6
 
 # Regex for stripping YandexGPT thinking tokens from streamed content.
 _THINKING_RE = re.compile(r"\[START_THINKING\].*?\[END_THINKING\]", re.DOTALL)
 
 
-def build_models_response(can_select: bool) -> dict:
-    """Model catalog for the UI, filtered to tools-capable entries only; empty if selection is disallowed."""
+def build_models_response(can_select: bool, user_default_model_id: str | None = None) -> dict:
+    """Model catalog for the UI, filtered to tools-capable entries only; empty if selection is disallowed.
+
+    `default_model_id` reports what the next message will use: user preference over config.
+    """
     cfg = settings.agents
     models = (
         [] if not can_select else [{"id": m.id, "label": m.label} for m in cfg.catalog if m.tools]
     )
-    return {"can_select": can_select, "default_model_id": cfg.chat_model, "models": models}
+    default_model_id = cfg.chat_model
+    if can_select and user_default_model_id and cfg.get_entry(user_default_model_id) is not None:
+        default_model_id = user_default_model_id
+    return {"can_select": can_select, "default_model_id": default_model_id, "models": models}
 
 
 @router.get("/chat/models")
-async def chat_models(current_user: dict = Depends(get_current_user)):
+async def chat_models(
+    current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
     """Models available for selection to the current user."""
-    return build_models_response(current_user.get("can_select", False))
+    user = await db.get(User, current_user["id"])
+    return build_models_response(
+        current_user.get("can_select", False),
+        user_default_model_id=user.default_model_id if user else None,
+    )
 
 
 def resolve_chat_model(
-    requested: str | None, session_model_id: str | None, can_select: bool
+    requested: str | None,
+    session_model_id: str | None,
+    can_select: bool,
+    user_default_model_id: str | None = None,
 ) -> str:
-    """Resolves which model to use, preferring the request (if entitled and in the catalog), then the session's model, then the config default."""
+    """Resolves which model to use.
+
+    Precedence: request > user preference > session model > config default.
+    The first two require can_select, matching how the preference is written.
+    """
     cfg = settings.agents
     if can_select and requested and cfg.get_entry(requested) is not None:
         return requested
+    if can_select and user_default_model_id and cfg.get_entry(user_default_model_id) is not None:
+        return user_default_model_id
     if session_model_id and cfg.get_entry(session_model_id) is not None:
         return session_model_id
     return cfg.chat_model
@@ -105,13 +127,12 @@ def _supports_tool_calling(model_id: str) -> bool:
 async def _fetch_mcp_context(mcp_client, ctx, expected_vpcs: dict | None = None) -> str | None:
     """Preloads environment state from MCP and formats it as a text block.
 
-    Called before the first LLM round so the model gets real context even
-    if it doesn't support native tool-calling (e.g. YandexGPT).
+    Runs before the first LLM round so models without tool-calling (YandexGPT)
+    still get real state.
 
-    expected_vpcs: node_name -> {"ip": ..., "gateway": ...} from [Задание], used
-    to immediately attach a "correct/incorrect" verdict next to the
-    actual IP, instead of relying on the model to compare values itself
-    (YandexGPT often ignores this and just restates the expected values).
+    expected_vpcs: node_name -> {"ip", "gateway"} from the [Задание] prompt
+    section. Used to label each actual IP correct/incorrect here rather than
+    asking the model to compare.
     """
     expected_vpcs = expected_vpcs or {}
     if mcp_client is None:
@@ -130,9 +151,8 @@ async def _fetch_mcp_context(mcp_client, ctx, expected_vpcs: dict | None = None)
             else:
                 parts.append("Компоненты среды: список пуст.")
 
-            # Real show ip for started VPCS nodes, don't rely on the model
-            # calling get_vpcs_ip itself (it often doesn't, and instead makes
-            # up values from [Задание]).
+            # Run show ip ourselves: models often skip get_vpcs_ip and echo the
+            # expected values from [Задание] instead.
             vpcs_nodes = [c for c in components if c.type == "vpcs" and c.status == "started"]
             if vpcs_nodes:
                 ip_results = await asyncio.gather(
@@ -241,7 +261,14 @@ async def _stream_one_round(
       - usage_info (dict | None)
       - has_tool_calls (bool): whether this round has tool_calls
     """
-    create_kwargs: dict = {"model": model, "messages": messages, "stream": True}
+    cfg = settings.agents
+    create_kwargs: dict = {
+        "model": model,
+        "messages": messages,
+        "stream": True,
+        "temperature": cfg.temperature,
+        "max_tokens": cfg.max_tokens,
+    }
     if _supports_tool_calling(model_id):
         create_kwargs["tools"] = TOOL_DEFINITIONS
         create_kwargs["tool_choice"] = "auto"
@@ -375,10 +402,18 @@ async def chat_stream(
         raise HTTPException(status_code=400, detail="No messages provided")
     await save_user_message(db, session.id, body.messages)
 
+    # Read before the generator starts: the request-scoped session is gone by the
+    # time the SSE body streams.
+    user_row = await db.get(User, current_user["id"])
+    user_default_model_id = user_row.default_model_id if user_row else None
+
     async def generate():
         """SSE event generator. Runs LLM rounds and saves the assistant's final message."""
         effective_model_id = resolve_chat_model(
-            body.model_id, session.model_id, current_user.get("can_select", False)
+            body.model_id,
+            session.model_id,
+            current_user.get("can_select", False),
+            user_default_model_id=user_default_model_id,
         )
         if body.model_id and effective_model_id != body.model_id:
             logger.warning(

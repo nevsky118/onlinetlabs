@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from agents.analytics.models import SessionFeatures
+from agents.identifier.models import SessionFeatures
 from learning_analytics.process_state import ProcessRegime
 
 # Fixed timestamp for synthetic snapshots (computed_at -- a required field)
@@ -70,10 +70,70 @@ def _features(ts_index: int, regime: ProcessRegime, fired: bool) -> SessionFeatu
     return SessionFeatures(**base)
 
 
+def build_synthetic_scenarios() -> list["LabeledScenario"]:
+    """The identifier fixture: 4 regimes x 3 onsets, plus 5 normal sessions.
+
+    Single source for the admin dashboard, eval_identifier and the defense export;
+    the three used to build it separately and drift. Detection delays and blips
+    make the identifier imperfect in both directions, without which T_k selection
+    is vacuous.
+    """
+    scns = []
+    for regime in (
+        ProcessRegime.REPEATING_ERRORS,
+        ProcessRegime.TRIAL_AND_ERROR,
+        ProcessRegime.STUCK_ON_STEP,
+        ProcessRegime.IDLE,
+    ):
+        for onset, delay in ((4, 0), (5, 1), (6, 2)):
+            scns.append(
+                make_struggle_scenario(
+                    regime,
+                    onset_index=onset,
+                    n=14,
+                    step=15.0,
+                    # Window must span the T_k grid, else every T_k past it is a
+                    # miss by arithmetic. Lateness is reported as latency.
+                    window=14 * 15.0,
+                    detect_delay=delay,
+                )
+            )
+    for blips in ((), (), (), (3, 4), (7, 8, 9)):
+        scns.append(make_normal_scenario(n=14, step=15.0, blip_indices=blips))
+    return scns
+
+
+def build_synthetic_sessions() -> list[dict]:
+    """Sessions for the T_k sweep: one bad spell of N seconds, then productive."""
+
+    def _session(spell_len: int, regime: str = "stuck_on_step", t_step: int = 15) -> dict:
+        samples: list[dict] = []
+        t, dwell = 0, 0.0
+        while t <= spell_len:
+            samples.append({"ts": float(t), "regime": regime, "dwell": dwell})
+            t += t_step
+            dwell += float(t_step)
+        samples.append({"ts": float(t), "regime": "productive", "dwell": 0.0})
+        return {"samples": samples}
+
+    return [_session(n) for n in (30, 30, 60, 120, 180, 300, 600)]
+
+
 def make_normal_scenario(
-    n: int = 12, step: float = 15.0, source: str = "synthetic"
+    n: int = 12,
+    step: float = 15.0,
+    source: str = "synthetic",
+    blip_indices: tuple[int, ...] = (),
+    blip_regime: ProcessRegime = ProcessRegime.REPEATING_ERRORS,
 ) -> "LabeledScenario":
-    snaps = [Snapshot(i * step, _features(i, ProcessRegime.PRODUCTIVE, False)) for i in range(n)]
+    """Productive session. `blip_indices` are snapshots whose features trip a rule.
+
+    Blips are the only source of false positives here; without them c_false
+    multiplies zero. Indices are explicit, not random, to keep the curve reproducible.
+    """
+    snaps = [
+        Snapshot(i * step, _features(i, blip_regime, fired=(i in blip_indices))) for i in range(n)
+    ]
     return LabeledScenario(snaps, None, 0.0, ProcessRegime.PRODUCTIVE, n * step, source)
 
 
@@ -84,6 +144,14 @@ def make_struggle_scenario(
     step: float = 15.0,
     window: float = 30.0,
     source: str = "synthetic",
+    detect_delay: int = 0,
 ) -> "LabeledScenario":
-    snaps = [Snapshot(i * step, _features(i, regime, fired=(i >= onset_index))) for i in range(n)]
+    """Session that enters `regime` at `onset_index`.
+
+    `detect_delay` keeps features benign for N snapshots after the true onset.
+    At the default 0 the features flip exactly at onset: a perfect detector, so
+    recall is 1.0 by construction and T_k selection is vacuous.
+    """
+    fire_from = onset_index + detect_delay
+    snaps = [Snapshot(i * step, _features(i, regime, fired=(i >= fire_from))) for i in range(n)]
     return LabeledScenario(snaps, onset_index * step, window, regime, n * step, source)

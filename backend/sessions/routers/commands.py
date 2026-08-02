@@ -1,4 +1,4 @@
-"""Session state-change endpoints for launch, stop, restart, reset, end, patch, and node actions."""
+"""Session state-change endpoints for launch, stop, restart, reset, end, and node actions."""
 
 import logging
 from typing import Literal
@@ -20,12 +20,9 @@ from sessions.queue import QUEUE_AVG_PROVISION_SEC, SessionQueueService, get_que
 from sessions.schemas import (
     LaunchResponse,
     LearningSessionCreate,
-    LearningSessionResponse,
-    LearningSessionUpdate,
 )
 from sessions.service import (
     end_lab,
-    end_session,
     get_active_session,
     launch_session,
     proxy_bulk_node_action,
@@ -172,27 +169,6 @@ async def end_endpoint(
     if not await end_lab(db, session_id, current_user["id"], gns3_client, monitor_registry):
         raise HTTPException(status_code=404, detail="Session not found")
     return {"ok": True}
-
-
-@router.patch("/{session_id}", response_model=LearningSessionResponse)
-async def update_session_endpoint(
-    session_id: str,
-    body: LearningSessionUpdate,
-    current_user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Updates the session status."""
-    session = await end_session(db, session_id, current_user["id"], body.status)
-    if session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
-    return LearningSessionResponse(
-        id=session.id,
-        lab_slug=session.lab_slug,
-        status=session.status,
-        started_at=session.started_at,
-        ended_at=session.ended_at,
-        meta=None,  # don't expose encrypted credentials externally
-    )
 
 
 @router.post("/{session_id}/nodes/{node_id}/{action}")

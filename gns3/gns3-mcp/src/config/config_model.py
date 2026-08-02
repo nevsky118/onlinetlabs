@@ -39,3 +39,5 @@ class GNS3MCPConfigModel(BaseModel):
     pool: PoolConfig = Field(default_factory=PoolConfig)
     log_buffer: LogBufferConfig = Field(default_factory=LogBufferConfig)
     gns3_service_url: str = Field(default="http://localhost:8101")
+    # Bearer token for gns3-service /v1/exec; without it every exec call 403s.
+    internal_api_token: str | None = Field(default=None)

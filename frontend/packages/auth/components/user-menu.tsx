@@ -86,23 +86,26 @@ export function UserMenu({
         align="end"
         sideOffset={4}
       >
-        <DropdownMenuLabel className="p-0 font-normal">
-          <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-            <Avatar className="h-8 w-8 rounded-full">
-              <AvatarImage
-                src={user.image ?? undefined}
-                alt={user.name ?? ""}
-              />
-              <AvatarFallback className="rounded-full">
-                {getInitials(user.name)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium">{user.name}</span>
-              <span className="truncate text-xs">{user.email}</span>
+        {/* base-ui throws when a label or item has no group ancestor. */}
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="p-0 font-normal">
+            <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+              <Avatar className="h-8 w-8 rounded-full">
+                <AvatarImage
+                  src={user.image ?? undefined}
+                  alt={user.name ?? ""}
+                />
+                <AvatarFallback className="rounded-full">
+                  {getInitials(user.name)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-medium">{user.name}</span>
+                <span className="truncate text-xs">{user.email}</span>
+              </div>
             </div>
-          </div>
-        </DropdownMenuLabel>
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           {instructorAccess ? (
@@ -121,10 +124,13 @@ export function UserMenu({
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={handleSignOut}>
-          {t("signOut")}
-          <LogOut className="ml-auto" />
-        </DropdownMenuItem>
+        {/* onClick, not onSelect: onSelect type-checks as the DOM select event and never fires. */}
+        <DropdownMenuGroup>
+          <DropdownMenuItem onClick={handleSignOut}>
+            {t("signOut")}
+            <LogOut className="ml-auto" />
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   )

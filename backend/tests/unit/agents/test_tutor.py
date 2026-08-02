@@ -2,11 +2,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_greater, assert_true
+from mcp_sdk.testing.custom_assertions import assert_greater, assert_true
 
 from agents.tutor.agent import TutorAgent
 from agents.tutor.models import TutorInput, TutorResponse
-from agents.tutor.tools import TutorTools
 
 pytestmark = [pytest.mark.unit, pytest.mark.agents]
 
@@ -14,46 +13,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.agents]
 def _make_tutor_input(**overrides):
     defaults = dict(session_id="s1", user_id="u1", question="Что такое OSPF?")
     return TutorInput(**(defaults | overrides))
-
-
-# TutorTools
-
-
-class TestTutorTools:
-    @autotest.num("440")
-    @autotest.external_id("012b1947-1e8b-4ac8-98db-7721fa40fa92")
-    @autotest.name("TutorTools.get_lab_context: возвращает контекст лабы")
-    async def test_012b1947_get_lab_context(self):
-        with autotest.step("Запрашиваем контекст лабы"):
-            tools = TutorTools()
-            result = await tools.get_lab_context("lab-ospf")
-
-        with autotest.step("Проверяем результат"):
-            assert_true(isinstance(result, str), f"тип: {type(result)}")
-            assert_true("lab-ospf" in result, "должен содержать slug")
-
-    @autotest.num("441")
-    @autotest.external_id("80f97c81-061f-464a-aa54-50d4ea21dfb0")
-    @autotest.name("TutorTools.get_lab_context: пустой slug")
-    async def test_80f97c81_get_lab_context_empty(self):
-        with autotest.step("Запрашиваем контекст без slug"):
-            tools = TutorTools()
-            result = await tools.get_lab_context("")
-
-        with autotest.step("Проверяем пустой результат"):
-            assert_equal(result, "", "пустая строка")
-
-    @autotest.num("442")
-    @autotest.external_id("e2c4f0bb-e610-4560-8a4e-3d813613d72b")
-    @autotest.name("TutorTools.get_step_context: возвращает контекст шага")
-    async def test_e2c4f0bb_get_step_context(self):
-        with autotest.step("Запрашиваем контекст шага"):
-            tools = TutorTools()
-            result = await tools.get_step_context("lab-ospf", "step-1")
-
-        with autotest.step("Проверяем результат"):
-            assert_true("lab-ospf" in result, "содержит lab slug")
-            assert_true("step-1" in result, "содержит step slug")
 
 
 # TutorAgent
@@ -68,7 +27,7 @@ class TestTutorAgent:
             agent = TutorAgent(config_model)
 
         with autotest.step("Проверяем атрибуты"):
-            assert_true(agent.tools is not None, "tools не None")
+            assert_true(agent.config is config_model, "config is stored")
 
     @autotest.num("444")
     @autotest.external_id("3303e166-09ff-47f4-b165-1acb1b2c2de5")
