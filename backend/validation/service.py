@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gns3_service_client import Gns3ServiceClient
+from i18n import DEFAULT_LOCALE, negotiate
 from progress.service import record_lab_validation
 from sessions.services.query import get_owned_session
 from validation.checks.registry import CheckContext
@@ -107,11 +108,13 @@ async def stream_validation(
     ctx = await build_check_context(gns3_client, gns3_sid, settings)
 
     run_id = await create_run(db, session_id, lab_slug)
+    session = await get_owned_session(db, session_id, user_id)
+    locale = negotiate(session.locale) if session else DEFAULT_LOCALE
 
     final_status = "failed"
     final_steps: list = []
     try:
-        async for event, steps_snapshot in run_validation(ctx, spec):
+        async for event, steps_snapshot in run_validation(ctx, spec, locale):
             if event.type == "run.start":
                 event.data["runId"] = run_id
             elif event.type == "run.finish":

@@ -8,7 +8,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.agents]
 
 
 class _Dummy(BaseAgent):
-    def system_prompt(self):
+    def system_prompt(self, locale):
         return "sp"
 
 
@@ -32,8 +32,8 @@ class TestBaseAgent:
             agent = _Dummy(config_model)
 
         with autotest.step("Вызываем _agent_for дважды для одного model_id"):
-            m1 = agent._agent_for("yandex-gpt-5.1")
-            m2 = agent._agent_for("yandex-gpt-5.1")
+            m1 = agent._agent_for("yandex-gpt-5.1", "en")
+            m2 = agent._agent_for("yandex-gpt-5.1", "en")
 
         with autotest.step("Каждый вызов создаёт новый Agent, кэш не нужен"):
             assert_true(m1 is not m2, "_agent_for не должен переиспользовать инстанс")
@@ -202,8 +202,8 @@ class TestBaseAgent:
         try:
             with autotest.step("Создаём _Dummy агент и вызываем _agent_for для двух model_id"):
                 agent = _Dummy(config_model)
-                agent1 = agent._agent_for("yandex-gpt-5.1")
-                agent2 = agent._agent_for("second-model")
+                agent1 = agent._agent_for("yandex-gpt-5.1", "en")
+                agent2 = agent._agent_for("second-model", "en")
 
             with autotest.step("Каждый вызов даёт свежий Agent с правильной моделью"):
                 assert_true(agent1 is not agent2, "разные Agent-инстансы, без кэша")
@@ -230,7 +230,7 @@ class TestBaseAgent:
             agent = BaseAgent(config_model)
 
         with autotest.step("Вызываем system_prompt"), pytest.raises(NotImplementedError):
-            agent.system_prompt()
+            agent.system_prompt("en")
 
     @autotest.num("404")
     @autotest.external_id("2aaa5fea-ec64-41a1-b524-e5abb2cc168f")

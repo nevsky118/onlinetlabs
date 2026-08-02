@@ -45,7 +45,7 @@ async def db_factory():
         db.add(
             User(id="u1", email="u1@test.local", control_arm="closed", experiment_group="group_b")
         )
-        db.add(Lab(slug="lab-a", title="Lab A", meta={"skill": "routing"}))
+        db.add(Lab(slug="lab-a", title_i18n={"en": "Lab A"}, meta={"skill": "routing"}))
         db.add(LabStep(lab_slug="lab-a", step_order=1, slug="step-1", title="Step 1"))
         db.add(LabStep(lab_slug="lab-a", step_order=2, slug="step-2", title="Step 2"))
         db.add(

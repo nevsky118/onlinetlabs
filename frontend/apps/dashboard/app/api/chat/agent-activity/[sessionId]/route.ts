@@ -1,4 +1,5 @@
 import { serverEnv } from "@repo/api/env"
+import { getRequestLocale } from "@repo/api/request-locale"
 import { getBackendToken } from "@repo/auth/server"
 
 export async function GET(
@@ -20,7 +21,10 @@ export async function GET(
   if (limit) upstream.searchParams.set("limit", limit)
 
   const r = await fetch(upstream.toString(), {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "X-Locale": await getRequestLocale(),
+    },
     cache: "no-store",
   })
 

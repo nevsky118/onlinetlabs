@@ -2,6 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from i18n import LocalizedError, as_locale_map
 from models.lab import Lab
 
 
@@ -30,35 +31,32 @@ def template_project_id_for(lab: Lab) -> str:
     if lab.slug.endswith("-ccna"):
         template_pid = lab.gns3_template_project_id_iosvl2
         if not template_pid:
-            raise ValueError(
-                f"Lab '{lab.slug}' требует IOSvL2 template, но он не настроен "
-                "(deploy на x86_64 production host)"
-            )
+            raise LocalizedError("error.lab.iosvl2_missing", status_code=400, slug=lab.slug)
     elif lab.slug.endswith("-frr"):
         template_pid = getattr(lab, "gns3_template_project_id_frr", None)
         if not template_pid:
-            raise ValueError(f"Lab '{lab.slug}' не имеет настроенного template")
+            raise LocalizedError("error.lab.no_template", status_code=400)
     else:
         template_pid = lab.gns3_template_project_id
         if not template_pid:
-            raise ValueError(f"Lab '{lab.slug}' не имеет gns3_template_project_id")
+            raise LocalizedError("error.lab.no_template_project", status_code=400)
     return template_pid
 
 
 async def create_lab(
     db: AsyncSession,
     slug: str,
-    title: str,
-    description: str | None = None,
+    title: str | dict,
+    description: str | dict | None = None,
     difficulty: str = "beginner",
     environment_type: str = "none",
     gns3_template_project_id: str | None = None,
 ) -> Lab:
-    """Creates and saves a new lab to the DB."""
+    """Creates and saves a new lab. A bare string title is stored under the default locale."""
     lab = Lab(
         slug=slug,
-        title=title,
-        description=description,
+        title_i18n=as_locale_map(title),
+        description_i18n=as_locale_map(description),
         difficulty=difficulty,
         environment_type=environment_type,
         gns3_template_project_id=gns3_template_project_id,
@@ -118,13 +116,11 @@ async def set_lab_template(
     """Binds a GNS3 template_project_id to the lab for the given environment variant.
 
     variant: "default" | "frr" | "iosvl2"
-    Returns the updated Lab. Raises HTTPException(404) for an unknown slug.
+    Returns the updated Lab. Raises LocalizedError(404) for an unknown slug.
     """
-    from fastapi import HTTPException, status
-
     lab = await db.get(Lab, slug)
     if lab is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lab not found")
+        raise LocalizedError("error.lab.not_found", status_code=404)
     column = _VARIANT_COLUMN[variant]
     setattr(lab, column, template_project_id)
     await db.flush()

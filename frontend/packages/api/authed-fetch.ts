@@ -3,6 +3,7 @@ import "server-only"
 import { headers } from "next/headers"
 import { RedirectType, redirect } from "next/navigation"
 import { serverEnv } from "./env"
+import { getRequestLocale } from "./request-locale"
 
 type MissingTokenBehavior = "redirect" | "throw"
 
@@ -31,11 +32,13 @@ export function createAuthedFetch(
         RedirectType.replace
       )
     }
+    const locale = await getRequestLocale()
     return fetch(`${serverEnv.BACKEND_URL}${path}`, {
       ...init,
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        "X-Locale": locale,
         ...(init?.headers || {}),
       },
       cache: "no-store",

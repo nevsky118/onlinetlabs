@@ -163,6 +163,8 @@ class LabProgressObserver:
 
     async def _poll_cycle(self) -> None:
         """One cycle: load spec → context → snapshot → current step."""
+        from i18n import DEFAULT_LOCALE, negotiate
+        from sessions.services.query import get_owned_session
         from validation.runner import evaluate_spec, load_lab_spec
         from validation.service import build_check_context
 
@@ -170,8 +172,17 @@ class LabProgressObserver:
         if spec is None:
             return
 
+        # Background path, no request: locale comes from the persisted session row.
+        session_id, user_id = self._session_id, self._user_id
+        locale = DEFAULT_LOCALE
+        if session_id is not None and user_id is not None:
+            async with self._db_factory() as db:
+                session_row = await get_owned_session(db, session_id, user_id)
+            if session_row is not None:
+                locale = negotiate(session_row.locale)
+
         ctx = await build_check_context(self._gns3, self._gns3_sid, self._settings)
-        snapshot = await evaluate_spec(ctx, spec)
+        snapshot = await evaluate_spec(ctx, spec, locale)
         self._state = derive_current_step(snapshot)
         # deltas → behavioral events
         events = diff_snapshots(self._prev_snapshot, snapshot)

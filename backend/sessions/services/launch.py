@@ -2,6 +2,7 @@ import logging
 
 from sqlalchemy import func, select
 
+from i18n import DEFAULT_LOCALE, Locale, LocalizedError
 from labs.service import template_project_id_for
 from models.lab import Lab
 from models.session import LearningSession
@@ -25,10 +26,12 @@ async def count_active_sessions(db, user_id: str) -> int:
     return int(result.scalar_one() or 0)
 
 
-async def _create_provisioning_row(db_factory, user_id: str, lab_slug: str):
+async def _create_provisioning_row(db_factory, user_id: str, lab_slug: str, locale: Locale):
     """Creates a session row with status provisioning in a separate transaction."""
     async with db_factory() as db:
-        session = LearningSession(user_id=user_id, lab_slug=lab_slug, status="provisioning")
+        session = LearningSession(
+            user_id=user_id, lab_slug=lab_slug, status="provisioning", locale=locale
+        )
         db.add(session)
         await db.commit()
         await db.refresh(session)
@@ -48,7 +51,7 @@ async def _finalize_session_row(db_factory, session_id: str, status: str, meta: 
 
 
 async def launch_session(
-    db, user_id: str, lab_slug: str, gns3_client, db_factory
+    db, user_id: str, lab_slug: str, gns3_client, db_factory, *, locale: Locale = DEFAULT_LOCALE
 ) -> tuple[LearningSession, dict]:
     """Launches a lab session.
 
@@ -58,6 +61,10 @@ async def launch_session(
     """
     existing = await get_active_session(db, user_id, lab_slug)
     if existing:
+        # Resume on a different locale than the one the session was launched with:
+        # refresh it so background paths reading learning_sessions.locale stay current.
+        if existing.locale != locale:
+            existing.locale = locale
         meta = existing.meta or {}
         return existing, {
             "gns3_username": meta["gns3_username"],
@@ -68,22 +75,21 @@ async def launch_session(
 
     active_count = await count_active_sessions(db, user_id)
     if active_count >= MAX_CONCURRENT_SESSIONS_PER_USER:
-        raise ValueError(
-            f"Достигнут лимит активных сессий ({MAX_CONCURRENT_SESSIONS_PER_USER}). "
-            "Заверши одну из текущих перед запуском новой."
+        raise LocalizedError(
+            "error.session.limit_reached", status_code=400, max=MAX_CONCURRENT_SESSIONS_PER_USER
         )
 
     lab = await db.get(Lab, lab_slug)
     if lab is None:
-        raise ValueError("Lab не найдена")
+        raise LocalizedError("error.lab.not_found", status_code=400)
 
     if not lab.enabled:
-        raise ValueError("Лаба отключена")
+        raise LocalizedError("error.lab.disabled", status_code=400)
 
     template_pid = template_project_id_for(lab)
 
     # Production split-tx scenario. Release the DB transaction during the gns3 call.
-    session = await _create_provisioning_row(db_factory, user_id, lab_slug)
+    session = await _create_provisioning_row(db_factory, user_id, lab_slug, locale)
     try:
         result = await gns3_client.create_session(user_id, template_pid)
     except Exception:

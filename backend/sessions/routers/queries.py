@@ -12,14 +12,15 @@ change the path and break that caller.
 import logging
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.dependencies import can_view_session_activity, get_current_user
 from chat.persistence import get_chat_history
 from db.session import get_db
-from deps import get_activity_log, get_gns3_client, get_state_cache
+from deps import get_activity_log, get_gns3_client, get_locale, get_state_cache
+from i18n import Locale, LocalizedError, resolve_localized
 from models.lab import Lab
 from models.session import LearningSession
 from sessions.queue import QUEUE_AVG_PROVISION_SEC, SessionQueueService, get_queue_service
@@ -47,14 +48,15 @@ router = APIRouter()
 async def list_sessions(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    locale: Locale = Depends(get_locale),
 ):
     """Returns the list of all learning sessions of the current user."""
     sessions = await get_user_sessions(db, current_user["id"])
     slugs = {s.lab_slug for s in sessions}
     titles: dict[str, str] = {}
     if slugs:
-        rows = await db.execute(select(Lab.slug, Lab.title).where(Lab.slug.in_(slugs)))
-        titles = dict(rows.all())
+        rows = await db.execute(select(Lab.slug, Lab.title_i18n).where(Lab.slug.in_(slugs)))
+        titles = {slug: resolve_localized(title_i18n, locale) for slug, title_i18n in rows.all()}
     return [
         LearningSessionResponse(
             id=s.id,
@@ -93,16 +95,17 @@ async def get_session_endpoint(
     session_id: str,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    locale: Locale = Depends(get_locale),
 ):
     """Returns session data by its identifier."""
     session = await get_session(db, session_id, current_user["id"])
     if session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise LocalizedError("error.session.not_found", status_code=404)
     lab = await db.get(Lab, session.lab_slug)
     return LearningSessionResponse(
         id=session.id,
         lab_slug=session.lab_slug,
-        lab_title=lab.title if lab else None,
+        lab_title=resolve_localized(lab.title_i18n, locale) if lab else None,
         status=session.status,
         started_at=session.started_at,
         ended_at=session.ended_at,
@@ -119,7 +122,7 @@ async def get_session_chat_history(
     """Returns the session's chat message history."""
     session = await get_session(db, session_id, current_user["id"])
     if session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise LocalizedError("error.session.not_found", status_code=404)
     return await get_chat_history(db, session_id)
 
 
@@ -130,11 +133,14 @@ async def get_state_endpoint(
     db: AsyncSession = Depends(get_db),
     gns3_client=Depends(get_gns3_client),
     state_cache=Depends(get_state_cache),
+    locale: Locale = Depends(get_locale),
 ):
     """Returns the full current session state with GNS3 topology."""
-    state = await get_session_state(db, session_id, current_user["id"], gns3_client, state_cache)
+    state = await get_session_state(
+        db, session_id, current_user["id"], gns3_client, state_cache, locale
+    )
     if state is None:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise LocalizedError("error.session.not_found", status_code=404)
     return state
 
 
@@ -147,7 +153,7 @@ async def credentials_endpoint(
     """Returns GNS3 access credentials for the session."""
     creds = await get_credentials(db, session_id, current_user["id"])
     if creds is None:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise LocalizedError("error.session.not_found", status_code=404)
     return CredentialsResponse(**creds)
 
 
@@ -170,7 +176,7 @@ async def get_activity_endpoint(
         gns3_client,
     )
     if result is None:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise LocalizedError("error.session.not_found", status_code=404)
     return result
 
 
@@ -191,9 +197,9 @@ async def get_agent_activity(
     """Agent activity event history for the session (instructor/admin or owner)."""
     session = await db.get(LearningSession, session_id)
     if session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise LocalizedError("error.session.not_found", status_code=404)
     if not can_view_session_activity(current_user, session):
-        raise HTTPException(status_code=403, detail="Forbidden")
+        raise LocalizedError("error.session.forbidden", status_code=403)
     # cap history size to avoid DoS
     limit = max(1, min(limit, 1000))
     return await activity.history(session_id, since, limit)

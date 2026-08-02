@@ -1,7 +1,9 @@
 slug: dhcp-basics
 steps:
   - id: dhcp-lease
-    title: PC получили адрес по DHCP
+    title:
+      en: PCs got an address via DHCP
+      ru: PC получили адрес по DHCP
     checks:
       - kind: vpcs.ip_in_subnet
         node: PC1
@@ -14,7 +16,9 @@ steps:
           subnet: "192.168.10.0/24"
           gateway: "192.168.10.1"
   - id: gateway
-    title: Шлюз доступен
+    title:
+      en: Gateway reachable
+      ru: Шлюз доступен
     checks:
       - kind: vpcs.ping
         from: PC1

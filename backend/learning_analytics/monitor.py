@@ -16,6 +16,7 @@ from agents.identifier.models import AnalyticsResult, SessionFeatures
 from agents.orchestrator.models import InterventionInput
 from config.config_model import LearningAnalyticsConfig
 from experiment.assignment import ControlArm
+from i18n import negotiate, t
 from learning_analytics.collector import BehavioralCollector
 from learning_analytics.context import MCPContextBuilder
 from learning_analytics.control_law import should_intervene
@@ -45,12 +46,7 @@ logger = logging.getLogger(__name__)
 
 # TutorInput requires a question, but proactive interventions don't have one,
 # so we phrase it on the student's behalf based on the struggle type.
-_STRUGGLE_QUESTIONS = {
-    "stuck_on_step": "Я застрял на текущем шаге и не понимаю, как двигаться дальше. Подскажи направление.",
-    "repeating_errors": "Я повторяю одну и ту же ошибку. Помоги понять, что я делаю не так.",
-    "idle": "Я давно не предпринимаю действий и, похоже, застрял. С чего продолжить?",
-    "trial_and_error": "Я перебираю действия наугад и делаю много ошибок. Помоги разобраться, что не так.",
-}
+_KNOWN_STRUGGLE_TYPES = {"stuck_on_step", "repeating_errors", "idle", "trial_and_error"}
 
 
 @dataclass
@@ -130,7 +126,10 @@ class SessionMonitor:
             result = await session.execute(stmt)
             self._last_event_at = result.scalar_one_or_none()
 
-            # Load the session's model_id to pass through into the intervention context.
+            # Load the session's model_id to pass through into interventions.
+            # Locale is NOT cached here: it can change mid-session on resume
+            # (sessions/services/launch.py refreshes it), so interventions
+            # re-read it live in _decide_intervention instead.
 
             ls = await session.get(LearningSession, session_id)
             self._session_model_id = ls.model_id if ls else None
@@ -337,18 +336,30 @@ class SessionMonitor:
             )
             return None
 
+        # Re-read live rather than caching: the student may have switched locale
+        # since start_session, and launch.py refreshes this column on resume.
+        async with self._db_factory() as db:
+            session_row = await db.get(LearningSession, self._session_id)
+        locale = negotiate(session_row.locale if session_row else None)
+
         context = await self._context_builder.build(
             self._ctx,
             features,
             analysis.struggle_type.value if analysis.struggle_type else None,
             features.dominant_error,
+            locale,
         )
         struggle_value = analysis.struggle_type.value if analysis.struggle_type else None
-        question = _STRUGGLE_QUESTIONS.get(
-            struggle_value, "Похоже, я застрял. Подскажи, что проверить."
+        key = (
+            f"prompt.struggle.{struggle_value}"
+            if struggle_value in _KNOWN_STRUGGLE_TYPES
+            else "prompt.struggle.fallback"
         )
+        question = t(key, locale)
         if features.dominant_error:
-            question += f" Последняя ошибка: {features.dominant_error}"
+            question += t(
+                "prompt.struggle.last_error_suffix", locale, error=features.dominant_error
+            )
         # Take the progress snapshot from the observer if one is attached
         st = self._observer.current_state() if self._observer else None
         payload = InterventionInput(
@@ -368,6 +379,7 @@ class SessionMonitor:
                 "agent_context": context.model_dump(),
                 "session_model_id": self._session_model_id,
             },
+            locale=locale,
         )
         return PendingIntervention(analysis=analysis, features=features, payload=payload)
 

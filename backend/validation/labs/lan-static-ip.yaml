@@ -1,7 +1,9 @@
 slug: lan-static-ip
 steps:
   - id: pc-ips
-    title: PC настроены
+    title:
+      en: PCs configured
+      ru: PC настроены
     checks:
       - kind: vpcs.show_ip
         node: PC1
@@ -14,7 +16,9 @@ steps:
           ip: "192.168.1.12/24"
           gateway: "0.0.0.0"
   - id: connectivity
-    title: Связность
+    title:
+      en: Connectivity
+      ru: Связность
     checks:
       - kind: vpcs.ping
         from: PC1

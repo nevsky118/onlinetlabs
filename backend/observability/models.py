@@ -52,7 +52,7 @@ def event_struggle_detected(session_id, user_id, *, struggle_type, confidence, c
         source=ActivitySource.INTERVENTION,
         kind=ActivityKind.STRUGGLE_DETECTED,
         agent="analytics",
-        summary=f"Определено затруднение: {struggle_type} (уверенность {confidence:.2f})",
+        summary=f"Struggle detected: {struggle_type} (confidence {confidence:.2f})",
         detail={"struggle_type": struggle_type, "confidence": confidence, "crossed": crossed},
     )
 
@@ -64,7 +64,7 @@ def event_model_selected(session_id, user_id, *, model_id, provider):
         user_id=user_id,
         source=ActivitySource.CHAT,
         kind=ActivityKind.MODEL_SELECTED,
-        summary=f"Выбрана модель: {model_id} ({provider})",
+        summary=f"Model selected: {model_id} ({provider})",
         detail={"model_id": model_id, "provider": provider},
     )
 
@@ -78,7 +78,7 @@ def event_mcp_context_fetched(
         user_id=user_id,
         source=ActivitySource.CHAT,
         kind=ActivityKind.MCP_CONTEXT_FETCHED,
-        summary=f"Контекст MCP: {component_count} компонентов, ошибок: {error_count}",
+        summary=f"MCP context: {component_count} components, errors: {error_count}",
         detail={
             "component_count": component_count,
             "error_count": error_count,
@@ -94,7 +94,7 @@ def event_tool_call(session_id, user_id, *, name, args_preview):
         user_id=user_id,
         source=ActivitySource.CHAT,
         kind=ActivityKind.TOOL_CALL,
-        summary=f"Вызов инструмента: {name}",
+        summary=f"Tool call: {name}",
         detail={"name": name, "args_preview": args_preview},
     )
 
@@ -106,7 +106,7 @@ def event_tool_result(session_id, user_id, *, name, result_preview, success):
         user_id=user_id,
         source=ActivitySource.CHAT,
         kind=ActivityKind.TOOL_RESULT,
-        summary=f"Результат {name}: {'успех' if success else 'ошибка'}",
+        summary=f"Result {name}: {'success' if success else 'error'}",
         detail={"name": name, "result_preview": result_preview, "success": success},
     )
 
@@ -118,7 +118,7 @@ def event_fallback(session_id, user_id, *, original_model, fallback_model, reaso
         user_id=user_id,
         source=ActivitySource.CHAT,
         kind=ActivityKind.FALLBACK,
-        summary=f"Фолбэк: {original_model} → {fallback_model} ({reason})",
+        summary=f"Fallback: {original_model} → {fallback_model} ({reason})",
         detail={
             "original_model": original_model,
             "fallback_model": fallback_model,
@@ -134,7 +134,7 @@ def event_response_finished(session_id, user_id, *, model_id, total_tokens, stop
         user_id=user_id,
         source=ActivitySource.CHAT,
         kind=ActivityKind.RESPONSE_FINISHED,
-        summary=f"Ответ завершён ({total_tokens} токенов, {stop_reason})",
+        summary=f"Response finished ({total_tokens} tokens, {stop_reason})",
         detail={"model_id": model_id, "total_tokens": total_tokens, "stop_reason": stop_reason},
     )
 
@@ -147,7 +147,7 @@ def event_cooldown_skip(session_id, user_id, *, reason, remaining_seconds):
         source=ActivitySource.INTERVENTION,
         kind=ActivityKind.COOLDOWN_SKIP,
         agent="analytics",
-        summary=f"Пропуск интервенции: {reason} (осталось {remaining_seconds}c)",
+        summary=f"Intervention skipped: {reason} ({remaining_seconds}s remaining)",
         detail={"reason": reason, "remaining_seconds": remaining_seconds},
     )
 
@@ -160,7 +160,7 @@ def event_agent_invoked(session_id, user_id, *, agent_name, model_id, parameters
         source=ActivitySource.INTERVENTION,
         kind=ActivityKind.AGENT_INVOKED,
         agent=agent_name,
-        summary=f"Агент {agent_name}: {model_id}",
+        summary=f"Agent {agent_name}: {model_id}",
         detail={
             "agent_name": agent_name,
             "model_id": model_id,
@@ -177,7 +177,7 @@ def event_hint_generated(session_id, user_id, *, level, hint_type, model_used):
         source=ActivitySource.INTERVENTION,
         kind=ActivityKind.HINT_GENERATED,
         agent="tutor",
-        summary=f"Подсказка уровня {level} ({hint_type}, модель {model_used})",
+        summary=f"Hint level {level} ({hint_type}, model {model_used})",
         detail={"level": level, "hint_type": hint_type, "model_used": model_used},
     )
 
@@ -190,7 +190,7 @@ def event_dispatched(session_id, user_id, *, intervention_type, target_agent, st
         source=ActivitySource.INTERVENTION,
         kind=ActivityKind.DISPATCHED,
         agent=target_agent,
-        summary=f"Интервенция отправлена: {intervention_type} ({status})",
+        summary=f"Intervention dispatched: {intervention_type} ({status})",
         detail={
             "intervention_type": intervention_type,
             "target_agent": target_agent,
@@ -208,6 +208,6 @@ def event_error(session_id, user_id, *, source, error, agent=None):
         kind=ActivityKind.ERROR,
         agent=agent,
         severity="error",
-        summary=f"Ошибка: {error}",
+        summary=f"Error: {error}",
         detail={"error": error},
     )

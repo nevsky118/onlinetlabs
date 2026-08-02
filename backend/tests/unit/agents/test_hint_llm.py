@@ -3,7 +3,7 @@ from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 from pydantic_ai.models.test import TestModel
 
-from agents.hint.agent import HINT_SYSTEM_PROMPT, HintAgent
+from agents.hint.agent import HintAgent
 from agents.hint.models import HintInput
 from tests.settings.data.analytics_data import AgentContextData
 
@@ -62,12 +62,13 @@ class TestHintAgentLLM:
 
     @autotest.num("572")
     @autotest.external_id("a86a10f4-8efa-47c5-b25f-dee13af75ece")
-    @autotest.name("HINT_SYSTEM_PROMPT: содержит все 3 уровня")
-    def test_a86a10f4_system_prompt_levels(self):
+    @autotest.name("HintAgent.system_prompt: содержит все 3 уровня")
+    def test_a86a10f4_system_prompt_levels(self, config_model):
         with autotest.step("Проверяем содержание промпта"):
-            assert_true("Уровень 1" in HINT_SYSTEM_PROMPT, "уровень 1")
-            assert_true("Уровень 2" in HINT_SYSTEM_PROMPT, "уровень 2")
-            assert_true("Уровень 3" in HINT_SYSTEM_PROMPT, "уровень 3")
+            prompt = HintAgent(config_model).system_prompt("ru")
+            assert_true("Уровень 1" in prompt, "уровень 1")
+            assert_true("Уровень 2" in prompt, "уровень 2")
+            assert_true("Уровень 3" in prompt, "уровень 3")
 
     @autotest.num("573")
     @autotest.external_id("ae0197d6-a05d-421b-8d75-8434a4516713")
@@ -86,7 +87,7 @@ class TestHintAgentLLM:
             r.output = "тест"
             return r
 
-        monkeypatch.setattr(agent, "_agent_for", lambda mid: AsyncMock(run=fake_run))
+        monkeypatch.setattr(agent, "_agent_for", lambda mid, locale: AsyncMock(run=fake_run))
         inp = HintInput(
             session_id="s1",
             user_id="u1",

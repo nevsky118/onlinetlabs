@@ -1,12 +1,13 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy import delete, select
 
 from auth.dependencies import get_current_user
 from config import settings
 from db.session import get_db
+from i18n import LocalizedError
 from models.user import Session, User
 
 router = APIRouter()
@@ -24,7 +25,7 @@ class PreferencesUpdate(BaseModel):
 async def get_preferences(current_user=Depends(get_current_user), db=Depends(get_db)):
     user = await db.get(User, current_user["id"])
     if user is None:
-        raise HTTPException(404, "Пользователь не найден")
+        raise LocalizedError("error.user.not_found", status_code=404)
     return PreferencesResponse(default_model_id=user.default_model_id)
 
 
@@ -36,14 +37,14 @@ async def update_preferences(
 ):
     user = await db.get(User, current_user["id"])
     if user is None:
-        raise HTTPException(404, "Пользователь не найден")
+        raise LocalizedError("error.user.not_found", status_code=404)
     if "default_model_id" in body.model_fields_set:
         val = body.default_model_id
         if val is not None:
             if not current_user.get("can_select", False):
-                raise HTTPException(403, "Выбор модели недоступен")
+                raise LocalizedError("error.user.model_selection_denied", status_code=403)
             if settings.agents.get_entry(val) is None:
-                raise HTTPException(422, "Неизвестная модель")
+                raise LocalizedError("error.user.unknown_model", status_code=422)
             user.default_model_id = val
         else:
             user.default_model_id = None  # clear
@@ -94,7 +95,7 @@ async def revoke_auth_session(
     )
     session = result.scalar_one_or_none()
     if session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise LocalizedError("error.session.not_found", status_code=404)
     await db.delete(session)
     await db.commit()
     return RevokeResponse(revoked=1)

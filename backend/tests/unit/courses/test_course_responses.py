@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from courses.router import router as courses_router
 from db.session import get_db
+from i18n import LocalizedError, localized_error_handler
 from models.course import Course
 from models.lab import Lab
 
@@ -28,8 +29,8 @@ class TestCourseResponses:
             db.add(
                 Course(
                     slug="networking-101",
-                    title="Networking 101",
-                    description="Основы сетей",
+                    title_i18n={"en": "Networking 101"},
+                    description_i18n={"en": "Основы сетей"},
                     difficulty="beginner",
                     order=1,
                     meta={"tags": ["networking"]},
@@ -38,7 +39,7 @@ class TestCourseResponses:
             db.add(
                 Lab(
                     slug="ospf-lab",
-                    title="OSPF Lab",
+                    title_i18n={"en": "OSPF Lab"},
                     course_slug="networking-101",
                     difficulty="intermediate",
                     environment_type="gns3",
@@ -49,6 +50,7 @@ class TestCourseResponses:
 
         self.app = FastAPI()
         self.app.include_router(courses_router, prefix="/courses")
+        self.app.add_exception_handler(LocalizedError, localized_error_handler)
 
         async def _override_db():
             async with self.session_factory() as db:
@@ -117,3 +119,29 @@ class TestCourseResponses:
                 },
                 "полный JSON курса с лабами",
             )
+
+    @autotest.num("3142")
+    @autotest.external_id("ff54bb18-742b-45c7-842e-adda3e2d4e9f")
+    @autotest.name(
+        "GET /courses/{slug}: unknown slug renders the same code with locale-specific detail"
+    )
+    async def test_ff54bb18_unknown_course_localizes_detail(self):
+        # Arrange
+        with autotest.step("Request an unknown course slug under X-Locale: ru and with no header"):
+            async with self._client() as client:
+                ru = await client.get("/courses/no-such-course", headers={"X-Locale": "ru"})
+                en = await client.get("/courses/no-such-course")
+
+        # Act
+        with autotest.step("Parse both responses"):
+            ru_body = ru.json()
+            en_body = en.json()
+
+        # Assert
+        with autotest.step("Both are 404 with the same code, but a different translated detail"):
+            assert_equal(ru.status_code, 404, "ru status 404")
+            assert_equal(en.status_code, 404, "en status 404")
+            assert_equal(ru_body["code"], "error.course.not_found", "ru code")
+            assert_equal(en_body["code"], "error.course.not_found", "en code")
+            assert_equal(en_body["detail"], "Course not found", "en detail")
+            assert_equal(ru_body["detail"], "Курс не найден", "ru detail")

@@ -22,11 +22,11 @@ class LabTemplateResponse(BaseModel):
 
 
 class LabCreate(BaseModel):
-    """Data for creating a lab."""
+    """Data for creating a lab. A bare title string is stored under the default locale."""
 
     slug: str = Field(min_length=1)
-    title: str = Field(min_length=1)
-    description: str | None = None
+    title: str | dict[str, str] = Field(min_length=1)
+    description: str | dict[str, str] | None = None
     difficulty: str = "beginner"
     environment_type: str = "none"
     gns3_template_project_id: str | None = None
@@ -45,8 +45,6 @@ class LabStepResponse(BaseModel):
 
 class LabResponse(BaseModel):
     """Lab without nested steps."""
-
-    model_config = ConfigDict(from_attributes=True)
 
     slug: str
     title: str

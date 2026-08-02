@@ -2,6 +2,7 @@ import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from i18n import DEFAULT_LOCALE, Locale, resolve_localized
 from models.lab import Lab
 from models.session import LearningSession
 
@@ -45,7 +46,7 @@ async def get_session(db, session_id: str, user_id: str) -> LearningSession | No
 
 
 async def get_session_state(
-    db, session_id: str, user_id: str, gns3_client, state_cache
+    db, session_id: str, user_id: str, gns3_client, state_cache, locale: Locale = DEFAULT_LOCALE
 ) -> dict | None:
     """Returns the enriched session state (with caching). None if not found or not owned.
 
@@ -80,7 +81,10 @@ async def get_session_state(
         "session_id": str(session.id),
         "status": session.status,
         "started_at": session.started_at.isoformat() if session.started_at else None,
-        "lab": {"slug": session.lab_slug, "title": lab.title if lab else None},
+        "lab": {
+            "slug": session.lab_slug,
+            "title": resolve_localized(lab.title_i18n, locale) if lab else None,
+        },
         "nodes": raw.get("nodes", []),
         "links": raw.get("links", []),
         "metrics": raw.get("metrics", {}),

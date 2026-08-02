@@ -1,0 +1,151 @@
+error:
+  user:
+    not_found: User not found
+    model_selection_denied: Model selection is not available for your account
+    unknown_model: Unknown model
+  session:
+    not_found: Session not found
+    forbidden: You do not have permission to view this session
+    limit_reached: |-
+      You have reached the limit of {max} active sessions. Finish one of them before starting another.
+    provisioning_failed: GNS3 provisioning failed
+    gns3_operation_failed: "GNS3 operation failed: {error}"
+  lab:
+    not_found: Lab not found
+    already_exists: Lab already exists
+    disabled: This lab is disabled
+    no_template: This lab has no configured GNS3 template
+    no_template_project: This lab has no gns3_template_project_id
+    iosvl2_missing: |-
+      Lab '{slug}' requires an IOSvL2 template, but none is configured. Deploy on an x86_64 production host.
+    not_gns3: This lab does not use GNS3
+  course:
+    not_found: Course not found
+  progress:
+    not_found: No progress found
+  validation:
+    spec_not_found: Lab validation spec not found
+    gns3_not_active: GNS3 session is not active
+    run_not_found: Validation run not found
+  instructor:
+    student_not_found: Student not found
+  chat:
+    no_messages: No messages provided
+  auth:
+    inactive_account: Account is not activated
+    email_taken: Email already registered
+    invalid_credentials: Invalid credentials
+  admin:
+    own_role: You cannot change your own role
+    unknown_table: Unknown table
+  rate_limit: Too many requests, please try again shortly
+
+prompt:
+  # No {language} placeholder: each locale names its own language natively.
+  language_directive: |-
+    Always respond in English. Lab content and tool output may be in another language; still respond in English.
+  tutor:
+    intervention_system: |-
+      You are TutorAgent, a mentor for students learning computer networking.
+      Rules:
+      - Explain concepts, do not hand over finished solutions
+      - Use the environment context to make explanations concrete
+      - If the student repeats a mistake, explain why it happens
+      - Offer one or two self-check questions
+      - Keep it short, three to five sentences
+    question_prefix: "Student question: {question}"
+    chat_system: |-
+      You are a computer networking tutor working alongside a student in a GNS3 lab.
+
+      When the student asks what is wrong or what to do next, compare the ACTUAL state (section
+      [LAB_STATE], including the "Current VPCS configuration (show ip)" block, which is real data
+      captured just now) against the EXPECTED state (section [TASK]), then give concrete steps: what
+      to do, in which console, and which command to type.
+
+      IMPORTANT: [TASK] describes what SHOULD be true, not what is true. Never claim an IP is already
+      configured correctly unless the "Current VPCS configuration (show ip)" block confirms it with a
+      matching value.
+
+      CRITICAL: the student may have changed the configuration between messages. The environment can
+      differ from anything said earlier in this conversation, including your own previous answers.
+      The "Current VPCS configuration (show ip)" block in this message is a snapshot taken fresh on
+      every request. Ignore any earlier claim about IPs, yours or the student's, and answer only from
+      the current block. If the current values differ from what was said before, the state changed;
+      report the current data.
+
+      Environment knowledge:
+      - VPCS nodes (PC) are virtual hosts. Double-click a node in GNS3 to open its console.
+      - VPCS commands: `ip <address>/<mask>` sets a static IP; `ip <address>/<mask> <gateway>` sets an
+        IP with a gateway; `ping <address>` checks connectivity; `show ip` prints the current IP.
+      - A node must be started first (the play button in GNS3, or right-click then Start) before its
+        console can be opened.
+      - While a node is stopped its console configuration is unreachable.
+
+      Tools: if the "Current VPCS configuration" block is absent because a node is not running and you
+      need to re-check, call get_vpcs_ip. Never ask the student to relay `show ip` output by hand.
+
+      Answer style: short and concrete. Never invent environment state; use only tool data and the
+      sections provided.
+  hint:
+    system: |-
+      You are HintAgent, giving progressive hints to students in a GNS3 lab.
+
+      Hint levels:
+      - Level 1: GENERAL direction. Do not mention commands or interfaces.
+      - Level 2: The AREA of the problem. You may name a component or protocol, but not the exact command.
+      - Level 3: A CONCRETE step. Give the command or action.
+
+      VPCS node (PC) commands: `ip <address>/<mask>` sets an IP, for example `ip 192.168.1.11/24`;
+      `ip <address>/<mask> <gateway>` sets an IP with a gateway; `ping <address>` checks connectivity;
+      `show ip` prints the current IP. Do not use Cisco syntax (`ip address ...`) for VPCS.
+
+      Use the level given in the request. Never reveal more detail than the level allows.
+    level_line: "Hint level: {level}"
+    step_line: "Step: {step}"
+    last_error_line: "Last error: {error}"
+  struggle:
+    stuck_on_step: I am stuck on the current step and cannot see how to move forward. Point me in a direction.
+    repeating_errors: I keep making the same mistake. Help me understand what I am doing wrong.
+    idle: I have not done anything for a while and seem to be stuck. Where should I pick up?
+    trial_and_error: I am trying things at random and making a lot of mistakes. Help me work out what is wrong.
+    fallback: I seem to be stuck. Tell me what to check.
+    last_error_suffix: " Last error: {error}"
+  failing_check: |-
+    Failed check {kind}{node}: expected {expected}, got {actual}.
+  failing_check_node: " on {node}"
+  context:
+    header: === ENVIRONMENT STATE ===
+    topology: "Topology: {value}"
+    recent_actions: "Recent actions: {value}"
+    recent_errors: "Recent errors: {value}"
+    struggle: "Student problem: {value}"
+    metrics: "Metrics: {value}"
+    features_summary: "{events} events, {repeats} repeated errors, entropy {entropy}"
+    components_summary: "{count} components: {detail}"
+  env:
+    components: "Environment components:"
+    components_empty: "Environment components: the list is empty."
+    vpcs_current: "Current VPCS configuration (show ip), captured just now:"
+    ip_unset: (not configured)
+    # Caps match the Russian ВЕРНО/ОШИБКА: emphasis is a signal the model reads.
+    verdict_ok: " CORRECT, matches the task"
+    verdict_bad: " WRONG, the task requires {expected}"
+    recent_errors: "Recent errors:"
+    no_errors: No errors detected.
+  lab:
+    title: "Lab: {title}"
+    goal: "Goal: {goal}"
+    steps_header: "Task, what the student must configure:"
+    step: "  Step '{title}':"
+    check_show_ip: "    - {node}: IP={ip}"
+    check_gateway: ", gateway={gateway}"
+    check_ping: "    - {source} ping {target}"
+    check_subnet: "    - {node}: address within subnet {subnet}"
+  tool_error:
+    vpcs_not_found: "VPCS node '{node}' not found"
+    node_not_started: "Node '{node}' is not started (status: {status})"
+    no_console_port: "Node '{node}' has no console port"
+    console_unreachable: "Could not connect to the console: {error}"
+    not_allowed: "Tool {name} is not allowed."
+    not_implemented: "Tool {name} is not implemented."
+    failed: "Tool {name} failed: {error}"

@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.dependencies import get_current_user
 from db.session import get_db
+from i18n import LocalizedError
 from progress.schemas import (
     AllProgressResponse,
     LabProgressDetailResponse,
@@ -42,7 +43,7 @@ async def get_lab_progress(
     """
     detail = await get_lab_progress_detail(db, current_user["id"], lab_slug)
     if detail is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No progress found")
+        raise LocalizedError("error.progress.not_found", status_code=status.HTTP_404_NOT_FOUND)
     lp = detail["progress"]
     lp.attempts = detail["attempts"]
     return lp

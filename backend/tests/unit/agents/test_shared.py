@@ -21,7 +21,7 @@ class TestFormatFailingCheck:
             }
 
         with autotest.step("Форматируем"):
-            result = format_failing_check(fc)
+            result = format_failing_check(fc, "ru")
 
         with autotest.step("Проверяем строку с node"):
             assert_equal(
@@ -44,7 +44,7 @@ class TestFormatFailingCheck:
             }
 
         with autotest.step("Форматируем"):
-            result = format_failing_check(fc)
+            result = format_failing_check(fc, "ru")
 
         with autotest.step("Проверяем строку без ' на ...'"):
             assert_equal(
@@ -61,7 +61,7 @@ class TestFormatFailingCheck:
             fc = {"kind": "generic.check", "params": "n/a", "expected": 1, "actual": 2}
 
         with autotest.step("Форматируем"):
-            result = format_failing_check(fc)
+            result = format_failing_check(fc, "ru")
 
         with autotest.step("Проверяем: узел не подставлен"):
             assert_equal(

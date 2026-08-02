@@ -1,4 +1,5 @@
 import { serverEnv } from "@repo/api/env"
+import { getRequestLocale } from "@repo/api/request-locale"
 import { getBackendToken } from "@repo/auth/server"
 
 /** SSE proxy. Forwards to backend POST /labs/{slug}/sessions/{sid}/validate with Bearer. */
@@ -9,6 +10,7 @@ export async function POST(
   const { sessionId } = await ctx.params
   const tokenPromise = getBackendToken()
   const bodyPromise = req.json() as Promise<{ slug: string }>
+  const localePromise = getRequestLocale()
 
   const token = await tokenPromise
   if (!token) return new Response("Unauthorized", { status: 401 })
@@ -20,7 +22,10 @@ export async function POST(
     `${serverEnv.BACKEND_URL}/labs/${slug}/sessions/${sessionId}/validate`,
     {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "X-Locale": await localePromise,
+      },
     }
   )
 

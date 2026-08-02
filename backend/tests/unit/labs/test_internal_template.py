@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from auth.dependencies import require_internal_caller
 from db.session import get_db
+from i18n import LocalizedError, localized_error_handler
 from labs.router import internal_router
 from models.lab import Lab
 
@@ -50,6 +51,7 @@ class TestInternalLabTemplate:
 
         self.app = FastAPI()
         self.app.include_router(internal_router, prefix="/internal")
+        self.app.add_exception_handler(LocalizedError, localized_error_handler)
 
         async def _override_db():
             async with self.session_factory() as db:
@@ -70,7 +72,7 @@ class TestInternalLabTemplate:
             db.add(
                 Lab(
                     slug="ospf-lab",
-                    title="OSPF Lab",
+                    title_i18n={"en": "OSPF Lab"},
                     difficulty="beginner",
                     environment_type="gns3",
                 )

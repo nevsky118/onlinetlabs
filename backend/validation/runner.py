@@ -5,6 +5,7 @@ from pathlib import Path
 
 import yaml
 
+from i18n import DEFAULT_LOCALE, Locale, resolve_localized
 from validation.checks import registry as _registry
 from validation.checks.registry import CheckContext, CheckResult
 from validation.stream import Event
@@ -46,12 +47,14 @@ def load_lab_spec(slug: str) -> dict | None:
     return spec
 
 
-async def evaluate_spec(ctx: CheckContext, spec: dict) -> list[dict]:
+async def evaluate_spec(
+    ctx: CheckContext, spec: dict, locale: Locale = DEFAULT_LOCALE
+) -> list[dict]:
     """Run all checks in the spec without an SSE stream. Returns a list of step records."""
     accumulated: list[dict] = []
     for step in spec.get("steps") or []:
         step_id = step.get("id", "")
-        step_title = step.get("title", "")
+        step_title = resolve_localized(step.get("title"), locale)
         check_results: list[dict] = []
         step_ok = True
         for check in step.get("checks") or []:
@@ -79,6 +82,7 @@ async def evaluate_spec(ctx: CheckContext, spec: dict) -> list[dict]:
 async def run_validation(
     ctx: CheckContext,
     spec: dict,
+    locale: Locale = DEFAULT_LOCALE,
 ) -> AsyncIterator[tuple[Event, list]]:
     """Event generator + accumulated step list for the final UPDATE.
 
@@ -92,7 +96,7 @@ async def run_validation(
 
     for step in steps:
         step_id = step.get("id", "")
-        step_title = step.get("title", "")
+        step_title = resolve_localized(step.get("title"), locale)
         checks = step.get("checks") or []
         yield (
             Event(

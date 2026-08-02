@@ -1,10 +1,12 @@
 import { serverEnv } from "@repo/api/env"
+import { getRequestLocale } from "@repo/api/request-locale"
 import { getBackendToken } from "@repo/auth/server"
 
 /** SSE proxy. Forwards the body to backend /chat/stream + Bearer. Forwarding Content-Type is critical for AI SDK stream parsing. */
 export async function POST(req: Request) {
   const tokenPromise = getBackendToken()
   const bodyPromise = req.text()
+  const localePromise = getRequestLocale()
 
   const token = await tokenPromise
   if (!token) return new Response("Unauthorized", { status: 401 })
@@ -15,6 +17,7 @@ export async function POST(req: Request) {
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
+      "X-Locale": await localePromise,
     },
     body,
   })

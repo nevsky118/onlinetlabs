@@ -138,8 +138,9 @@ decrypt:
 	done
 
 # ── Content Sync ─────────────────────────────────────────────
+# Runs as a file, not -m: backend/scripts/ shadows repo-root scripts/ as a package, so -m can't resolve it.
 sync-content:
-	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=.. poetry run python -m scripts.sync_content
+	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=..:. poetry run python ../scripts/sync_content.py
 
 seed-lab-templates:
 	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=.. poetry run python -m scripts.seed_lab_templates

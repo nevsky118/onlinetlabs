@@ -76,8 +76,7 @@ async def test_get_agent_activity_entitled():
 @autotest.name("get_agent_activity: 403 при отсутствии прав")
 @pytest.mark.asyncio
 async def test_get_agent_activity_forbidden():
-    from fastapi import HTTPException
-
+    from i18n import LocalizedError
     from sessions.routers.queries import get_agent_activity
 
     activity = _FakeActivityLog([])
@@ -88,7 +87,7 @@ async def test_get_agent_activity_forbidden():
         async def get(self, model_cls, pk):
             return session
 
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(LocalizedError) as exc_info:
         await get_agent_activity(
             session_id="s1",
             since=None,
@@ -103,8 +102,7 @@ async def test_get_agent_activity_forbidden():
 @autotest.name("get_agent_activity: 404 при отсутствии сессии")
 @pytest.mark.asyncio
 async def test_get_agent_activity_not_found():
-    from fastapi import HTTPException
-
+    from i18n import LocalizedError
     from sessions.routers.queries import get_agent_activity
 
     activity = _FakeActivityLog([])
@@ -114,7 +112,7 @@ async def test_get_agent_activity_not_found():
         async def get(self, model_cls, pk):
             return None
 
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(LocalizedError) as exc_info:
         await get_agent_activity(
             session_id="s1",
             since=None,

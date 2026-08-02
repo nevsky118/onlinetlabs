@@ -22,7 +22,7 @@ class TestTutorAgentLLM:
             monkeypatch.setattr(
                 agent,
                 "_agent_for",
-                lambda mid: AsyncMock(run=AsyncMock(side_effect=RuntimeError("llm down"))),
+                lambda mid, locale: AsyncMock(run=AsyncMock(side_effect=RuntimeError("llm down"))),
             )
             inp = TutorInput(
                 session_id="s1",

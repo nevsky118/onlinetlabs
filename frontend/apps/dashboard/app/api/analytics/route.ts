@@ -1,4 +1,5 @@
 import { serverEnv } from "@repo/api/env"
+import { getRequestLocale } from "@repo/api/request-locale"
 import { getBackendToken } from "@repo/auth/server"
 
 // web posts cross-origin to the dashboard, so preflight and CORS response headers are required
@@ -18,7 +19,10 @@ export async function POST(req: Request) {
   const body = await req.text()
   const token = await getBackendToken().catch(() => null)
 
-  const headers: Record<string, string> = { "Content-Type": "application/json" }
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "X-Locale": await getRequestLocale(),
+  }
   if (token) headers["Authorization"] = `Bearer ${token}`
 
   try {

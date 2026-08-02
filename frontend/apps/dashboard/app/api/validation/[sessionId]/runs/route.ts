@@ -1,4 +1,5 @@
 import { serverEnv } from "@repo/api/env"
+import { getRequestLocale } from "@repo/api/request-locale"
 import { getBackendToken } from "@repo/auth/server"
 
 type RunListItemWire = {
@@ -23,7 +24,10 @@ export async function GET(
   const upstream = await fetch(
     `${serverEnv.BACKEND_URL}/sessions/${sessionId}/validation-runs`,
     {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "X-Locale": await getRequestLocale(),
+      },
       cache: "no-store",
     }
   )

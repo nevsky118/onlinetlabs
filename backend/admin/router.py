@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from sqlalchemy import String, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -38,6 +38,7 @@ from evaluation.metrics import (
     operating_curve,
 )
 from evaluation.scenarios import build_synthetic_scenarios, build_synthetic_sessions
+from i18n import DEFAULT_LOCALE, LocalizedError, resolve_localized
 from labs.service import get_all_labs, get_lab_by_slug, update_lab
 from models.experiment import ExperimentMetrics
 from models.session import LearningSession
@@ -299,13 +300,10 @@ async def update_user(
     """Update a user's role/flags. Can't change your own role."""
     user = await db.get(User, user_id)
     if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
+        raise LocalizedError("error.user.not_found", status_code=404)
 
     if body.role is not None and user_id == current_user["id"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Нельзя менять собственную роль",
-        )
+        raise LocalizedError("error.admin.own_role", status_code=400)
 
     if body.role is not None:
         user.role = body.role.value
@@ -338,7 +336,7 @@ def _to_admin_lab(lab) -> AdminLab:
     template_ready = True if lab.environment_type != "gns3" else bool(lab.gns3_template_project_id)
     return AdminLab(
         slug=lab.slug,
-        title=lab.title,
+        title=resolve_localized(lab.title_i18n, DEFAULT_LOCALE),
         enabled=lab.enabled,
         environment_type=lab.environment_type,
         course_slug=lab.course_slug,
@@ -371,7 +369,7 @@ async def patch_admin_lab(
     fields = body.model_dump(exclude_unset=True)
     lab = await update_lab(db, slug, fields)
     if lab is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Лаба не найдена")
+        raise LocalizedError("error.lab.not_found", status_code=404)
     return _to_admin_lab(lab)
 
 
@@ -404,9 +402,9 @@ async def rebuild_lab_template(
     """Trigger a rebuild of the GNS3 template for a lab. Idempotent, returns 202."""
     lab = await get_lab_by_slug(db, slug)
     if lab is None:
-        raise HTTPException(404, "Лаба не найдена")
+        raise LocalizedError("error.lab.not_found", status_code=404)
     if lab.environment_type != "gns3":
-        raise HTTPException(400, "Лаба не использует GNS3")
+        raise LocalizedError("error.lab.not_gns3", status_code=400)
     if (lab.meta or {}).get("template_status") == "building":
         return {"status": "building"}
     lab.meta = {**(lab.meta or {}), "template_status": "building"}
@@ -429,7 +427,7 @@ async def get_admin_data(
     """Generic endpoint for reading whitelisted log tables."""
     spec = ADMIN_TABLES.get(table)
     if spec is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown table")
+        raise LocalizedError("error.admin.unknown_table", status_code=status.HTTP_404_NOT_FOUND)
 
     sort_col = sort if sort in spec.sortable else spec.default_sort
     model = spec.model

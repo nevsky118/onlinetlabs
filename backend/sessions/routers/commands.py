@@ -4,14 +4,15 @@ import logging
 from typing import Literal
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from fastapi import Request as FastAPIRequest
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.dependencies import get_current_user, require_active_user
 from db.session import get_db, get_db_factory
-from deps import get_gns3_client, get_mcp_client, get_monitor_registry, get_state_cache
+from deps import get_gns3_client, get_locale, get_mcp_client, get_monitor_registry, get_state_cache
+from i18n import Locale, LocalizedError
 from mcp_client.client import MCPToolError
 from rate_limit import limiter
 from sessions.context import build_session_context
@@ -52,6 +53,7 @@ async def launch_endpoint(
     gns3_client=Depends(get_gns3_client),
     monitor_registry: SessionMonitorRegistry = Depends(get_monitor_registry),
     queue: SessionQueueService = Depends(get_queue_service),
+    locale: Locale = Depends(get_locale),
 ):
     """Launches a lab and creates a session, issuing GNS3 credentials.
 
@@ -83,16 +85,16 @@ async def launch_endpoint(
             )
     try:
         session, creds = await launch_session(
-            db, current_user["id"], body.lab_slug, gns3_client, db_factory=db_factory
+            db, current_user["id"], body.lab_slug, gns3_client, db_factory=db_factory, locale=locale
         )
-    except ValueError as exc:
+    except LocalizedError:
         if is_new_launch:
             await queue.release(body.lab_slug)
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise
     except Exception:
         if is_new_launch:
             await queue.release(body.lab_slug)
-        raise HTTPException(status_code=502, detail="GNS3 provisioning failed")
+        raise LocalizedError("error.session.provisioning_failed", status_code=502)
     structlog.contextvars.bind_contextvars(session_id=session.id)
     if is_new_launch and session.status == "active":
         ctx = build_session_context(session)
@@ -121,9 +123,9 @@ async def stop_endpoint(
     try:
         ok = await stop_lab(db, session_id, current_user["id"], mcp_client)
     except MCPToolError as exc:
-        raise HTTPException(status_code=502, detail=str(exc))
+        raise LocalizedError("error.session.gns3_operation_failed", status_code=502, error=str(exc))
     if not ok:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise LocalizedError("error.session.not_found", status_code=404)
     return {"ok": True}
 
 
@@ -138,9 +140,9 @@ async def restart_endpoint(
     try:
         ok = await restart_lab(db, session_id, current_user["id"], mcp_client)
     except MCPToolError as exc:
-        raise HTTPException(status_code=502, detail=str(exc))
+        raise LocalizedError("error.session.gns3_operation_failed", status_code=502, error=str(exc))
     if not ok:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise LocalizedError("error.session.not_found", status_code=404)
     return {"ok": True}
 
 
@@ -153,7 +155,7 @@ async def reset_endpoint(
 ):
     """Resets the lab to its initial state within the session."""
     if not await reset_lab(db, session_id, current_user["id"], gns3_client):
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise LocalizedError("error.session.not_found", status_code=404)
     return {"ok": True}
 
 
@@ -167,7 +169,7 @@ async def end_endpoint(
 ):
     """Ends the session and releases GNS3 resources."""
     if not await end_lab(db, session_id, current_user["id"], gns3_client, monitor_registry):
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise LocalizedError("error.session.not_found", status_code=404)
     return {"ok": True}
 
 
@@ -194,7 +196,7 @@ async def node_action_endpoint(
         state_cache,
     )
     if not ok:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise LocalizedError("error.session.not_found", status_code=404)
     return {"ok": True}
 
 
@@ -221,5 +223,5 @@ async def bulk_node_action_endpoint(
         semaphore=bulk_semaphore,
     )
     if not ok:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise LocalizedError("error.session.not_found", status_code=404)
     return {"ok": True}

@@ -44,7 +44,7 @@ class TestAgentContext:
             )
 
         with autotest.step("Проверяем to_prompt"):
-            prompt = ctx.to_prompt()
+            prompt = ctx.to_prompt("en")
             assert_true("R1 running" in prompt, "содержит топологию")
             assert_true("Interface Gi0/0 down" in prompt, "содержит ошибку")
             assert_true("repeating_errors" in prompt, "содержит тип struggle")
@@ -64,7 +64,7 @@ class TestAgentContext:
             )
 
         with autotest.step("to_prompt возвращает строку"):
-            prompt = ctx.to_prompt()
+            prompt = ctx.to_prompt("en")
             assert_true(isinstance(prompt, str), "строка")
 
 
@@ -101,7 +101,7 @@ class TestMCPContextBuilder:
             builder = MCPContextBuilder(mcp)
 
         with autotest.step("Собираем контекст"):
-            ctx = await builder.build(None, None, "repeating_errors", "OSPF timeout")
+            ctx = await builder.build(None, None, "repeating_errors", "OSPF timeout", "en")
 
         with autotest.step("Проверяем AgentContext"):
             assert_true("R1" in ctx.topology_summary, "содержит R1")
@@ -127,7 +127,7 @@ class TestMCPContextBuilder:
             builder = MCPContextBuilder(FailingMCP())
 
         with autotest.step("build не падает"):
-            ctx = await builder.build(None, None, None, None)
+            ctx = await builder.build(None, None, None, None, "en")
 
         with autotest.step("Контекст пустой но валидный"):
             assert_equal(ctx.topology_summary, "", "пустая топология")

@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from mcp_sdk.testing import autotest
@@ -8,9 +8,33 @@ from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 
 from agents.orchestrator.models import OrchestratorResponse
 from config.config_model import LearningAnalyticsConfig
+from i18n import t
 from learning_analytics.monitor import SessionMonitor
 
 pytestmark = [pytest.mark.unit]
+
+
+class LocaleRow:
+    """Stand-in for a LearningSession row, exposing only the .locale the monitor reads."""
+
+    def __init__(self, locale):
+        self.locale = locale
+
+
+class LocaleDbSession:
+    """Async context manager whose .get() returns whatever the holder currently points to."""
+
+    def __init__(self, row_holder):
+        self._row_holder = row_holder
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        return False
+
+    async def get(self, model, session_id):
+        return self._row_holder["row"]
 
 
 class CapturingSession:
@@ -172,3 +196,49 @@ class TestSessionMonitor:
             assert_equal(event.extra_data["latency_ms"], 250, "latency")
             assert_equal(event.extra_data["error_code"], "agent_timeout", "error")
             assert_equal(event.message, "agent_timeout: timeout", "message")
+
+    @autotest.num("3141")
+    @autotest.external_id("73d4cdd1-5c79-4986-9291-f91515d0c67a")
+    @autotest.name("SessionMonitor: intervention reads locale live, not the value cached at start")
+    async def test_73d4cdd1_intervention_uses_current_locale(self):
+        # Arrange
+        with autotest.step(
+            "Start a monitor on an English session, then flip the stored locale to Russian"
+        ):
+            row_holder = {"row": LocaleRow("en")}
+            monitor = SessionMonitor(
+                mcp_client=MagicMock(),
+                db_factory=lambda: LocaleDbSession(row_holder),
+                orchestrator=MagicMock(),
+                learning_analytics_config=LearningAnalyticsConfig(),
+            )
+            monitor._session_id = "s1"
+            monitor._user_id = "u1"
+            monitor._lab_slug = "lab-1"
+            monitor._ctx = MagicMock()
+            monitor._context_builder = SimpleNamespace(
+                build=AsyncMock(return_value=SimpleNamespace(model_dump=lambda: {}))
+            )
+            row_holder["row"] = LocaleRow("ru")
+            analysis = SimpleNamespace(
+                struggle_detected=True,
+                struggle_type=SimpleNamespace(value="stuck_on_step"),
+                suggested_intervention=SimpleNamespace(value="hint"),
+                confidence=0.9,
+            )
+            features = SimpleNamespace(dominant_error=None, error_repeat_count=1)
+
+        # Act
+        with autotest.step("Build the intervention payload"):
+            pending = await monitor._decide_intervention(analysis, features)
+
+        # Assert
+        with autotest.step(
+            "Payload locale and question are Russian, not the English value cached at session start"
+        ):
+            assert_equal(pending.payload.locale, "ru", "payload locale")
+            assert_equal(
+                pending.payload.context["question"],
+                t("prompt.struggle.stuck_on_step", "ru"),
+                "question language",
+            )

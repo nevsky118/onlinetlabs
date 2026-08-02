@@ -48,8 +48,10 @@ async def cohort_db():
                 id="cohort-u1", email="u1@t.local", name="u1", role="student", control_arm="closed"
             )
         )
-        db.add(Lab(slug="lan-static-ip", title="L1 Static IP", meta={"skill": _SKILL}))
-        db.add(Lab(slug="lan-static-ip-b", title="L2 Static IP", meta={"skill": _SKILL}))
+        db.add(Lab(slug="lan-static-ip", title_i18n={"en": "L1 Static IP"}, meta={"skill": _SKILL}))
+        db.add(
+            Lab(slug="lan-static-ip-b", title_i18n={"en": "L2 Static IP"}, meta={"skill": _SKILL})
+        )
 
         # LabProgress: L1 completed 10 days ago, L2 completed 2 days ago
         db.add(
@@ -175,7 +177,7 @@ async def censored_db():
                 control_arm="closed",
             )
         )
-        db.add(Lab(slug="lan-static-ip", title="L1 Static IP", meta={"skill": _SKILL}))
+        db.add(Lab(slug="lan-static-ip", title_i18n={"en": "L1 Static IP"}, meta={"skill": _SKILL}))
         db.add(
             LabProgress(
                 id="lp-cens-l1",

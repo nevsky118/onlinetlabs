@@ -11,6 +11,7 @@ from auth.dependencies import decode_backend_token
 from auth.router import router as auth_router
 from config import settings
 from db.session import get_db
+from i18n import LocalizedError, localized_error_handler
 from models.user import Account, User
 from rate_limit import limiter
 
@@ -37,6 +38,7 @@ class TestAuthRouter:
             return JSONResponse(status_code=429, content={"detail": "too many"})
 
         app.include_router(auth_router, prefix="/auth")
+        app.add_exception_handler(LocalizedError, localized_error_handler)
 
         async def _override_get_db():
             async with self.session_factory() as db:

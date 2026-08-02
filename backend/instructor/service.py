@@ -8,6 +8,7 @@ how the learning session monitor logs interventions delivered to the student
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from i18n import DEFAULT_LOCALE, resolve_localized
 from models.behavioral_event import BehavioralEvent
 from models.chat_message import ChatMessage
 from models.lab import Lab
@@ -184,8 +185,13 @@ async def get_student_detail(db: AsyncSession, user_id: str) -> dict | None:
     lab_slugs = {p.lab_slug for p in progress_rows} | {s.lab_slug for s in session_rows}
     titles: dict[str, str] = {}
     if lab_slugs:
-        titles_result = await db.execute(select(Lab.slug, Lab.title).where(Lab.slug.in_(lab_slugs)))
-        titles = {slug: title for slug, title in titles_result.all()}
+        titles_result = await db.execute(
+            select(Lab.slug, Lab.title_i18n).where(Lab.slug.in_(lab_slugs))
+        )
+        titles = {
+            slug: resolve_localized(title_i18n, DEFAULT_LOCALE)
+            for slug, title_i18n in titles_result.all()
+        }
 
     labs = [
         {

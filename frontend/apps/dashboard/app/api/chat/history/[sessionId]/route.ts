@@ -1,4 +1,5 @@
 import { serverEnv } from "@repo/api/env"
+import { getRequestLocale } from "@repo/api/request-locale"
 import { getBackendToken } from "@repo/auth/server"
 
 export async function GET(
@@ -12,7 +13,10 @@ export async function GET(
   const r = await fetch(
     `${serverEnv.BACKEND_URL}/users/me/sessions/${sessionId}/chat`,
     {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "X-Locale": await getRequestLocale(),
+      },
       cache: "no-store",
     }
   )

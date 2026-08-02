@@ -32,7 +32,7 @@ async def test_hint_llm_failure_raises(config_model, monkeypatch):
     monkeypatch.setattr(
         agent,
         "_agent_for",
-        lambda mid: AsyncMock(run=AsyncMock(side_effect=RuntimeError("llm down"))),
+        lambda mid, locale: AsyncMock(run=AsyncMock(side_effect=RuntimeError("llm down"))),
     )
     inp = HintInput(
         session_id="s",
@@ -67,7 +67,7 @@ async def test_tutor_llm_failure_raises(config_model, monkeypatch):
     monkeypatch.setattr(
         agent,
         "_agent_for",
-        lambda mid: AsyncMock(run=AsyncMock(side_effect=RuntimeError("llm down"))),
+        lambda mid, locale: AsyncMock(run=AsyncMock(side_effect=RuntimeError("llm down"))),
     )
     inp = TutorInput(session_id="s", user_id="u", question="Что такое OSPF?")
     with pytest.raises(Exception):

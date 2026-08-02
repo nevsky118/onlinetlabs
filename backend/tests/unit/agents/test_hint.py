@@ -98,7 +98,7 @@ class TestHintAgent:
     def test_7a8b9c0d_system_prompt(self, config_model):
         with autotest.step("Получаем system_prompt"):
             agent = HintAgent(config_model)
-            prompt = agent.system_prompt()
+            prompt = agent.system_prompt("en")
 
         with autotest.step("Проверяем содержание"):
             assert_true(len(prompt) > 10, "prompt содержательный")

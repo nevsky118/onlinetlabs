@@ -223,6 +223,9 @@ importers:
 
   packages/api:
     dependencies:
+      '@repo/i18n':
+        specifier: workspace:*
+        version: link:../i18n
       axios:
         specifier: ^1.13.4
         version: 1.13.4

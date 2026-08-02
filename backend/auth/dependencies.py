@@ -7,6 +7,7 @@ from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from config import settings
+from i18n import LocalizedError
 
 logger = logging.getLogger(__name__)
 
@@ -145,7 +146,7 @@ def require_instructor(current_user: dict = Depends(get_current_user)) -> dict:
 def require_active_user(current_user: dict = Depends(get_current_user)) -> dict:
     """Allows only activated users. Otherwise 403."""
     if not current_user.get("is_active"):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Аккаунт не активирован")
+        raise LocalizedError("error.auth.inactive_account", status_code=403)
     return current_user
 
 

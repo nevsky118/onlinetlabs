@@ -14,6 +14,7 @@ from admin.data_registry import ADMIN_TABLES
 from admin.router import router as admin_router
 from auth.dependencies import get_current_user
 from db.session import get_db
+from i18n import LocalizedError, localized_error_handler
 from models.mcp_audit import MCPAudit
 from models.user import User
 
@@ -158,6 +159,7 @@ class TestAdminUsersEndpoints:
 
         app = FastAPI()
         app.include_router(admin_router, prefix="/admin")
+        app.add_exception_handler(LocalizedError, localized_error_handler)
 
         async def _override_db():
             async with self.session_factory() as db:
@@ -174,6 +176,7 @@ class TestAdminUsersEndpoints:
         self.app = app
         self.student_app = FastAPI()
         self.student_app.include_router(admin_router, prefix="/admin")
+        self.student_app.add_exception_handler(LocalizedError, localized_error_handler)
         self.student_app.dependency_overrides[get_db] = _override_db
         self.student_app.dependency_overrides[get_current_user] = _override_student
 
@@ -282,9 +285,9 @@ class TestAdminUsersEndpoints:
             async with self._client() as client:
                 resp = await client.patch("/admin/users/admin-001", json={"role": "student"})
 
-        with autotest.step("Assert: 400"):
+        with autotest.step("Assert: 400, code=error.admin.own_role"):
             assert_equal(resp.status_code, 400, "status 400")
-            assert_in("detail", resp.json(), "detail в ответе")
+            assert_equal(resp.json()["code"], "error.admin.own_role", "code")
 
     @autotest.num("1822")
     @autotest.external_id("e3556b2c-9572-4579-8104-59a7b7645966")
@@ -325,6 +328,7 @@ class TestAdminDataEndpoints:
 
         app = FastAPI()
         app.include_router(admin_router, prefix="/admin")
+        app.add_exception_handler(LocalizedError, localized_error_handler)
 
         async def _override_db():
             async with self.session_factory() as db:
@@ -342,6 +346,7 @@ class TestAdminDataEndpoints:
 
         self.student_app = FastAPI()
         self.student_app.include_router(admin_router, prefix="/admin")
+        self.student_app.add_exception_handler(LocalizedError, localized_error_handler)
         self.student_app.dependency_overrides[get_db] = _override_db
         self.student_app.dependency_overrides[get_current_user] = _override_student
 

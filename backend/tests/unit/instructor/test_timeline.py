@@ -3,11 +3,11 @@
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from fastapi import HTTPException
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from i18n import LocalizedError
 from instructor.service import build_session_timeline
 from models.behavioral_event import BehavioralEvent
 from models.chat_message import ChatMessage
@@ -46,7 +46,7 @@ class TestBuildSessionTimeline:
             db.add_all(
                 [
                     User(id="stud-t", name="Таймлайн", email="tl@test.local", role="student"),
-                    Lab(slug="tl-lab", title="TL Lab"),
+                    Lab(slug="tl-lab", title_i18n={"en": "TL Lab"}),
                     LearningSession(
                         id="sess-tl",
                         user_id="stud-t",
@@ -127,7 +127,7 @@ class TestBuildSessionTimeline:
                 db.add_all(
                     [
                         User(id="stud-cmd", name="CMD", email="cmd@test.local", role="student"),
-                        Lab(slug="cmd-lab", title="CMD Lab"),
+                        Lab(slug="cmd-lab", title_i18n={"en": "CMD Lab"}),
                         LearningSession(
                             id="sess-cmd",
                             user_id="stud-cmd",
@@ -165,7 +165,7 @@ class TestBuildSessionTimeline:
                 db.add_all(
                     [
                         User(id="owner", name="Owner", email="owner@test.local", role="student"),
-                        Lab(slug="ep-lab", title="EP Lab"),
+                        Lab(slug="ep-lab", title_i18n={"en": "EP Lab"}),
                         LearningSession(
                             id="sess-ep",
                             user_id="owner",
@@ -181,7 +181,7 @@ class TestBuildSessionTimeline:
             from instructor.router import student_session_timeline
 
             async with self.session_factory() as db:
-                with pytest.raises(HTTPException) as exc_info:
+                with pytest.raises(LocalizedError) as exc_info:
                     await student_session_timeline(
                         user_id="other",
                         session_id="sess-ep",
@@ -189,7 +189,7 @@ class TestBuildSessionTimeline:
                         db=db,
                     )
             assert_equal(exc_info.value.status_code, 404, "status 404")
-            assert_equal(exc_info.value.detail, "Session not found", "detail")
+            assert_equal(exc_info.value.key, "error.session.not_found", "code key")
 
     @autotest.num("1884")
     @autotest.external_id("e0835e16-0ece-4ffa-8ea5-108d4e90e8ce")
@@ -199,7 +199,7 @@ class TestBuildSessionTimeline:
             from instructor.router import student_session_timeline
 
             async with self.session_factory() as db:
-                with pytest.raises(HTTPException) as exc_info:
+                with pytest.raises(LocalizedError) as exc_info:
                     await student_session_timeline(
                         user_id="any-user",
                         session_id="ghost-session",

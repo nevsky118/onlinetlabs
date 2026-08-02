@@ -1,10 +1,8 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
 
 class LabSummary(BaseModel):
     """Brief description of a lab within a course."""
-
-    model_config = ConfigDict(from_attributes=True)
 
     slug: str
     title: str
@@ -15,8 +13,6 @@ class LabSummary(BaseModel):
 
 class CourseResponse(BaseModel):
     """Course without nested labs."""
-
-    model_config = ConfigDict(from_attributes=True)
 
     slug: str
     title: str

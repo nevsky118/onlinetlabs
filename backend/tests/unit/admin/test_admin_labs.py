@@ -15,6 +15,7 @@ from admin.router import router as admin_router
 from auth.dependencies import get_current_user
 from db.session import get_db
 from deps import get_gns3_client, get_session_factory
+from i18n import LocalizedError, localized_error_handler
 from models.lab import Lab, LabStep
 
 pytestmark = [pytest.mark.unit]
@@ -36,6 +37,7 @@ class TestAdminLabsEndpoints:
 
         app = FastAPI()
         app.include_router(admin_router, prefix="/admin")
+        app.add_exception_handler(LocalizedError, localized_error_handler)
 
         async def _override_db():
             async with self.session_factory() as db:
@@ -53,6 +55,7 @@ class TestAdminLabsEndpoints:
 
         self.student_app = FastAPI()
         self.student_app.include_router(admin_router, prefix="/admin")
+        self.student_app.add_exception_handler(LocalizedError, localized_error_handler)
         self.student_app.dependency_overrides[get_db] = _override_db
         self.student_app.dependency_overrides[get_current_user] = _override_student
 
@@ -91,20 +94,20 @@ class TestAdminLabsEndpoints:
             [
                 Lab(
                     slug="gns3-lab-with-tpl",
-                    title="GNS3 with template",
+                    title_i18n={"en": "GNS3 with template"},
                     environment_type="gns3",
                     gns3_template_project_id="tpl-uuid-123",
                     enabled=True,
                 ),
                 Lab(
                     slug="none-lab",
-                    title="None env lab",
+                    title_i18n={"en": "None env lab"},
                     environment_type="none",
                     enabled=True,
                 ),
                 Lab(
                     slug="gns3-lab-no-tpl",
-                    title="GNS3 no template",
+                    title_i18n={"en": "GNS3 no template"},
                     environment_type="gns3",
                     enabled=True,
                 ),
@@ -138,7 +141,12 @@ class TestAdminLabsEndpoints:
     async def test_3b6d23c5_patch_toggles_enabled(self):
         await self._seed(
             [
-                Lab(slug="toggle-lab", title="Toggle Lab", environment_type="none", enabled=True),
+                Lab(
+                    slug="toggle-lab",
+                    title_i18n={"en": "Toggle Lab"},
+                    environment_type="none",
+                    enabled=True,
+                ),
             ]
         )
 
@@ -161,7 +169,12 @@ class TestAdminLabsEndpoints:
     async def test_92947fab_patch_sets_template_id(self):
         await self._seed(
             [
-                Lab(slug="tpl-lab", title="Template Lab", environment_type="gns3", enabled=True),
+                Lab(
+                    slug="tpl-lab",
+                    title_i18n={"en": "Template Lab"},
+                    environment_type="gns3",
+                    enabled=True,
+                ),
             ]
         )
 
@@ -197,7 +210,7 @@ class TestAdminLabsEndpoints:
             [
                 Lab(
                     slug="no-meta-lab",
-                    title="No Meta",
+                    title_i18n={"en": "No Meta"},
                     environment_type="none",
                     enabled=True,
                     meta=None,
@@ -231,6 +244,7 @@ class TestRebuildTemplate:
 
         app = FastAPI()
         app.include_router(admin_router, prefix="/admin")
+        app.add_exception_handler(LocalizedError, localized_error_handler)
 
         async def _override_db():
             async with self.session_factory() as db:
@@ -246,6 +260,7 @@ class TestRebuildTemplate:
         # student app needs same overrides so FastAPI resolves deps before 403
         student_app = FastAPI()
         student_app.include_router(admin_router, prefix="/admin")
+        student_app.add_exception_handler(LocalizedError, localized_error_handler)
         student_app.dependency_overrides[get_db] = _override_db
         student_app.dependency_overrides[get_current_user] = lambda: _STUDENT_USER
         student_app.dependency_overrides[get_gns3_client] = lambda: self.stub_client
@@ -274,7 +289,12 @@ class TestRebuildTemplate:
     async def test_3db4cf7c_rebuild_non_admin_403(self):
         await self._seed(
             [
-                Lab(slug="gns3-lab", title="GNS3", environment_type="gns3", enabled=True),
+                Lab(
+                    slug="gns3-lab",
+                    title_i18n={"en": "GNS3"},
+                    environment_type="gns3",
+                    enabled=True,
+                ),
             ]
         )
         with autotest.step("Act"):
@@ -299,7 +319,12 @@ class TestRebuildTemplate:
     async def test_10a02c2f_rebuild_non_gns3_400(self):
         await self._seed(
             [
-                Lab(slug="none-lab", title="None", environment_type="none", enabled=True),
+                Lab(
+                    slug="none-lab",
+                    title_i18n={"en": "None"},
+                    environment_type="none",
+                    enabled=True,
+                ),
             ]
         )
         with autotest.step("Act"):
@@ -318,7 +343,12 @@ class TestRebuildTemplate:
         self.stub_client.build_template = AsyncMock(side_effect=RuntimeError("stubbed"))
         await self._seed(
             [
-                Lab(slug="build-lab", title="Build", environment_type="gns3", enabled=True),
+                Lab(
+                    slug="build-lab",
+                    title_i18n={"en": "Build"},
+                    environment_type="gns3",
+                    enabled=True,
+                ),
             ]
         )
         with autotest.step("Act: POST rebuild-template"):
@@ -347,7 +377,7 @@ class TestRebuildTemplate:
             [
                 Lab(
                     slug="already-building",
-                    title="Building",
+                    title_i18n={"en": "Building"},
                     environment_type="gns3",
                     enabled=True,
                     meta={"template_status": "building"},
@@ -369,7 +399,12 @@ class TestRebuildTemplate:
     async def test_a836dbf5_worker_success(self):
         await self._seed(
             [
-                Lab(slug="worker-ok", title="Worker OK", environment_type="gns3", enabled=True),
+                Lab(
+                    slug="worker-ok",
+                    title_i18n={"en": "Worker OK"},
+                    environment_type="gns3",
+                    enabled=True,
+                ),
             ]
         )
         expected_id = str(uuid.uuid4())
@@ -393,7 +428,12 @@ class TestRebuildTemplate:
     async def test_3daf90a1_worker_error(self):
         await self._seed(
             [
-                Lab(slug="worker-err", title="Worker Err", environment_type="gns3", enabled=True),
+                Lab(
+                    slug="worker-err",
+                    title_i18n={"en": "Worker Err"},
+                    environment_type="gns3",
+                    enabled=True,
+                ),
             ]
         )
         client = AsyncMock()

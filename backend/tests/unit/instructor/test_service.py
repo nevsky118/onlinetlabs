@@ -44,7 +44,7 @@ class TestInstructorService:
             db.add_all(
                 [
                     User(id="stud-c", name="Чат", email="chat@test.local", role="student"),
-                    Lab(slug="chat-lab", title="Chat Lab"),
+                    Lab(slug="chat-lab", title_i18n={"en": "Chat Lab"}),
                     LearningSession(
                         id="sess-c",
                         user_id="stud-c",
@@ -84,7 +84,7 @@ class TestInstructorService:
                     User(id="stud-1", name="Иван", email="ivan@test.local", role="student"),
                     User(id="stud-2", name="Пётр", email="petr@test.local", role="student"),
                     User(id="teacher", name="Препод", email="t@test.local", role="instructor"),
-                    Lab(slug="dhcp-basics", title="DHCP Basics"),
+                    Lab(slug="dhcp-basics", title_i18n={"en": "DHCP Basics"}),
                     LabProgress(
                         user_id="stud-1",
                         lab_slug="dhcp-basics",

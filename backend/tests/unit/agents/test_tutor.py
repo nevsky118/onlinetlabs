@@ -35,7 +35,7 @@ class TestTutorAgent:
     def test_3303e166_system_prompt(self, config_model):
         with autotest.step("Получаем system_prompt"):
             agent = TutorAgent(config_model)
-            prompt = agent.system_prompt()
+            prompt = agent.system_prompt("en")
 
         with autotest.step("Проверяем содержание"):
             assert_true(len(prompt) > 10, "prompt содержательный")
@@ -49,7 +49,9 @@ class TestTutorAgent:
             fake_result = AsyncMock()
             fake_result.output = "Ответ тьютора"
             monkeypatch.setattr(
-                agent, "_agent_for", lambda mid: AsyncMock(run=AsyncMock(return_value=fake_result))
+                agent,
+                "_agent_for",
+                lambda mid, locale: AsyncMock(run=AsyncMock(return_value=fake_result)),
             )
             result = await agent.run(_make_tutor_input())
 
@@ -67,7 +69,7 @@ class TestTutorAgent:
             monkeypatch.setattr(
                 agent,
                 "_agent_for",
-                lambda mid: AsyncMock(run=AsyncMock(side_effect=RuntimeError("llm down"))),
+                lambda mid, locale: AsyncMock(run=AsyncMock(side_effect=RuntimeError("llm down"))),
             )
 
         with autotest.step("Ожидаем re-raise"), pytest.raises(Exception):

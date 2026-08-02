@@ -5,6 +5,8 @@ import logging
 
 from pydantic import BaseModel
 
+from i18n import Locale, t
+
 logger = logging.getLogger(__name__)
 
 
@@ -18,20 +20,26 @@ class AgentContext(BaseModel):
     dominant_error: str | None
     features_summary: str
 
-    def to_prompt(self) -> str:
-        """Context → text for the user message."""
-        parts = ["=== СОСТОЯНИЕ СРЕДЫ ==="]
+    def to_prompt(self, locale: Locale) -> str:
+        """Context to text for the user message."""
+        parts = [t("prompt.context.header", locale)]
         if self.topology_summary:
-            parts.append(f"Топология: {self.topology_summary}")
+            parts.append(t("prompt.context.topology", locale, value=self.topology_summary))
         if self.recent_actions:
-            parts.append(f"Последние действия: {', '.join(self.recent_actions)}")
+            parts.append(
+                t("prompt.context.recent_actions", locale, value=", ".join(self.recent_actions))
+            )
         if self.recent_errors:
-            parts.append(f"Недавние ошибки: {', '.join(self.recent_errors)}")
+            parts.append(
+                t("prompt.context.recent_errors", locale, value=", ".join(self.recent_errors))
+            )
         if self.struggle_type:
-            error_detail = f" — {self.dominant_error}" if self.dominant_error else ""
-            parts.append(f"Проблема студента: {self.struggle_type}{error_detail}")
+            detail = f" — {self.dominant_error}" if self.dominant_error else ""
+            parts.append(
+                t("prompt.context.struggle", locale, value=f"{self.struggle_type}{detail}")
+            )
         if self.features_summary:
-            parts.append(f"Метрики: {self.features_summary}")
+            parts.append(t("prompt.context.metrics", locale, value=self.features_summary))
         return "\n".join(parts)
 
 
@@ -48,6 +56,7 @@ class MCPContextBuilder:
         features,
         struggle_type: str | None,
         dominant_error: str | None,
+        locale: Locale,
     ) -> AgentContext:
         """Topology + actions + errors in parallel → AgentContext."""
         components, actions, errors = await asyncio.gather(
@@ -56,16 +65,18 @@ class MCPContextBuilder:
             self._safe_list_errors(mcp_ctx),
         )
 
-        topology_summary = self._summarize_topology(components)
+        topology_summary = self._summarize_topology(components, locale)
         recent_actions = [f"{a.action}({a.component_id or ''})" for a in actions]
         recent_errors = [e.message for e in errors]
 
         features_summary = ""
         if features:
-            features_summary = (
-                f"{features.events_total} событий, "
-                f"{features.error_repeat_count} повторов ошибки, "
-                f"энтропия {features.action_sequence_entropy}"
+            features_summary = t(
+                "prompt.context.features_summary",
+                locale,
+                events=features.events_total,
+                repeats=features.error_repeat_count,
+                entropy=features.action_sequence_entropy,
             )
 
         return AgentContext(
@@ -102,7 +113,7 @@ class MCPContextBuilder:
             return []
 
     @staticmethod
-    def _summarize_topology(components: list) -> str:
+    def _summarize_topology(components: list, locale: Locale) -> str:
         """Components → text summary."""
         if not components:
             return ""
@@ -111,4 +122,9 @@ class MCPContextBuilder:
             status = component.status
             by_status.setdefault(status, []).append(component.name)
         parts = [f"{', '.join(names)} ({status})" for status, names in by_status.items()]
-        return f"{len(components)} компонентов: {'; '.join(parts)}"
+        return t(
+            "prompt.context.components_summary",
+            locale,
+            count=len(components),
+            detail="; ".join(parts),
+        )

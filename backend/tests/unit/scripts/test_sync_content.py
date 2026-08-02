@@ -30,7 +30,7 @@ async def _make_db():
 def _write_lab_mdx(labs_dir: Path, slug: str, environment: str = "gns3") -> None:
     lab_dir = labs_dir / slug
     lab_dir.mkdir(parents=True, exist_ok=True)
-    (lab_dir / "index.mdx").write_text(
+    (lab_dir / "index.en.mdx").write_text(
         textwrap.dedent(f"""\
             ---
             title: Demo Lab

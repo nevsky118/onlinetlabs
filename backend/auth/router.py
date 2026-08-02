@@ -28,6 +28,7 @@ from auth.service import (
 )
 from config import settings
 from db.session import get_db
+from i18n import LocalizedError
 from rate_limit import exchange_rate_limit_key, limiter
 
 router = APIRouter()
@@ -43,7 +44,7 @@ async def register(
     """Registers a new user. Returns 409 if the email is taken."""
     existing = await get_user_by_email(db, req.email)
     if existing:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+        raise LocalizedError("error.auth.email_taken", status_code=status.HTTP_409_CONFLICT)
 
     password_hash = await hash_password_async(req.password)
     user = await create_user(
@@ -67,10 +68,14 @@ async def login(
     """Verifies email and password. Returns 401 on invalid credentials."""
     user = await get_user_by_email(db, req.email)
     if not user or not user.password_hash:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+        raise LocalizedError(
+            "error.auth.invalid_credentials", status_code=status.HTTP_401_UNAUTHORIZED
+        )
 
     if not await verify_password_async(req.password, user.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+        raise LocalizedError(
+            "error.auth.invalid_credentials", status_code=status.HTTP_401_UNAUTHORIZED
+        )
 
     return UserResponse(
         id=user.id, email=user.email, name=user.name, image=user.image, role=user.role
@@ -137,7 +142,7 @@ async def delete_user_endpoint(
     """Deletes a user by id (admin only). Returns 404 if not found."""
     deleted = await delete_user(db, user_id)
     if not deleted:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise LocalizedError("error.user.not_found", status_code=status.HTTP_404_NOT_FOUND)
 
 
 @router.post("/github-callback", response_model=UserResponse)

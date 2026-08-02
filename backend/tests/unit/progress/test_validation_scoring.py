@@ -70,7 +70,7 @@ class TestRecordLabValidation:
             db.add_all(
                 [
                     User(id="u1", email="u1@test.local", role="student"),
-                    Lab(slug="dhcp-basics", title="DHCP Basics"),
+                    Lab(slug="dhcp-basics", title_i18n={"en": "DHCP Basics"}),
                 ]
             )
             await db.commit()

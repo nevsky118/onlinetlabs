@@ -8,6 +8,7 @@ from pydantic_ai.settings import ModelSettings
 
 from config.config_model import ConfigModel, LlmProvider
 from core.llm.client import build_client, model_uri, resolve_model
+from i18n import Locale
 
 
 class BaseAgent:
@@ -17,11 +18,11 @@ class BaseAgent:
         self.config = config
         self.agents_config = config.agents
 
-    def _agent_for(self, model_id: str) -> Agent:
+    def _agent_for(self, model_id: str, locale: Locale) -> Agent:
         """Fresh pydantic-ai Agent for model_id (2.x supports model= per run, no cache needed)."""
         return Agent(
             model=self._build_model(model_id),
-            system_prompt=self.system_prompt(),
+            system_prompt=self.system_prompt(locale),
             model_settings=ModelSettings(
                 temperature=self.agents_config.temperature,
                 max_tokens=self.agents_config.max_tokens,
@@ -36,8 +37,8 @@ class BaseAgent:
         client = build_client(model_id)
         return OpenAIChatModel(model_uri(model_id), provider=OpenAIProvider(openai_client=client))
 
-    def system_prompt(self) -> str:
-        """System prompt. Overridden in each agent."""
+    def system_prompt(self, locale: Locale) -> str:
+        """System prompt for a locale. Overridden in each agent."""
         raise NotImplementedError
 
     async def run(self, input_data: BaseModel) -> BaseModel:

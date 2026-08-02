@@ -34,6 +34,7 @@ from db.session import async_session
 from escalation.router import router as escalation_router
 from experiment.router import router as experiment_router
 from gns3_service_client import Gns3ServiceClient
+from i18n import LocalizedError, localized_error_handler, negotiate, t, validate_catalogs
 from instructor.router import router as instructor_router
 from labs.router import internal_router as labs_internal_router
 from labs.router import router as labs_router
@@ -97,6 +98,9 @@ async def lifespan(app: FastAPI):
     background tasks on startup, and closes the connections and tasks on exit.
     """
 
+    # Fail at boot, not at a student's first message.
+    validate_catalogs()
+
     mcp_client = MCPClient(settings.mcp.server_url)
     gateway = WebSocketGateway()
     orchestrator = Orchestrator(settings)
@@ -152,12 +156,16 @@ app = FastAPI(lifespan=lifespan)
 
 app.state.limiter = limiter
 
+app.add_exception_handler(LocalizedError, localized_error_handler)
+
 
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
     """Returns 429 with a clear message when the request rate limit is exceeded."""
+    locale = negotiate(request.headers.get("x-locale"))
     return JSONResponse(
-        status_code=429, content={"detail": "Слишком много запросов, попробуй чуть позже"}
+        status_code=429,
+        content={"detail": t("error.rate_limit", locale), "code": "error.rate_limit"},
     )
 
 

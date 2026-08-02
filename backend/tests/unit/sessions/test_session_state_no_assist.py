@@ -41,8 +41,8 @@ async def db_factory():
     async with sf() as db:
         db.add(User(id="u1", email="u1@test.local", control_arm="closed"))
         db.add(User(id="u2", email="u2@test.local", control_arm="closed"))
-        db.add(Lab(slug="l1", title="L1", meta={"skill": _SKILL}))
-        db.add(Lab(slug="l2", title="L2", meta={"skill": _SKILL}))
+        db.add(Lab(slug="l1", title_i18n={"en": "L1"}, meta={"skill": _SKILL}))
+        db.add(Lab(slug="l2", title_i18n={"en": "L2"}, meta={"skill": _SKILL}))
         db.add(LabProgress(id="p1", user_id="u1", lab_slug="l1", status="completed"))
         # u1 on l2 = L2 holdout (has a completed l1 of the same skill)
         db.add(

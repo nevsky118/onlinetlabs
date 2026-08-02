@@ -5,6 +5,7 @@ from sqlalchemy import DateTime, ForeignKey, Index, String
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
+from i18n import Locale
 from models.base import Base
 
 
@@ -28,3 +29,6 @@ class LearningSession(Base):
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     meta: Mapped[dict | None] = mapped_column(JSON, default=None)
     model_id: Mapped[str | None] = mapped_column(String(255), default=None)
+    locale: Mapped[Locale] = mapped_column(
+        String(5), nullable=False, server_default="en", default="en"
+    )

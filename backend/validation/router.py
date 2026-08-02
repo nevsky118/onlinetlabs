@@ -1,6 +1,6 @@
 """POST /labs/{slug}/sessions/{sid}/validate (SSE validation stream)."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,6 +8,7 @@ from auth.dependencies import get_current_user
 from config import settings
 from db.session import get_db
 from deps import get_gns3_client
+from i18n import LocalizedError
 from validation.service import (
     GNS3SessionMissing,
     LabSpecNotFound,
@@ -33,11 +34,11 @@ async def validate_lab(
             db=db, session_id=sid, lab_slug=slug, user_id=current_user["id"]
         )
     except SessionNotFound:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise LocalizedError("error.session.not_found", status_code=404)
     except LabSpecNotFound:
-        raise HTTPException(status_code=404, detail="Lab validation spec not found")
+        raise LocalizedError("error.validation.spec_not_found", status_code=404)
     except GNS3SessionMissing:
-        raise HTTPException(status_code=400, detail="GNS3 session is not active")
+        raise LocalizedError("error.validation.gns3_not_active", status_code=400)
 
     async def stream():
         """Convert validation events into SSE frames."""

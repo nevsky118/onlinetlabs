@@ -2,26 +2,14 @@
 
 import logging
 
-from agents._shared import format_failing_check
+from agents._shared import format_failing_check, language_directive
 from agents.base import BaseAgent
 from agents.hint.models import HintInput, HintResponse
 from agents.hint.tools import HintTools
 from config.config_model import ConfigModel
+from i18n import Locale, t
 
 logger = logging.getLogger(__name__)
-
-
-HINT_SYSTEM_PROMPT = (
-    "Ты — HintAgent, помощник для выдачи подсказок студентам в лаборатории GNS3.\n\n"
-    "Уровни подсказок:\n"
-    "- Уровень 1: ОБЩЕЕ направление. Не упоминай команды или интерфейсы.\n"
-    "- Уровень 2: ОБЛАСТЬ проблемы. Можно упомянуть компонент или протокол, без точной команды.\n"
-    "- Уровень 3: КОНКРЕТНЫЙ шаг. Укажи команду или действие.\n\n"
-    "Команды узлов VPCS (PC): `ip <адрес>/<маска>` — задать IP (например `ip 192.168.1.11/24`); "
-    "`ip <адрес>/<маска> <шлюз>` — IP со шлюзом; `ping <адрес>` — связность; "
-    "`show ip` — текущий IP. Не используй Cisco-синтаксис (`ip address ...`) для VPCS.\n\n"
-    "Используй уровень, указанный в запросе. Не давай больше деталей, чем позволяет уровень."
-)
 
 
 class HintAgent(BaseAgent):
@@ -32,9 +20,9 @@ class HintAgent(BaseAgent):
         self.tools = HintTools()
         super().__init__(config)
 
-    def system_prompt(self) -> str:
+    def system_prompt(self, locale: Locale) -> str:
         """System prompt with level instructions."""
-        return HINT_SYSTEM_PROMPT
+        return f"{t('prompt.hint.system', locale)}\n\n{language_directive(locale)}"
 
     async def run(self, input_data: HintInput, model_id: str | None = None) -> HintResponse:
         """Hint at the requested level via LLM. agent_context is required."""
@@ -42,28 +30,24 @@ class HintAgent(BaseAgent):
             raise ValueError("hint requires agent_context")
 
         resolved_model = model_id or self.agents_config.intervention_model
+        locale = input_data.locale
         hint_level = self.tools.get_hint_level(input_data.attempts_count)
         remaining = self.tools.get_remaining_hints(hint_level)
 
-        check_line = ""
+        lines = []
         if input_data.failing_check:
-            check_line = f"{format_failing_check(input_data.failing_check)}\n"
+            lines.append(format_failing_check(input_data.failing_check, locale))
+        lines.append(t("prompt.hint.level_line", locale, level=hint_level))
+        lines.append(t("prompt.hint.step_line", locale, step=input_data.step_slug))
+        lines.append(t("prompt.hint.last_error_line", locale, error=input_data.last_error))
+        lines.append("")
+        lines.append(input_data.agent_context.to_prompt(locale))
 
         try:
-            result = await self._agent_for(resolved_model).run(
-                f"{check_line}"
-                f"Уровень подсказки: {hint_level}\n"
-                f"Шаг: {input_data.step_slug}\n"
-                f"Последняя ошибка: {input_data.last_error}\n\n"
-                f"{input_data.agent_context.to_prompt()}",
-            )
+            result = await self._agent_for(resolved_model, locale).run("\n".join(lines))
             hint_text = result.output
         except Exception:
             logger.warning("LLM hint failed", exc_info=True)
             raise
 
-        return HintResponse(
-            hint=hint_text,
-            hint_level=hint_level,
-            remaining_hints=remaining,
-        )
+        return HintResponse(hint=hint_text, hint_level=hint_level, remaining_hints=remaining)

@@ -26,10 +26,10 @@ async def db_factory():
 
     async with session_factory() as db:
         db.add(User(id="u1", email="u1@test.local", control_arm="closed"))
-        db.add(Lab(slug="l1", title="L1", meta={"skill": _SKILL}))
-        db.add(Lab(slug="l2", title="L2", meta={"skill": _SKILL}))
-        db.add(Lab(slug="no-skill", title="No skill", meta={}))
-        db.add(Lab(slug="other-skill", title="Other", meta={"skill": "routing"}))
+        db.add(Lab(slug="l1", title_i18n={"en": "L1"}, meta={"skill": _SKILL}))
+        db.add(Lab(slug="l2", title_i18n={"en": "L2"}, meta={"skill": _SKILL}))
+        db.add(Lab(slug="no-skill", title_i18n={"en": "No skill"}, meta={}))
+        db.add(Lab(slug="other-skill", title_i18n={"en": "Other"}, meta={"skill": "routing"}))
         # l1 completed by the user
         db.add(LabProgress(id="p1", user_id="u1", lab_slug="l1", status="completed"))
         await db.commit()

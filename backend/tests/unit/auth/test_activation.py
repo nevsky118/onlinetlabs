@@ -3,7 +3,7 @@
 import uuid
 
 import pytest
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from httpx import ASGITransport, AsyncClient
 from mcp_sdk.testing import autotest
@@ -21,6 +21,7 @@ from auth.router import router as auth_router
 from auth.service import create_user, upsert_github_user
 from config import settings
 from db.session import get_db
+from i18n import LocalizedError
 from models.user import Account, User
 from rate_limit import limiter
 
@@ -54,10 +55,11 @@ class TestRequireActiveUser:
             raised = False
             try:
                 require_active_user(current_user=user)
-            except HTTPException as exc:
+            except LocalizedError as exc:
                 raised = True
                 assert_equal(exc.status_code, 403, "статус 403")
-            assert_true(raised, "HTTPException был поднят")
+                assert_equal(exc.key, "error.auth.inactive_account", "code")
+            assert_true(raised, "LocalizedError был поднят")
 
 
 class TestTokenIsActiveRoundTrip:

@@ -2,6 +2,8 @@
 
 from fastapi import Request
 
+from i18n import Locale, negotiate
+
 
 def get_mcp_client(request: Request):
     """Returns the MCP client from app.state."""
@@ -33,3 +35,8 @@ def get_state_cache(request: Request):
 def get_activity_log(request: Request):
     """Returns the agent activity log from app.state."""
     return request.app.state.activity_log
+
+
+def get_locale(request: Request) -> Locale:
+    """Request locale from the X-Locale header set by the frontend BFF."""
+    return negotiate(request.headers.get("x-locale"))

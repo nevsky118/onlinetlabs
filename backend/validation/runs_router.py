@@ -1,10 +1,11 @@
 """GET /sessions/{sid}/validation-runs[/{runId}] (run history)."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.dependencies import get_current_user
 from db.session import get_db
+from i18n import LocalizedError
 from sessions.services.query import get_owned_session
 from validation.repository import get_one, list_for_session
 from validation.schemas import ValidationRunDetail, ValidationRunListItem
@@ -36,7 +37,7 @@ async def list_runs(
     """Return the session's validation runs with a checks summary."""
     session = await get_owned_session(db, sid, current_user["id"])
     if session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise LocalizedError("error.session.not_found", status_code=404)
     runs = await list_for_session(db, sid, limit=20)
     items: list[ValidationRunListItem] = []
     for run in runs:
@@ -72,10 +73,10 @@ async def get_run(
     """Return a single validation run with detailed steps."""
     session = await get_owned_session(db, sid, current_user["id"])
     if session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise LocalizedError("error.session.not_found", status_code=404)
     run = await get_one(db, run_id)
     if run is None or run.session_id != sid:
-        raise HTTPException(status_code=404, detail="Validation run not found")
+        raise LocalizedError("error.validation.run_not_found", status_code=404)
     return ValidationRunDetail(
         id=run.id,
         lab_slug=run.lab_slug,

@@ -1,4 +1,5 @@
 import { serverEnv } from "@repo/api/env"
+import { getRequestLocale } from "@repo/api/request-locale"
 import { getBackendToken } from "@repo/auth/server"
 
 export async function DELETE(
@@ -11,7 +12,13 @@ export async function DELETE(
   const { id } = await params
   const r = await fetch(
     `${serverEnv.BACKEND_URL}/users/me/auth-sessions/${encodeURIComponent(id)}`,
-    { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "X-Locale": await getRequestLocale(),
+      },
+    }
   )
   return new Response(r.body, {
     status: r.status,

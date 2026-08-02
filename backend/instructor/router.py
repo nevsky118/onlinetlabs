@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -6,6 +6,7 @@ from auth.dependencies import require_instructor
 from cohort.service import compute_cohort_metrics
 from config import settings
 from db.session import get_db
+from i18n import LocalizedError
 from instructor.schemas import (
     CohortMetricsResponse,
     LabProgressRow,
@@ -59,7 +60,9 @@ async def student_detail(
     """Detailed progress of one student broken down by lab and hints."""
     detail = await get_student_detail(db, user_id)
     if detail is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
+        raise LocalizedError(
+            "error.instructor.student_not_found", status_code=status.HTTP_404_NOT_FOUND
+        )
     return StudentDetailResponse(
         **{k: v for k, v in detail.items() if k not in ("labs", "sessions")},
         labs=[LabProgressRow(**lab) for lab in detail["labs"]],
@@ -99,6 +102,6 @@ async def student_session_timeline(
         await db.execute(select(LearningSession).where(LearningSession.id == session_id))
     ).scalar_one_or_none()
     if session is None or session.user_id != user_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+        raise LocalizedError("error.session.not_found", status_code=status.HTTP_404_NOT_FOUND)
     items = await build_session_timeline(db, session_id)
     return [TimelineItem(**i) for i in items]

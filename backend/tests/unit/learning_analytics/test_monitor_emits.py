@@ -16,6 +16,19 @@ from observability.models import ActivityKind
 pytestmark = [pytest.mark.unit]
 
 
+class _NullDbSession:
+    """DB session stub: no row, so _decide_intervention's locale re-read falls back to default."""
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        return False
+
+    async def get(self, model, session_id):
+        return None
+
+
 def _make_struggle_features(session_id: str = "s1") -> SessionFeatures:
     """Features with error_repeat_count=4 → triggers REPEATING_ERRORS."""
     return SessionFeatures(
@@ -44,7 +57,7 @@ def _make_monitor(activity_log, config_model) -> SessionMonitor:
     """Monitor with a mocked context_builder."""
     monitor = SessionMonitor(
         mcp_client=None,
-        db_factory=None,
+        db_factory=lambda: _NullDbSession(),
         orchestrator=MagicMock(),
         learning_analytics_config=LearningAnalyticsConfig(),
         gateway=MagicMock(),

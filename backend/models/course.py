@@ -3,8 +3,9 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Integer, String, Text
-from sqlalchemy.dialects.postgresql import JSON
+import sqlalchemy as sa
+from sqlalchemy import DateTime, Integer, String
+from sqlalchemy.dialects.postgresql import JSON, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.base import Base
@@ -19,8 +20,13 @@ class Course(Base):
     __tablename__ = "courses"
 
     slug: Mapped[str] = mapped_column(String(255), primary_key=True)
-    title: Mapped[str] = mapped_column(String(500))
-    description: Mapped[str | None] = mapped_column(Text)
+    # JSONB in Postgres; plain JSON elsewhere so the SQLite unit-test harness can compile it.
+    title_i18n: Mapped[dict] = mapped_column(
+        sa.JSON().with_variant(JSONB(), "postgresql"), nullable=False
+    )
+    description_i18n: Mapped[dict | None] = mapped_column(
+        sa.JSON().with_variant(JSONB(), "postgresql"), nullable=True
+    )
     difficulty: Mapped[str] = mapped_column(String(50), default="beginner")
     order: Mapped[int] = mapped_column(Integer, default=0)
     prerequisites: Mapped[dict | None] = mapped_column(JSON, default=None)

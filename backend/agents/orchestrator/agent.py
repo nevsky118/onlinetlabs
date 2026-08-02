@@ -79,7 +79,7 @@ class Orchestrator:
                     session_id=input_data.session_id,
                     user_id=input_data.user_id,
                     intent=agent_name,
-                    payload=input_data.context,
+                    payload={**input_data.context, "locale": input_data.locale},
                 ),
             )
             if resolved_agent_name in self._LLM_AGENTS:

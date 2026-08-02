@@ -118,7 +118,7 @@ class TestModelConstraints:
     async def test_a7a2ff3d_learning_session_defaults_and_cascade(self, session: AsyncSession):
         with autotest.step("Создаём User и Lab"):
             user = User(id="u-ls", email="ls@example.com")
-            lab = Lab(slug="lab-1", title="Lab 1")
+            lab = Lab(slug="lab-1", title_i18n={"en": "Lab 1"})
             session.add(user)
             session.add(lab)
             await session.commit()

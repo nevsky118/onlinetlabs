@@ -2,6 +2,7 @@
 
 from pydantic import BaseModel, Field
 
+from i18n import DEFAULT_LOCALE, Locale
 from learning_analytics.context import AgentContext
 
 
@@ -11,11 +12,12 @@ class TutorInput(BaseModel):
     session_id: str
     user_id: str
     question: str
-    context: str = Field(default="", description="Контекст лабы/курса")
+    context: str = Field(default="", description="Lab/course context")
     lab_slug: str | None = None
     step_slug: str | None = None
     failing_check: dict | None = None
     agent_context: AgentContext | None = None
+    locale: Locale = DEFAULT_LOCALE
 
 
 class TutorResponse(BaseModel):

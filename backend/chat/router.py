@@ -7,12 +7,14 @@ import re
 import uuid
 from collections.abc import AsyncIterator
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from agents._shared import language_directive
 from auth.dependencies import get_current_user, require_active_user
 from chat.persistence import save_assistant_message, save_user_message, to_openai_messages
+from chat.prompt import build_system_content
 from chat.schemas import ChatStreamRequest
 from chat.stream_protocol import (
     done_event,
@@ -30,9 +32,9 @@ from chat.stream_protocol import (
 from chat.tools import TOOL_DEFINITIONS, execute_tool, run_vpcs_show_ip
 from config import settings
 from core.llm.client import build_client, model_supports_tools, model_uri
-from core.llm.prompts import LANGUAGE_REMINDER, TUTOR_SYSTEM_PROMPT
 from db.session import get_db
-from deps import get_mcp_client
+from deps import get_locale, get_mcp_client
+from i18n import Locale, LocalizedError, resolve_localized, t
 from labs.spec import expected_vpcs_config
 from models.lab import Lab
 from models.user import User
@@ -62,9 +64,9 @@ def _activity_emit(app_state, event) -> None:
 # Max tool-call rounds in a single /chat response, guards against infinite recursion.
 MAX_TOOL_ROUNDS = 5
 
-# Recent dialogue messages sent to the model. The [Задание] and
-# [Текущее состояние лаб-среды] prompt sections are rebuilt every request, so
-# older turns add no context and repeat stale claims about the environment.
+# Recent dialogue messages sent to the model. The [TASK] and [LAB_STATE] prompt
+# sections are rebuilt every request, so older turns add no context and repeat
+# stale claims about the environment.
 MAX_HISTORY_MESSAGES = 6
 
 # Regex for stripping YandexGPT thinking tokens from streamed content.
@@ -124,19 +126,19 @@ def _supports_tool_calling(model_id: str) -> bool:
     return model_supports_tools(model_id)
 
 
-async def _fetch_mcp_context(mcp_client, ctx, expected_vpcs: dict | None = None) -> str | None:
-    """Preloads environment state from MCP and formats it as a text block.
+async def _fetch_mcp_context(
+    mcp_client, ctx, locale: Locale, expected_vpcs: dict | None = None
+) -> tuple[str | None, int, int]:
+    """Preloads environment state from MCP as text plus structural component and error counts.
 
-    Runs before the first LLM round so models without tool-calling (YandexGPT)
-    still get real state.
+    Runs before the first LLM round so models without tool-calling (YandexGPT) still get real state.
 
-    expected_vpcs: node_name -> {"ip", "gateway"} from the [Задание] prompt
-    section. Used to label each actual IP correct/incorrect here rather than
-    asking the model to compare.
+    expected_vpcs: node_name -> {"ip", "gateway"} from the [TASK] prompt section. Used to label each
+    actual IP correct/incorrect here rather than asking the model to compare.
     """
     expected_vpcs = expected_vpcs or {}
     if mcp_client is None:
-        return None
+        return None, 0, 0
     try:
         components, errors = await asyncio.gather(
             mcp_client.list_components(ctx),
@@ -144,19 +146,19 @@ async def _fetch_mcp_context(mcp_client, ctx, expected_vpcs: dict | None = None)
             return_exceptions=True,
         )
         parts = []
-        if isinstance(components, list):
-            if components:
-                lines = [f"  - {c.name} ({c.type}): {c.status} — {c.summary}" for c in components]
-                parts.append("Компоненты среды:\n" + "\n".join(lines))
-            else:
-                parts.append("Компоненты среды: список пуст.")
+        component_count = 0
+        error_count = 0
+        if isinstance(components, list) and components:
+            component_count = len(components)
+            lines = [f"  - {c.name} ({c.type}): {c.status} — {c.summary}" for c in components]
+            parts.append(t("prompt.env.components", locale) + "\n" + "\n".join(lines))
 
             # Run show ip ourselves: models often skip get_vpcs_ip and echo the
-            # expected values from [Задание] instead.
+            # expected values from [TASK] instead.
             vpcs_nodes = [c for c in components if c.type == "vpcs" and c.status == "started"]
             if vpcs_nodes:
                 ip_results = await asyncio.gather(
-                    *(run_vpcs_show_ip(c.name, ctx, mcp_client) for c in vpcs_nodes),
+                    *(run_vpcs_show_ip(c.name, ctx, mcp_client, locale) for c in vpcs_nodes),
                     return_exceptions=True,
                 )
                 lines = []
@@ -165,75 +167,90 @@ async def _fetch_mcp_context(mcp_client, ctx, expected_vpcs: dict | None = None)
                         continue
                     actual_ip = res.get("ip")
                     gw = res.get("gateway", "")
-                    line = f"  - {c.name}: IP={actual_ip or '(не настроен)'}"
+                    line = f"  - {c.name}: IP={actual_ip or t('prompt.env.ip_unset', locale)}"
                     if gw and gw != "0.0.0.0":
                         line += f", gateway={gw}"
                     expected = expected_vpcs.get(c.name)
                     if expected and expected.get("ip"):
                         if actual_ip == expected["ip"]:
-                            line += " — ВЕРНО (совпадает с заданием)"
+                            line += t("prompt.env.verdict_ok", locale)
                         else:
-                            line += f" — ОШИБКА (в задании требуется {expected['ip']})"
+                            line += t("prompt.env.verdict_bad", locale, expected=expected["ip"])
                     lines.append(line)
                 if lines:
-                    parts.append(
-                        "Текущая конфигурация VPCS (show ip) — снято прямо сейчас:\n"
-                        + "\n".join(lines)
-                    )
+                    parts.append(t("prompt.env.vpcs_current", locale) + "\n" + "\n".join(lines))
         else:
-            parts.append("Компоненты среды: список пуст.")
+            parts.append(t("prompt.env.components_empty", locale))
 
         if isinstance(errors, list):
             recent = [e for e in errors if not isinstance(e, Exception)][:5]
+            error_count = len(recent)
             if recent:
                 lines = [
                     f"  - [{e.level.value}] {e.component_id or '?'}: {e.message}" for e in recent
                 ]
-                parts.append("Последние ошибки:\n" + "\n".join(lines))
+                parts.append(t("prompt.env.recent_errors", locale) + "\n" + "\n".join(lines))
             else:
-                parts.append("Ошибок не обнаружено.")
-        return "\n\n".join(parts) if parts else None
+                parts.append(t("prompt.env.no_errors", locale))
+        return ("\n\n".join(parts) if parts else None), component_count, error_count
     except Exception:
         logger.warning("chat: failed to preload the MCP context", exc_info=True)
-        return None
+        return None, 0, 0
 
 
-async def _fetch_lab_context(db: AsyncSession, lab_slug: str, spec: dict | None) -> str | None:
+async def _fetch_lab_context(
+    db: AsyncSession, lab_slug: str, spec: dict | None, locale: Locale
+) -> str | None:
     """Loads the lab description and expected configuration from the DB and YAML spec."""
     try:
         lab = await db.get(Lab, lab_slug)
         if lab is None:
             return None
-        parts = [f"Лабораторная работа: «{lab.title}»"]
-        if lab.description:
-            parts.append(f"Цель: {lab.description}")
+        parts = [t("prompt.lab.title", locale, title=resolve_localized(lab.title_i18n, locale))]
+        description = resolve_localized(lab.description_i18n, locale)
+        if description:
+            parts.append(t("prompt.lab.goal", locale, goal=description))
 
         if spec is not None:
             steps = spec.get("steps", [])
             if steps:
                 step_lines = []
                 for step in steps:
-                    step_lines.append(f"  Шаг «{step.get('title', step.get('id', '?'))}»:")
+                    title = resolve_localized(step.get("title", step.get("id", "?")), locale)
+                    step_lines.append(t("prompt.lab.step", locale, title=title))
                     for check in step.get("checks", []):
                         kind = check.get("kind", "")
                         expect = check.get("expect", {})
                         if kind == "vpcs.show_ip":
-                            node = check.get("node", "?")
-                            ip = expect.get("ip", "?")
+                            line = t(
+                                "prompt.lab.check_show_ip",
+                                locale,
+                                node=check.get("node", "?"),
+                                ip=expect.get("ip", "?"),
+                            )
                             gw = expect.get("gateway", "")
-                            line = f"    - {node}: IP={ip}"
                             if gw and gw != "0.0.0.0":
-                                line += f", gateway={gw}"
+                                line += t("prompt.lab.check_gateway", locale, gateway=gw)
                             step_lines.append(line)
                         elif kind == "vpcs.ping":
-                            frm = check.get("from", "?")
-                            to = check.get("to", "?")
-                            step_lines.append(f"    - {frm} ping {to}")
+                            step_lines.append(
+                                t(
+                                    "prompt.lab.check_ping",
+                                    locale,
+                                    source=check.get("from", "?"),
+                                    target=check.get("to", "?"),
+                                )
+                            )
                         elif kind == "vpcs.ip_in_subnet":
-                            node = check.get("node", "?")
-                            subnet = expect.get("subnet", "?")
-                            step_lines.append(f"    - {node}: адрес в подсети {subnet}")
-                parts.append("Задание (что должен настроить студент):\n" + "\n".join(step_lines))
+                            step_lines.append(
+                                t(
+                                    "prompt.lab.check_subnet",
+                                    locale,
+                                    node=check.get("node", "?"),
+                                    subnet=expect.get("subnet", "?"),
+                                )
+                            )
+                parts.append(t("prompt.lab.steps_header", locale) + "\n" + "\n".join(step_lines))
 
         return "\n".join(parts)
     except Exception:
@@ -249,6 +266,7 @@ async def _stream_one_round(
     ctx,
     mcp_client,
     state: dict,
+    locale: Locale,
     model_id: str = "",
     app_state=None,
     session_id: str = "",
@@ -354,7 +372,7 @@ async def _stream_one_round(
                 args_preview=str(parsed)[:200],
             ),
         )
-        result = await execute_tool(tc_name, parsed, ctx, mcp_client)
+        result = await execute_tool(tc_name, parsed, ctx, mcp_client, locale)
         _activity_emit(
             app_state,
             event_tool_result(
@@ -367,7 +385,11 @@ async def _stream_one_round(
         )
         yield tool_output_available(tc_id, result)
         messages.append(
-            {"role": "tool", "tool_call_id": tc_id, "content": f"{result}\n\n[{LANGUAGE_REMINDER}]"}
+            {
+                "role": "tool",
+                "tool_call_id": tc_id,
+                "content": f"{result}\n\n[{language_directive(locale)}]",
+            }
         )
 
 
@@ -390,16 +412,17 @@ async def chat_stream(
     _active: dict = Depends(require_active_user),
     db: AsyncSession = Depends(get_db),
     mcp_client=Depends(get_mcp_client),
+    locale: Locale = Depends(get_locale),
 ):
     """Streams the tutor's response for a session via SSE with tool-call support."""
     session = await get_owned_session(db, body.id, current_user["id"])
     if session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise LocalizedError("error.session.not_found", status_code=404)
     ctx = build_session_context(session)
 
     openai_messages = to_openai_messages(body.messages)
     if not openai_messages:
-        raise HTTPException(status_code=400, detail="No messages provided")
+        raise LocalizedError("error.chat.no_messages", status_code=400)
     await save_user_message(db, session.id, body.messages)
 
     # Read before the generator starts: the request-scoped session is gone by the
@@ -426,7 +449,7 @@ async def chat_stream(
                     current_user["id"],
                     original_model=body.model_id,
                     fallback_model=effective_model_id,
-                    reason="не в каталоге или нет права выбора",
+                    reason="not in catalog or selection not permitted",
                 ),
             )
         # Persist the model choice to the session.
@@ -449,29 +472,22 @@ async def chat_stream(
         # Loads lab description and environment state from MCP in parallel.
         spec = load_lab_spec(session.lab_slug)
         expected_vpcs = expected_vpcs_config(spec)
-        lab_ctx_text, mcp_ctx_text = await asyncio.gather(
-            _fetch_lab_context(db, session.lab_slug, spec),
-            _fetch_mcp_context(mcp_client, ctx, expected_vpcs),
+        lab_ctx_text, mcp_result = await asyncio.gather(
+            _fetch_lab_context(db, session.lab_slug, spec, locale),
+            _fetch_mcp_context(mcp_client, ctx, locale, expected_vpcs),
         )
+        mcp_ctx_text, component_count, error_count = mcp_result
         _activity_emit(
             request.app.state,
             event_mcp_context_fetched(
                 session.id,
                 current_user["id"],
-                component_count=mcp_ctx_text.count("\n  - ") if mcp_ctx_text else 0,
-                error_count=1
-                if mcp_ctx_text
-                and "ошибок" in mcp_ctx_text.lower()
-                and "не обнаружено" not in mcp_ctx_text.lower()
-                else 0,
+                component_count=component_count,
+                error_count=error_count,
                 verdict_summary=("ok" if mcp_ctx_text else "no_context"),
             ),
         )
-        system_content = TUTOR_SYSTEM_PROMPT
-        if lab_ctx_text:
-            system_content += f"\n\n[Задание]\n{lab_ctx_text}"
-        if mcp_ctx_text:
-            system_content += f"\n\n[Текущее состояние лаб-среды]\n{mcp_ctx_text}"
+        system_content = build_system_content(locale, lab_ctx_text, mcp_ctx_text)
 
         messages = [
             {"role": "system", "content": system_content},
@@ -494,6 +510,7 @@ async def chat_stream(
                     ctx,
                     mcp_client,
                     state,
+                    locale,
                     model_id=effective_model_id,
                     app_state=request.app.state,
                     session_id=session.id,

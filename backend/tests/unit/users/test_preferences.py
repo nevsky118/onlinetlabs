@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from auth.dependencies import get_current_user
 from db.session import get_db
+from i18n import LocalizedError, localized_error_handler
 from models.user import User
 from users.router import router as users_router
 
@@ -46,6 +47,7 @@ class TestPreferencesEndpoints:
     def _build_app(self, user: dict) -> FastAPI:
         app = FastAPI()
         app.include_router(users_router, prefix="/users/me")
+        app.add_exception_handler(LocalizedError, localized_error_handler)
 
         async def _override_db():
             async with self.session_factory() as db:
