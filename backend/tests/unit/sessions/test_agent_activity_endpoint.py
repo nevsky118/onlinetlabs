@@ -32,8 +32,11 @@ pytestmark = [pytest.mark.unit]
     ],
 )
 def test_36f5c7a1_can_view_session_activity_matrix(user, expected):
-    sess = SimpleNamespace(user_id="owner")
-    assert can_view_session_activity(user, sess) is expected
+    with autotest.step("Arrange: a session owned by 'owner'"):
+        sess = SimpleNamespace(user_id="owner")
+
+    with autotest.step("Act+Assert: can_view_session_activity matches the expected verdict"):
+        assert can_view_session_activity(user, sess) is expected
 
 
 # ── HTTP test via direct function call ──────────────────────────────────────
@@ -54,27 +57,31 @@ class _FakeActivityLog:
 @autotest.name("get_agent_activity: returns events when permission is granted")
 @pytest.mark.asyncio
 async def test_8fccb0f4_get_agent_activity_entitled():
-    from sessions.routers.queries import get_agent_activity
+    with autotest.step("Arrange: entitled user, a session they own, and a stubbed activity log"):
+        from sessions.routers.queries import get_agent_activity
 
-    events = [SimpleNamespace(id="e1"), SimpleNamespace(id="e2")]
-    activity = _FakeActivityLog(events)
-    session = SimpleNamespace(user_id="u1")
-    user = {"id": "u1", "role": "student", "can_view_logs": True}
+        events = [SimpleNamespace(id="e1"), SimpleNamespace(id="e2")]
+        activity = _FakeActivityLog(events)
+        session = SimpleNamespace(user_id="u1")
+        user = {"id": "u1", "role": "student", "can_view_logs": True}
 
-    # db.get returns a fake session, patched directly via DI arguments
-    class _FakeDB:
-        async def get(self, model_cls, pk):
-            return session
+        # db.get returns a fake session, patched directly via DI arguments
+        class _FakeDB:
+            async def get(self, model_cls, pk):
+                return session
 
-    result = await get_agent_activity(
-        session_id="s1",
-        since=None,
-        limit=200,
-        current_user=user,
-        activity=activity,
-        db=_FakeDB(),
-    )
-    assert result == events
+    with autotest.step("Act: get_agent_activity"):
+        result = await get_agent_activity(
+            session_id="s1",
+            since=None,
+            limit=200,
+            current_user=user,
+            activity=activity,
+            db=_FakeDB(),
+        )
+
+    with autotest.step("Assert: returns the activity log's events"):
+        assert result == events
 
 
 @autotest.num("3253")
@@ -82,27 +89,31 @@ async def test_8fccb0f4_get_agent_activity_entitled():
 @autotest.name("get_agent_activity: 403 when permission is missing")
 @pytest.mark.asyncio
 async def test_907a6e0a_get_agent_activity_forbidden():
-    from i18n import LocalizedError
-    from sessions.routers.queries import get_agent_activity
+    with autotest.step("Arrange: student without ownership, viewing someone else's session"):
+        from i18n import LocalizedError
+        from sessions.routers.queries import get_agent_activity
 
-    activity = _FakeActivityLog([])
-    session = SimpleNamespace(user_id="other_user")
-    user = {"id": "u1", "role": "student", "can_view_logs": True}
+        activity = _FakeActivityLog([])
+        session = SimpleNamespace(user_id="other_user")
+        user = {"id": "u1", "role": "student", "can_view_logs": True}
 
-    class _FakeDB:
-        async def get(self, model_cls, pk):
-            return session
+        class _FakeDB:
+            async def get(self, model_cls, pk):
+                return session
 
-    with pytest.raises(LocalizedError) as exc_info:
-        await get_agent_activity(
-            session_id="s1",
-            since=None,
-            limit=200,
-            current_user=user,
-            activity=activity,
-            db=_FakeDB(),
-        )
-    assert exc_info.value.status_code == 403
+    with autotest.step("Act: get_agent_activity"):
+        with pytest.raises(LocalizedError) as exc_info:
+            await get_agent_activity(
+                session_id="s1",
+                since=None,
+                limit=200,
+                current_user=user,
+                activity=activity,
+                db=_FakeDB(),
+            )
+
+    with autotest.step("Assert: raises 403"):
+        assert exc_info.value.status_code == 403
 
 
 @autotest.num("3254")
@@ -110,23 +121,27 @@ async def test_907a6e0a_get_agent_activity_forbidden():
 @autotest.name("get_agent_activity: 404 when the session is missing")
 @pytest.mark.asyncio
 async def test_b528c845_get_agent_activity_not_found():
-    from i18n import LocalizedError
-    from sessions.routers.queries import get_agent_activity
+    with autotest.step("Arrange: instructor and a db.get that returns no session"):
+        from i18n import LocalizedError
+        from sessions.routers.queries import get_agent_activity
 
-    activity = _FakeActivityLog([])
-    user = {"id": "u1", "role": "instructor", "can_view_logs": True}
+        activity = _FakeActivityLog([])
+        user = {"id": "u1", "role": "instructor", "can_view_logs": True}
 
-    class _FakeDB:
-        async def get(self, model_cls, pk):
-            return None
+        class _FakeDB:
+            async def get(self, model_cls, pk):
+                return None
 
-    with pytest.raises(LocalizedError) as exc_info:
-        await get_agent_activity(
-            session_id="s1",
-            since=None,
-            limit=200,
-            current_user=user,
-            activity=activity,
-            db=_FakeDB(),
-        )
-    assert exc_info.value.status_code == 404
+    with autotest.step("Act: get_agent_activity"):
+        with pytest.raises(LocalizedError) as exc_info:
+            await get_agent_activity(
+                session_id="s1",
+                since=None,
+                limit=200,
+                current_user=user,
+                activity=activity,
+                db=_FakeDB(),
+            )
+
+    with autotest.step("Assert: raises 404"):
+        assert exc_info.value.status_code == 404

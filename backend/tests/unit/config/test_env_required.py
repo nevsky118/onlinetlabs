@@ -35,15 +35,21 @@ def _base_env():
 @autotest.external_id("0a250261-625e-4651-9f47-4f9eb82593f8")
 @autotest.name("env_config_loader._build: raises with a clear message on a missing required var")
 def test_0a250261_missing_required_url_raises_with_clear_message():
-    env = _base_env()
-    del env["GNS3_SERVICE_URL"]
-    with pytest.raises(ValueError, match="Missing required env vars: GNS3_SERVICE_URL"):
-        _build(env)
+    with autotest.step("Arrange: env missing GNS3_SERVICE_URL"):
+        env = _base_env()
+        del env["GNS3_SERVICE_URL"]
+
+    with autotest.step("Act+Assert: _build raises naming the missing var"):
+        with pytest.raises(ValueError, match="Missing required env vars: GNS3_SERVICE_URL"):
+            _build(env)
 
 
 @autotest.num("3225")
 @autotest.external_id("d9c5a1bb-68f6-4b3f-819b-d81d3e8a971d")
 @autotest.name("env_config_loader._build: builds config when all required vars are present")
 def test_d9c5a1bb_builds_when_all_required_present():
-    cfg = _build(_base_env())
-    assert cfg.gns3.service_url == "http://localhost:8101"
+    with autotest.step("Act: _build with a complete env"):
+        cfg = _build(_base_env())
+
+    with autotest.step("Assert: gns3.service_url is carried through"):
+        assert cfg.gns3.service_url == "http://localhost:8101"

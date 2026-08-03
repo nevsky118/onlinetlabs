@@ -21,18 +21,26 @@ def _load(name: str) -> str:
 @autotest.external_id("beafd3af-dc2f-42b2-a956-46b3903d9631")
 @autotest.name("VPCS _parse_show_ip: reads ip and gateway from show ip output")
 def test_beafd3af_parse_show_ip_reads_ip_and_gateway():
-    text = _load("vpcs_show_ip.txt")
-    parsed = _parse_show_ip(text)
-    assert parsed["ip"] == "192.168.10.10/24"
-    assert parsed["gateway"] == "192.168.10.1"
+    with autotest.step("Arrange: fixture output of VPCS 'show ip'"):
+        text = _load("vpcs_show_ip.txt")
+
+    with autotest.step("Act: _parse_show_ip"):
+        parsed = _parse_show_ip(text)
+
+    with autotest.step("Assert: ip and gateway are extracted"):
+        assert parsed["ip"] == "192.168.10.10/24"
+        assert parsed["gateway"] == "192.168.10.1"
 
 
 @autotest.num("3295")
 @autotest.external_id("370bc14b-745e-4a8e-b7bb-32234eccb109")
 @autotest.name("VPCS _parse_show_ip: garbage input returns empty ip and gateway")
 def test_370bc14b_parse_show_ip_garbage():
-    parsed = _parse_show_ip("random unrelated text")
-    assert parsed == {"ip": "", "gateway": ""}
+    with autotest.step("Act: _parse_show_ip on unrelated text"):
+        parsed = _parse_show_ip("random unrelated text")
+
+    with autotest.step("Assert: empty ip and gateway"):
+        assert parsed == {"ip": "", "gateway": ""}
 
 
 # ---------------- VPCS: ip_in_subnet membership ----------------
@@ -56,4 +64,5 @@ def test_370bc14b_parse_show_ip_garbage():
 @autotest.external_id("008caad4-1b1c-44b2-9352-8f82b8dc497b")
 @autotest.name("VPCS _ip_in_subnet: membership matrix across masks and malformed input")
 def test_008caad4_ip_in_subnet(ip_with_mask, subnet, ok):
-    assert _ip_in_subnet(ip_with_mask, subnet) is ok
+    with autotest.step("Act+Assert: _ip_in_subnet matches the expected verdict"):
+        assert _ip_in_subnet(ip_with_mask, subnet) is ok
