@@ -117,9 +117,9 @@ class TestRequireAdmin:
             assert_equal(result, user, "returns the same user dict")
 
     @autotest.num("707")
-    @autotest.external_id("08090a0b-0c0d-4e0f-8067-90abcdef0123")
+    @autotest.external_id("95ec7fab-48b2-4eac-8031-c95cfa35c7c9")
     @autotest.name("require_admin: student → HTTPException 403")
-    def test_08090a0b_non_admin_raises_403(self):
+    def test_95ec7fab_non_admin_raises_403(self):
         with autotest.step("Arrange: dict with role=student"):
             user = {"id": "user-707", "role": "student"}
 

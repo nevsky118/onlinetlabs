@@ -36,12 +36,13 @@ class TestCoursesSmokeApi:
             assert_true(isinstance(body, list), f"Expected a list, got {type(body)}")
 
     @autotest.num("9")
-    @autotest.external_id("c9d0e1f2-a3b4-5678-cdef-789012345678")
+    @autotest.external_id("34a114c2-ad3c-4856-9837-760a70ff7175")
     @autotest.name("Smoke: GET /courses/{slug} — 404 for nonexistent")
-    async def test_c9d0e1f2_get_course_not_found(self):
+    async def test_34a114c2_get_course_not_found(self):
         """Requesting a nonexistent course returns 404."""
         # Arrange
-        fake_slug = f"nonexistent-{Randomizer.random_string(8).lower()}"
+        with autotest.step("Build a nonexistent course slug"):
+            fake_slug = f"nonexistent-{Randomizer.random_string(8).lower()}"
 
         # Act
         with autotest.step(f"Send GET /courses/{fake_slug}"):

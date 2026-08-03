@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
+from mcp_sdk.testing import autotest
 
 from src.config import settings
 from src.routers.exec import router as exec_router
@@ -58,70 +59,96 @@ VTYSH_BODY = {
 
 
 class TestExecAuth:
-    async def test_returns_403_without_authorization_header(self, client):
-        response = await client.post("/v1/exec/vtysh", json=VTYSH_BODY)
-        assert response.status_code == 403
-        assert response.json()["detail"] == "missing bearer token"
+    @autotest.num("3353")
+    @autotest.external_id("02b9b88d-c8b0-42a4-9cd0-26351ce80ab9")
+    @autotest.name("POST /v1/exec/vtysh: 403 without an Authorization header")
+    async def test_02b9b88d_returns_403_without_authorization_header(self, client):
+        with autotest.step("Act: POST vtysh without an Authorization header"):
+            response = await client.post("/v1/exec/vtysh", json=VTYSH_BODY)
 
-    async def test_returns_403_with_wrong_token(self, client):
-        response = await client.post(
-            "/v1/exec/vtysh",
-            json=VTYSH_BODY,
-            headers={"Authorization": "Bearer wrong-token"},
-        )
-        assert response.status_code == 403
-        assert response.json()["detail"] == "invalid internal token"
+        with autotest.step("Assert: 403 missing bearer token"):
+            assert response.status_code == 403
+            assert response.json()["detail"] == "missing bearer token"
+
+    @autotest.num("3354")
+    @autotest.external_id("46a921ae-78c4-44c6-9334-44c70d43f95f")
+    @autotest.name("POST /v1/exec/vtysh: 403 with an incorrect internal token")
+    async def test_46a921ae_returns_403_with_wrong_token(self, client):
+        with autotest.step("Act: POST vtysh with an incorrect internal token"):
+            response = await client.post(
+                "/v1/exec/vtysh",
+                json=VTYSH_BODY,
+                headers={"Authorization": "Bearer wrong-token"},
+            )
+
+        with autotest.step("Assert: 403 invalid internal token"):
+            assert response.status_code == 403
+            assert response.json()["detail"] == "invalid internal token"
 
 
 class TestExecNodeTypeGuard:
-    async def test_returns_400_when_node_is_not_docker(self, app, client):
-        admin = app.state.session_service._admin
-        admin.request.return_value = _stub_response(200, {"node_type": "qemu", "properties": {}})
+    @autotest.num("3355")
+    @autotest.external_id("62321ab2-d4ab-40ac-8df7-de43e52d10e3")
+    @autotest.name("POST /v1/exec/vtysh: 400 when the target node is not docker")
+    async def test_62321ab2_returns_400_when_node_is_not_docker(self, app, client):
+        with autotest.step("Arrange: the target node reports a non-docker type"):
+            admin = app.state.session_service._admin
+            admin.request.return_value = _stub_response(
+                200, {"node_type": "qemu", "properties": {}}
+            )
 
-        response = await client.post(
-            "/v1/exec/vtysh",
-            json=VTYSH_BODY,
-            headers={"Authorization": f"Bearer {_VALID_TOKEN}"},
-        )
-
-        assert response.status_code == 400
-        assert "only docker nodes" in response.json()["detail"]
-
-
-class TestExecHappyPath:
-    async def test_runs_docker_exec_and_returns_stdout(self, app, client):
-        admin = app.state.session_service._admin
-        admin.request.return_value = _stub_response(
-            200,
-            {
-                "node_type": "docker",
-                "properties": {"container_id": "container-xyz"},
-            },
-        )
-
-        proc = AsyncMock()
-        proc.communicate.return_value = (b"R1#", b"")
-        proc.returncode = 0
-
-        with patch(
-            "src.routers.exec.asyncio.create_subprocess_exec",
-            new=AsyncMock(return_value=proc),
-        ) as mock_spawn:
+        with autotest.step("Act: POST vtysh against that node"):
             response = await client.post(
                 "/v1/exec/vtysh",
                 json=VTYSH_BODY,
                 headers={"Authorization": f"Bearer {_VALID_TOKEN}"},
             )
 
-        assert response.status_code == 200
-        assert response.json() == {
-            "stdout": "R1#",
-            "stderr": "",
-            "exit_code": 0,
-        }
-        mock_spawn.assert_awaited_once()
-        # Check that the command contains container_id and vtysh -c "..."
-        args = mock_spawn.await_args.args
-        assert "container-xyz" in args
-        assert "vtysh" in args
-        assert "show ip ospf neighbor" in args
+        with autotest.step("Assert: 400, only docker nodes are supported"):
+            assert response.status_code == 400
+            assert "only docker nodes" in response.json()["detail"]
+
+
+class TestExecHappyPath:
+    @autotest.num("3356")
+    @autotest.external_id("9d103297-62cf-497d-9162-b16b20f79194")
+    @autotest.name("POST /v1/exec/vtysh: runs vtysh in the container and returns stdout")
+    async def test_9d103297_runs_docker_exec_and_returns_stdout(self, app, client):
+        with autotest.step("Arrange: a docker node and a subprocess stub returning stdout"):
+            admin = app.state.session_service._admin
+            admin.request.return_value = _stub_response(
+                200,
+                {
+                    "node_type": "docker",
+                    "properties": {"container_id": "container-xyz"},
+                },
+            )
+
+            proc = AsyncMock()
+            proc.communicate.return_value = (b"R1#", b"")
+            proc.returncode = 0
+
+        with autotest.step("Act: POST vtysh with the subprocess spawn mocked"):
+            with patch(
+                "src.routers.exec.asyncio.create_subprocess_exec",
+                new=AsyncMock(return_value=proc),
+            ) as mock_spawn:
+                response = await client.post(
+                    "/v1/exec/vtysh",
+                    json=VTYSH_BODY,
+                    headers={"Authorization": f"Bearer {_VALID_TOKEN}"},
+                )
+
+        with autotest.step("Assert: 200 with stdout, and vtysh ran against the container"):
+            assert response.status_code == 200
+            assert response.json() == {
+                "stdout": "R1#",
+                "stderr": "",
+                "exit_code": 0,
+            }
+            mock_spawn.assert_awaited_once()
+            # Check that the command contains container_id and vtysh -c "..."
+            args = mock_spawn.await_args.args
+            assert "container-xyz" in args
+            assert "vtysh" in args
+            assert "show ip ospf neighbor" in args

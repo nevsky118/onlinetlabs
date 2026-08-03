@@ -55,15 +55,19 @@ class TestLaunchSlotRelease:
     @autotest.external_id("453610e2-6dc4-468a-af57-3ccabab10902")
     @autotest.name("launch: relaunching an active session does not take a slot or bump the gauge")
     async def test_453610e2_reuse_does_not_leak_slot_or_double_count(self):
-        queue, monitor_registry = self._mocks()
-        existing = SimpleNamespace(id="s1", user_id="user-1", lab_slug="lab-x", status="active")
-        with (
-            patch.object(launch_mod, "get_active_session", AsyncMock(return_value=existing)),
-            patch.object(launch_mod, "launch_session", AsyncMock(return_value=(existing, _CREDS))),
-            patch.object(launch_mod, "build_session_context", MagicMock(return_value=object())),
-            patch("observability.metrics.active_sessions_gauge") as gauge,
-        ):
-            with autotest.step("Act: relaunch an already active session"):
+        with autotest.step("Arrange: mocks for an existing active session"):
+            queue, monitor_registry = self._mocks()
+            existing = SimpleNamespace(id="s1", user_id="user-1", lab_slug="lab-x", status="active")
+
+        with autotest.step("Act: relaunch an already active session"):
+            with (
+                patch.object(launch_mod, "get_active_session", AsyncMock(return_value=existing)),
+                patch.object(
+                    launch_mod, "launch_session", AsyncMock(return_value=(existing, _CREDS))
+                ),
+                patch.object(launch_mod, "build_session_context", MagicMock(return_value=object())),
+                patch("observability.metrics.active_sessions_gauge") as gauge,
+            ):
                 resp = await self._call(queue, monitor_registry)
 
         with autotest.step(
@@ -79,15 +83,19 @@ class TestLaunchSlotRelease:
     @autotest.external_id("cbca5d12-5297-4d74-bc26-1c2b3862e671")
     @autotest.name("launch: a fresh launch of an active session bumps the gauge exactly once")
     async def test_cbca5d12_new_launch_increments_gauge_once(self):
-        queue, monitor_registry = self._mocks()
-        new_sess = SimpleNamespace(id="s2", user_id="user-1", lab_slug="lab-x", status="active")
-        with (
-            patch.object(launch_mod, "get_active_session", AsyncMock(return_value=None)),
-            patch.object(launch_mod, "launch_session", AsyncMock(return_value=(new_sess, _CREDS))),
-            patch.object(launch_mod, "build_session_context", MagicMock(return_value=object())),
-            patch("observability.metrics.active_sessions_gauge") as gauge,
-        ):
-            with autotest.step("Act: fresh launch"):
+        with autotest.step("Arrange: mocks for a fresh session launch"):
+            queue, monitor_registry = self._mocks()
+            new_sess = SimpleNamespace(id="s2", user_id="user-1", lab_slug="lab-x", status="active")
+
+        with autotest.step("Act: fresh launch"):
+            with (
+                patch.object(launch_mod, "get_active_session", AsyncMock(return_value=None)),
+                patch.object(
+                    launch_mod, "launch_session", AsyncMock(return_value=(new_sess, _CREDS))
+                ),
+                patch.object(launch_mod, "build_session_context", MagicMock(return_value=object())),
+                patch("observability.metrics.active_sessions_gauge") as gauge,
+            ):
                 await self._call(queue, monitor_registry)
 
         with autotest.step("Assert: slot taken, monitor starts, gauge +1 exactly once"):

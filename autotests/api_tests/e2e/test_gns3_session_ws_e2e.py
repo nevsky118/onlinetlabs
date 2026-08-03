@@ -20,15 +20,17 @@ class TestGns3SessionWsE2E:
         self.gns3_base = config.gns3_base_url
 
     @autotest.num("90")
-    @autotest.external_id("aa111111-eeee-4eee-eeee-eeeeeeeeeeee")
+    @autotest.external_id("1abea10e-dc25-4fd6-b3b8-abc4cec12b9d")
     @autotest.name("Gns3 e2e: WS connects + receives snapshot")
-    async def test_aa111111_ws_snapshot(self):
+    async def test_1abea10e_ws_snapshot(self):
         """Connecting to the WS returns a snapshot as the first message."""
-        session_dict = await self.helper.create_session()
-        session_id = session_dict["session_id"]
+        with autotest.step("Arrange: create a session and a WS client"):
+            session_dict = await self.helper.create_session()
+            session_id = session_dict["session_id"]
+            ws_client = WSClient(self.gns3_base)
 
-        ws_client = WSClient(self.gns3_base)
-        async with await ws_client.connect(f"/sessions/{session_id}/events") as ws:
-            msg = await ws_client.recv_json(ws, timeout=15)
-            assert msg["type"] == "snapshot", f"Expected snapshot, got {msg['type']}"
-            assert msg["payload"]["session_id"] == session_id
+        with autotest.step("Act + Assert: connect and check the first message is a snapshot for this session"):
+            async with await ws_client.connect(f"/sessions/{session_id}/events") as ws:
+                msg = await ws_client.recv_json(ws, timeout=15)
+                assert msg["type"] == "snapshot", f"Expected snapshot, got {msg['type']}"
+                assert msg["payload"]["session_id"] == session_id

@@ -99,7 +99,8 @@ class TestEndSessionFinalizes:
     @autotest.external_id("9c5b5efc-c9a0-4d89-9508-196d8785783f")
     @autotest.name("end_session: creates an ExperimentMetrics row with correct fields")
     async def test_9c5b5efc_inserts_experiment_metrics_row(self, db_factory):
-        engine, session_factory = db_factory
+        with autotest.step("Arrange: unpack the db_factory fixture"):
+            engine, session_factory = db_factory
         with autotest.step("Act: call end_session"):
             async with session_factory() as db:
                 result = await end_session(db, "sess-1", "u1", "ended")
@@ -141,8 +142,8 @@ class TestEndSessionFinalizes:
     async def test_4750257f_finalization_failure_does_not_break_end_session(
         self, db_factory, monkeypatch
     ):
-        engine, session_factory = db_factory
         with autotest.step("Arrange: patch _finalize_experiment_metrics to raise"):
+            engine, session_factory = db_factory
             import sessions.services.lifecycle as lc
 
             async def _boom(*args, **kwargs):

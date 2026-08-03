@@ -75,36 +75,43 @@ class TestHintAgentLLM:
     @autotest.name("HintAgent: failing_check makes it into the LLM prompt")
     async def test_ae0197d6_failing_check_in_prompt(self, config_model, monkeypatch):
         """Regression FIX 2: failing_check{expected/actual} is visible to the LLM."""
-        from unittest.mock import AsyncMock
+        with autotest.step(
+            "Arrange: agent with a captured-prompt stub, input with a failing_check"
+        ):
+            from unittest.mock import AsyncMock
 
-        agent = HintAgent(config_model)
-        context = AgentContextData().context
-        captured_prompt: list[str] = []
+            agent = HintAgent(config_model)
+            context = AgentContextData().context
+            captured_prompt: list[str] = []
 
-        async def fake_run(prompt: str):
-            captured_prompt.append(prompt)
-            r = AsyncMock()
-            r.output = "тест"
-            return r
+            async def fake_run(prompt: str):
+                captured_prompt.append(prompt)
+                r = AsyncMock()
+                r.output = "тест"
+                return r
 
-        monkeypatch.setattr(agent, "_agent_for", lambda mid, locale: AsyncMock(run=fake_run))
-        inp = HintInput(
-            session_id="s1",
-            user_id="u1",
-            lab_slug="lab-ospf",
-            step_slug="step-1",
-            attempts_count=2,
-            failing_check={
-                "kind": "vpcs_ip",
-                "params": {"node": "PC1"},
-                "ok": False,
-                "expected": "10.0.0.1/24",
-                "actual": "10.0.0.2/24",
-            },
-            agent_context=context,
-        )
-        await agent.run(inp)
-        assert captured_prompt, "the LLM was not called"
-        prompt = captured_prompt[0]
-        assert_true("10.0.0.1/24" in prompt, "expected is in the prompt")
-        assert_true("10.0.0.2/24" in prompt, "actual is in the prompt")
+            monkeypatch.setattr(agent, "_agent_for", lambda mid, locale: AsyncMock(run=fake_run))
+            inp = HintInput(
+                session_id="s1",
+                user_id="u1",
+                lab_slug="lab-ospf",
+                step_slug="step-1",
+                attempts_count=2,
+                failing_check={
+                    "kind": "vpcs_ip",
+                    "params": {"node": "PC1"},
+                    "ok": False,
+                    "expected": "10.0.0.1/24",
+                    "actual": "10.0.0.2/24",
+                },
+                agent_context=context,
+            )
+
+        with autotest.step("Act: run the agent"):
+            await agent.run(inp)
+
+        with autotest.step("Assert: expected/actual failing_check values reached the prompt"):
+            assert captured_prompt, "the LLM was not called"
+            prompt = captured_prompt[0]
+            assert_true("10.0.0.1/24" in prompt, "expected is in the prompt")
+            assert_true("10.0.0.2/24" in prompt, "actual is in the prompt")

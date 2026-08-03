@@ -23,13 +23,14 @@ class TestSessionsActivitySmokeApi:
         self.sessions_helper = SessionsHelperApi(anon_client, config)
 
     @autotest.num("73")
-    @autotest.external_id("73111111-7777-4777-7777-777777777777")
+    @autotest.external_id("bd1584e0-b094-4376-8b6e-4fc8105bc3d4")
     @autotest.name("Sessions Smoke: GET .../activity — 200")
-    async def test_73111111_activity_200(self):
+    async def test_bd1584e0_activity_200(self):
         """GET activity returns 200 and the events/nextCursor fields."""
         # Arrange
-        session_id = await self.sessions_helper.launch_and_wait_active("autotest-lab")
-        query = ActivityQueryData(limit=10)
+        with autotest.step("Launch an active session and build an activity query"):
+            session_id = await self.sessions_helper.launch_and_wait_active("autotest-lab")
+            query = ActivityQueryData(limit=10)
 
         # Act
         with autotest.step(f"GET .../sessions/{session_id}/activity"):

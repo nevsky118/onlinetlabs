@@ -23,16 +23,17 @@ def _metric(group: str, time_s: float, repeated: int):
 @pytest.mark.asyncio
 class TestExperimentAnalysisE2E:
     @autotest.num("713")
-    @autotest.external_id("a1b2c3d4-e5f6-7890-abcd-713000000001")
+    @autotest.external_id("d03ed47a-1fc8-4464-b3a9-bd3d4b4e7ee8")
     @autotest.name("E2E: compute_experiment_analysis returns H1/H2 for two groups")
-    async def test_a1b2c3d4_analysis(self):
-        from experiment.analysis import compute_experiment_analysis
-        from experiment.assignment import ExperimentGroup
+    async def test_d03ed47a_analysis(self):
+        with autotest.step("Arrange: build metrics for group A and group B"):
+            from experiment.analysis import compute_experiment_analysis
+            from experiment.assignment import ExperimentGroup
 
-        metrics = (
-            [_metric(ExperimentGroup.GROUP_A.value, 600.0, 5) for _ in range(4)]
-            + [_metric(ExperimentGroup.GROUP_B.value, 400.0, 2) for _ in range(4)]
-        )
+            metrics = (
+                [_metric(ExperimentGroup.GROUP_A.value, 600.0, 5) for _ in range(4)]
+                + [_metric(ExperimentGroup.GROUP_B.value, 400.0, 2) for _ in range(4)]
+            )
         with autotest.step("Compute analysis"):
             res = compute_experiment_analysis(metrics)
         with autotest.step("Sample size and hypotheses present"):

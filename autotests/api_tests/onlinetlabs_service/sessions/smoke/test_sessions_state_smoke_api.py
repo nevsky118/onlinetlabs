@@ -22,12 +22,13 @@ class TestSessionsStateSmokeApi:
         self.sessions_helper = SessionsHelperApi(anon_client, config)
 
     @autotest.num("70")
-    @autotest.external_id("70111111-7777-4777-7777-777777777777")
+    @autotest.external_id("5f19b9b3-f41f-4ab5-9f8b-8ab06d8e2594")
     @autotest.name("Sessions Smoke: GET .../state — 200")
-    async def test_70111111_state_200(self):
+    async def test_5f19b9b3_state_200(self):
         """GET state of an active session returns 200 and the required fields."""
         # Arrange
-        session_id = await self.sessions_helper.launch_and_wait_active("autotest-lab")
+        with autotest.step("Launch an active session"):
+            session_id = await self.sessions_helper.launch_and_wait_active("autotest-lab")
 
         # Act
         with autotest.step(f"GET /users/me/sessions/{session_id}/state"):

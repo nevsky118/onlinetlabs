@@ -24,25 +24,25 @@ class TestDataRegistry:
             assert_in("behavioral_events", ADMIN_TABLES, "behavioral_events")
 
     @autotest.num("1921")
-    @autotest.external_id("d2b3c4e5-f6a7-4890-bcde-f01234567891")
+    @autotest.external_id("13e104de-c20c-47d4-a69d-d998454f73b8")
     @autotest.name("ADMIN_TABLES excludes auth tables")
-    def test_d2b3c4e5_admin_tables_excludes_auth_tables(self):
+    def test_13e104de_admin_tables_excludes_auth_tables(self):
         with autotest.step("Assert: auth tables are absent"):
             for slug in ["accounts", "sessions", "verification_tokens", "users"]:
                 assert_true(slug not in ADMIN_TABLES, f"{slug} is absent")
 
     @autotest.num("1922")
-    @autotest.external_id("e3c4d5f6-a7b8-4901-cdef-012345678912")
+    @autotest.external_id("3f847f3e-14c7-49c6-a0df-a14c4c95d2f6")
     @autotest.name("default_sort is included in sortable for every table")
-    def test_e3c4d5f6_default_sort_in_sortable(self):
+    def test_3f847f3e_default_sort_in_sortable(self):
         with autotest.step("Assert: default_sort ⊆ sortable for all"):
             for slug, spec in ADMIN_TABLES.items():
                 assert_in(spec.default_sort, spec.sortable, f"{slug}.default_sort in sortable")
 
     @autotest.num("1923")
-    @autotest.external_id("f4d5e6a7-b8c9-4012-defa-123456789023")
+    @autotest.external_id("7e1229e7-9c0a-4197-bbce-78d558831150")
     @autotest.name("sortable/searchable/masked ⊆ columns for every table")
-    def test_f4d5e6a7_column_sets_subset_of_columns(self):
+    def test_7e1229e7_column_sets_subset_of_columns(self):
         with autotest.step("Assert: all column sets are subsets of columns"):
             for slug, spec in ADMIN_TABLES.items():
                 cols = set(spec.columns)
@@ -51,18 +51,19 @@ class TestDataRegistry:
                 assert_true(spec.masked <= cols, f"{slug}.masked ⊆ columns")
 
     @autotest.num("1924")
-    @autotest.external_id("a5e6f7b8-c9d0-4123-efab-234567890134")
+    @autotest.external_id("5aa8ab53-5651-4a4d-9eda-980c5859321d")
     @autotest.name("serialize_row masks a field from masked")
-    def test_a5e6f7b8_serialize_row_masks_masked_col(self):
-        spec = TableSpec(
-            model=object,
-            columns=["id", "secret_field"],
-            sortable={"id"},
-            searchable=["id"],
-            masked={"secret_field"},
-            default_sort="id",
-        )
-        row = types.SimpleNamespace(id="x", secret_field="sensitive")
+    def test_5aa8ab53_serialize_row_masks_masked_col(self):
+        with autotest.step("Arrange: a spec with secret_field masked, and a matching row"):
+            spec = TableSpec(
+                model=object,
+                columns=["id", "secret_field"],
+                sortable={"id"},
+                searchable=["id"],
+                masked={"secret_field"},
+                default_sort="id",
+            )
+            row = types.SimpleNamespace(id="x", secret_field="sensitive")
         with autotest.step("Act: serialize_row"):
             result = serialize_row(spec, row)
         with autotest.step("Assert: secret_field is masked, id untouched"):
@@ -70,18 +71,19 @@ class TestDataRegistry:
             assert_equal(result["id"], "x", "id untouched")
 
     @autotest.num("1925")
-    @autotest.external_id("b6f7a8c9-d0e1-4234-fabc-345678901245")
+    @autotest.external_id("b40cc542-75bc-4b0b-8746-8fe0b1858ede")
     @autotest.name("serialize_row masks a field with a secret-regex name (api_token)")
-    def test_b6f7a8c9_serialize_row_masks_secret_regex(self):
-        spec = TableSpec(
-            model=object,
-            columns=["id", "api_token"],
-            sortable={"id"},
-            searchable=["id"],
-            masked=set(),
-            default_sort="id",
-        )
-        row = types.SimpleNamespace(id="x", api_token="abc123")
+    def test_b40cc542_serialize_row_masks_secret_regex(self):
+        with autotest.step("Arrange: a spec with no masked cols, and a row with api_token"):
+            spec = TableSpec(
+                model=object,
+                columns=["id", "api_token"],
+                sortable={"id"},
+                searchable=["id"],
+                masked=set(),
+                default_sort="id",
+            )
+            row = types.SimpleNamespace(id="x", api_token="abc123")
         with autotest.step("Act: serialize_row"):
             result = serialize_row(spec, row)
         with autotest.step("Assert: api_token is masked by regex"):
@@ -91,16 +93,17 @@ class TestDataRegistry:
     @autotest.external_id("c7a8b9d0-e1f2-4345-abcd-456789012356")
     @autotest.name("serialize_row truncates a long dict to 200 + '…'")
     def test_c7a8b9d0_serialize_row_truncates_long_dict(self):
-        spec = TableSpec(
-            model=object,
-            columns=["id", "data"],
-            sortable={"id"},
-            searchable=["id"],
-            masked=set(),
-            default_sort="id",
-        )
-        big_dict = {str(i): "x" * 10 for i in range(50)}
-        row = types.SimpleNamespace(id="x", data=big_dict)
+        with autotest.step("Arrange: a spec with a data col, and a row with a large dict"):
+            spec = TableSpec(
+                model=object,
+                columns=["id", "data"],
+                sortable={"id"},
+                searchable=["id"],
+                masked=set(),
+                default_sort="id",
+            )
+            big_dict = {str(i): "x" * 10 for i in range(50)}
+            row = types.SimpleNamespace(id="x", data=big_dict)
         with autotest.step("Act: serialize_row"):
             result = serialize_row(spec, row)
         with autotest.step("Assert: length ≤ 202, ends with '…'"):

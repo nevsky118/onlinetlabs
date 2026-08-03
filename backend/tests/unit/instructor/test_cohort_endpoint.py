@@ -12,7 +12,8 @@ class TestCohortEndpoint:
     @autotest.external_id("af57dc57-575a-40e2-8b81-b0b82b2efaa4")
     @autotest.name("cohort_response_from_result: empty cohort, headline=closed, pooled.n==0")
     def test_af57dc57_cohort_response_from_result(self):
-        from instructor.schemas import cohort_response_from_result
+        with autotest.step("Arrange: import cohort_response_from_result"):
+            from instructor.schemas import cohort_response_from_result
 
         with autotest.step("Act: aggregate an empty cohort and build the response"):
             out = aggregate_cohort([], horizon_seconds=100.0, by_arm=False)
@@ -28,9 +29,9 @@ class TestCohortEndpoint:
         "cohort_response_from_result: one learner reaching L2, by_skill, reach_rate, note are preserved"
     )
     def test_c32c4035_cohort_response_non_empty(self):
-        from instructor.schemas import cohort_response_from_result
-
         with autotest.step("Arrange: one learner who reached L2"):
+            from instructor.schemas import cohort_response_from_result
+
             rec = LearnerOutcome(
                 user_id="u1",
                 skill="routing",

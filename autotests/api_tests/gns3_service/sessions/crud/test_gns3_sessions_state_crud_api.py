@@ -21,9 +21,9 @@ class TestGns3SessionsStateCrudApi:
         self.gns3_sessions_helper = Gns3SessionsHelperApi(anon_client, config, base_url=config.gns3_base_url)
 
     @autotest.num("162")
-    @autotest.external_id("b1111111-bbbb-4bbb-bbbb-bbbbbbbbbbbb")
+    @autotest.external_id("8db5db69-bd3a-4165-bef5-37b9e28253eb")
     @autotest.name("Gns3 CRUD: state 404 on unknown session")
-    async def test_b1111111_state_404_unknown(self):
+    async def test_8db5db69_state_404_unknown(self):
         """A nonexistent session results in 404."""
         # Act
         with autotest.step("Request state for a nonexistent session"):

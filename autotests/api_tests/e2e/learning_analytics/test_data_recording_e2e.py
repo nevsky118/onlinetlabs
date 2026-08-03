@@ -22,9 +22,9 @@ class TestDataRecordingE2E:
         self.sessions_helper = SessionsHelperApi(anon_client, config)
 
     @autotest.num("710")
-    @autotest.external_id("d1e2f3a4-b5c6-7890-defa-710000000001")
+    @autotest.external_id("3362daa1-99ff-4094-ac1d-6c82bf45d971")
     @autotest.name("E2E: chat writes chat_messages (user+assistant) to DB")
-    async def test_d1e2f3a4_chat_persisted(self):
+    async def test_3362daa1_chat_persisted(self):
         with autotest.step("Launch + chat"):
             launched = await self.sessions_helper.launch_session("autotest-lab")
             session_id = launched["session_id"]

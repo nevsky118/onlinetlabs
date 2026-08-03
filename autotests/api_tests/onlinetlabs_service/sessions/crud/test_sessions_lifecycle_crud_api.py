@@ -23,9 +23,9 @@ class TestSessionsLifecycleCrudApi:
         self.sessions_helper = SessionsHelperApi(anon_client, config)
 
     @autotest.num("51")
-    @autotest.external_id("c2d3e4f5-a6b7-8901-cdef-012345678901")
+    @autotest.external_id("81b0f0a4-13a0-4912-90ad-5cb8919f1ffc")
     @autotest.name("CRUD: relaunch autotest-lab — idempotency (same session_id)")
-    async def test_c2d3e4f5_relaunch_idempotent(self):
+    async def test_81b0f0a4_relaunch_idempotent(self):
         """Relaunching an active session returns the same session_id."""
         # Arrange
         with autotest.step("Launch the session for the first time"):
@@ -47,9 +47,9 @@ class TestSessionsLifecycleCrudApi:
             )
 
     @autotest.num("52")
-    @autotest.external_id("d3e4f5a6-b7c8-9012-defa-123456789012")
+    @autotest.external_id("cc04a575-ddbe-4aa3-822c-5847bd1d5bcf")
     @autotest.name("CRUD: GET credentials — 200, returns gns3_username/password/url")
-    async def test_d3e4f5a6_get_credentials(self):
+    async def test_cc04a575_get_credentials(self):
         """GET credentials of an active session returns 200 with the gns3 fields."""
         # Arrange
         with autotest.step("Launch the session"):
@@ -75,9 +75,9 @@ class TestSessionsLifecycleCrudApi:
             assert_is_not_none(body.get("gns3_url"), "gns3_url must not be None")
 
     @autotest.num("53")
-    @autotest.external_id("e4f5a6b7-c8d9-0123-efab-234567890123")
+    @autotest.external_id("13d446ad-4bf0-4c76-8d9b-34d4c317e9f0")
     @autotest.name("CRUD: POST stop — 200 {ok: true}")
-    async def test_e4f5a6b7_stop(self):
+    async def test_13d446ad_stop(self):
         """POST stop returns 200 with the body {ok: true}."""
         # Arrange
         with autotest.step("Launch the session"):
@@ -96,9 +96,9 @@ class TestSessionsLifecycleCrudApi:
             assert response.json() == {"ok": True}, f"Expected {{ok: true}}, got: {response.json()}"
 
     @autotest.num("54")
-    @autotest.external_id("f5a6b7c8-d9e0-1234-fabc-345678901234")
+    @autotest.external_id("aa41e3a9-7705-4c3c-a687-8eec71420767")
     @autotest.name("CRUD: POST restart — 200 {ok: true}")
-    async def test_f5a6b7c8_restart(self):
+    async def test_aa41e3a9_restart(self):
         """POST restart returns 200 with the body {ok: true}."""
         # Arrange
         with autotest.step("Launch the session"):
@@ -117,9 +117,9 @@ class TestSessionsLifecycleCrudApi:
             assert response.json() == {"ok": True}, f"Expected {{ok: true}}, got: {response.json()}"
 
     @autotest.num("55")
-    @autotest.external_id("a6b7c8d9-e0f1-2345-abcd-456789012345")
+    @autotest.external_id("c0aaca3c-e670-4aba-8769-18d0c1cf2979")
     @autotest.name("CRUD: POST reset — 200 {ok: true}")
-    async def test_a6b7c8d9_reset(self):
+    async def test_c0aaca3c_reset(self):
         """POST reset returns 200 with the body {ok: true}."""
         # Arrange
         with autotest.step("Launch the session"):
@@ -138,9 +138,9 @@ class TestSessionsLifecycleCrudApi:
             assert response.json() == {"ok": True}, f"Expected {{ok: true}}, got: {response.json()}"
 
     @autotest.num("56")
-    @autotest.external_id("b7c8d9e0-f1a2-3456-bcde-567890123456")
+    @autotest.external_id("57ae6f91-abc0-42e9-8847-6ed3685c9f5e")
     @autotest.name("CRUD: POST end — 200 {ok: true}, relaunch creates a new session")
-    async def test_b7c8d9e0_end_and_relaunch(self):
+    async def test_57ae6f91_end_and_relaunch(self):
         """POST end finishes the session, and a relaunch creates a new session_id."""
         # Arrange
         with autotest.step("Launch the first session"):
@@ -170,9 +170,9 @@ class TestSessionsLifecycleCrudApi:
             )
 
     @autotest.num("57")
-    @autotest.external_id("c8d9e0f1-a2b3-4567-cdef-678901234567")
+    @autotest.external_id("280a74b1-653c-4b27-abee-3e3ce988f76c")
     @autotest.name("CRUD: ownership — another user's token on credentials → 404")
-    async def test_c8d9e0f1_ownership_credentials(self):
+    async def test_280a74b1_ownership_credentials(self):
         """Another user's token when accessing credentials results in 404."""
         # Arrange
         with autotest.step("Register a session from REGISTERED_ACCOUNT"):
@@ -188,9 +188,9 @@ class TestSessionsLifecycleCrudApi:
             check_response_status(response, 404)
 
     @autotest.num("58")
-    @autotest.external_id("d9e0f1a2-b3c4-5678-defa-789012345678")
+    @autotest.external_id("8de1fc0e-1002-4ae5-be30-e1774a6bfc03")
     @autotest.name("CRUD: ownership — another user's token on stop → 404")
-    async def test_d9e0f1a2_ownership_stop(self):
+    async def test_8de1fc0e_ownership_stop(self):
         """Another user's token on POST stop results in 404."""
         # Arrange
         with autotest.step("Register a session from REGISTERED_ACCOUNT"):

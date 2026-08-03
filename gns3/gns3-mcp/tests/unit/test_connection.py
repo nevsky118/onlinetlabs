@@ -26,7 +26,7 @@ class TestGNS3ConnectionManager:
     @autotest.num("340")
     @autotest.external_id("gns3-conn-connect-creates-client")
     @autotest.name("GNS3ConnectionManager.connect: creates a GNS3ApiClient")
-    async def test_connect(self):
+    async def test_gns3conn_connect(self):
         with autotest.step("Call connect"):
             mgr = GNS3ConnectionManager()
             ctx = _make_ctx()
@@ -39,7 +39,7 @@ class TestGNS3ConnectionManager:
     @autotest.num("341")
     @autotest.external_id("gns3-conn-connect-jwt-header")
     @autotest.name("GNS3ConnectionManager.connect: JWT in the header")
-    async def test_connect_with_jwt(self):
+    async def test_gns3conn_connect_with_jwt(self):
         with autotest.step("Call connect with a JWT"):
             mgr = GNS3ConnectionManager()
             ctx = _make_ctx(metadata={"gns3_jwt": "test-token"})
@@ -54,7 +54,7 @@ class TestGNS3ConnectionManager:
     @autotest.num("342")
     @autotest.external_id("gns3-conn-health-check-ok")
     @autotest.name("GNS3ConnectionManager.health_check: True on 200")
-    async def test_health_check_ok(self):
+    async def test_gns3conn_health_check_ok(self):
         with autotest.step("Mock /v3/version"):
             respx.get(f"{GNS3_URL}/v3/version").mock(
                 return_value=httpx.Response(200, json=build_gns3_version())
@@ -71,7 +71,7 @@ class TestGNS3ConnectionManager:
     @autotest.num("343")
     @autotest.external_id("gns3-conn-health-check-fail")
     @autotest.name("GNS3ConnectionManager.health_check: False on error")
-    async def test_health_check_fail(self):
+    async def test_gns3conn_health_check_fail(self):
         with autotest.step("Mock ConnectError"):
             respx.get(f"{GNS3_URL}/v3/version").mock(side_effect=httpx.ConnectError("refused"))
             mgr = GNS3ConnectionManager()

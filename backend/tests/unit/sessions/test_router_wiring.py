@@ -80,7 +80,8 @@ class TestSessionRouterWiring:
     @autotest.external_id("65a828fd-599b-4817-a47a-5493fe707ffc")
     @autotest.name("router wiring: the (method, path) set of session routers is unchanged")
     def test_65a828fd_route_table_matches_pinned_set(self):
-        app = _build_app()
+        with autotest.step("Arrange: build the app as main.py mounts it"):
+            app = _build_app()
         with autotest.step("Act: collect (method, path) under /users/me/sessions and /sessions"):
             actual = _route_table(app)
         with autotest.step("Assert: set is identical to the one pinned before the refactor"):
@@ -90,7 +91,8 @@ class TestSessionRouterWiring:
     @autotest.external_id("47ed00f3-936e-4e50-baa8-b1b8771959d3")
     @autotest.name("router wiring: GET queue-status is not shadowed by the {session_id} catch-all")
     def test_47ed00f3_queue_status_not_shadowed_by_session_id_catchall(self):
-        app = _build_app()
+        with autotest.step("Arrange: build the app as main.py mounts it"):
+            app = _build_app()
         with autotest.step("Act: resolve GET /users/me/sessions/queue-status"):
             route = _first_match(app, "GET", "/users/me/sessions/queue-status")
         with autotest.step("Assert: resolves to queue_status, not get_session_endpoint"):
@@ -101,7 +103,8 @@ class TestSessionRouterWiring:
     @autotest.external_id("5526191c-4cde-45bc-a6b1-657613cdbf0e")
     @autotest.name("router wiring: GET {session_id} still resolves correctly")
     def test_5526191c_session_id_catchall_still_resolves(self):
-        app = _build_app()
+        with autotest.step("Arrange: build the app as main.py mounts it"):
+            app = _build_app()
         with autotest.step("Act: resolve GET /users/me/sessions/<regular id>"):
             route = _first_match(app, "GET", "/users/me/sessions/some-session-id")
         with autotest.step("Assert: resolves to get_session_endpoint"):

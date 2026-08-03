@@ -1,4 +1,5 @@
 import pytest
+from mcp_sdk.testing import autotest
 
 from config.env_config_loader import _build
 
@@ -30,13 +31,19 @@ def _base_env():
     }
 
 
-def test_missing_required_url_raises_with_clear_message():
+@autotest.num("3224")
+@autotest.external_id("0a250261-625e-4651-9f47-4f9eb82593f8")
+@autotest.name("env_config_loader._build: raises with a clear message on a missing required var")
+def test_0a250261_missing_required_url_raises_with_clear_message():
     env = _base_env()
     del env["GNS3_SERVICE_URL"]
     with pytest.raises(ValueError, match="Missing required env vars: GNS3_SERVICE_URL"):
         _build(env)
 
 
-def test_builds_when_all_required_present():
+@autotest.num("3225")
+@autotest.external_id("d9c5a1bb-68f6-4b3f-819b-d81d3e8a971d")
+@autotest.name("env_config_loader._build: builds config when all required vars are present")
+def test_d9c5a1bb_builds_when_all_required_present():
     cfg = _build(_base_env())
     assert cfg.gns3.service_url == "http://localhost:8101"

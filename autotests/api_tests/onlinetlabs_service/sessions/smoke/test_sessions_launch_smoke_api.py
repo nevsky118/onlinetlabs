@@ -22,9 +22,9 @@ class TestSessionsLaunchSmokeApi:
         self.sessions_helper = SessionsHelperApi(anon_client, config)
 
     @autotest.num("50")
-    @autotest.external_id("b1c2d3e4-f5a6-7890-bcde-f01234567890")
+    @autotest.external_id("799f4ee4-15a4-4af3-9933-f9891b252bf8")
     @autotest.name("Smoke: POST /users/me/sessions — 201 launch autotest-lab, body contains session_id/gns3_*/status=active")
-    async def test_b1c2d3e4_launch_autotest_lab(self):
+    async def test_799f4ee4_launch_autotest_lab(self):
         """Launching autotest-lab returns 201 with a full response body and status=active."""
         # Act
         with autotest.step("Launch the session for autotest-lab via the helper"):

@@ -38,10 +38,11 @@ class TestBuildModelsResponse:
     @autotest.external_id("a88e6991-1166-4f5f-a99e-9e399f0fd9b6")
     @autotest.name("build_models_response: can_select=True → only tools-capable models")
     def test_a88e6991_can_select_returns_tools_models(self, monkeypatch):
-        monkeypatch.setattr(
-            "chat.router.settings",
-            _FakeSettings("yandex-gpt-5.1", _CATALOG),
-        )
+        with autotest.step("Arrange: patch settings with the mixed tools/no-tools catalog"):
+            monkeypatch.setattr(
+                "chat.router.settings",
+                _FakeSettings("yandex-gpt-5.1", _CATALOG),
+            )
         with autotest.step("Call with can_select=True"):
             result = build_models_response(can_select=True)
         with autotest.step("Returns only tools-capable models"):
@@ -60,10 +61,11 @@ class TestBuildModelsResponse:
     @autotest.external_id("708e1b78-2ba9-4ab5-bcd1-b87a735de6a5")
     @autotest.name("build_models_response: can_select=False → models is an empty list")
     def test_708e1b78_cannot_select_returns_empty(self, monkeypatch):
-        monkeypatch.setattr(
-            "chat.router.settings",
-            _FakeSettings("yandex-gpt-5.1", _CATALOG),
-        )
+        with autotest.step("Arrange: patch settings with the mixed tools/no-tools catalog"):
+            monkeypatch.setattr(
+                "chat.router.settings",
+                _FakeSettings("yandex-gpt-5.1", _CATALOG),
+            )
         with autotest.step("Call with can_select=False"):
             result = build_models_response(can_select=False)
         with autotest.step("can_select=False, models=[]"):

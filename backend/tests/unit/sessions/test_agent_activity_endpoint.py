@@ -13,6 +13,8 @@ pytestmark = [pytest.mark.unit]
 # ── can_view_session_activity matrix ─────────────────────────────────────────
 
 
+@autotest.num("3251")
+@autotest.external_id("36f5c7a1-e9f7-42ac-a682-5471c6fd22e0")
 @autotest.name("can_view_session_activity: permission matrix for viewing session activity")
 @pytest.mark.parametrize(
     "user,expected",
@@ -29,7 +31,7 @@ pytestmark = [pytest.mark.unit]
         ({"id": "owner", "role": "instructor"}, False),
     ],
 )
-def test_can_view_session_activity_matrix(user, expected):
+def test_36f5c7a1_can_view_session_activity_matrix(user, expected):
     sess = SimpleNamespace(user_id="owner")
     assert can_view_session_activity(user, sess) is expected
 
@@ -47,9 +49,11 @@ class _FakeActivityLog:
         return self._events
 
 
+@autotest.num("3252")
+@autotest.external_id("8fccb0f4-c814-4166-8081-216a65cc8e1f")
 @autotest.name("get_agent_activity: returns events when permission is granted")
 @pytest.mark.asyncio
-async def test_get_agent_activity_entitled():
+async def test_8fccb0f4_get_agent_activity_entitled():
     from sessions.routers.queries import get_agent_activity
 
     events = [SimpleNamespace(id="e1"), SimpleNamespace(id="e2")]
@@ -73,9 +77,11 @@ async def test_get_agent_activity_entitled():
     assert result == events
 
 
+@autotest.num("3253")
+@autotest.external_id("907a6e0a-81d2-4503-84e5-e668027d1c01")
 @autotest.name("get_agent_activity: 403 when permission is missing")
 @pytest.mark.asyncio
-async def test_get_agent_activity_forbidden():
+async def test_907a6e0a_get_agent_activity_forbidden():
     from i18n import LocalizedError
     from sessions.routers.queries import get_agent_activity
 
@@ -99,9 +105,11 @@ async def test_get_agent_activity_forbidden():
     assert exc_info.value.status_code == 403
 
 
+@autotest.num("3254")
+@autotest.external_id("b528c845-35aa-41a8-87cb-dd05f0b419ab")
 @autotest.name("get_agent_activity: 404 when the session is missing")
 @pytest.mark.asyncio
-async def test_get_agent_activity_not_found():
+async def test_b528c845_get_agent_activity_not_found():
     from i18n import LocalizedError
     from sessions.routers.queries import get_agent_activity
 

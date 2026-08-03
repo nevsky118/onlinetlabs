@@ -41,8 +41,10 @@ class TestAppRouteUniqueness:
     @autotest.external_id("7366a3ae-07eb-4f7d-81dd-2711154e70e9")
     @autotest.name("app routes: GET /users/me/sessions resolves to the learning session list")
     def test_7366a3ae_learning_session_list_not_shadowed(self):
-        with autotest.step("Act: resolve GET /users/me/sessions"):
+        with autotest.step("Arrange: an ASGI scope for GET /users/me/sessions"):
             scope = {"type": "http", "method": "GET", "path": "/users/me/sessions"}
+
+        with autotest.step("Act: resolve GET /users/me/sessions"):
             matched = next(
                 (r for r in app.routes if r.matches(scope)[0] == Match.FULL),
                 None,

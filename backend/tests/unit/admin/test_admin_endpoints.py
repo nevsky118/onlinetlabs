@@ -26,7 +26,8 @@ class TestAdminEndpoints:
     @autotest.external_id("a3f7c2d1-8b4e-4f9a-bc12-5e6d0f1a2b3c")
     @autotest.name("admin: identifier-eval response shape on synthetic data")
     def test_a3f7c2d1_identifier_eval_shape(self):
-        from admin.router import build_identifier_eval
+        with autotest.step("Arrange: import build_identifier_eval"):
+            from admin.router import build_identifier_eval
 
         with autotest.step("Act: build eval on synthetic data"):
             out = build_identifier_eval()
@@ -55,7 +56,8 @@ class TestAdminEndpoints:
     @autotest.external_id("0955923d-b23e-4776-b7a0-8552600260f7")
     @autotest.name("admin: tk-sensitivity response shape")
     def test_0955923d_tk_sensitivity_shape(self):
-        from admin.router import build_tk_sensitivity
+        with autotest.step("Arrange: import build_tk_sensitivity"):
+            from admin.router import build_tk_sensitivity
 
         with autotest.step("Act: build the sensitivity curve"):
             out = build_tk_sensitivity()
@@ -80,7 +82,8 @@ class TestAdminEndpoints:
         "admin: build_overview on an empty DB returns a dict with ab/cohort/identifier/ops keys"
     )
     async def test_29876633_overview_empty_db(self, empty_admin_db):
-        from admin.router import build_overview
+        with autotest.step("Arrange: import build_overview"):
+            from admin.router import build_overview
 
         with autotest.step("Act: build_overview on an empty DB"):
             out = await build_overview(empty_admin_db)
@@ -100,7 +103,8 @@ class TestAdminEndpoints:
     @autotest.external_id("68b00e53-5e40-4fe2-9a62-0a64855fff33")
     @autotest.name("admin: build_overview with a single metric doesn't fail, returns numbers")
     async def test_68b00e53_overview_with_seed(self, seeded_admin_db):
-        from admin.router import build_overview
+        with autotest.step("Arrange: import build_overview"):
+            from admin.router import build_overview
 
         with autotest.step("Act: build_overview with seed data"):
             out = await build_overview(seeded_admin_db)
@@ -129,9 +133,10 @@ class TestAdminEndpoints:
     @autotest.external_id("45ff77c3-a01a-4b80-865d-e89b51b6d9d3")
     @autotest.name("admin: require_admin rejects non-admin (403)")
     def test_45ff77c3_require_admin_rejects(self):
-        from fastapi import HTTPException
+        with autotest.step("Arrange: import HTTPException and require_admin"):
+            from fastapi import HTTPException
 
-        from admin.router import require_admin
+            from admin.router import require_admin
 
         with autotest.step("Call require_admin with role student"):
             raised = False
@@ -395,28 +400,29 @@ class TestAdminDataEndpoints:
     @autotest.external_id("d797ce5c-1aca-41f5-9862-d693b3d0bd05")
     @autotest.name("GET /admin/data/mcp_audit: pagination and total")
     async def test_d797ce5c_pagination_and_total(self):
-        now = datetime.datetime.now(datetime.UTC)
-        rows = [
-            MCPAudit(
-                id=str(uuid.uuid4()),
-                user_id="u1",
-                session_id="s1",
-                tool="ping",
-                kind="observe",
-                ts=now,
-                success=True,
-            ),
-            MCPAudit(
-                id=str(uuid.uuid4()),
-                user_id="u2",
-                session_id="s2",
-                tool="pong",
-                kind="act",
-                ts=now,
-                success=False,
-            ),
-        ]
-        await self._seed_audit_rows(rows)
+        with autotest.step("Arrange: seed two mcp_audit rows"):
+            now = datetime.datetime.now(datetime.UTC)
+            rows = [
+                MCPAudit(
+                    id=str(uuid.uuid4()),
+                    user_id="u1",
+                    session_id="s1",
+                    tool="ping",
+                    kind="observe",
+                    ts=now,
+                    success=True,
+                ),
+                MCPAudit(
+                    id=str(uuid.uuid4()),
+                    user_id="u2",
+                    session_id="s2",
+                    tool="pong",
+                    kind="act",
+                    ts=now,
+                    success=False,
+                ),
+            ]
+            await self._seed_audit_rows(rows)
 
         with autotest.step("Act: page_size=1, page=1"):
             async with self._client() as client:
@@ -436,28 +442,29 @@ class TestAdminDataEndpoints:
     @autotest.external_id("103b8e07-0ab4-467c-b6e7-f0f8c1b8869f")
     @autotest.name("GET /admin/data/mcp_audit: search narrows results")
     async def test_103b8e07_search_narrows(self):
-        now = datetime.datetime.now(datetime.UTC)
-        rows = [
-            MCPAudit(
-                id=str(uuid.uuid4()),
-                user_id="u1",
-                session_id="s1",
-                tool="gns3.list_nodes",
-                kind="observe",
-                ts=now,
-                success=True,
-            ),
-            MCPAudit(
-                id=str(uuid.uuid4()),
-                user_id="u2",
-                session_id="s2",
-                tool="docker.run",
-                kind="act",
-                ts=now,
-                success=True,
-            ),
-        ]
-        await self._seed_audit_rows(rows)
+        with autotest.step("Arrange: seed one gns3 row and one docker row"):
+            now = datetime.datetime.now(datetime.UTC)
+            rows = [
+                MCPAudit(
+                    id=str(uuid.uuid4()),
+                    user_id="u1",
+                    session_id="s1",
+                    tool="gns3.list_nodes",
+                    kind="observe",
+                    ts=now,
+                    success=True,
+                ),
+                MCPAudit(
+                    id=str(uuid.uuid4()),
+                    user_id="u2",
+                    session_id="s2",
+                    tool="docker.run",
+                    kind="act",
+                    ts=now,
+                    success=True,
+                ),
+            ]
+            await self._seed_audit_rows(rows)
 
         with autotest.step("Act: search=gns3"):
             async with self._client() as client:
@@ -473,29 +480,30 @@ class TestAdminDataEndpoints:
     @autotest.external_id("d998c922-fc26-4596-b3a3-627797bd7ff7")
     @autotest.name("GET /admin/data/mcp_audit: sort asc vs desc by ts")
     async def test_d998c922_sort_asc_vs_desc(self):
-        t1 = datetime.datetime(2025, 1, 1, tzinfo=datetime.UTC)
-        t2 = datetime.datetime(2025, 6, 1, tzinfo=datetime.UTC)
-        rows = [
-            MCPAudit(
-                id=str(uuid.uuid4()),
-                user_id="u1",
-                session_id="s1",
-                tool="a",
-                kind="observe",
-                ts=t1,
-                success=True,
-            ),
-            MCPAudit(
-                id=str(uuid.uuid4()),
-                user_id="u2",
-                session_id="s2",
-                tool="b",
-                kind="observe",
-                ts=t2,
-                success=True,
-            ),
-        ]
-        await self._seed_audit_rows(rows)
+        with autotest.step("Arrange: seed two rows with distinct timestamps"):
+            t1 = datetime.datetime(2025, 1, 1, tzinfo=datetime.UTC)
+            t2 = datetime.datetime(2025, 6, 1, tzinfo=datetime.UTC)
+            rows = [
+                MCPAudit(
+                    id=str(uuid.uuid4()),
+                    user_id="u1",
+                    session_id="s1",
+                    tool="a",
+                    kind="observe",
+                    ts=t1,
+                    success=True,
+                ),
+                MCPAudit(
+                    id=str(uuid.uuid4()),
+                    user_id="u2",
+                    session_id="s2",
+                    tool="b",
+                    kind="observe",
+                    ts=t2,
+                    success=True,
+                ),
+            ]
+            await self._seed_audit_rows(rows)
 
         with autotest.step("Act: order=asc"):
             async with self._client() as client:

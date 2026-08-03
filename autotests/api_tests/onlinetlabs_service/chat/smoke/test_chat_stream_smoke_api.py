@@ -37,9 +37,9 @@ class TestChatStreamSmokeApi:
         self.sessions_helper = SessionsHelperApi(anon_client, config)
 
     @autotest.num("59")
-    @autotest.external_id("e0f1a2b3-c4d5-6789-efab-890123456789")
+    @autotest.external_id("9a6d1d09-16ff-4261-b6a1-4e86fa3386ca")
     @autotest.name("Smoke: chat/stream — v1 events (start, text-delta, [DONE])")
-    async def test_e0f1a2b3_chat_stream_v1_events(self):
+    async def test_9a6d1d09_chat_stream_v1_events(self):
         """POST /chat/stream returns a v1 SSE stream with start, text-delta and [DONE]."""
         # Arrange
         with autotest.step("Launch autotest-lab session"):
@@ -53,8 +53,9 @@ class TestChatStreamSmokeApi:
                 messages=[{"role": "user", "parts": [{"type": "text", "text": "привет"}]}],
             )
 
-        events, done = _parse_sse(lines)
-        types = [e.get("type") for e in events]
+        with autotest.step("Act: parse the SSE stream into events and types"):
+            events, done = _parse_sse(lines)
+            types = [e.get("type") for e in events]
 
         # Assert
         with autotest.step("Verify start event present"):

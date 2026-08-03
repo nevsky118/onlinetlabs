@@ -33,8 +33,10 @@ class TestAgentLocale:
     @autotest.external_id("ffd6c1cc-59b2-46af-aeec-b6f95d8f2be0")
     @autotest.name("BaseAgent: _agent_for passes the locale to system_prompt")
     def test_ffd6c1cc_agent_for_uses_locale(self, config_model):
-        with autotest.step("Act: build agents for both locales"):
+        with autotest.step("Arrange: a dummy agent over the shared config"):
             agent = _Dummy(config_model)
+
+        with autotest.step("Act: build agents for both locales"):
             en = agent._agent_for("yandex-gpt-5.1", "en")
             ru = agent._agent_for("yandex-gpt-5.1", "ru")
 
@@ -60,13 +62,15 @@ class TestAgentLocale:
     @autotest.external_id("bad1daff-4c5e-4253-b6c4-019fd6770fff")
     @autotest.name("format_failing_check: renders per locale and keeps the check kind verbatim")
     def test_bad1daff_failing_check_localised(self):
-        with autotest.step("Act: format the same failed check in both locales"):
+        with autotest.step("Arrange: a failed vpcs.show_ip check on PC1"):
             check = {
                 "kind": "vpcs.show_ip",
                 "params": {"node": "PC1"},
                 "expected": "192.168.1.11/24",
                 "actual": "none",
             }
+
+        with autotest.step("Act: format the same failed check in both locales"):
             en = format_failing_check(check, "en")
             ru = format_failing_check(check, "ru")
 

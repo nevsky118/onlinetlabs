@@ -21,19 +21,20 @@ class TestAuthLoginCrudApi:
         self.auth_api = AuthApi(anon_client, config)
 
     @autotest.num("5")
-    @autotest.external_id("e5f6a7b8-c9d0-1234-efab-345678901234")
+    @autotest.external_id("a1341411-f699-49f9-bf70-1cfad241f2a1")
     @autotest.name("Auth Login: success (200)")
-    async def test_e5f6a7b8_login_success(self):
+    async def test_a1341411_login_success(self):
         """A successful login after registration returns 200."""
         # Arrange
         with autotest.step("Register user"):
             reg_data = AuthRegisterData()
             await self.auth_helper.register_user(reg_data.data)
 
-        login_data = {
-            "email": reg_data.email,
-            "password": reg_data.password,
-        }
+        with autotest.step("Build login payload from the registered user"):
+            login_data = {
+                "email": reg_data.email,
+                "password": reg_data.password,
+            }
 
         # Act
         with autotest.step("Log in with correct credentials"):
@@ -44,19 +45,20 @@ class TestAuthLoginCrudApi:
             check_response_status(response, 200)
 
     @autotest.num("6")
-    @autotest.external_id("f6a7b8c9-d0e1-2345-fabc-456789012345")
+    @autotest.external_id("2a515cc0-a06e-4f9a-97e6-713bb8c25763")
     @autotest.name("Auth Login: wrong password (401)")
-    async def test_f6a7b8c9_login_wrong_password(self):
+    async def test_2a515cc0_login_wrong_password(self):
         """A login with a wrong password returns 401."""
         # Arrange
         with autotest.step("Register user"):
             reg_data = AuthRegisterData()
             await self.auth_helper.register_user(reg_data.data)
 
-        login_data = {
-            "email": reg_data.email,
-            "password": valid_password(),
-        }
+        with autotest.step("Build login payload with a wrong password"):
+            login_data = {
+                "email": reg_data.email,
+                "password": valid_password(),
+            }
 
         # Act
         with autotest.step("Log in with wrong password"):
@@ -67,12 +69,13 @@ class TestAuthLoginCrudApi:
             check_response_status(response, 401)
 
     @autotest.num("7")
-    @autotest.external_id("a7b8c9d0-e1f2-3456-abcd-567890123456")
+    @autotest.external_id("7467ff96-7727-485c-a44f-3683b4d18665")
     @autotest.name("Auth Login: non-existent email (401)")
-    async def test_a7b8c9d0_login_nonexistent_email(self):
+    async def test_7467ff96_login_nonexistent_email(self):
         """A login with a nonexistent email returns 401."""
         # Arrange
-        login_data = AuthLoginData()
+        with autotest.step("Build login payload for a nonexistent email"):
+            login_data = AuthLoginData()
 
         # Act
         with autotest.step("Log in with nonexistent email"):

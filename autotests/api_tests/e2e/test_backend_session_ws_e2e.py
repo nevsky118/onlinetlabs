@@ -19,28 +19,36 @@ class TestBackendSessionWsE2E:
         self.token = registered_account.token
 
     @autotest.num("91")
-    @autotest.external_id("91111111-9999-4999-9999-999999999999")
+    @autotest.external_id("7948fa28-b833-44e2-b8ee-9cafb8d558d3")
     @autotest.name("Backend e2e: WS connects + receives snapshot")
-    async def test_91111111_ws_snapshot(self):
+    async def test_7948fa28_ws_snapshot(self):
         """Connecting to the WS returns a snapshot as the first message."""
-        session_id = await self.sessions_helper.launch_and_wait_active("autotest-lab")
-        ws_client = WSClient(self.config.base_url, token=self.token)
-        async with await ws_client.connect(f"/users/me/sessions/ws/{session_id}/events") as ws:
-            msg = await ws_client.recv_json(ws, timeout=15)
-            assert msg["type"] == "snapshot", f"Expected snapshot, got {msg.get('type')}"
+        with autotest.step("Arrange: launch an active session and a WS client with a token"):
+            session_id = await self.sessions_helper.launch_and_wait_active("autotest-lab")
+            ws_client = WSClient(self.config.base_url, token=self.token)
+
+        with autotest.step("Act + Assert: connect and check the first message is a snapshot"):
+            async with await ws_client.connect(f"/users/me/sessions/ws/{session_id}/events") as ws:
+                msg = await ws_client.recv_json(ws, timeout=15)
+                assert msg["type"] == "snapshot", f"Expected snapshot, got {msg.get('type')}"
 
     @autotest.num("92")
-    @autotest.external_id("92111111-9999-4999-9999-999999999999")
+    @autotest.external_id("99b8112b-e7aa-4899-a20e-c9a5adffbea1")
     @autotest.name("Backend e2e: WS closes 4401 without a token")
-    async def test_92111111_unauthorized_4401(self):
+    async def test_99b8112b_unauthorized_4401(self):
         """Connecting without a token results in close 4401."""
-        ws_client = WSClient(self.config.base_url)  # no token
-        with pytest.raises(Exception) as exc_info:
-            async with await ws_client.connect(
-                "/users/me/sessions/ws/00000000-0000-0000-0000-000000000000/events"
-            ) as ws:
-                await ws.recv()
-        err = str(exc_info.value).lower()
-        assert any(s in err for s in ("4401", "unauthorized", "forbidden", "rejected")), (
-            f"Expected 4401/Unauthorized in error, got {exc_info.value}"
-        )
+        with autotest.step("Arrange: WS client with no token"):
+            ws_client = WSClient(self.config.base_url)  # no token
+
+        with autotest.step("Act: connect without a token"):
+            with pytest.raises(Exception) as exc_info:
+                async with await ws_client.connect(
+                    "/users/me/sessions/ws/00000000-0000-0000-0000-000000000000/events"
+                ) as ws:
+                    await ws.recv()
+
+        with autotest.step("Assert: close reason is 4401/unauthorized"):
+            err = str(exc_info.value).lower()
+            assert any(s in err for s in ("4401", "unauthorized", "forbidden", "rejected")), (
+                f"Expected 4401/Unauthorized in error, got {exc_info.value}"
+            )

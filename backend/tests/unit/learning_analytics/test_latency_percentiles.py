@@ -12,10 +12,12 @@ class TestLatencyPercentiles:
     @autotest.external_id("a42fd0a1-66ac-47d1-9040-895d390317e3")
     @autotest.name("percentiles: Type 7 linear interpolation p50/p95/p99 over 10..100")
     def test_a42fd0a1_type7_interpolation(self):
-        with autotest.step("Act: percentiles over 10 values 10..100"):
+        with autotest.step("Arrange: ten evenly spaced values"):
             from learning_analytics.latency import percentiles
 
             vals = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+
+        with autotest.step("Act: percentiles over 10 values 10..100"):
             out = percentiles(vals, [50, 95, 99])
 
         with autotest.step("Assert: p50=55.0, p95=95.5, p99=99.1 (Type 7)"):

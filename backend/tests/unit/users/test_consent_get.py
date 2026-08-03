@@ -76,10 +76,11 @@ class TestConsentGet:
     @autotest.external_id("99ff576e-a9d6-44b9-a721-26b4ca3736b0")
     @autotest.name("GET /consent: returns only active (non-revoked) consents")
     async def test_99ff576e_returns_only_active_consents(self):
-        async with self.session_factory() as db:
-            await grant(db, "user-consent-test", "study", observe=True, act=True)
-            await grant(db, "user-consent-test", "product", observe=True, act=False)
-            await revoke(db, "user-consent-test", "product")
+        with autotest.step("Arrange: grant study+product, then revoke product"):
+            async with self.session_factory() as db:
+                await grant(db, "user-consent-test", "study", observe=True, act=True)
+                await grant(db, "user-consent-test", "product", observe=True, act=False)
+                await revoke(db, "user-consent-test", "product")
 
         with autotest.step("Act: GET /users/me/consent"):
             async with self._client() as client:

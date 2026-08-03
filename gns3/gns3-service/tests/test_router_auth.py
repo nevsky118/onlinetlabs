@@ -6,6 +6,7 @@ do not exercise the include-time dependency. These assert it on the real app.
 
 import pytest
 from fastapi.testclient import TestClient
+from mcp_sdk.testing import autotest
 
 from src.main import app
 
@@ -23,21 +24,33 @@ def client():
 
 
 @pytest.mark.parametrize("path", _GUARDED)
-def test_guarded_paths_reject_missing_token(client, path):
+@autotest.num("3349")
+@autotest.external_id("c18bfbf6-bd1d-4cf6-828b-5d721e2ef7d9")
+@autotest.name("Guarded routes: reject requests missing the internal token")
+def test_c18bfbf6_guarded_paths_reject_missing_token(client, path):
     assert client.get(path).status_code == 403
 
 
 @pytest.mark.parametrize("path", _GUARDED)
-def test_guarded_paths_reject_wrong_token(client, path):
+@autotest.num("3350")
+@autotest.external_id("a332ad01-e226-40ef-933b-79bcf127a389")
+@autotest.name("Guarded routes: reject requests with the wrong internal token")
+def test_a332ad01_guarded_paths_reject_wrong_token(client, path):
     response = client.get(path, headers={"Authorization": "Bearer wrong-token"})
     assert response.status_code == 403
 
 
-def test_guarded_paths_reject_malformed_authorization(client):
+@autotest.num("3351")
+@autotest.external_id("5fe99ff7-1ccd-4f41-ad88-34874ae2b7ce")
+@autotest.name("Guarded routes: reject a malformed Authorization header")
+def test_5fe99ff7_guarded_paths_reject_malformed_authorization(client):
     response = client.get(_GUARDED[0], headers={"Authorization": "test-internal-token"})
     assert response.status_code == 403
 
 
-def test_health_stays_open(client):
+@autotest.num("3352")
+@autotest.external_id("0edff9c7-7028-484c-a453-e6e79c79ffff")
+@autotest.name("Guarded routes: /health stays open without a token")
+def test_0edff9c7_health_stays_open(client):
     # The container healthcheck calls it unauthenticated; any status but 403 is fine.
     assert client.get("/health").status_code != 403

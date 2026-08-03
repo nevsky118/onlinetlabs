@@ -136,9 +136,10 @@ class TestSessionActivityObserveWs:
         "session_activity_observe_ws: client disconnect removes the subscription (no task leak)"
     )
     async def test_e3d9c3a0_disconnect_cleans_up_subscription(self):
-        activity = self.app.state.activity_log
-        token = self._token(can_view_logs=True)
-        transport = ASGIWebSocketTransport(app=self.app)
+        with autotest.step("Arrange: an observer token and a websocket transport"):
+            activity = self.app.state.activity_log
+            token = self._token(can_view_logs=True)
+            transport = ASGIWebSocketTransport(app=self.app)
 
         with autotest.step("Act: observer connects, waits for the subscription, then disconnects"):
             # asyncio.timeout is a safeguard: before the fix, the handler would hang on

@@ -234,7 +234,8 @@ class TestComputeCohortMetrics:
     @autotest.external_id("59097021-e803-4fa6-b200-28abd59f0517")
     @autotest.name("compute_cohort_metrics: censored learner, reach_rate=0, median=None")
     async def test_59097021_censored_learner(self, censored_db):
-        from cohort.service import compute_cohort_metrics
+        with autotest.step("Arrange: import compute_cohort_metrics"):
+            from cohort.service import compute_cohort_metrics
 
         with autotest.step("Act: compute cohort metrics for a censored learner"):
             out = await compute_cohort_metrics(
@@ -265,7 +266,8 @@ class TestComputeCohortMetrics:
         "compute_cohort_metrics: one learner reached L2, reach_rate=1, by_arm contains closed"
     )
     async def test_9b201865_one_learner(self, cohort_db):
-        from cohort.service import compute_cohort_metrics
+        with autotest.step("Arrange: import compute_cohort_metrics"):
+            from cohort.service import compute_cohort_metrics
 
         with autotest.step("Act: compute cohort metrics for one learner"):
             out = await compute_cohort_metrics(cohort_db, horizon_seconds=30 * 86400.0, by_arm=True)

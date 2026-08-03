@@ -12,7 +12,7 @@ class TestConfigModel:
     @autotest.num("320")
     @autotest.external_id("gns3-config-defaults")
     @autotest.name("GNS3MCPConfigModel: default values")
-    def test_defaults(self):
+    def test_gns3conf_defaults(self):
         with autotest.step("Create the default config"):
             cfg = GNS3MCPConfigModel()
 
@@ -32,7 +32,7 @@ class TestConfigModel:
     @autotest.num("321")
     @autotest.external_id("gns3-config-invalid-transport")
     @autotest.name("MCPConfig: invalid transport")
-    def test_invalid_transport(self):
+    def test_gns3conf_invalid_transport(self):
         with autotest.step("Create a config with an invalid transport"):
             with pytest.raises(ValidationError):
                 MCPConfig(transport="grpc")
@@ -42,7 +42,7 @@ class TestEnvConfigLoader:
     @autotest.num("322")
     @autotest.external_id("gns3-config-loader-defaults")
     @autotest.name("EnvConfigLoader: empty dict → default values")
-    def test_build_defaults(self):
+    def test_gns3conf_build_defaults(self):
         with autotest.step("Build from an empty dict"):
             cfg = EnvConfigLoader._build({})
 
@@ -54,7 +54,7 @@ class TestEnvConfigLoader:
     @autotest.num("323")
     @autotest.external_id("gns3-config-loader-overrides")
     @autotest.name("EnvConfigLoader: overrides via env vars")
-    def test_build_overrides(self):
+    def test_gns3conf_build_overrides(self):
         with autotest.step("Build with custom values"):
             cfg = EnvConfigLoader._build(
                 {
@@ -76,7 +76,7 @@ class TestEnvConfigLoader:
     @autotest.num("324")
     @autotest.external_id("gns3-config-loader-stdio-transport")
     @autotest.name("EnvConfigLoader: stdio transport")
-    def test_stdio_transport(self):
+    def test_gns3conf_stdio_transport(self):
         with autotest.step("Build with transport=stdio"):
             cfg = EnvConfigLoader._build({"MCP_TRANSPORT": "stdio"})
 

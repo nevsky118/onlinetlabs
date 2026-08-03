@@ -23,9 +23,9 @@ class TestSessionsSmokeApi:
         self.sessions_helper = SessionsHelperApi(anon_client, config)
 
     @autotest.num("12")
-    @autotest.external_id("f2a3b4c5-d6e7-8901-fabc-012345678901")
+    @autotest.external_id("983da460-2816-4f71-b5b1-af3d8e853d36")
     @autotest.name("Smoke: GET /users/me/sessions — 200")
-    async def test_f2a3b4c5_get_sessions(self):
+    async def test_983da460_get_sessions(self):
         """Fetching the list of sessions returns 200."""
         # Act
         with autotest.step("Send GET /users/me/sessions"):
@@ -36,12 +36,13 @@ class TestSessionsSmokeApi:
             check_response_status(response, 200)
 
     @autotest.num("13")
-    @autotest.external_id("a3b4c5d6-e7f8-9012-abcd-123456789012")
+    @autotest.external_id("a2611deb-8eb6-44c3-a8ab-317537296240")
     @autotest.name("Smoke: POST /users/me/sessions — 201 session creation")
-    async def test_a3b4c5d6_create_session(self):
+    async def test_a2611deb_create_session(self):
         """Creating a session returns 201."""
         # Arrange
-        session_data = SessionCreateData(lab_slug="autotest-lab")
+        with autotest.step("Build session create data"):
+            session_data = SessionCreateData(lab_slug="autotest-lab")
 
         # Act
         with autotest.step("Create the session"):

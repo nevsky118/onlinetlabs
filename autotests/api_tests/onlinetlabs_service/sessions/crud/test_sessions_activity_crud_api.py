@@ -18,9 +18,9 @@ class TestSessionsActivityCrudApi:
         self.sessions_api = SessionsApi(anon_client, config, ConstantsSettings.REGISTERED_ACCOUNT)
 
     @autotest.num("77")
-    @autotest.external_id("77111111-7777-4777-7777-777777777777")
+    @autotest.external_id("1f6f3836-9fae-4895-b588-c787d2e8910d")
     @autotest.name("Sessions CRUD: activity limit=0 → 422 or 404")
-    async def test_77111111_limit_0_422(self):
+    async def test_1f6f3836_limit_0_422(self):
         """limit=0 gives 422 from FastAPI Query, or 404 for an unknown session, and both are valid."""
         # Act
         with autotest.step("GET activity with limit=0"):

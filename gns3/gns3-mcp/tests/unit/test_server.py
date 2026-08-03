@@ -35,7 +35,7 @@ class TestGNS3ServerInit:
     @autotest.num("800")
     @autotest.external_id("gns3-server-init-stores-deps")
     @autotest.name("GNS3Server.__init__: stores the injected dependencies")
-    def test_init_stores_dependencies(self):
+    def test_gns3serv_init_stores_dependencies(self):
         with autotest.step("Create a server with an explicit api_client"):
             api = _make_api_mock()
             server = GNS3Server(api_client=api, history_url="http://hist")
@@ -51,7 +51,7 @@ class TestActionSpecsRegistry:
     @autotest.num("801")
     @autotest.external_id("gns3-server-actions-registered")
     @autotest.name("ACTIONS: the key actions are registered")
-    def test_known_actions_present(self):
+    def test_gns3serv_known_actions_present(self):
         with autotest.step("Collect the names"):
             names = {action["name"] for action in ACTIONS}
 
@@ -70,7 +70,7 @@ class TestActionSpecsRegistry:
     @autotest.num("802")
     @autotest.external_id("gns3-server-list-actions-no-component")
     @autotest.name("list_available_actions: with no component_id, returns all actions")
-    async def test_list_available_actions_returns_all(self):
+    async def test_gns3serv_list_available_actions_returns_all(self):
         with autotest.step("Call with no component_id"):
             server = GNS3Server(api_client=_make_api_mock())
             specs = await server.list_available_actions(_make_ctx())
@@ -84,7 +84,7 @@ class TestExecuteAction:
     @autotest.num("803")
     @autotest.external_id("gns3-server-execute-start-node")
     @autotest.name("execute_action(start_node): calls api.start_node")
-    async def test_execute_start_node_dispatches(self):
+    async def test_gns3serv_execute_start_node_dispatches(self):
         with autotest.step("Set up the mock api"):
             api = _make_api_mock()
             server = GNS3Server(api_client=api)
@@ -99,7 +99,7 @@ class TestExecuteAction:
     @autotest.num("804")
     @autotest.external_id("gns3-server-execute-unknown-action")
     @autotest.name("execute_action: unknown action → ActionExecutionError")
-    async def test_execute_unknown_action_raises(self):
+    async def test_gns3serv_execute_unknown_action_raises(self):
         with autotest.step("Call an unknown action"):
             server = GNS3Server(api_client=_make_api_mock())
 
@@ -111,7 +111,7 @@ class TestExecuteAction:
     @autotest.num("805")
     @autotest.external_id("gns3-server-execute-missing-param")
     @autotest.name("execute_action: missing parameter → ActionExecutionError")
-    async def test_execute_missing_param_raises(self):
+    async def test_gns3serv_execute_missing_param_raises(self):
         with autotest.step("Set up the server"):
             server = GNS3Server(api_client=_make_api_mock())
 
@@ -125,7 +125,7 @@ class TestStateProvider:
     @autotest.num("806")
     @autotest.external_id("gns3-server-list-components")
     @autotest.name("list_components: returns nodes + links")
-    async def test_list_components_aggregates(self):
+    async def test_gns3serv_list_components_aggregates(self):
         with autotest.step("Set up the mock api"):
             api = _make_api_mock()
             api.list_nodes.return_value = [
@@ -148,7 +148,7 @@ class TestSessionContextErrors:
     @autotest.num("807")
     @autotest.external_id("gns3-server-missing-project-id")
     @autotest.name("execute_action: no project_id → SessionContextError")
-    async def test_missing_project_id_raises(self):
+    async def test_gns3serv_missing_project_id_raises(self):
         with autotest.step("Context without project_id"):
             server = GNS3Server(api_client=_make_api_mock())
             ctx = SessionContext(user_id="u1", session_id="s1", environment_url=GNS3_URL)

@@ -101,7 +101,7 @@ class TestRegistration:
     @autotest.num("810")
     @autotest.external_id("gns3-domain-tools-registered")
     @autotest.name("register_domain_tools: registers the full set of GNS3 tools")
-    def test_all_expected_tools_registered(self, registered):
+    def test_gns3doma_all_expected_tools_registered(self, registered):
         with autotest.step("Get the registered names"):
             server, _ = registered
             registered_names = set(server.tools.keys())
@@ -114,7 +114,7 @@ class TestRegistration:
     @autotest.num("811")
     @autotest.external_id("gns3-domain-tools-descriptions-non-empty")
     @autotest.name("register_domain_tools: every tool has a non-empty description")
-    def test_each_tool_has_description(self, registered):
+    def test_gns3doma_each_tool_has_description(self, registered):
         with autotest.step("Get the descriptions"):
             server, _ = registered
 
@@ -127,7 +127,7 @@ class TestDispatch:
     @autotest.num("812")
     @autotest.external_id("gns3-domain-tools-dispatch-start-node")
     @autotest.name("start_node: calls api_client.start_node with project_id and node_id")
-    async def test_start_node_dispatch(self, registered):
+    async def test_gns3doma_start_node_dispatch(self, registered):
         with autotest.step("Set up the api mock"):
             server, api = registered
             api.start_node.return_value = {"status": "started"}
@@ -144,7 +144,7 @@ class TestDispatch:
     @autotest.num("813")
     @autotest.external_id("gns3-domain-tools-dispatch-isolate-node")
     @autotest.name("isolate_node: calls api_client.isolate_node")
-    async def test_isolate_node_dispatch(self, registered):
+    async def test_gns3doma_isolate_node_dispatch(self, registered):
         with autotest.step("Set up the api mock"):
             server, api = registered
             api.isolate_node.return_value = {"isolated_links": ["l1", "l2"]}
@@ -161,7 +161,7 @@ class TestDispatch:
     @autotest.num("814")
     @autotest.external_id("gns3-domain-tools-dispatch-get-console-info")
     @autotest.name("get_console_info: returns the node's console fields with no success flag")
-    async def test_get_console_info_returns_node_fields(self, registered):
+    async def test_gns3doma_get_console_info_returns_node_fields(self, registered):
         with autotest.step("Set up the api mock"):
             server, api = registered
             api.get_node.return_value = {
@@ -185,7 +185,7 @@ class TestDispatch:
     @autotest.num("815")
     @autotest.external_id("gns3-domain-tools-dispatch-delete-link")
     @autotest.name("delete_link: calls api_client.delete_link, success=True")
-    async def test_delete_link_dispatch(self, registered):
+    async def test_gns3doma_delete_link_dispatch(self, registered):
         with autotest.step("Set up the api mock"):
             server, api = registered
             api.delete_link.return_value = None
@@ -201,7 +201,7 @@ class TestDispatch:
     @autotest.num("816")
     @autotest.external_id("gns3-domain-tools-dispatch-create-snapshot")
     @autotest.name("create_snapshot: passes the name through to api_client.create_snapshot")
-    async def test_create_snapshot_dispatch(self, registered):
+    async def test_gns3doma_create_snapshot_dispatch(self, registered):
         with autotest.step("Set up the api mock"):
             server, api = registered
             api.create_snapshot.return_value = {"snapshot_id": "s9"}
@@ -218,7 +218,7 @@ class TestDispatch:
     @autotest.num("817")
     @autotest.external_id("gns3-domain-tools-dispatch-start-all-nodes")
     @autotest.name("start_all_nodes: calls api_client.start_all_nodes, response has no data")
-    async def test_start_all_nodes_dispatch(self, registered):
+    async def test_gns3doma_start_all_nodes_dispatch(self, registered):
         with autotest.step("Set up the api mock"):
             server, api = registered
             api.start_all_nodes.return_value = None
@@ -233,7 +233,7 @@ class TestDispatch:
     @autotest.num("818")
     @autotest.external_id("gns3-domain-tools-dispatch-list-templates")
     @autotest.name("list_templates: returns the template list as-is, unwrapped")
-    async def test_list_templates_dispatch(self, registered):
+    async def test_gns3doma_list_templates_dispatch(self, registered):
         with autotest.step("Set up the api mock"):
             server, api = registered
             api.list_templates.return_value = [{"template_id": "tpl-1"}]

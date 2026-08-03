@@ -20,48 +20,62 @@ class TestGns3SessionsActivityCrudApi:
         self.gns3_sessions_helper = Gns3SessionsHelperApi(anon_client, config, base_url=config.gns3_base_url)
 
     @autotest.num("168")
-    @autotest.external_id("f1111111-ffff-4fff-ffff-ffffffffffff")
+    @autotest.external_id("864f0bb8-1118-4ec4-8002-0eec5aecc3d2")
     @autotest.name("Gns3 CRUD: activity limit=0 → 422")
-    async def test_f1111111_limit_0_422(self):
+    async def test_864f0bb8_limit_0_422(self):
         """A limit outside the allowed bounds results in 422."""
-        response = await self.gns3_sessions_api.get_activity(
-            "00000000-0000-0000-0000-000000000000", {"limit": 0},
-        )
-        check_response_status(response, 422)
+        with autotest.step("Act: request activity with limit=0"):
+            response = await self.gns3_sessions_api.get_activity(
+                "00000000-0000-0000-0000-000000000000", {"limit": 0},
+            )
+        with autotest.step("Assert: 422"):
+            check_response_status(response, 422)
 
     @autotest.num("169")
-    @autotest.external_id("f2222222-ffff-4fff-ffff-ffffffffffff")
+    @autotest.external_id("6cafe4e7-ab4f-41ac-acd6-7a3e711bf3ee")
     @autotest.name("Gns3 CRUD: activity cursor narrows the result set")
-    async def test_f2222222_cursor_pagination(self):
+    async def test_6cafe4e7_cursor_pagination(self):
         """If next_cursor was returned, a repeat request with cursor returns 200."""
-        session_dict = await self.gns3_sessions_helper.create_session()
-        session_id = session_dict["session_id"]
+        with autotest.step("Arrange: create a session"):
+            session_dict = await self.gns3_sessions_helper.create_session()
+            session_id = session_dict["session_id"]
 
-        page1 = await self.gns3_sessions_api.get_activity(session_id, {"limit": 5})
-        check_response_status(page1, 200)
-        cursor = page1.json().get("next_cursor")
-        if cursor:
-            page2 = await self.gns3_sessions_api.get_activity(session_id, {"limit": 5, "cursor": cursor})
-            check_response_status(page2, 200)
+        with autotest.step("Act: request the first page of activity"):
+            page1 = await self.gns3_sessions_api.get_activity(session_id, {"limit": 5})
+        with autotest.step("Assert: first page returns 200"):
+            check_response_status(page1, 200)
+
+        with autotest.step("Arrange: extract next_cursor from the first page"):
+            cursor = page1.json().get("next_cursor")
+        with autotest.step("Act + Assert: if a cursor was returned, the next page also returns 200"):
+            if cursor:
+                page2 = await self.gns3_sessions_api.get_activity(session_id, {"limit": 5, "cursor": cursor})
+                check_response_status(page2, 200)
 
     @autotest.num("170")
-    @autotest.external_id("f3333333-ffff-4fff-ffff-ffffffffffff")
+    @autotest.external_id("1fa46f66-7035-4de5-a856-4d98b56f9e54")
     @autotest.name("Gns3 CRUD: activity invalid cursor → 400")
-    async def test_f3333333_invalid_cursor_400(self):
+    async def test_1fa46f66_invalid_cursor_400(self):
         """An invalid ISO value in cursor results in 400."""
-        session_dict = await self.gns3_sessions_helper.create_session()
-        session_id = session_dict["session_id"]
-        response = await self.gns3_sessions_api.get_activity(
-            session_id, {"limit": 5, "cursor": "not-a-timestamp"},
-        )
-        check_response_status(response, 400)
+        with autotest.step("Arrange: create a session"):
+            session_dict = await self.gns3_sessions_helper.create_session()
+            session_id = session_dict["session_id"]
+
+        with autotest.step("Act: request activity with a non-timestamp cursor"):
+            response = await self.gns3_sessions_api.get_activity(
+                session_id, {"limit": 5, "cursor": "not-a-timestamp"},
+            )
+        with autotest.step("Assert: 400"):
+            check_response_status(response, 400)
 
     @autotest.num("171")
-    @autotest.external_id("f4444444-ffff-4fff-ffff-ffffffffffff")
+    @autotest.external_id("a127a1e6-00e1-43de-b987-e16a0603b012")
     @autotest.name("Gns3 CRUD: activity limit>200 → 422")
-    async def test_f4444444_limit_over_max_422(self):
+    async def test_a127a1e6_limit_over_max_422(self):
         """A limit past the upper bound (>200) results in 422."""
-        response = await self.gns3_sessions_api.get_activity(
-            "00000000-0000-0000-0000-000000000000", {"limit": 201},
-        )
-        check_response_status(response, 422)
+        with autotest.step("Act: request activity with limit=201"):
+            response = await self.gns3_sessions_api.get_activity(
+                "00000000-0000-0000-0000-000000000000", {"limit": 201},
+            )
+        with autotest.step("Assert: 422"):
+            check_response_status(response, 422)

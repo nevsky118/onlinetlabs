@@ -19,9 +19,9 @@ class TestSessionsStateCrudApi:
         self.sessions_api = SessionsApi(anon_client, config, ConstantsSettings.REGISTERED_ACCOUNT)
 
     @autotest.num("74")
-    @autotest.external_id("74111111-7777-4777-7777-777777777777")
+    @autotest.external_id("b4807ba9-7a8d-4013-aa97-620ee90a7e11")
     @autotest.name("Sessions CRUD: state 404 for an unknown session")
-    async def test_74111111_state_404(self):
+    async def test_b4807ba9_state_404(self):
         """GET state with a nonexistent session_id returns 404."""
         # Act
         with autotest.step("GET state with an all-zero UUID"):

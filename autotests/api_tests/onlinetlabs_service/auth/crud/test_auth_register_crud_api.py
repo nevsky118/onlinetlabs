@@ -21,12 +21,13 @@ class TestAuthRegisterCrudApi:
         self.auth_api = AuthApi(anon_client, config)
 
     @autotest.num("2")
-    @autotest.external_id("b2c3d4e5-f6a7-8901-bcde-f12345678901")
+    @autotest.external_id("bf38581b-65ca-4260-8ce1-617fa518c203")
     @autotest.name("Auth Register: success (201)")
-    async def test_b2c3d4e5_register_success(self):
+    async def test_bf38581b_register_success(self):
         """A successful registration returns 201 and correct data."""
         # Arrange
-        reg_data = AuthRegisterData()
+        with autotest.step("Build registration data"):
+            reg_data = AuthRegisterData()
 
         # Act
         with autotest.step("Register new user"):
@@ -44,9 +45,9 @@ class TestAuthRegisterCrudApi:
             )
 
     @autotest.num("3")
-    @autotest.external_id("c3d4e5f6-a7b8-9012-cdef-123456789012")
+    @autotest.external_id("d167191d-e653-454a-a66b-ab67babe9ae2")
     @autotest.name("Auth Register: duplicate email (409)")
-    async def test_c3d4e5f6_register_duplicate_email(self):
+    async def test_d167191d_register_duplicate_email(self):
         """Registration with an existing email returns 409."""
         # Arrange
         with autotest.step("Register user"):
@@ -62,13 +63,14 @@ class TestAuthRegisterCrudApi:
             check_response_status(response, 409)
 
     @autotest.num("4")
-    @autotest.external_id("d4e5f6a7-b8c9-0123-defa-234567890123")
+    @autotest.external_id("f315a754-e939-4992-83d8-4ac5fb7feadb")
     @autotest.name("Auth Register: short password (422)")
-    async def test_d4e5f6a7_register_short_password(self):
+    async def test_f315a754_register_short_password(self):
         """A password shorter than 8 characters returns 422."""
         # Arrange
-        reg_data = AuthRegisterData()
-        reg_data.data["password"] = short_password()
+        with autotest.step("Build registration data with a short password"):
+            reg_data = AuthRegisterData()
+            reg_data.data["password"] = short_password()
 
         # Act
         with autotest.step("Registration with short password"):

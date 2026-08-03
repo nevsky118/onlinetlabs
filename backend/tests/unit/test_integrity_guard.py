@@ -32,8 +32,10 @@ class TestIntegrityGuard:
     @autotest.external_id("c1d81b0c-70e7-43ea-8177-714b34e525fc")
     @autotest.name("Integrity guard: production code does not depend on seeded/.e2e/l2_pass")
     def test_c1d81b0c_no_seeded_dependency_in_production(self):
-        with autotest.step("Act: scan production modules for seeded dependencies"):
+        with autotest.step("Arrange: locate the backend package root"):
             backend = Path(__file__).parents[2]
+
+        with autotest.step("Act: scan production modules for seeded dependencies"):
             offenders = []
             for d in _PROD_DIRS:
                 for py in (backend / d).rglob("*.py"):

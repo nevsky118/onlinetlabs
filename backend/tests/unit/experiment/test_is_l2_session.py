@@ -43,7 +43,8 @@ class TestIsL2Session:
     @autotest.external_id("a423e1a9-6df1-460f-a0ff-a15bf16e97e1")
     @autotest.name("is_l2_session: True when a prior lab of the same skill is completed")
     async def test_a423e1a9_returns_true_when_prior_same_skill_completed(self, db_factory):
-        engine, session_factory = db_factory
+        with autotest.step("Arrange: unpack the db_factory fixture"):
+            engine, session_factory = db_factory
         with autotest.step("Act: call is_l2_session for l2 with l1 completed"):
             async with session_factory() as db:
                 result = await is_l2_session(db, "u1", "l2")
@@ -54,8 +55,8 @@ class TestIsL2Session:
     @autotest.external_id("2921d28f-899c-4710-9d44-4336225cc852")
     @autotest.name("is_l2_session: False when the user has no completed labs")
     async def test_2921d28f_returns_false_when_no_prior_completion(self, db_factory):
-        engine, session_factory = db_factory
         with autotest.step("Arrange: add user u2 with no completed labs"):
+            engine, session_factory = db_factory
             async with session_factory() as db:
                 db.add(User(id="u2", email="u2@test.local", control_arm="closed"))
                 await db.commit()
@@ -69,7 +70,8 @@ class TestIsL2Session:
     @autotest.external_id("f0ebdf40-7d24-4743-96a2-b5fd0160bf31")
     @autotest.name("is_l2_session: False when a lab of a different skill is completed")
     async def test_f0ebdf40_returns_false_for_different_skill(self, db_factory):
-        engine, session_factory = db_factory
+        with autotest.step("Arrange: unpack the db_factory fixture"):
+            engine, session_factory = db_factory
         with autotest.step("Act: call is_l2_session for other-skill"):
             async with session_factory() as db:
                 result = await is_l2_session(db, "u1", "other-skill")
@@ -80,7 +82,8 @@ class TestIsL2Session:
     @autotest.external_id("e4278f70-b323-4cf9-bedf-83c02603247f")
     @autotest.name("is_l2_session: False for a lab without a skill tag")
     async def test_e4278f70_returns_false_for_lab_without_skill(self, db_factory):
-        engine, session_factory = db_factory
+        with autotest.step("Arrange: unpack the db_factory fixture"):
+            engine, session_factory = db_factory
         with autotest.step("Act: call is_l2_session for no-skill"):
             async with session_factory() as db:
                 result = await is_l2_session(db, "u1", "no-skill")
@@ -91,7 +94,8 @@ class TestIsL2Session:
     @autotest.external_id("da49dbb7-4302-4578-ab26-30ec1a923cc1")
     @autotest.name("is_l2_session: False for an unknown lab, no exception")
     async def test_da49dbb7_returns_false_for_unknown_lab(self, db_factory):
-        engine, session_factory = db_factory
+        with autotest.step("Arrange: unpack the db_factory fixture"):
+            engine, session_factory = db_factory
         with autotest.step("Act: call is_l2_session for ghost-lab"):
             async with session_factory() as db:
                 result = await is_l2_session(db, "u1", "ghost-lab")

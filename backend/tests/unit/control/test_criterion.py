@@ -49,17 +49,18 @@ class TestCriterion:
     @autotest.external_id("00208a1c-033f-47c9-9087-60a60de6b614")
     @autotest.name("compute_J: a false intervention is counted on premature exit from a spell")
     def test_00208a1c_count_false_flags_premature_intervention(self):
-        def _spell(start: int, duration: int, with_iv: bool) -> list[dict]:
-            """Returns samples for one spell [start, start+duration]."""
-            result = []
-            t = start
-            while t < start + duration:
-                result.append({"ts": t, "regime": "stuck_on_step", "dwell": float(t - start)})
-                t += 10
-            result.append({"ts": t, "regime": "productive", "dwell": 0.0})
-            return result
-
         with autotest.step("Arrange: three 60s clean spells, one with an intervention at 20s"):
+
+            def _spell(start: int, duration: int, with_iv: bool) -> list[dict]:
+                """Returns samples for one spell [start, start+duration]."""
+                result = []
+                t = start
+                while t < start + duration:
+                    result.append({"ts": t, "regime": "stuck_on_step", "dwell": float(t - start)})
+                    t += 10
+                result.append({"ts": t, "regime": "productive", "dwell": 0.0})
+                return result
+
             samples = (
                 _spell(0, 60, with_iv=False)
                 + _spell(70, 60, with_iv=False)

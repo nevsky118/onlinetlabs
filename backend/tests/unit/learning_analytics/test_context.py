@@ -73,8 +73,8 @@ class TestMCPContextBuilder:
     @autotest.external_id("c362feb3-de89-49b5-b627-cc4daec9ee89")
     @autotest.name("MCPContextBuilder.build: assembles context from MCP")
     async def test_c362feb3_build(self):
-        now = datetime.now(tz=UTC)
         with autotest.step("Create a fake MCP with data"):
+            now = datetime.now(tz=UTC)
             mcp = FakeContextMCPClient(
                 components=[
                     Component(id="n1", name="R1", type="qemu", status="running", summary=""),

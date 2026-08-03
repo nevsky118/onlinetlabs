@@ -13,7 +13,7 @@ class TestLogBuffer:
     @autotest.num("310")
     @autotest.external_id("gns3-log-buffer-add-entry")
     @autotest.name("LogBuffer._add_entry: adds an entry")
-    def test_add_entry(self):
+    def test_gns3logb_add_entry(self):
         with autotest.step("Add an entry"):
             buf = LogBuffer()
             buf._add_entry(LogLevel.INFO, "test message")
@@ -27,7 +27,7 @@ class TestLogBuffer:
     @autotest.num("311")
     @autotest.external_id("gns3-log-buffer-ring-eviction")
     @autotest.name("LogBuffer: the ring buffer evicts old entries")
-    def test_ring_eviction(self):
+    def test_gns3logb_ring_eviction(self):
         with autotest.step("Fill a buffer with max_entries=3"):
             buf = LogBuffer(max_entries=3)
             for i in range(5):
@@ -42,7 +42,7 @@ class TestLogBuffer:
     @autotest.num("312")
     @autotest.external_id("gns3-log-buffer-get-errors")
     @autotest.name("LogBuffer.get_errors: only ERROR and WARNING")
-    def test_get_errors(self):
+    def test_gns3logb_get_errors(self):
         with autotest.step("Add entries at different levels"):
             buf = LogBuffer()
             buf._add_entry(LogLevel.INFO, "info")
@@ -58,7 +58,7 @@ class TestLogBuffer:
     @autotest.num("313")
     @autotest.external_id("gns3-log-buffer-get-errors-since")
     @autotest.name("LogBuffer.get_errors: filtering by since")
-    def test_get_errors_since(self):
+    def test_gns3logb_get_errors_since(self):
         with autotest.step("Add entries"):
             buf = LogBuffer()
             buf._add_entry(LogLevel.ERROR, "old error")
@@ -72,7 +72,7 @@ class TestLogBuffer:
     @autotest.num("314")
     @autotest.external_id("gns3-log-buffer-get-logs-by-level")
     @autotest.name("LogBuffer.get_logs: filtering by level")
-    def test_get_logs_by_level(self):
+    def test_gns3logb_get_logs_by_level(self):
         with autotest.step("Add entries at different levels"):
             buf = LogBuffer()
             buf._add_entry(LogLevel.INFO, "info-1")
@@ -91,7 +91,7 @@ class TestLogBuffer:
     @autotest.num("315")
     @autotest.external_id("gns3-log-buffer-get-logs-limit")
     @autotest.name("LogBuffer.get_logs: limit caps the result")
-    def test_get_logs_limit(self):
+    def test_gns3logb_get_logs_limit(self):
         with autotest.step("Add 5 entries"):
             buf = LogBuffer()
             for i in range(5):
@@ -106,7 +106,7 @@ class TestLogBuffer:
     @autotest.num("316")
     @autotest.external_id("gns3-log-buffer-close")
     @autotest.name("LogBuffer.close: clears the buffer")
-    async def test_close(self):
+    async def test_gns3logb_close(self):
         with autotest.step("Add entries, then close"):
             buf = LogBuffer()
             buf._add_entry(LogLevel.INFO, "msg")
@@ -119,7 +119,7 @@ class TestLogBuffer:
     @autotest.num("317")
     @autotest.external_id("gns3-log-buffer-initial-state")
     @autotest.name("LogBuffer: initial state")
-    def test_initial_state(self):
+    def test_gns3logb_initial_state(self):
         with autotest.step("Create a buffer"):
             buf = LogBuffer(max_entries=100, inactivity_timeout=60.0)
 

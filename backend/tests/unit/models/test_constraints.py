@@ -157,10 +157,10 @@ class TestModelConstraints:
             assert_equal(user.id.count("-"), 4, "uuid has 4 dashes")
 
     @autotest.num("755")
-    @autotest.external_id("b6c7d8e9-f0a1-4b2c-d3e4-5f6071829304")
+    @autotest.external_id("88ae0d4c-9d98-4612-9038-9239a409cfb8")
     @autotest.name("Account.id auto-generates a UUID when no explicit value is given")
     @pytest.mark.asyncio
-    async def test_b6c7d8e9_account_id_auto_uuid(self, session: AsyncSession):
+    async def test_88ae0d4c_account_id_auto_uuid(self, session: AsyncSession):
         with autotest.step("Create a User + Account with no id"):
             session.add(User(id="u-acc-uuid", email="acc-uuid@example.com"))
             await session.commit()
@@ -181,10 +181,10 @@ class TestModelConstraints:
             assert_equal(acc.id.count("-"), 4, "uuid has 4 dashes")
 
     @autotest.num("756")
-    @autotest.external_id("c7d8e9f0-a1b2-4c3d-e4f5-607182930415")
+    @autotest.external_id("9e0ad8de-e339-4621-8278-4b8b49f398e4")
     @autotest.name("Account with a nonexistent user_id raises IntegrityError (FK enforced)")
     @pytest.mark.asyncio
-    async def test_c7d8e9f0_account_fk_enforced(self, session: AsyncSession):
+    async def test_9e0ad8de_account_fk_enforced(self, session: AsyncSession):
         with autotest.step("Account referencing a nonexistent user"):
             session.add(
                 Account(

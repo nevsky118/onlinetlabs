@@ -34,18 +34,20 @@ class TestLaunchSessionDisabledLab:
     @autotest.external_id("ac2ec268-26a6-4412-ac47-1e84277ae5ba")
     @autotest.name("launch_session: disabled lab raises LocalizedError 'error.lab.disabled'")
     async def test_ac2ec268_disabled_lab_raises(self, monkeypatch):
-        import sessions.services.launch as launch_mod
+        with autotest.step("Arrange: import launch_mod"):
+            import sessions.services.launch as launch_mod
 
         with autotest.step("Create a disabled lab"):
             await self._insert_lab("test-lab", enabled=False)
 
-        async def _no_session(*a, **kw):
-            return None
-
-        async def _zero_count(*a, **kw):
-            return 0
-
         with autotest.step("Patch get_active_session and count_active_sessions"):
+
+            async def _no_session(*a, **kw):
+                return None
+
+            async def _zero_count(*a, **kw):
+                return 0
+
             monkeypatch.setattr(launch_mod, "get_active_session", _no_session)
             monkeypatch.setattr(launch_mod, "count_active_sessions", _zero_count)
 

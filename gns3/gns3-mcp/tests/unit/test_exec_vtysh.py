@@ -62,7 +62,7 @@ class TestExecVtysh:
     @autotest.num("817")
     @autotest.external_id("gns3-exec-vtysh-posts-to-service")
     @autotest.name("exec_vtysh: POST /v1/exec/vtysh to gns3-service, returns output")
-    async def test_exec_vtysh_posts_to_service(self):
+    async def test_gns3exec_exec_vtysh_posts_to_service(self):
         with autotest.step("Arrange: tool registered with service_url"):
             server = _register(SERVICE_URL)
 
@@ -86,7 +86,7 @@ class TestExecVtysh:
     @autotest.num("818")
     @autotest.external_id("gns3-exec-vtysh-no-service-url")
     @autotest.name("exec_vtysh: without service_url → success=False")
-    async def test_exec_vtysh_no_service_url(self):
+    async def test_gns3exec_exec_vtysh_no_service_url(self):
         with autotest.step("Arrange: tool without service_url"):
             server = _register(None)
 
@@ -98,7 +98,7 @@ class TestExecVtysh:
     @autotest.num("819")
     @autotest.external_id("f0c9d4b7-7a3f-4a26-8a54-9c3a1f7de2b1")
     @autotest.name("exec_vtysh: without an internal token → success=False, no request sent")
-    async def test_exec_vtysh_no_internal_token(self):
+    async def test_f0c9d4b7_exec_vtysh_no_internal_token(self):
         with autotest.step("Arrange: tool registered without a token"):
             server = _register(SERVICE_URL, internal_api_token=None)
 

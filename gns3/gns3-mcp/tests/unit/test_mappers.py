@@ -18,7 +18,7 @@ class TestNodeToComponent:
     @autotest.num("300")
     @autotest.external_id("gns3-mappers-node-to-component")
     @autotest.name("node_to_component: maps the basic fields")
-    def test_basic(self):
+    def test_gns3mapp_basic(self):
         with autotest.step("Map GNS3 node → Component"):
             node = build_gns3_node()
             c = node_to_component(node)
@@ -34,7 +34,7 @@ class TestNodeToComponent:
     @autotest.num("301")
     @autotest.external_id("gns3-mappers-node-to-component-stopped")
     @autotest.name("node_to_component: stopped status")
-    def test_stopped(self):
+    def test_gns3mapp_stopped(self):
         with autotest.step("Map a stopped node"):
             node = build_gns3_node(status="stopped")
             c = node_to_component(node)
@@ -48,7 +48,7 @@ class TestNodeToComponentDetail:
     @autotest.num("302")
     @autotest.external_id("gns3-mappers-node-detail")
     @autotest.name("node_to_component_detail: properties and relationships")
-    def test_detail(self):
+    def test_gns3mapp_detail(self):
         with autotest.step("Map node → ComponentDetail"):
             node = build_gns3_node()
             cd = node_to_component_detail(node, peer_node_ids=["node-2", "node-3"])
@@ -62,7 +62,7 @@ class TestNodeToComponentDetail:
     @autotest.num("303")
     @autotest.external_id("gns3-mappers-node-detail-no-peers")
     @autotest.name("node_to_component_detail: no peer_node_ids")
-    def test_no_peers(self):
+    def test_gns3mapp_no_peers(self):
         with autotest.step("Map with no peers"):
             cd = node_to_component_detail(build_gns3_node())
 
@@ -74,7 +74,7 @@ class TestLinkToComponent:
     @autotest.num("304")
     @autotest.external_id("gns3-mappers-link-to-component")
     @autotest.name("link_to_component: name built from node_names")
-    def test_basic(self):
+    def test_gns3mapp_basic(self):
         with autotest.step("Map the link"):
             link = build_gns3_link()
             names = {"node-1": "R1", "node-2": "R2"}
@@ -90,7 +90,7 @@ class TestLinkToComponent:
     @autotest.num("305")
     @autotest.external_id("gns3-mappers-link-capturing")
     @autotest.name("link_to_component: capturing → status")
-    def test_capturing(self):
+    def test_gns3mapp_capturing(self):
         with autotest.step("Map a capturing link"):
             link = build_gns3_link(capturing=True)
             c = link_to_component(link, {"node-1": "R1", "node-2": "R2"})
@@ -103,7 +103,7 @@ class TestLinkToComponentDetail:
     @autotest.num("306")
     @autotest.external_id("gns3-mappers-link-detail")
     @autotest.name("link_to_component_detail: relationships contains node_ids")
-    def test_detail(self):
+    def test_gns3mapp_detail(self):
         with autotest.step("Map link → ComponentDetail"):
             link = build_gns3_link()
             cd = link_to_component_detail(link, {"node-1": "R1", "node-2": "R2"})
@@ -119,7 +119,7 @@ class TestBuildSystemOverview:
     @autotest.num("307")
     @autotest.external_id("gns3-mappers-system-overview")
     @autotest.name("build_system_overview: component counts")
-    def test_overview(self):
+    def test_gns3mapp_overview(self):
         with autotest.step("Build the overview"):
             nodes = [build_gns3_node(), build_gns3_node(node_id="node-2", name="R2")]
             links = [build_gns3_link()]
@@ -137,7 +137,7 @@ class TestBuildSystemOverview:
     @autotest.num("308")
     @autotest.external_id("gns3-mappers-system-overview-empty")
     @autotest.name("build_system_overview: empty topology")
-    def test_empty(self):
+    def test_gns3mapp_empty(self):
         with autotest.step("Empty nodes and links"):
             overview = build_system_overview([], [], build_gns3_version(), "empty")
 

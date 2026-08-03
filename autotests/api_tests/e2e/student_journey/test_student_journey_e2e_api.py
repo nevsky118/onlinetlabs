@@ -60,9 +60,9 @@ class TestStudentJourneyE2E:
         self.sessions_helper = SessionsHelperApi(anon_client, config)
 
     @autotest.num("800")
-    @autotest.external_id("c1d2e3f4-a5b6-7890-cdef-800000000001")
+    @autotest.external_id("de5178f0-ac90-49f6-930e-edbe1f8f6dbd")
     @autotest.name("E2E: student journey — browsing→launch→chat→progress→lifecycle→end")
-    async def test_c1d2e3f4_student_journey(self):
+    async def test_de5178f0_student_journey(self):
         with autotest.step("Browsing courses and labs"):
             check_response_status(await self.courses_api.get_courses(), 200)
             check_response_status(await self.labs_api.get_labs(), 200)

@@ -3,6 +3,7 @@
 from unittest.mock import AsyncMock
 
 import pytest
+from mcp_sdk.testing import autotest
 
 from agents.hint.agent import HintAgent
 from agents.hint.models import HintInput
@@ -26,7 +27,10 @@ def _hint_context() -> AgentContext:
     )
 
 
-async def test_hint_llm_failure_raises(config_model, monkeypatch):
+@autotest.num("3209")
+@autotest.external_id("c230cf00-73a4-4ae8-aa82-91233dec57f0")
+@autotest.name("HintAgent.run: re-raises on LLM failure instead of a canned fallback")
+async def test_c230cf00_hint_llm_failure_raises(config_model, monkeypatch):
     """HintAgent: LLM exception → re-raise, not a canned template."""
     agent = HintAgent(config_model)
     monkeypatch.setattr(
@@ -47,7 +51,10 @@ async def test_hint_llm_failure_raises(config_model, monkeypatch):
         await agent.run(inp, "yandex-gpt-5.1")
 
 
-async def test_hint_no_context_raises(config_model):
+@autotest.num("3210")
+@autotest.external_id("8eb78cde-892b-44bc-9b16-7aab207b3e24")
+@autotest.name("HintAgent.run: raises ValueError when agent_context is missing")
+async def test_8eb78cde_hint_no_context_raises(config_model):
     """HintAgent: without agent_context → ValueError."""
     agent = HintAgent(config_model)
     inp = HintInput(
@@ -61,7 +68,10 @@ async def test_hint_no_context_raises(config_model):
         await agent.run(inp, "yandex-gpt-5.1")
 
 
-async def test_tutor_llm_failure_raises(config_model, monkeypatch):
+@autotest.num("3211")
+@autotest.external_id("efd15bff-262e-4525-a0a5-9da3e4fd8229")
+@autotest.name("TutorAgent.run: re-raises on LLM failure instead of a canned fallback")
+async def test_efd15bff_tutor_llm_failure_raises(config_model, monkeypatch):
     """TutorAgent: LLM exception → re-raise, not a canned template."""
     agent = TutorAgent(config_model)
     monkeypatch.setattr(
@@ -74,7 +84,10 @@ async def test_tutor_llm_failure_raises(config_model, monkeypatch):
         await agent.run(inp, "yandex-gpt-5.1")
 
 
-async def test_orchestrator_intervene_catches_agent_raise(config_model, monkeypatch):
+@autotest.num("3212")
+@autotest.external_id("3f542499-2d86-40eb-a77e-5180a3bbed38")
+@autotest.name("Orchestrator.intervene: catches agent exceptions and returns success=False")
+async def test_3f542499_orchestrator_intervene_catches_agent_raise(config_model, monkeypatch):
     """Orchestrator.intervene: agent.run raise → success=False, not an exception."""
     orch = Orchestrator(config_model)
 

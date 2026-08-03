@@ -48,12 +48,13 @@ class TestSyncContent:
     @autotest.external_id("9b9e4305-4f22-479f-9635-fc5b1a87e1e9")
     @autotest.name("sync_content: environment_type is set from frontmatter")
     async def test_9b9e4305_environment_type_from_frontmatter(self, tmp_path, monkeypatch):
-        labs_dir = tmp_path / "labs"
-        _write_lab_mdx(labs_dir, "demo-lab", environment="gns3")
-        monkeypatch.setattr(sc, "CONTENT_DIR", tmp_path)
+        with autotest.step("Arrange: write a gns3 lab mdx, point CONTENT_DIR at it, build a db"):
+            labs_dir = tmp_path / "labs"
+            _write_lab_mdx(labs_dir, "demo-lab", environment="gns3")
+            monkeypatch.setattr(sc, "CONTENT_DIR", tmp_path)
 
-        engine = await _make_db()
-        factory = async_sessionmaker(engine, expire_on_commit=False)
+            engine = await _make_db()
+            factory = async_sessionmaker(engine, expire_on_commit=False)
 
         with autotest.step("Act: sync_labs on tmp content"):
             async with factory() as db:
@@ -68,18 +69,20 @@ class TestSyncContent:
             assert_true(lab is not None, "lab found")
             assert_equal(lab.environment_type, "gns3", "environment_type=gns3")
 
-        await engine.dispose()
+        with autotest.step("Cleanup: dispose the test engine"):
+            await engine.dispose()
 
     @autotest.num("1825")
     @autotest.external_id("b1dc0f5d-af40-46b6-86fb-c96091c23529")
     @autotest.name("sync_content: re-running does not create a duplicate (idempotent upsert)")
     async def test_b1dc0f5d_idempotent_upsert(self, tmp_path, monkeypatch):
-        labs_dir = tmp_path / "labs"
-        _write_lab_mdx(labs_dir, "demo-lab", environment="gns3")
-        monkeypatch.setattr(sc, "CONTENT_DIR", tmp_path)
+        with autotest.step("Arrange: write a gns3 lab mdx, point CONTENT_DIR at it, build a db"):
+            labs_dir = tmp_path / "labs"
+            _write_lab_mdx(labs_dir, "demo-lab", environment="gns3")
+            monkeypatch.setattr(sc, "CONTENT_DIR", tmp_path)
 
-        engine = await _make_db()
-        factory = async_sessionmaker(engine, expire_on_commit=False)
+            engine = await _make_db()
+            factory = async_sessionmaker(engine, expire_on_commit=False)
 
         with autotest.step("Act: run sync_labs twice"):
             async with factory() as db:
@@ -100,4 +103,5 @@ class TestSyncContent:
                 lab = await db.get(Lab, "demo-lab")
             assert_equal(lab.environment_type, "gns3", "environment_type=gns3")
 
-        await engine.dispose()
+        with autotest.step("Cleanup: dispose the test engine"):
+            await engine.dispose()

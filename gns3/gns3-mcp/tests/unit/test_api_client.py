@@ -26,7 +26,7 @@ class TestApiClientRequests:
     @autotest.num("330")
     @autotest.external_id("gns3-api-client-get-version")
     @autotest.name("GNS3ApiClient.get_version: GET /v3/version")
-    async def test_get_version(self, api_client):
+    async def test_gns3apic_get_version(self, api_client):
         with autotest.step("Mock /v3/version"):
             data = build_gns3_version()
             respx.get(f"{BASE_URL}/v3/version").mock(return_value=httpx.Response(200, json=data))
@@ -41,7 +41,7 @@ class TestApiClientRequests:
     @autotest.num("331")
     @autotest.external_id("gns3-api-client-list-nodes")
     @autotest.name("GNS3ApiClient.list_nodes: GET /v3/projects/{id}/nodes")
-    async def test_list_nodes(self, api_client):
+    async def test_gns3apic_list_nodes(self, api_client):
         with autotest.step("Mock list_nodes"):
             nodes = [build_gns3_node()]
             respx.get(f"{BASE_URL}/v3/projects/{PROJECT_ID}/nodes").mock(
@@ -59,7 +59,7 @@ class TestApiClientRequests:
     @autotest.num("332")
     @autotest.external_id("gns3-api-client-start-node")
     @autotest.name("GNS3ApiClient.start_node: POST start")
-    async def test_start_node(self, api_client):
+    async def test_gns3apic_start_node(self, api_client):
         with autotest.step("Mock start_node"):
             respx.post(f"{BASE_URL}/v3/projects/{PROJECT_ID}/nodes/{NODE_ID}/start").mock(
                 return_value=httpx.Response(200, json={"status": "started"})
@@ -75,7 +75,7 @@ class TestApiClientRequests:
     @autotest.num("333")
     @autotest.external_id("gns3-api-client-create-link")
     @autotest.name("GNS3ApiClient.create_link: POST link")
-    async def test_create_link(self, api_client):
+    async def test_gns3apic_create_link(self, api_client):
         with autotest.step("Mock create_link"):
             link_nodes = [
                 {"node_id": "node-1", "adapter_number": 0, "port_number": 0},
@@ -95,7 +95,7 @@ class TestApiClientRequests:
     @autotest.num("334")
     @autotest.external_id("gns3-api-client-delete-link-204")
     @autotest.name("GNS3ApiClient.delete_link: 204 → None")
-    async def test_delete_link(self, api_client):
+    async def test_gns3apic_delete_link(self, api_client):
         with autotest.step("Mock delete_link 204"):
             respx.delete(f"{BASE_URL}/v3/projects/{PROJECT_ID}/links/{LINK_ID}").mock(
                 return_value=httpx.Response(204)
@@ -113,7 +113,7 @@ class TestApiClientErrors:
     @autotest.num("335")
     @autotest.external_id("gns3-api-client-404")
     @autotest.name("GNS3ApiClient: 404 → TargetSystemAPIError")
-    async def test_404(self, api_client):
+    async def test_gns3apic_404(self, api_client):
         with autotest.step("Mock 404"):
             respx.get(f"{BASE_URL}/v3/version").mock(
                 return_value=httpx.Response(404, text="Not Found")
@@ -128,7 +128,7 @@ class TestApiClientErrors:
     @autotest.num("336")
     @autotest.external_id("gns3-api-client-500")
     @autotest.name("GNS3ApiClient: 500 → TargetSystemAPIError")
-    async def test_500(self, api_client):
+    async def test_gns3apic_500(self, api_client):
         with autotest.step("Mock 500"):
             respx.get(f"{BASE_URL}/v3/version").mock(
                 return_value=httpx.Response(500, text="Internal Server Error")
@@ -143,7 +143,7 @@ class TestApiClientErrors:
     @autotest.num("337")
     @autotest.external_id("gns3-api-client-connection-error")
     @autotest.name("GNS3ApiClient: ConnectError → TargetSystemConnectionError")
-    async def test_connection_error(self, api_client):
+    async def test_gns3apic_connection_error(self, api_client):
         with autotest.step("Mock ConnectError"):
             respx.get(f"{BASE_URL}/v3/version").mock(side_effect=httpx.ConnectError("refused"))
 
@@ -155,7 +155,7 @@ class TestApiClientErrors:
     @autotest.num("338")
     @autotest.external_id("gns3-api-client-timeout")
     @autotest.name("GNS3ApiClient: ReadTimeout → TargetSystemConnectionError")
-    async def test_timeout(self, api_client):
+    async def test_gns3apic_timeout(self, api_client):
         with autotest.step("Mock ReadTimeout"):
             respx.get(f"{BASE_URL}/v3/version").mock(side_effect=httpx.ReadTimeout("timeout"))
 

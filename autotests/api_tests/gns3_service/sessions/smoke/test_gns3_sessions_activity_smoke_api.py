@@ -22,17 +22,20 @@ class TestGns3SessionsActivitySmokeApi:
         self.gns3_sessions_helper = Gns3SessionsHelperApi(anon_client, config, base_url=config.gns3_base_url)
 
     @autotest.num("165")
-    @autotest.external_id("d1111111-dddd-4ddd-dddd-dddddddddddd")
+    @autotest.external_id("03067da6-0c78-4ba6-a770-8d809e2e0e9f")
     @autotest.name("Gns3 Smoke: GET .../activity — 200")
-    async def test_d1111111_activity_200(self):
+    async def test_03067da6_activity_200(self):
         """GET activity returns 200 and the events/next_cursor fields."""
-        session_dict = await self.gns3_sessions_helper.create_session()
-        session_id = session_dict["session_id"]
-        query = ActivityQueryData(limit=10)
+        with autotest.step("Arrange: create a session and an activity query"):
+            session_dict = await self.gns3_sessions_helper.create_session()
+            session_id = session_dict["session_id"]
+            query = ActivityQueryData(limit=10)
 
-        response = await self.gns3_sessions_api.get_activity(session_id, query.data)
+        with autotest.step("Act: request activity"):
+            response = await self.gns3_sessions_api.get_activity(session_id, query.data)
 
-        check_response_status(response, 200)
-        body = response.json()
-        assert_in("events", body, "events field missing")
-        assert_in("next_cursor", body, "next_cursor field missing")
+        with autotest.step("Assert: 200 with events and next_cursor fields"):
+            check_response_status(response, 200)
+            body = response.json()
+            assert_in("events", body, "events field missing")
+            assert_in("next_cursor", body, "next_cursor field missing")

@@ -90,7 +90,7 @@ class TestBuildSessionTimeline:
     @autotest.num("1880")
     @autotest.external_id("13b91764-bfeb-4fa5-a37b-598df801e959")
     @autotest.name("build_session_timeline: student → intervention → tutor in time order")
-    async def test_timeline_merges_in_time_order(self):
+    async def test_13b91764_timeline_merges_in_time_order(self):
         with autotest.step("Arrange: seed session with msg-evt-msg"):
             await self._seed_timeline()
 
@@ -108,7 +108,7 @@ class TestBuildSessionTimeline:
     @autotest.num("1881")
     @autotest.external_id("81f3a141-9d73-4ecb-8e43-c9edf7e8c812")
     @autotest.name("build_session_timeline: empty session → []")
-    async def test_timeline_empty_session(self):
+    async def test_81f3a141_timeline_empty_session(self):
         with autotest.step("Act: nonexistent session"):
             async with self.session_factory() as db:
                 items = await build_session_timeline(db, "no-such-session")
@@ -119,7 +119,7 @@ class TestBuildSessionTimeline:
     @autotest.num("1882")
     @autotest.external_id("dd4af488-c9e2-4be7-a115-c3b627e008f4")
     @autotest.name("build_session_timeline: non-intervention events are ignored")
-    async def test_timeline_ignores_non_intervention_events(self):
+    async def test_dd4af488_timeline_ignores_non_intervention_events(self):
         with autotest.step("Arrange: session with a command event"):
             async with self.session_factory() as db:
                 db.add_all(
@@ -157,7 +157,7 @@ class TestBuildSessionTimeline:
     @autotest.num("1883")
     @autotest.external_id("dd624b8a-68d0-4a93-a633-c33971e7fb4e")
     @autotest.name("student_session_timeline endpoint: foreign session → 404")
-    async def test_endpoint_foreign_session_returns_404(self):
+    async def test_dd624b8a_endpoint_foreign_session_returns_404(self):
         with autotest.step("Arrange: session belongs to another user"):
             async with self.session_factory() as db:
                 db.add_all(
@@ -192,7 +192,7 @@ class TestBuildSessionTimeline:
     @autotest.num("1884")
     @autotest.external_id("e0835e16-0ece-4ffa-8ea5-108d4e90e8ce")
     @autotest.name("student_session_timeline endpoint: nonexistent session → 404")
-    async def test_endpoint_missing_session_returns_404(self):
+    async def test_e0835e16_endpoint_missing_session_returns_404(self):
         with autotest.step("Act + Assert: session_id does not exist → 404"):
             from instructor.router import student_session_timeline
 

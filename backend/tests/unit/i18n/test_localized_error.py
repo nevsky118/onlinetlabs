@@ -26,8 +26,10 @@ class TestLocalizedError:
     @autotest.external_id("5ecd15a8-2448-426e-9418-79b436b31b42")
     @autotest.name("LocalizedError: the same failure renders per X-Locale")
     def test_5ecd15a8_detail_follows_locale(self):
-        with autotest.step("Act: hit the failing route in both locales"):
+        with autotest.step("Arrange: an app whose one route always raises LocalizedError"):
             client = _client()
+
+        with autotest.step("Act: hit the failing route in both locales"):
             en = client.get("/boom", headers={"X-Locale": "en"}).json()
             ru = client.get("/boom", headers={"X-Locale": "ru"}).json()
 
@@ -41,8 +43,10 @@ class TestLocalizedError:
     @autotest.external_id("a2e5086a-20ff-4e8a-b0d9-11dbf3a32034")
     @autotest.name("LocalizedError: the machine-readable code is locale-invariant")
     def test_a2e5086a_code_is_stable(self):
-        with autotest.step("Act: hit the failing route in both locales"):
+        with autotest.step("Arrange: an app whose one route always raises LocalizedError"):
             client = _client()
+
+        with autotest.step("Act: hit the failing route in both locales"):
             en = client.get("/boom", headers={"X-Locale": "en"}).json()
             ru = client.get("/boom", headers={"X-Locale": "ru"}).json()
 

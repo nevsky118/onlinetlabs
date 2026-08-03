@@ -73,7 +73,7 @@ class TestAgentsConfig:
     @autotest.num("100")
     @autotest.external_id("c014205c-b5cb-4eff-a773-9b83d2a3e01a")
     @autotest.name("AgentsConfig: minimal valid configuration")
-    def test_a1b2c3d4_defaults(self):
+    def test_c014205c_defaults(self):
         with autotest.step("Create an AgentsConfig with minimal fields"):
             cfg = _agents()
 
@@ -94,7 +94,7 @@ class TestAgentsConfig:
     @autotest.num("101")
     @autotest.external_id("b45d78d1-981d-4953-9498-2b0b78b4aebc")
     @autotest.name("AgentsConfig: unknown chat_model is rejected")
-    def test_b2c3d4e5_rejects_unknown_chat_model(self):
+    def test_b45d78d1_rejects_unknown_chat_model(self):
         with autotest.step("Pass a nonexistent chat_model"), pytest.raises(ValueError):
             _agents(chat_model="does-not-exist")
 
@@ -113,7 +113,7 @@ class TestAgentsConfig:
     @autotest.num("103")
     @autotest.external_id("b20b522c-26e8-4b7f-9714-471423873ab4")
     @autotest.name("AgentsConfig: get_entry returns the entry by id")
-    def test_d4e5f6a7_get_entry(self):
+    def test_b20b522c_get_entry(self):
         with autotest.step("Create a config"):
             cfg = _agents()
 
@@ -126,7 +126,7 @@ class TestAgentsConfig:
     @autotest.num("105")
     @autotest.external_id("bb640a7c-1fc9-4df8-aea3-ada6b5765180")
     @autotest.name("AgentsConfig: Ollama base_url is substituted automatically")
-    def test_f6a7b8c9_ollama_base_url_default(self):
+    def test_bb640a7c_ollama_base_url_default(self):
         with autotest.step("Create ProviderCreds for OLLAMA without base_url"):
             creds = ProviderCreds(provider=LlmProvider.OLLAMA)
             catalog = [
@@ -152,7 +152,7 @@ class TestConfigModel:
     @autotest.num("106")
     @autotest.external_id("75456dc1-509e-4e0e-8d67-24d05a96f24e")
     @autotest.name("ConfigModel: full config assembly")
-    def test_a7b8c9d0_full_config(self):
+    def test_75456dc1_full_config(self):
         with autotest.step("Create a full configuration"):
             cfg = _make_full_config()
 
@@ -169,9 +169,9 @@ class TestConfigModel:
             )
 
     @autotest.num("107")
-    @autotest.external_id("b8c9d0e1-f2a3-4b4c-5d6e-f7a8b9c0d1e2")
+    @autotest.external_id("9e2811d9-d603-4112-98be-200d913cfe8a")
     @autotest.name("ConfigModel: no llm field")
-    def test_b8c9d0e1_no_llm_field(self):
+    def test_9e2811d9_no_llm_field(self):
         with autotest.step("Check that the 'llm' field is absent from ConfigModel"):
             assert_true(
                 "llm" not in ConfigModel.model_fields,

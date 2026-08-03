@@ -21,13 +21,14 @@ class TestSessionsNodesSmokeApi:
         self.sessions_helper = SessionsHelperApi(anon_client, config)
 
     @autotest.num("71")
-    @autotest.external_id("71111111-7777-4777-7777-777777777777")
+    @autotest.external_id("b16604f8-4af1-4da5-afb8-2102ac2b417c")
     @autotest.name("Sessions Smoke: POST .../nodes/{id}/stop — 200")
-    async def test_71111111_node_stop_200(self):
+    async def test_b16604f8_node_stop_200(self):
         """POST per-node stop returns 200."""
         # Arrange
-        session_id = await self.sessions_helper.launch_and_wait_active("autotest-lab")
-        node_id = await self.sessions_helper.pick_first_node_id(session_id)
+        with autotest.step("Launch an active session and pick a node"):
+            session_id = await self.sessions_helper.launch_and_wait_active("autotest-lab")
+            node_id = await self.sessions_helper.pick_first_node_id(session_id)
 
         # Act
         with autotest.step(f"POST .../sessions/{session_id}/nodes/{node_id}/stop"):
@@ -38,12 +39,13 @@ class TestSessionsNodesSmokeApi:
             check_response_status(response, 200)
 
     @autotest.num("72")
-    @autotest.external_id("72111111-7777-4777-7777-777777777777")
+    @autotest.external_id("06d28ea6-b109-4dc5-b6ea-ffb767f3786d")
     @autotest.name("Sessions Smoke: POST .../nodes/stop (bulk) — 200")
-    async def test_72111111_bulk_stop_200(self):
+    async def test_06d28ea6_bulk_stop_200(self):
         """POST bulk stop returns 200."""
         # Arrange
-        session_id = await self.sessions_helper.launch_and_wait_active("autotest-lab")
+        with autotest.step("Launch an active session"):
+            session_id = await self.sessions_helper.launch_and_wait_active("autotest-lab")
 
         # Act
         with autotest.step(f"POST .../sessions/{session_id}/nodes/stop"):

@@ -30,9 +30,10 @@ class TestGns3SessionsSmokeApi:
     async def test_5fa35cd6_create_gns3_session(self):
         """Creating a GNS3 session returns 201."""
         # Arrange
-        session_data = Gns3SessionCreateData(
-            lab_template_project_id=self.config.gns3_lab_template_project_id or None,
-        )
+        with autotest.step("Arrange: build session create data"):
+            session_data = Gns3SessionCreateData(
+                lab_template_project_id=self.config.gns3_lab_template_project_id or None,
+            )
 
         # Act
         with autotest.step("Create GNS3 session"):

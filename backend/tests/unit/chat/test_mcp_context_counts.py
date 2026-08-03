@@ -42,8 +42,10 @@ class TestMcpContextCounts:
     @autotest.name("_fetch_mcp_context: counts are structural, not parsed from the prompt text")
     @pytest.mark.asyncio
     async def test_694fcab8_counts_are_structural(self):
-        with autotest.step("Act: fetch context with two components and one error, in both locales"):
+        with autotest.step("Arrange: a client with two components and one error"):
             client = _Client([_component("SW1"), _component("SW2")], [_error("link down")])
+
+        with autotest.step("Act: fetch context in both locales"):
             _, en_components, en_errors = await _fetch_mcp_context(client, None, "en")
             _, ru_components, ru_errors = await _fetch_mcp_context(client, None, "ru")
 
@@ -56,8 +58,10 @@ class TestMcpContextCounts:
     @autotest.name("_fetch_mcp_context: a clean environment reports zero errors in both locales")
     @pytest.mark.asyncio
     async def test_2c64c427_zero_errors(self):
-        with autotest.step("Act: fetch context with no errors"):
+        with autotest.step("Arrange: a client with one component and no errors"):
             client = _Client([_component("SW1")], [])
+
+        with autotest.step("Act: fetch context in both locales"):
             _, _, en_errors = await _fetch_mcp_context(client, None, "en")
             _, _, ru_errors = await _fetch_mcp_context(client, None, "ru")
 

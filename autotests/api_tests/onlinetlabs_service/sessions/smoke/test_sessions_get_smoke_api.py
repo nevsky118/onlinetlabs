@@ -21,9 +21,9 @@ class TestSessionsGetSmokeApi:
         self.sessions_helper = SessionsHelperApi(anon_client, config)
 
     @autotest.num("60")
-    @autotest.external_id("a2b3c4d5-e6f7-8901-abcd-ef0123456790")
+    @autotest.external_id("bbf2082f-f5e8-4e36-9eb4-bf17ee724e26")
     @autotest.name("Smoke: GET /users/me/sessions/{id} — 200, body contains lab_slug and status")
-    async def test_a2b3c4d5_get_session_by_id(self):
+    async def test_bbf2082f_get_session_by_id(self):
         """GET by id returns 200 with the lab_slug and status of the launched session."""
         with autotest.step("Launch the autotest-lab session"):
             launched = await self.sessions_helper.launch_session("autotest-lab")
@@ -32,8 +32,9 @@ class TestSessionsGetSmokeApi:
         with autotest.step("Fetch the session by id"):
             response = await self.sessions_api.get_session(session_id)
 
-        check_response_status(response, 200)
-        body = response.json()
+        with autotest.step("Check status code 200"):
+            check_response_status(response, 200)
+            body = response.json()
 
         with autotest.step("Check lab_slug"):
             assert body.get("lab_slug") == "autotest-lab", f"Expected lab_slug=autotest-lab, got: {body.get('lab_slug')}"

@@ -53,9 +53,9 @@ class TestConsentEndpointLogic:
             assert_is_none(resp.revoked_at, "not revoked")
 
     @autotest.num("1781")
-    @autotest.external_id("a2b3c4d5-e6f7-4a89-0123-4b5c6d7e8f90")
+    @autotest.external_id("d54ea268-7345-44c2-986e-6c0af3494fed")
     @autotest.name("consent POST: product observe=True act=False, schema correct")
-    async def test_a2b3c4d5_grant_product_granular(self, endpoint_db):
+    async def test_d54ea268_grant_product_granular(self, endpoint_db):
         with autotest.step("Act: product with restricted act"):
             c = await grant(
                 endpoint_db,
@@ -70,9 +70,9 @@ class TestConsentEndpointLogic:
             assert_equal(resp.act, False, "act=False")
 
     @autotest.num("1782")
-    @autotest.external_id("b3c4d5e6-f7a8-4b90-1234-5c6d7e8f9012")
+    @autotest.external_id("42b98f49-0df7-48d0-92b6-9ff97b630e29")
     @autotest.name("consent DELETE: revoke returns count, schema ConsentRevokeResponse")
-    async def test_b3c4d5e6_revoke_count(self, endpoint_db):
+    async def test_42b98f49_revoke_count(self, endpoint_db):
         with autotest.step("Arrange: grant study consent"):
             await grant(
                 endpoint_db,
@@ -88,9 +88,9 @@ class TestConsentEndpointLogic:
             assert_equal(resp.revoked, 1, "count=1")
 
     @autotest.num("1783")
-    @autotest.external_id("c4d5e6f7-a8b9-4c01-2345-6d7e8f901234")
+    @autotest.external_id("bca70c6d-5de5-4e13-9147-426878c395f6")
     @autotest.name("audit GET: MCPAuditRow schema builds from an MCPAudit row")
-    async def test_c4d5e6f7_audit_row_schema(self, endpoint_db):
+    async def test_bca70c6d_audit_row_schema(self, endpoint_db):
         with autotest.step("Arrange: insert an audit row manually"):
             from datetime import datetime
             from uuid import uuid4
@@ -113,9 +113,9 @@ class TestConsentEndpointLogic:
             assert_equal(schema.tool, "list_user_actions", "tool")
 
     @autotest.num("1784")
-    @autotest.external_id("d5e6f7a8-b9c0-4d12-3456-7e8f90123456")
+    @autotest.external_id("732b1b92-e848-415f-b9f3-567f41eb8d62")
     @autotest.name("audit GET: filtering by kind=act returns only act rows")
-    async def test_d5e6f7a8_audit_filter_kind(self, endpoint_db):
+    async def test_732b1b92_audit_filter_kind(self, endpoint_db):
         with autotest.step("Arrange: two audit calls, observe and act"):
             from datetime import datetime
             from uuid import uuid4

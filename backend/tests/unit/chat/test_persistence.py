@@ -209,9 +209,9 @@ class TestSaveAssistantMessage(_DBTestBase):
 
 class TestGetChatHistory(_DBTestBase):
     @autotest.num("1919")
-    @autotest.external_id("b4e7c8a2-5f9d-4a1b-c3d6-7e8f9a0b1c2d")
+    @autotest.external_id("28d51ddb-4f25-4777-97a1-864fb4c43682")
     @autotest.name("get_chat_history: ordered by created_at ASC")
-    async def test_b4e7c8a2_orders_by_created_at_asc(self):
+    async def test_28d51ddb_orders_by_created_at_asc(self):
         with autotest.step("Insert 3 messages with explicit created_at in shuffled order"):
             base = datetime(2026, 6, 1, 12, 0, 0, tzinfo=UTC)
             async with self.session_factory() as db:

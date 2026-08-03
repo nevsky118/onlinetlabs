@@ -67,7 +67,8 @@ class TestTokenIsActiveRoundTrip:
     @autotest.external_id("362e970f-def2-4815-a07a-bd6f7d870adf")
     @autotest.name("JWT round-trip: is_active=True is preserved in the token")
     def test_362e970f_is_active_true_round_trip(self):
-        from auth.dependencies import decode_backend_token
+        with autotest.step("Arrange: import decode_backend_token"):
+            from auth.dependencies import decode_backend_token
 
         with autotest.step("Act: create a token with is_active=True"):
             token = create_backend_token("u-1958", "student", is_active=True)
@@ -80,7 +81,8 @@ class TestTokenIsActiveRoundTrip:
     @autotest.external_id("83f2ecf0-dbd8-4d56-ad9d-20541258de8e")
     @autotest.name("JWT round-trip: is_active=False is preserved in the token")
     def test_83f2ecf0_is_active_false_round_trip(self):
-        from auth.dependencies import decode_backend_token
+        with autotest.step("Arrange: import decode_backend_token"):
+            from auth.dependencies import decode_backend_token
 
         with autotest.step("Act: create a token with is_active=False (default)"):
             token = create_backend_token("u-1959", "student")

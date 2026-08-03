@@ -130,7 +130,7 @@ class TestToolErrorContract:
     @autotest.num("827")
     @autotest.external_id("356217db-a3bf-4373-b8af-d4b0a9a240ae")
     @autotest.name("_tool_errors: invalid ctx → SessionContextError for all 8 tools")
-    async def test_invalid_ctx_raises_session_context_error(self, make_server):
+    async def test_356217db_invalid_ctx_raises_session_context_error(self, make_server):
         with autotest.step("Set up a server with the full set of protocols"):
             server = make_server()
 
@@ -144,7 +144,7 @@ class TestToolErrorContract:
     @autotest.num("828")
     @autotest.external_id("760061cd-e6e3-485c-8cc5-c1789c17be3d")
     @autotest.name("_tool_errors: a domain MCPServerError propagates unwrapped")
-    async def test_domain_error_passthrough(self, make_server):
+    async def test_760061cd_domain_error_passthrough(self, make_server):
         with autotest.step("impl raises ComponentNotFoundError"):
             server = make_server(raise_error=ComponentNotFoundError(component_id="c1"))
 
@@ -156,7 +156,7 @@ class TestToolErrorContract:
     @autotest.num("829")
     @autotest.external_id("881a7ba6-da1f-4346-9be1-389c25ffd515")
     @autotest.name("_tool_errors: unexpected exception → MCPServerError('Internal server error')")
-    async def test_unexpected_error_masked(self, make_server):
+    async def test_881a7ba6_unexpected_error_masked(self, make_server):
         with autotest.step("impl raises an arbitrary RuntimeError"):
             server = make_server(raise_error=RuntimeError("boom"))
 
@@ -171,7 +171,7 @@ class TestBonusArgumentValidation:
     @autotest.num("830")
     @autotest.external_id("433369b4-ad0d-4c39-95bb-420c39c0b72c")
     @autotest.name("get_logs: invalid level → SessionContextError, not Internal server error")
-    async def test_get_logs_invalid_level_raises_session_context_error(self, make_server):
+    async def test_433369b4_get_logs_invalid_level_raises_session_context_error(self, make_server):
         with autotest.step("Set up the server"):
             server = make_server()
             fn = server.mcp.tools["get_logs"]
@@ -184,7 +184,9 @@ class TestBonusArgumentValidation:
     @autotest.num("831")
     @autotest.external_id("a03f92dc-71cd-4332-92b1-e0678ec5f80e")
     @autotest.name("list_errors: invalid since → SessionContextError, not Internal server error")
-    async def test_list_errors_invalid_since_raises_session_context_error(self, make_server):
+    async def test_a03f92dc_list_errors_invalid_since_raises_session_context_error(
+        self, make_server
+    ):
         with autotest.step("Set up the server"):
             server = make_server()
             fn = server.mcp.tools["list_errors"]

@@ -142,7 +142,7 @@ class TestInstructorService:
     @autotest.num("743")
     @autotest.external_id("6f531b65-31f8-4783-bff5-ceec98b773b6")
     @autotest.name("get_students_overview: students only, hints = intervention")
-    async def test_overview_counts_hints_and_excludes_non_students(self):
+    async def test_6f531b65_overview_counts_hints_and_excludes_non_students(self):
         with autotest.step("Arrange: seed students, instructor, and events"):
             await self._seed()
 
@@ -162,7 +162,7 @@ class TestInstructorService:
     @autotest.num("744")
     @autotest.external_id("d62eb287-869b-4d68-b2c8-5827e4927f92")
     @autotest.name("get_student_detail: breakdown by lab with title and hints")
-    async def test_detail_breaks_down_by_lab(self):
+    async def test_d62eb287_detail_breaks_down_by_lab(self):
         with autotest.step("Arrange: seed data"):
             await self._seed()
 
@@ -182,7 +182,7 @@ class TestInstructorService:
     @autotest.num("745")
     @autotest.external_id("fc258598-ea8f-4e9c-8310-cf5d9740cae7")
     @autotest.name("get_student_detail: unknown student → None")
-    async def test_detail_unknown_user_returns_none(self):
+    async def test_fc258598_detail_unknown_user_returns_none(self):
         with autotest.step("Act: request nonexistent student"):
             async with self.session_factory() as db:
                 detail = await get_student_detail(db, "ghost")
@@ -193,7 +193,7 @@ class TestInstructorService:
     @autotest.num("746")
     @autotest.external_id("f148d464-0220-428f-b136-a2dbce7639b3")
     @autotest.name("get_student_detail: sessions with message_count and hint_count")
-    async def test_detail_sessions_message_and_hint_counts(self):
+    async def test_f148d464_detail_sessions_message_and_hint_counts(self):
         with autotest.step("Arrange: student with one session, 2 messages, 1 intervention"):
             await self._seed_with_chat()
 

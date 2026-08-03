@@ -24,13 +24,14 @@ class TestAuthExchangeSmokeApi:
         self.config = config
 
     @autotest.num("1")
-    @autotest.external_id("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+    @autotest.external_id("28bb1710-997c-48c4-8642-7a00579279b2")
     @autotest.name("Smoke: POST /auth/exchange — 200 and JWT token in response")
-    async def test_a1b2c3d4_exchange_token(self):
+    async def test_28bb1710_exchange_token(self):
         """Exchange of credentials -> JWT token."""
         # Arrange
-        account = self.config.accounts[ConstantsSettings.REGISTERED_ACCOUNT]
-        exchange_data = {"user_id": account.sub, "email": account.email}
+        with autotest.step("Build exchange payload for the registered account"):
+            account = self.config.accounts[ConstantsSettings.REGISTERED_ACCOUNT]
+            exchange_data = {"user_id": account.sub, "email": account.email}
 
         # Act
         with autotest.step("Send POST /auth/exchange"):
@@ -40,8 +41,8 @@ class TestAuthExchangeSmokeApi:
         with autotest.step("Verify status code 200"):
             check_response_status(response, 200)
 
-        body = response.json()
         with autotest.step("Verify access_token present and type bearer"):
+            body = response.json()
             assert_is_not_none(body.get("access_token"), "access_token must not be None")
             assert_equal(body["token_type"], "bearer",
                          f"token_type: expected bearer, got {body['token_type']}")

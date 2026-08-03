@@ -55,9 +55,9 @@ class TestMCPAgentPipelineE2E:
         await self.helper.create_vpcs_nodes(["PC1", "PC2"])
 
     @autotest.num("700")
-    @autotest.external_id("a1b2c3d4-e5f6-4789-abcd-700000000001")
+    @autotest.external_id("33ed8a6f-1427-4ca5-ae78-0c02325d906e")
     @autotest.name("E2E: MCP list_components returns GNS3 project nodes")
-    async def test_a1b2c3d4_mcp_list_components(self):
+    async def test_33ed8a6f_mcp_list_components(self):
         with autotest.step("Prepare GNS3 project"):
             await self._ensure_project()
 
@@ -73,9 +73,9 @@ class TestMCPAgentPipelineE2E:
             assert_true("PC2" in names, "PC2 present")
 
     @autotest.num("701")
-    @autotest.external_id("b2c3d4e5-f6a7-4890-bcde-701000000002")
+    @autotest.external_id("9447c714-8252-46c6-b9b3-3941c2f3a573")
     @autotest.name("E2E: MCPContextBuilder builds context from GNS3")
-    async def test_b2c3d4e5_context_builder(self):
+    async def test_9447c714_context_builder(self):
         with autotest.step("Prepare GNS3 project"):
             await self._ensure_project()
 
@@ -100,9 +100,9 @@ class TestMCPAgentPipelineE2E:
             assert_true("PC1" in prompt, "PC1 in prompt")
 
     @autotest.num("702")
-    @autotest.external_id("c3d4e5f6-a7b8-4901-cdef-702000000003")
+    @autotest.external_id("752a12bb-29a5-4e0e-91eb-2b7f57744743")
     @autotest.name("E2E: TutorAgent responds with MCP context via YandexGPT")
-    async def test_c3d4e5f6_tutor_agent_with_context(self):
+    async def test_752a12bb_tutor_agent_with_context(self):
         with autotest.step("Prepare GNS3 project"):
             await self._ensure_project()
 
@@ -130,10 +130,11 @@ class TestMCPAgentPipelineE2E:
             assert_true(len(result.answer) > 20, "answer longer than 20 characters")
 
     @autotest.num("703")
-    @autotest.external_id("d4e5f6a7-b8c9-4012-defa-703000000004")
+    @autotest.external_id("6f520261-c159-4e1e-bbf9-d0d84f555df8")
     @autotest.name("E2E: HintAgent gives a hint with MCP context")
-    async def test_d4e5f6a7_hint_agent_with_context(self):
-        hint_data = HintTestData(attempts_count=4)
+    async def test_6f520261_hint_agent_with_context(self):
+        with autotest.step("Arrange: hint test data with 4 attempts"):
+            hint_data = HintTestData(attempts_count=4)
 
         with autotest.step("Prepare GNS3 project"):
             await self._ensure_project()
@@ -167,9 +168,9 @@ class TestMCPAgentPipelineE2E:
             assert_equal(result.remaining_hints, 0, "no hints remaining")
 
     @autotest.num("704")
-    @autotest.external_id("e5f6a7b8-c9d0-4123-efab-704000000005")
+    @autotest.external_id("2be04b9b-fa9d-47e3-a254-b49383d4ae5c")
     @autotest.name("E2E: get_system_overview returns project summary")
-    async def test_e5f6a7b8_system_overview(self):
+    async def test_2be04b9b_system_overview(self):
         with autotest.step("Prepare GNS3 project"):
             await self._ensure_project()
 

@@ -51,8 +51,8 @@ class TestFeatureExtractor:
     @autotest.external_id("12b3c4d5-e6f7-4a8b-9c0d-1e2f3a4b5c6d")
     @autotest.name("FeatureExtractor: detects idle periods")
     def test_12b3c4d5_idle_periods_detected(self):
-        now = datetime.now(tz=UTC)
         with autotest.step("Create events with a gap > 60s"):
+            now = datetime.now(tz=UTC)
             events = [
                 EventData(id="e1", timestamp=now - timedelta(seconds=200)),
                 EventData(id="e2", timestamp=now - timedelta(seconds=100)),
@@ -70,8 +70,8 @@ class TestFeatureExtractor:
     @autotest.external_id("23c4d5e6-f7a8-4b9c-8d0e-2f3a4b5c6d7e")
     @autotest.name("FeatureExtractor: counts repeating errors")
     def test_23c4d5e6_error_repeat_count(self):
-        now = datetime.now(tz=UTC)
         with autotest.step("Create 3 identical errors in a row"):
+            now = datetime.now(tz=UTC)
             events = [
                 EventData(
                     id="e1",
@@ -124,9 +124,9 @@ class TestFeatureExtractor:
     @autotest.external_id("45e6f7a8-b9c0-4d1e-af2a-4b5c6d7e8f9a")
     @autotest.name("FeatureExtractor: high entropy for diverse actions")
     def test_45e6f7a8_action_sequence_entropy_diverse(self):
-        actions = ["start_node", "stop_node", "create_link", "delete_link", "reload_node"]
-        now = datetime.now(tz=UTC)
         with autotest.step("Create 10 events with 5 different actions"):
+            actions = ["start_node", "stop_node", "create_link", "delete_link", "reload_node"]
+            now = datetime.now(tz=UTC)
             events = [
                 EventData(
                     id=f"e{i}",
@@ -147,8 +147,8 @@ class TestFeatureExtractor:
     @autotest.external_id("56f7a8b9-c0d1-4e2f-8a3b-5c6d7e8f9a0b")
     @autotest.name("FeatureExtractor: counts unique components")
     def test_56f7a8b9_components_touched(self):
-        now = datetime.now(tz=UTC)
         with autotest.step("Create events on 2 components"):
+            now = datetime.now(tz=UTC)
             events = [
                 EventData(id="e1", component_id="n1", timestamp=now - timedelta(seconds=20)),
                 EventData(id="e2", component_id="n2", timestamp=now - timedelta(seconds=10)),
@@ -166,8 +166,8 @@ class TestFeatureExtractor:
     @autotest.external_id("67a8b9c0-d1e2-4f3a-9b4c-6d7e8f9a0b1c")
     @autotest.name("FeatureExtractor: error frequency per minute")
     def test_67a8b9c0_error_frequency(self):
-        now = datetime.now(tz=UTC)
         with autotest.step("Create 5 errors over 5 minutes"):
+            now = datetime.now(tz=UTC)
             events = [
                 EventData(
                     id=f"e{i}",

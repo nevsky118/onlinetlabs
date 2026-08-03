@@ -23,12 +23,13 @@ class TestSessionsNodesCrudApi:
         self.sessions_helper = SessionsHelperApi(anon_client, config)
 
     @autotest.num("75")
-    @autotest.external_id("75111111-7777-4777-7777-777777777777")
+    @autotest.external_id("acb6622b-3eb8-4c78-a392-57c60a41b87d")
     @autotest.name("Sessions CRUD: invalid action 422")
-    async def test_75111111_invalid_action_422(self):
+    async def test_acb6622b_invalid_action_422(self):
         """An invalid action results in 422."""
         # Arrange
-        session_id = await self.sessions_helper.launch_and_wait_active("autotest-lab")
+        with autotest.step("Launch an active session"):
+            session_id = await self.sessions_helper.launch_and_wait_active("autotest-lab")
 
         # Act
         with autotest.step("POST per-node with an invalid action=destroy"):
@@ -39,13 +40,14 @@ class TestSessionsNodesCrudApi:
             check_response_status(response, 422)
 
     @autotest.num("76")
-    @autotest.external_id("76111111-7777-4777-7777-777777777777")
+    @autotest.external_id("be900fe4-4eb4-4a9d-859c-8eea9a634dd3")
     @autotest.name("Sessions CRUD: 12 rapid node actions → 429 present")
-    async def test_76111111_rate_limit_429(self):
+    async def test_be900fe4_rate_limit_429(self):
         """slowapi 5/sec, so after a burst of requests we expect 429 in at least one of them."""
         # Arrange
-        session_id = await self.sessions_helper.launch_and_wait_active("autotest-lab")
-        node_id = await self.sessions_helper.pick_first_node_id(session_id)
+        with autotest.step("Launch an active session and pick a node"):
+            session_id = await self.sessions_helper.launch_and_wait_active("autotest-lab")
+            node_id = await self.sessions_helper.pick_first_node_id(session_id)
 
         # Act
         with autotest.step("Send 12 POST node action requests in parallel"):

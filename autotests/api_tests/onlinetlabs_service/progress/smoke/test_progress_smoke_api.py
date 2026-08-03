@@ -19,9 +19,9 @@ class TestProgressSmokeApi:
         self.progress_api = ProgressApi(anon_client, config, ConstantsSettings.REGISTERED_ACCOUNT)
 
     @autotest.num("14")
-    @autotest.external_id("b4c5d6e7-f8a9-0123-bcde-234567890123")
+    @autotest.external_id("820270ea-61fd-4720-a308-b1d36d44f448")
     @autotest.name("Smoke: GET /users/me/progress — 200")
-    async def test_b4c5d6e7_get_progress(self):
+    async def test_820270ea_get_progress(self):
         """Fetching the progress returns 200."""
         # Act
         with autotest.step("Send GET /users/me/progress"):
@@ -32,12 +32,13 @@ class TestProgressSmokeApi:
             check_response_status(response, 200)
 
     @autotest.num("15")
-    @autotest.external_id("c5d6e7f8-a9b0-1234-cdef-345678901234")
+    @autotest.external_id("0472dcf0-378b-49fa-b920-9119bacf67a9")
     @autotest.name("Smoke: GET /users/me/progress/labs/{slug} — 404 for a nonexistent lab")
-    async def test_c5d6e7f8_get_lab_progress_not_found(self):
+    async def test_0472dcf0_get_lab_progress_not_found(self):
         """Progress for a nonexistent lab returns 404."""
         # Arrange
-        fake_slug = f"nonexistent-{Randomizer.random_string(8).lower()}"
+        with autotest.step("Build a nonexistent lab slug"):
+            fake_slug = f"nonexistent-{Randomizer.random_string(8).lower()}"
 
         # Act
         with autotest.step(f"Send GET /users/me/progress/labs/{fake_slug}"):

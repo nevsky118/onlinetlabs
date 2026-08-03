@@ -4,6 +4,7 @@ import pytest
 import structlog
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
+from mcp_sdk.testing import autotest
 
 from core.middleware.request_id import RequestIDMiddleware
 
@@ -22,7 +23,12 @@ def _build_app() -> FastAPI:
 
 
 @pytest.mark.asyncio
-async def test_request_id_bound_into_structlog_contextvars_during_request():
+@autotest.num("3240")
+@autotest.external_id("f45dcbd3-d76d-4fae-9dfd-87eb1edc28e1")
+@autotest.name(
+    "RequestIDMiddleware: binds request_id into structlog contextvars during the request"
+)
+async def test_f45dcbd3_request_id_bound_into_structlog_contextvars_during_request():
     app = _build_app()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.get("/probe")
@@ -34,7 +40,10 @@ async def test_request_id_bound_into_structlog_contextvars_during_request():
 
 
 @pytest.mark.asyncio
-async def test_request_id_honors_incoming_header_and_echoes_it_in_response():
+@autotest.num("3241")
+@autotest.external_id("e5bd2db4-f4b2-4022-aa47-6eb2dcc89b3d")
+@autotest.name("RequestIDMiddleware: honors an incoming x-request-id header and echoes it back")
+async def test_e5bd2db4_request_id_honors_incoming_header_and_echoes_it_in_response():
     app = _build_app()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.get("/probe", headers={"x-request-id": "fixed-rid"})
@@ -43,7 +52,10 @@ async def test_request_id_honors_incoming_header_and_echoes_it_in_response():
 
 
 @pytest.mark.asyncio
-async def test_contextvars_cleared_after_request_completes():
+@autotest.num("3242")
+@autotest.external_id("508891c3-c860-4a60-9ca6-0ed86efee0db")
+@autotest.name("RequestIDMiddleware: clears structlog contextvars after the request completes")
+async def test_508891c3_contextvars_cleared_after_request_completes():
     app = _build_app()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         await client.get("/probe")

@@ -65,7 +65,8 @@ class TestFinalizerMetrics:
         "compute_session_metrics: escalations and would_interventions are counted correctly"
     )
     def test_fd105d13_escalations_and_would_interventions(self):
-        now = datetime.now(tz=UTC)
+        with autotest.step("Arrange: fix now"):
+            now = datetime.now(tz=UTC)
         with autotest.step("Act: build events and call compute_session_metrics"):
             metrics = compute_session_metrics(
                 events=_base_events(now),
@@ -85,7 +86,8 @@ class TestFinalizerMetrics:
     @autotest.external_id("67e54f61-352c-42d8-b6b0-c3ccc44269a1")
     @autotest.name("compute_session_metrics: control_arm and base_arm propagate into metrics")
     def test_67e54f61_control_arm_propagated(self):
-        now = datetime.now(tz=UTC)
+        with autotest.step("Arrange: fix now"):
+            now = datetime.now(tz=UTC)
         with autotest.step("Act: call with control_arm=open, base_arm=closed"):
             metrics = compute_session_metrics(
                 events=[],
@@ -106,7 +108,8 @@ class TestFinalizerMetrics:
     @autotest.external_id("178b5aee-43e2-4ad2-b1d7-50262dc05ff7")
     @autotest.name("compute_session_metrics: l2_unassisted_pass=None when is_l2=False")
     def test_178b5aee_l2_none_when_not_l2(self):
-        now = datetime.now(tz=UTC)
+        with autotest.step("Arrange: fix now"):
+            now = datetime.now(tz=UTC)
         with autotest.step("Act: is_l2 not passed (default False)"):
             metrics = compute_session_metrics(
                 events=_base_events(now),
@@ -125,7 +128,8 @@ class TestFinalizerMetrics:
         "compute_session_metrics: l2_unassisted_pass=True when completed and interventions <= cap"
     )
     def test_0d357f7e_l2_pass_within_cap(self):
-        now = datetime.now(tz=UTC)
+        with autotest.step("Arrange: fix now"):
+            now = datetime.now(tz=UTC)
         with autotest.step("Act: is_l2=True, completed, interventions=3, cap=3"):
             metrics = compute_session_metrics(
                 events=_base_events(now),
@@ -144,7 +148,8 @@ class TestFinalizerMetrics:
     @autotest.external_id("2b2c76fc-3c1a-4840-941f-e4dfa9c7ba24")
     @autotest.name("compute_session_metrics: l2_unassisted_pass=False when interventions > cap")
     def test_2b2c76fc_l2_fail_exceeds_cap(self):
-        now = datetime.now(tz=UTC)
+        with autotest.step("Arrange: fix now"):
+            now = datetime.now(tz=UTC)
         with autotest.step("Act: is_l2=True, completed, interventions=3, cap=2"):
             metrics = compute_session_metrics(
                 events=_base_events(now),
@@ -163,7 +168,8 @@ class TestFinalizerMetrics:
     @autotest.external_id("1a995d42-657a-495b-ae33-b263891b63e4")
     @autotest.name("compute_session_metrics: l2_unassisted_pass=False when not completed")
     def test_1a995d42_l2_fail_not_completed(self):
-        now = datetime.now(tz=UTC)
+        with autotest.step("Arrange: fix now"):
+            now = datetime.now(tz=UTC)
         with autotest.step("Act: is_l2=True, not completed (2/5 steps), cap=10"):
             metrics = compute_session_metrics(
                 events=[],
@@ -182,7 +188,8 @@ class TestFinalizerMetrics:
     @autotest.external_id("288327d2-5188-47d6-adf8-a90481b50ba4")
     @autotest.name("compute_session_metrics: existing fields are unchanged")
     def test_288327d2_existing_fields_unchanged(self):
-        now = datetime.now(tz=UTC)
+        with autotest.step("Arrange: fix now"):
+            now = datetime.now(tz=UTC)
         with autotest.step("Act: standard call without new parameters"):
             metrics = compute_session_metrics(
                 events=_base_events(now),
@@ -210,7 +217,8 @@ class TestFinalizerMetrics:
         "compute_session_metrics: base_arm=None by default; completed=False if steps_completed < total_steps"
     )
     def test_6df0c600_base_arm_default_and_incomplete(self):
-        now = datetime.now(tz=UTC)
+        with autotest.step("Arrange: fix now"):
+            now = datetime.now(tz=UTC)
         with autotest.step("Act: base_arm not passed; 1 of 2 steps → not completed"):
             metrics = compute_session_metrics(
                 events=[],

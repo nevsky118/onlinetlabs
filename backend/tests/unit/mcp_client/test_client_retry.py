@@ -44,23 +44,24 @@ class TestMCPClientRetry:
     @autotest.external_id("0326bce7-6376-4e0a-8acf-0aa5c55a8caa")
     @autotest.name("MCPClient._call_tool: succeeds on the second attempt after RequestError")
     async def test_0326bce7_retry_succeeds_on_second_attempt(self):
-        call_count = 0
+        with autotest.step("Arrange: a fake session and a transport that fails once then yields"):
+            call_count = 0
 
-        fake_session = AsyncMock()
-        fake_session.initialize = AsyncMock()
-        fake_session.call_tool = AsyncMock(return_value=_build_call_tool_result())
+            fake_session = AsyncMock()
+            fake_session.initialize = AsyncMock()
+            fake_session.call_tool = AsyncMock(return_value=_build_call_tool_result())
 
-        @asynccontextmanager
-        async def fake_streamable(*args, **kwargs):
-            nonlocal call_count
-            call_count += 1
-            if call_count == 1:
-                raise httpx.RequestError("transient network blip")
-            read = AsyncMock()
-            write = AsyncMock()
-            yield (read, write, lambda: "sid")
+            @asynccontextmanager
+            async def fake_streamable(*args, **kwargs):
+                nonlocal call_count
+                call_count += 1
+                if call_count == 1:
+                    raise httpx.RequestError("transient network blip")
+                read = AsyncMock()
+                write = AsyncMock()
+                yield (read, write, lambda: "sid")
 
-        with autotest.step("Patch streamablehttp_client and ClientSession"):
+        with autotest.step("Act: patch streamablehttp_client and ClientSession, call _call_tool"):
             with (
                 patch("mcp_client.client.streamablehttp_client", fake_streamable),
                 patch(
@@ -81,17 +82,18 @@ class TestMCPClientRetry:
     @autotest.external_id("4ca60575-01a4-4559-8caf-b3720d28476e")
     @autotest.name("MCPClient._call_tool: 3 RequestError failures -> reraise after 3 attempts")
     async def test_4ca60575_all_attempts_fail_reraises(self):
-        call_count = 0
+        with autotest.step("Arrange: a transport that always fails"):
+            call_count = 0
 
-        @asynccontextmanager
-        async def fake_streamable_always_fails(*args, **kwargs):
-            nonlocal call_count
-            call_count += 1
-            raise httpx.RequestError("persistent failure")
-            yield  # pragma: no cover  # makes the function an async generator for the CM
+            @asynccontextmanager
+            async def fake_streamable_always_fails(*args, **kwargs):
+                nonlocal call_count
+                call_count += 1
+                raise httpx.RequestError("persistent failure")
+                yield  # pragma: no cover  # makes the function an async generator for the CM
 
         with (
-            autotest.step("Patch streamablehttp_client to fail permanently"),
+            autotest.step("Act: patch streamablehttp_client to fail permanently"),
             patch(
                 "mcp_client.client.streamablehttp_client",
                 fake_streamable_always_fails,

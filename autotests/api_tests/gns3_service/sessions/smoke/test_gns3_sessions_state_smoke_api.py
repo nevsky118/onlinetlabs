@@ -22,14 +22,14 @@ class TestGns3SessionsStateSmokeApi:
         self.gns3_sessions_helper = Gns3SessionsHelperApi(anon_client, config, base_url=config.gns3_base_url)
 
     @autotest.num("160")
-    @autotest.external_id("a1111111-aaaa-4aaa-aaaa-aaaaaaaaaaaa")
+    @autotest.external_id("c5d668a0-6a77-4f38-9c27-895e157a1866")
     @autotest.name("Gns3 Smoke: GET /sessions/{id}/state — 200")
-    async def test_a1111111_state_200(self):
+    async def test_c5d668a0_state_200(self):
         """GET /sessions/{id}/state returns 200 for an active session."""
         # Arrange
         with autotest.step("Create GNS3 session"):
             session_dict = await self.gns3_sessions_helper.create_session()
-        session_id = session_dict["session_id"]
+            session_id = session_dict["session_id"]
 
         # Act
         with autotest.step("Request session state"):
@@ -40,14 +40,14 @@ class TestGns3SessionsStateSmokeApi:
             check_response_status(response, 200)
 
     @autotest.num("161")
-    @autotest.external_id("a2222222-aaaa-4aaa-aaaa-aaaaaaaaaaaa")
+    @autotest.external_id("04a1ce6a-8f6b-4fd6-89b6-90fd961f93bd")
     @autotest.name("Gns3 Smoke: state contains nodes/links/metrics")
-    async def test_a2222222_state_shape(self):
+    async def test_04a1ce6a_state_shape(self):
         """The state response contains the fields nodes, links, metrics."""
         # Arrange
         with autotest.step("Create GNS3 session"):
             session_dict = await self.gns3_sessions_helper.create_session()
-        session_id = session_dict["session_id"]
+            session_id = session_dict["session_id"]
 
         # Act
         with autotest.step("Get session state"):

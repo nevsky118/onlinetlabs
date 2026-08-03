@@ -85,10 +85,11 @@ class TestSessionEndpoints:
     @autotest.external_id("f4ab80d0-6b59-4a5e-b047-0ad2383af47a")
     @autotest.name("GET /sessions: returns the user's sessions and count")
     async def test_f4ab80d0_list_returns_sessions_and_count(self):
-        s1 = _make_session("s1", "user-a", offset_days=1)
-        s2 = _make_session("s2", "user-a", offset_days=0)
-        s3 = _make_session("s3", "user-b")  # belongs to someone else
-        await self._seed(s1, s2, s3)
+        with autotest.step("Arrange: seed two sessions for user-a and one for user-b"):
+            s1 = _make_session("s1", "user-a", offset_days=1)
+            s2 = _make_session("s2", "user-a", offset_days=0)
+            s3 = _make_session("s3", "user-b")  # belongs to someone else
+            await self._seed(s1, s2, s3)
 
         with autotest.step("Act: GET /users/me/auth-sessions as user-a"):
             async with self._client() as client:
@@ -107,9 +108,10 @@ class TestSessionEndpoints:
     @autotest.external_id("696f19c2-bab1-43a8-9b55-b99373e9e55e")
     @autotest.name("DELETE /sessions/{id}: removes a single session of the user")
     async def test_696f19c2_delete_single_session(self):
-        s1 = _make_session("s1", "user-a")
-        s2 = _make_session("s2", "user-a")
-        await self._seed(s1, s2)
+        with autotest.step("Arrange: seed two sessions for user-a"):
+            s1 = _make_session("s1", "user-a")
+            s2 = _make_session("s2", "user-a")
+            await self._seed(s1, s2)
 
         with autotest.step("Act: DELETE /users/me/auth-sessions/s1"):
             async with self._client() as client:
@@ -129,8 +131,9 @@ class TestSessionEndpoints:
     @autotest.external_id("94daf388-acc2-4682-a4c1-889d1d0e4405")
     @autotest.name("DELETE /sessions/{id}: foreign/nonexistent → 404")
     async def test_94daf388_delete_foreign_or_missing_404(self):
-        s_b = _make_session("sb1", "user-b")
-        await self._seed(s_b)
+        with autotest.step("Arrange: seed a session belonging to user-b"):
+            s_b = _make_session("sb1", "user-b")
+            await self._seed(s_b)
 
         with autotest.step("Act: user-a deletes someone else's session sb1"):
             async with self._client() as client:
@@ -150,9 +153,10 @@ class TestSessionEndpoints:
     @autotest.external_id("e838e96a-6c34-4cdd-809b-7ad70c67904f")
     @autotest.name("DELETE /sessions: removes all sessions, revoked==2, GET returns count=0")
     async def test_e838e96a_delete_all_sessions(self):
-        s1 = _make_session("sa1", "user-a")
-        s2 = _make_session("sa2", "user-a")
-        await self._seed(s1, s2)
+        with autotest.step("Arrange: seed two sessions for user-a"):
+            s1 = _make_session("sa1", "user-a")
+            s2 = _make_session("sa2", "user-a")
+            await self._seed(s1, s2)
 
         with autotest.step("Act: DELETE /users/me/auth-sessions (all)"):
             async with self._client() as client:
