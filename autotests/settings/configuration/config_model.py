@@ -16,15 +16,15 @@ class Account(BaseModel):
 
     sub: Optional[str] = Field(
         default=None,
-        description="Идентификатор пользователя (subject claim).",
+        description="User identifier (subject claim).",
     )
     email: Optional[str] = Field(
         default=None,
-        description="Email пользователя.",
+        description="User email.",
     )
     token: Optional[str] = Field(
         default=None,
-        description="JWT-токен пользователя (генерируется при старте тестов).",
+        description="User JWT token (generated when the tests start).",
     )
 
 
@@ -38,33 +38,33 @@ class ConfigModel(BaseModel):
 
     base_url: str = Field(
         default="http://localhost:8000",
-        description="Базовый URL для обращения к тестируемому API.",
+        description="Base URL used to reach the API under test.",
     )
     gns3_base_url: str = Field(
         default="http://localhost:8101",
-        description="Базовый URL gns3-service.",
+        description="Base URL of gns3-service.",
     )
     gns3_lab_template_project_id: str = Field(
         default="",
-        description="UUID шаблонного проекта GNS3 для тестов.",
+        description="UUID of the GNS3 template project for the tests.",
     )
     gns3_url: str = Field(
         default="http://localhost:3080",
-        description="URL GNS3 сервера.",
+        description="GNS3 server URL.",
     )
     gns3_mcp_url: str = Field(
         default="http://localhost:8100",
-        description="URL GNS3 MCP сервера.",
+        description="GNS3 MCP server URL.",
     )
     gns3_admin_user: str = Field(
         default="admin",
-        description="Логин администратора GNS3.",
+        description="GNS3 admin login.",
     )
     gns3_admin_password: str = Field(
         default="admin",
-        description="Пароль администратора GNS3.",
+        description="GNS3 admin password.",
     )
     accounts: Dict[str, Account] = Field(
         default={},
-        description="Словарь тестовых аккаунтов (по ключу — имя аккаунта).",
+        description="Dictionary of test accounts, keyed by account name.",
     )

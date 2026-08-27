@@ -58,7 +58,13 @@ class SessionMonitorRegistry:
                         self._config,
                         self._config.learning_analytics,
                     )
-                    await observer.start(session_id, user_id, lab_slug, gns3_sid)
+                    await observer.start(
+                        session_id,
+                        user_id,
+                        lab_slug,
+                        gns3_sid,
+                        started_at=getattr(ls, "started_at", None),
+                    )
                     self._observers[session_id] = observer
                     logger.info(
                         "LabProgressObserver started for %s (gns3_sid=%s)", session_id, gns3_sid

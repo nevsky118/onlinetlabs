@@ -74,7 +74,7 @@ async def _run_build(script_path: Path) -> str:
 @router.post(
     "/{lab}/build",
     response_model=BuildTemplateResponse,
-    summary="Собрать GNS3-шаблон для лабы",
+    summary="Build the GNS3 template for a lab",
     dependencies=[Depends(verify_internal_token)],
 )
 async def build_template(lab: str) -> BuildTemplateResponse:

@@ -126,6 +126,22 @@ services:
       MCP_HOST: 0.0.0.0
       MCP_PORT: 8100
       GNS3_SERVICE_URL: http://gns3-service:8101
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - |
+          import sys, urllib.error, urllib.request
+          try:
+              urllib.request.urlopen("http://127.0.0.1:8100/mcp", timeout=3)
+          except urllib.error.HTTPError:
+              sys.exit(0)
+          except Exception:
+              sys.exit(1)
+      interval: 10s
+      timeout: 5s
+      retries: 6
     depends_on:
       gns3-service:
         condition: service_healthy

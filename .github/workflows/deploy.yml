@@ -125,6 +125,8 @@ jobs:
           scp deployment/prod/compose.yaml deployment/prod/Caddyfile \
             deployment/prod/backend.env deployment/prod/frontend.env \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/onlinetlabs/deployment/prod/"
+          ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            'chmod 600 /opt/onlinetlabs/deployment/prod/backend.env /opt/onlinetlabs/deployment/prod/frontend.env'
 
       - name: Pull images + up + migrate
         run: |
@@ -147,5 +149,6 @@ jobs:
             \$dc run --rm backend alembic upgrade head
             \$dc run --rm backend python -m scripts.sync_content
             \$dc ps
-            docker image prune -f
+            docker image prune -af --filter 'until=168h'
+            docker builder prune -f --filter 'unused-for=168h'
           "

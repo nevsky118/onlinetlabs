@@ -151,96 +151,103 @@ class LearningAnalyticsConfig(BaseModel):
     """Learning Analytics configuration: collection, analysis, interventions."""
 
     # Cycles
-    poll_interval: float = Field(default=5.0, description="Интервал опроса MCP (сек)")
-    analysis_interval: float = Field(default=15.0, description="Интервал анализа (сек)")
-    cooldown_period: float = Field(default=60.0, description="Мин. пауза между интервенциями (сек)")
+    poll_interval: float = Field(default=5.0, description="MCP poll interval (sec)")
+    analysis_interval: float = Field(default=15.0, description="Analysis interval (sec)")
+    cooldown_period: float = Field(
+        default=60.0, description="Min. pause between interventions (sec)"
+    )
     enabled: bool = Field(
-        default=True, description="Включить интервенции (False для контрольной группы)"
+        default=True, description="Enable interventions (False for the control group)"
     )
 
     # MRT (micro-randomized trial): randomizes the intervene/withhold decision point
     mrt_enabled: bool = Field(
         default=False,
-        description="Включить MRT-рандомизацию точек решения (иначе OPEN/CLOSED по плечу)",
+        description="Enable MRT randomization of decision points (otherwise OPEN/CLOSED by arm)",
     )
     mrt_hold_probability: float = Field(
-        default=0.5, description="P(withhold) в eligible-точке при MRT"
+        default=0.5, description="P(withhold) at an eligible point under MRT"
     )
     mrt_t_k_jitter_frac: float = Field(
-        default=0.5, description="Доля джиттера T_k на spell: T_k*U[1-f, 1+f]"
+        default=0.5, description="T_k jitter fraction per spell: T_k*U[1-f, 1+f]"
     )
 
     # Capture of raw evidence for blind labeling (disjoint from features)
     evidence_capture_enabled: bool = Field(
         default=False,
-        description="Персистить сырые MCP-наблюдения в session_evidence_snapshots (для разметки)",
+        description="Persist raw MCP observations to session_evidence_snapshots (for labeling)",
     )
 
     # Instrumentation of cycle stage latency (p50/p95/p99)
     latency_capture_enabled: bool = Field(
-        default=False, description="Персистить латентность стадий в cycle_latency_samples"
+        default=False, description="Persist stage latency to cycle_latency_samples"
     )
 
     # Grounding ablation: generate help with and without MCP context (for the expert)
     grounding_ablation_enabled: bool = Field(
         default=False,
-        description="Генерировать пару grounded/ungrounded помощи в grounding_comparisons",
+        description="Generate a grounded/ungrounded help pair in grounding_comparisons",
     )
 
     # Single-vs-multi-agent ablation: force a single generalist agent
     single_agent_mode: bool = Field(
         default=False,
-        description="Все интервенции через один generalist-агент (ablation мультиагентности)",
+        description="All interventions through a single generalist agent (multi-agent ablation)",
     )
 
     # Student simulation: LLM for help-request text (otherwise templates)
     sim_llm_help_enabled: bool = Field(
-        default=False, description="Сим-студенты: LLM генерит текст просьб о помощи (gated, бюджет)"
+        default=False, description="Sim students: LLM generates help-request text (gated, budget)"
     )
 
     # Struggle detection thresholds
     error_repeat_threshold: int = Field(
-        default=3, description="Повторов одной ошибки для срабатывания"
+        default=3, description="Repeats of the same error to trigger"
     )
-    idle_threshold: int = Field(default=3, description="Кол-во idle-периодов для детекции")
+    idle_threshold: int = Field(default=3, description="Number of idle periods for detection")
     entropy_threshold: float = Field(
-        default=0.7, description="Порог энтропии действий (trial-and-error)"
+        default=0.7, description="Action entropy threshold (trial-and-error)"
     )
-    error_freq_threshold: float = Field(default=0.4, description="Ошибок/мин для детекции flailing")
+    error_freq_threshold: float = Field(default=0.4, description="Errors/min to detect flailing")
     distinct_actuals_threshold: int = Field(
-        default=2, description="Мин. уникальных неверных ответов для trial-and-error (Table 1)"
+        default=2, description="Min. distinct wrong answers for trial-and-error (Table 1)"
     )
     unchanged_cycles_threshold: int = Field(
-        default=3, description="Мин. циклов без изменений для stuck (Table 1)"
+        default=3, description="Min. cycles without change for stuck (Table 1)"
     )
     stuck_time_multiplier: float = Field(
-        default=2.0, description="Множитель avg_latency для детекции stuck"
+        default=2.0, description="avg_latency multiplier for stuck detection"
     )
     rate_slope_threshold: float = Field(
-        default=-0.5, description="Порог slope для детекции замедления"
+        default=-0.5, description="Slope threshold for slowdown detection"
     )
     min_latency_floor: float = Field(
-        default=30.0, description="Мин. базовая латентность для stuck (сек)"
+        default=30.0, description="Min. baseline latency for stuck (sec)"
     )
-    min_idle_for_stuck: int = Field(default=2, description="Мин. idle-периодов для stuck")
+    min_idle_for_stuck: int = Field(default=2, description="Min. idle periods for stuck")
 
     # Feature parameters
-    idle_gap_seconds: float = Field(default=60.0, description="Gap > N сек = idle период")
+    idle_gap_seconds: float = Field(default=60.0, description="Gap > N sec = idle period")
     rate_window_seconds: float = Field(
-        default=120.0, description="Окно для подсчёта action rate (сек)"
+        default=120.0, description="Window for computing action rate (sec)"
     )
-    min_rate_windows: int = Field(default=3, description="Мин. окон для расчёта slope")
-    error_freq_window_minutes: float = Field(default=5.0, description="Окно частоты ошибок (мин)")
+    min_rate_windows: int = Field(default=3, description="Min. windows to compute slope")
+    error_freq_window_minutes: float = Field(
+        default=5.0, description="Error frequency window (min)"
+    )
 
     # Progress observer
     progress_poll_interval: float = Field(
-        default=25.0, description="Интервал опроса spec-проверок (сек)"
+        default=25.0, description="Spec check poll interval (sec)"
+    )
+    progress_max_duration_hours: float = Field(
+        default=12.0, description="Max. LabProgressObserver lifetime from session start (hours)"
     )
 
     # Collector
-    dedup_max_size: int = Field(default=10_000, description="Макс. размер dedup-кэша")
-    mcp_actions_limit: int = Field(default=50, description="Лимит list_user_actions")
-    mcp_logs_limit: int = Field(default=100, description="Лимит get_logs")
+    dedup_max_size: int = Field(default=10_000, description="Max. dedup cache size")
+    mcp_actions_limit: int = Field(default=50, description="list_user_actions limit")
+    mcp_logs_limit: int = Field(default=100, description="get_logs limit")
 
     # Control law: dwell-time threshold in a bad regime T_k (sec) per type.
     # Default 0 = baseline (fires immediately, like the manual STRUGGLE_RULES thresholds);
@@ -252,70 +259,68 @@ class LearningAnalyticsConfig(BaseModel):
             "idle": 0.0,
             "trial_and_error": 0.0,
         },
-        description="T_k: порог dwell-time по режиму (сек), выводится из J",
+        description="T_k: dwell-time threshold per regime (sec), derived from J",
     )
     # Costs for the J criterion (uniform units; the ratio is economically justified).
     cost_stuck: float = Field(
-        default=1.0, description="c_застр: стоимость единицы длительности затруднения"
+        default=1.0, description="c_stuck: cost per unit of struggle duration"
     )
-    cost_intervention: float = Field(
-        default=1.0, description="c_возд: стоимость одного воздействия"
-    )
+    cost_intervention: float = Field(default=1.0, description="c_int: cost of one intervention")
     cost_false_intervention: float = Field(
-        default=0.5, description="c_ложн: штраф за ложное вмешательство"
+        default=0.5, description="c_false: penalty for a false intervention"
     )
 
     # A/B and org metrics (Task 4)
     escalation_max_dwell: float = Field(
-        default=180.0, description="Порог dwell для объективной эскалации (сек)"
+        default=180.0, description="Dwell threshold for objective escalation (sec)"
     )
     mentor_handling_seconds: float = Field(
-        default=900.0, description="t_наставника для контрфактуала часов"
+        default=900.0, description="t_mentor for the hours counterfactual"
     )
     l2_intervention_cap: int = Field(
-        default=0, description="Макс. воздействий для зачёта автономии на L2"
+        default=0, description="Max. interventions to credit autonomy at L2"
     )
 
     # Task 3: cohort org metrics
     cohort_horizon_days: float = Field(
-        default=30.0, description="Горизонт T наблюдения для reach-rate@T и RMST (дни)"
+        default=30.0, description="Observation horizon T for reach-rate@T and RMST (days)"
     )
     autonomy_intervention_threshold: int = Field(
-        default=0, description="Порог воздействий, ниже которого L2 считается автономным"
+        default=0, description="Intervention threshold below which L2 counts as autonomous"
     )
 
     # Task 5: identifier P1 evaluation
     eval_t_k_grid: list[float] = Field(
         default=[0.0, 15.0, 30.0, 60.0, 120.0, 180.0],
-        description="Сетка порогов dwell T_k для рабочей кривой",
+        description="Grid of dwell thresholds T_k for the operating curve",
     )
     eval_onset_window_seconds: float = Field(
-        default=30.0, description="Окно допуска ±Δ вокруг онсета струггла"
+        default=30.0, description="Tolerance window ±Δ around struggle onset"
     )
 
 
 class GNS3Config(BaseModel):
     """Integration with gns3-service and the GNS3 server."""
 
-    service_url: str = Field(description="Внутренний URL gns3-service")
-    public_url: str = Field(description="Browser-reachable URL GNS3 Web UI для студента")
-    internal_url: str = Field(description="Внутренний URL GNS3-сервера для MCP SessionContext")
+    service_url: str = Field(description="Internal gns3-service URL")
+    public_url: str = Field(description="Browser-reachable GNS3 Web UI URL for the student")
+    internal_url: str = Field(description="Internal GNS3 server URL for MCP SessionContext")
     node_host: str = Field(
         default="",
-        description="Host для прямых TCP-подключений к console-портам узлов (telnet VPCS). Если пусто — derive из internal_url/public_url.",
+        description="Host for direct TCP connections to node console ports (telnet VPCS). If empty, derived from internal_url/public_url.",
     )
 
 
 class MCPConfig(BaseModel):
     """Connection to the GNS3 MCP server."""
 
-    server_url: str = Field(description="URL GNS3 MCP-сервера")
+    server_url: str = Field(description="GNS3 MCP server URL")
 
 
 class SecurityConfig(BaseModel):
     """Application secrets."""
 
-    cred_encryption_key: str = Field(description="Fernet-ключ для шифрования GNS3-кредов")
+    cred_encryption_key: str = Field(description="Fernet key for encrypting GNS3 credentials")
     internal_api_token: str = Field(
         description="Shared secret for server-to-server calls (Next.js → backend /auth/exchange, backend → gns3-service /v1/exec/vtysh)"
     )

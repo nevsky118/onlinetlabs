@@ -4,7 +4,7 @@
 # Security headers, all origins. No CSP (Next inlines scripts).
 (security_headers) {
 	header {
-		Strict-Transport-Security "max-age=31536000"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		X-Frame-Options "SAMEORIGIN"
@@ -36,19 +36,16 @@ www.{$APP_DOMAIN} {
 
 	import security_headers
 
-	# Public routes moved to the web origin. Labs are listed individually, not /labs/*, so session
-	# paths like /labs/<slug>/launch stay on the dashboard. {uri} has no locale, web adds it.
-	redir / https://{$APP_DOMAIN}{uri} permanent
-	redir /courses https://{$APP_DOMAIN}{uri} permanent
-	redir /courses/* https://{$APP_DOMAIN}{uri} permanent
-	redir /labs https://{$APP_DOMAIN}{uri} permanent
-	redir /labs/dhcp-basics https://{$APP_DOMAIN}{uri} permanent
-	redir /labs/inter-subnet-routing https://{$APP_DOMAIN}{uri} permanent
-	redir /labs/lan-static-ip https://{$APP_DOMAIN}{uri} permanent
-	redir /labs/lan-static-ip-b https://{$APP_DOMAIN}{uri} permanent
+	# Public routes moved to the web origin. A lab slug is one segment, so session
+	# paths like /labs/<slug>/launch stay on the dashboard. Locale prefix is optional.
+	@public_root path_regexp ^/(en|ru)?/?$
+	redir @public_root https://{$APP_DOMAIN}{uri} permanent
+
+	@public path_regexp ^(/(en|ru))?/(courses(/.*)?|labs(/[^/]+)?)/?$
+	redir @public https://{$APP_DOMAIN}{uri} permanent
 
 	# Session WebSocket endpoints → backend (wss://<domain>/ws/...)
-	@ws path /ws/*
+	@ws path /ws/* /users/me/sessions/ws/*
 	reverse_proxy @ws backend:8000
 
 	# Student GNS3 Web UI, the SPA + assets (/static/web-ui/*) and API/websockets (/v3/*)

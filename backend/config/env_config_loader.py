@@ -168,6 +168,7 @@ def build_learning_analytics_config(values: dict[str, str | None]) -> LearningAn
     _take("LA_POLL_INTERVAL", "poll_interval", float)
     _take("LA_ANALYSIS_INTERVAL", "analysis_interval", float)
     _take("LA_COOLDOWN_PERIOD", "cooldown_period", float)
+    _take("LA_PROGRESS_MAX_DURATION_HOURS", "progress_max_duration_hours", float)
 
     # MRT
     _take("LA_MRT_ENABLED", "mrt_enabled", _str2bool)

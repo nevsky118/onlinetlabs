@@ -401,7 +401,7 @@ async def _run(args) -> None:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Прогон сим-когорты студентов на живом стеке")
+    ap = argparse.ArgumentParser(description="Simulated student cohort run against the live stack")
     ap.add_argument("--n", type=int, default=50)
     ap.add_argument("--concurrency", type=int, default=3)
     ap.add_argument("--seed", type=int, default=0)

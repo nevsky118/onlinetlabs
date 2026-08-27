@@ -30,6 +30,9 @@ services:
     image: redis:7-alpine
     restart: unless-stopped
     logging: *default-logging
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD required}"]
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?REDIS_PASSWORD required}
     # the port is NOT published to the outside
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -49,7 +52,7 @@ services:
     environment:
       DB_HOST: db
       DB_PORT: "5432"
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD required}@redis:6379/0
       ENVIRONMENT: production
     depends_on:
       db:
@@ -97,6 +100,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "443:443/udp"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./certs:/etc/caddy/certs:ro      # Cloudflare Origin Certificate (origin.pem + origin-key.pem)

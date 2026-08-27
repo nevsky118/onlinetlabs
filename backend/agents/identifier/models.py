@@ -11,8 +11,8 @@ class StudentMetrics(BaseModel):
 
     total_attempts: int
     success_rate: float = Field(ge=0.0, le=1.0)
-    avg_time_per_step: float = Field(description="Среднее время на шаг (секунды)")
-    struggling_steps: list[str] = Field(description="Шаги с >2 неудачами подряд")
+    avg_time_per_step: float = Field(description="Average time per step (seconds)")
+    struggling_steps: list[str] = Field(description="Steps with >2 consecutive failures")
 
 
 class DifficultyRecommendation(BaseModel):

@@ -19,13 +19,13 @@ class PoolConfig(BaseModel):
     Idle ones close via idle_ttl; LRU entries get evicted once space runs out.
     """
 
-    max_size: int = Field(default=200, description="Потолок одновременных соединений")
-    idle_ttl: float = Field(default=600.0, description="Закрывать соединение после N сек простоя")
+    max_size: int = Field(default=200, description="Cap on simultaneous connections")
+    idle_ttl: float = Field(default=600.0, description="Close a connection after N sec idle")
     health_check_interval: float = Field(
-        default=60.0, description="Не чаще N сек проверять живость соединения из кеша"
+        default=60.0, description="Check a cached connection liveness at most every N sec"
     )
     min_evict_idle: float = Field(
-        default=30.0, description="Вытеснять LRU, только если оно простаивало N сек"
+        default=30.0, description="Evict LRU only if it was idle for N sec"
     )
 
 

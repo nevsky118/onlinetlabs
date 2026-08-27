@@ -152,3 +152,96 @@ class TestExecHappyPath:
             assert "container-xyz" in args
             assert "vtysh" in args
             assert "show ip ospf neighbor" in args
+
+
+class TestExecInfrastructureFailure:
+    @autotest.num("3381")
+    @autotest.external_id("a201ea0c-62fb-4960-8b2a-88d1fde062e9")
+    @autotest.name("POST /v1/exec/vtysh: 503 when the docker daemon is unreachable")
+    async def test_a201ea0c_returns_503_when_docker_daemon_unreachable(self, app, client):
+        with autotest.step("Arrange: a docker node and a docker CLI that cannot reach the daemon"):
+            admin = app.state.session_service._admin
+            admin.request.return_value = _stub_response(
+                200,
+                {"node_type": "docker", "properties": {"container_id": "container-xyz"}},
+            )
+            proc = AsyncMock()
+            proc.communicate.return_value = (
+                b"",
+                b"Cannot connect to the Docker daemon at unix:///var/run/docker.sock. "
+                b"Is the docker daemon running?",
+            )
+            proc.returncode = 1
+
+        with autotest.step("Act: POST vtysh with the subprocess spawn mocked"):
+            with patch(
+                "src.routers.exec.asyncio.create_subprocess_exec",
+                new=AsyncMock(return_value=proc),
+            ):
+                response = await client.post(
+                    "/v1/exec/vtysh",
+                    json=VTYSH_BODY,
+                    headers={"Authorization": f"Bearer {_VALID_TOKEN}"},
+                )
+
+        with autotest.step("Assert: 503, not a 200 that looks like a failed check"):
+            assert response.status_code == 503
+            assert "docker exec failed before vtysh ran" in response.json()["detail"]
+
+    @autotest.num("3382")
+    @autotest.external_id("42d84653-fc10-4728-9164-a32a476b5f67")
+    @autotest.name("POST /v1/exec/vtysh: 503 when docker exits with an infrastructure code")
+    async def test_42d84653_returns_503_on_docker_infrastructure_exit_code(self, app, client):
+        with autotest.step("Arrange: a docker node and docker exiting 125"):
+            admin = app.state.session_service._admin
+            admin.request.return_value = _stub_response(
+                200,
+                {"node_type": "docker", "properties": {"container_id": "container-xyz"}},
+            )
+            proc = AsyncMock()
+            proc.communicate.return_value = (b"", b"docker: Error response from daemon.")
+            proc.returncode = 125
+
+        with autotest.step("Act: POST vtysh with the subprocess spawn mocked"):
+            with patch(
+                "src.routers.exec.asyncio.create_subprocess_exec",
+                new=AsyncMock(return_value=proc),
+            ):
+                response = await client.post(
+                    "/v1/exec/vtysh",
+                    json=VTYSH_BODY,
+                    headers={"Authorization": f"Bearer {_VALID_TOKEN}"},
+                )
+
+        with autotest.step("Assert: 503 rather than a successful response"):
+            assert response.status_code == 503
+
+    @autotest.num("3383")
+    @autotest.external_id("d8610feb-aa67-4788-bc80-517dc22070a7")
+    @autotest.name("POST /v1/exec/vtysh: a failing vtysh command still returns 200")
+    async def test_d8610feb_returns_200_when_vtysh_command_fails(self, app, client):
+        with autotest.step("Arrange: a docker node and vtysh rejecting the command"):
+            admin = app.state.session_service._admin
+            admin.request.return_value = _stub_response(
+                200,
+                {"node_type": "docker", "properties": {"container_id": "container-xyz"}},
+            )
+            proc = AsyncMock()
+            proc.communicate.return_value = (b"", b"% Unknown command")
+            proc.returncode = 1
+
+        with autotest.step("Act: POST vtysh with the subprocess spawn mocked"):
+            with patch(
+                "src.routers.exec.asyncio.create_subprocess_exec",
+                new=AsyncMock(return_value=proc),
+            ):
+                response = await client.post(
+                    "/v1/exec/vtysh",
+                    json=VTYSH_BODY,
+                    headers={"Authorization": f"Bearer {_VALID_TOKEN}"},
+                )
+
+        with autotest.step("Assert: 200 with the vtysh exit code preserved"):
+            assert response.status_code == 200
+            assert response.json()["exit_code"] == 1
+            assert response.json()["stderr"] == "% Unknown command"

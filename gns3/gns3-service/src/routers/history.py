@@ -22,15 +22,15 @@ class ActivityResponse(BaseModel):
     "/history/{session_id}/actions",
     response_model=list[HistoryEvent],
     tags=["history"],
-    summary="История действий сессии",
-    description="Возвращает последние события из лабораторной сессии (узлы, линки, консоль и т.д.).",
+    summary="Session action history",
+    description="Returns the latest events of a lab session (nodes, links, console, etc.).",
     responses={
-        404: {"model": ErrorResponse, "description": "Сессия не найдена"},
+        404: {"model": ErrorResponse, "description": "Session not found"},
     },
 )
 async def get_history_actions(
-    session_id: str = Path(description="UUID сессии"),
-    limit: int = Query(default=50, ge=1, le=500, description="Макс. кол-во событий"),
+    session_id: str = Path(description="Session UUID"),
+    limit: int = Query(default=50, ge=1, le=500, description="Max. number of events"),
     db=Depends(get_db),
 ):
     from sqlalchemy import select
@@ -60,18 +60,18 @@ async def get_history_actions(
     "/sessions/{session_id}/activity",
     response_model=ActivityResponse,
     tags=["history"],
-    summary="История активности сессии (cursor-пагинация)",
+    summary="Session activity history (cursor pagination)",
     description=(
-        "Возвращает события сессии в обратном хронологическом порядке. "
-        "Используй next_cursor для подгрузки старых страниц. "
-        "Максимум limit=200 за один запрос."
+        "Returns session events in reverse chronological order. "
+        "Use next_cursor to load older pages. "
+        "Maximum limit=200 per request."
     ),
 )
 async def get_session_activity(
-    session_id: str = Path(description="UUID сессии"),
-    limit: int = Query(default=50, ge=1, le=200, description="Сколько событий вернуть (1-200)"),
+    session_id: str = Path(description="Session UUID"),
+    limit: int = Query(default=50, ge=1, le=200, description="How many events to return (1-200)"),
     cursor: str | None = Query(
-        default=None, description="ISO timestamp последнего события для пагинации"
+        default=None, description="ISO timestamp of the last event, for pagination"
     ),
     db=Depends(get_db),
 ):

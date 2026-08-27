@@ -65,15 +65,23 @@ async def _restore_session_monitors(monitor_registry: SessionMonitorRegistry) ->
     container restarts, so without this restore the active sessions are left
     without proactive interventions until the next launch.
     """
+    from datetime import UTC, datetime, timedelta
+
     from sqlalchemy import select
 
     from models.session import LearningSession
     from sessions.context import build_session_context
 
+    cutoff = datetime.now(tz=UTC) - timedelta(
+        hours=settings.learning_analytics.progress_max_duration_hours
+    )
     try:
         async with async_session() as db:
             result = await db.execute(
-                select(LearningSession).where(LearningSession.status == "active")
+                select(LearningSession).where(
+                    LearningSession.status == "active",
+                    LearningSession.started_at >= cutoff,
+                )
             )
             sessions = result.scalars().all()
     except Exception:

@@ -4,7 +4,7 @@ import asyncio
 import json
 import logging
 from dataclasses import dataclass, field
-from datetime import UTC
+from datetime import UTC, datetime, timedelta
 
 from config.config_model import LearningAnalyticsConfig
 
@@ -128,13 +128,25 @@ class LabProgressObserver:
         self._user_id: str | None = None
         self._lab_slug: str | None = None
         self._gns3_sid: str | None = None
+        self._deadline: datetime | None = None
 
-    async def start(self, session_id: str, user_id: str, lab_slug: str, gns3_sid: str) -> None:
+    async def start(
+        self,
+        session_id: str,
+        user_id: str,
+        lab_slug: str,
+        gns3_sid: str,
+        started_at: datetime | None = None,
+    ) -> None:
         """Start the polling loop as an asyncio.Task."""
         self._session_id = session_id
         self._user_id = user_id
         self._lab_slug = lab_slug
         self._gns3_sid = gns3_sid
+        anchor = started_at or datetime.now(tz=UTC)
+        if anchor.tzinfo is None:
+            anchor = anchor.replace(tzinfo=UTC)
+        self._deadline = anchor + timedelta(hours=self._cfg.progress_max_duration_hours)
         self._task = asyncio.create_task(self._poll_loop())
 
     async def stop(self) -> None:
@@ -151,8 +163,14 @@ class LabProgressObserver:
         return self._state
 
     async def _poll_loop(self) -> None:
-        """Infinite loop: run → pause → repeat."""
+        """Poll until the session's max duration is reached: run → pause → repeat."""
         while True:
+            if self._deadline is not None and datetime.now(tz=UTC) >= self._deadline:
+                logger.info(
+                    "LabProgressObserver: max duration reached for %s, stopping",
+                    self._session_id,
+                )
+                break
             try:
                 await self._poll_cycle()
             except asyncio.CancelledError:
@@ -187,7 +205,6 @@ class LabProgressObserver:
         # deltas → behavioral events
         events = diff_snapshots(self._prev_snapshot, snapshot)
         if events:
-            from datetime import datetime
             from uuid import uuid4
 
             now = datetime.now(tz=UTC)

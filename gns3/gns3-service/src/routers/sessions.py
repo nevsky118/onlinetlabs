@@ -23,13 +23,13 @@ router = APIRouter()
     status_code=201,
     response_model=SessionResponse,
     tags=["sessions"],
-    summary="Создать лабораторную сессию",
+    summary="Create a lab session",
     description=(
-        "Клонирует шаблонный проект GNS3, создаёт изолированного пользователя "
-        "и возвращает учётные данные для подключения. Пароль возвращается только один раз."
+        "Clones the GNS3 template project, creates an isolated user "
+        "and returns the connection credentials. The password is returned only once."
     ),
     responses={
-        503: {"model": ErrorResponse, "description": "БД не сконфигурирована"},
+        503: {"model": ErrorResponse, "description": "Database is not configured"},
     },
 )
 async def create_session(body: SessionCreate, service=Depends(get_service), db=Depends(get_db)):
@@ -44,18 +44,18 @@ async def create_session(body: SessionCreate, service=Depends(get_service), db=D
     "/sessions/{session_id}/state",
     response_model=SessionStateResponse,
     tags=["sessions"],
-    summary="Получить состояние сессии",
+    summary="Get session state",
     description=(
-        "Возвращает текущее состояние GNS3-проекта сессии: узлы, links, метрики. "
-        "Кешируется на 5 секунд in-memory."
+        "Returns the current state of the session GNS3 project: nodes, links, metrics. "
+        "Cached in-memory for 5 seconds."
     ),
     responses={
-        404: {"model": ErrorResponse, "description": "Сессия не найдена"},
-        502: {"model": ErrorResponse, "description": "GNS3 недоступен"},
+        404: {"model": ErrorResponse, "description": "Session not found"},
+        502: {"model": ErrorResponse, "description": "GNS3 is unavailable"},
     },
 )
 async def get_session_state(
-    session_id: str = Path(description="UUID сессии"),
+    session_id: str = Path(description="Session UUID"),
     service=Depends(get_service),
     db=Depends(get_db),
 ):
@@ -71,7 +71,7 @@ async def get_session_state(
 
 class ProjectResetRequest(BaseModel):
     lab_template_project_id: str = Field(
-        description="UUID шаблонного проекта GNS3 для повторного клонирования",
+        description="UUID of the GNS3 template project to clone again",
         examples=["a1b2c3d4-e5f6-7890-abcd-ef1234567890"],
     )
 
@@ -80,18 +80,18 @@ class ProjectResetRequest(BaseModel):
     "/sessions/{session_id}/reset-project",
     response_model=ProjectResetResponse,
     tags=["sessions"],
-    summary="Сбросить проект сессии",
+    summary="Reset the session project",
     description=(
-        "Удаляет текущий клонированный проект GNS3 и создаёт новый из шаблона. "
-        "ACL для GNS3-пользователя сессии выставляется на новый проект автоматически."
+        "Deletes the current cloned GNS3 project and creates a new one from the template. "
+        "The ACL for the session GNS3 user is set on the new project automatically."
     ),
     responses={
-        404: {"model": ErrorResponse, "description": "Сессия не найдена"},
-        409: {"model": ErrorResponse, "description": "Сессия закрыта"},
+        404: {"model": ErrorResponse, "description": "Session not found"},
+        409: {"model": ErrorResponse, "description": "Session closed"},
     },
 )
 async def reset_project(
-    session_id: str = Path(description="UUID сессии"),
+    session_id: str = Path(description="Session UUID"),
     body: ProjectResetRequest = ...,
     service=Depends(get_service),
     db=Depends(get_db),
@@ -106,17 +106,16 @@ async def reset_project(
 @router.delete(
     "/sessions/{session_id}",
     tags=["sessions"],
-    summary="Удалить сессию",
+    summary="Delete the session",
     description=(
-        "Удаляет лабораторную сессию: останавливает проект GNS3, "
-        "удаляет пользователя и очищает данные."
+        "Deletes the lab session: stops the GNS3 project, removes the user and clears the data."
     ),
     responses={
-        404: {"model": ErrorResponse, "description": "Сессия не найдена"},
+        404: {"model": ErrorResponse, "description": "Session not found"},
     },
 )
 async def delete_session(
-    session_id: str = Path(description="UUID сессии"),
+    session_id: str = Path(description="Session UUID"),
     service=Depends(get_service),
     db=Depends(get_db),
 ):
@@ -131,17 +130,17 @@ NodeAction = Literal["start", "stop", "suspend", "reload"]
     "/sessions/{session_id}/nodes/{node_id}/{action}",
     status_code=204,
     tags=["sessions"],
-    summary="Управление узлом сессии",
-    description="Запускает, останавливает, приостанавливает или перезагружает один узел GNS3.",
+    summary="Control a session node",
+    description="Starts, stops, suspends or reloads a single GNS3 node.",
     responses={
-        404: {"model": ErrorResponse, "description": "Сессия не найдена"},
-        409: {"model": ErrorResponse, "description": "Сессия закрыта"},
+        404: {"model": ErrorResponse, "description": "Session not found"},
+        409: {"model": ErrorResponse, "description": "Session closed"},
     },
 )
 async def post_node_action(
-    session_id: str = Path(description="UUID сессии"),
-    node_id: str = Path(description="UUID узла"),
-    action: NodeAction = Path(description="Действие над узлом"),
+    session_id: str = Path(description="Session UUID"),
+    node_id: str = Path(description="Node UUID"),
+    action: NodeAction = Path(description="Node action"),
     service=Depends(get_service),
     db=Depends(get_db),
 ):
@@ -152,16 +151,16 @@ async def post_node_action(
     "/sessions/{session_id}/nodes/{action}",
     status_code=204,
     tags=["sessions"],
-    summary="Bulk-действие над всеми узлами сессии",
-    description="Применяет действие (start/stop/suspend/reload) ко всем узлам проекта одной операцией.",
+    summary="Bulk action on all session nodes",
+    description="Applies an action (start/stop/suspend/reload) to all project nodes at once.",
     responses={
-        404: {"model": ErrorResponse, "description": "Сессия не найдена"},
-        409: {"model": ErrorResponse, "description": "Сессия закрыта"},
+        404: {"model": ErrorResponse, "description": "Session not found"},
+        409: {"model": ErrorResponse, "description": "Session closed"},
     },
 )
 async def post_bulk_node_action(
-    session_id: str = Path(description="UUID сессии"),
-    action: NodeAction = Path(description="Действие над всеми узлами"),
+    session_id: str = Path(description="Session UUID"),
+    action: NodeAction = Path(description="Action for all nodes"),
     service=Depends(get_service),
     db=Depends(get_db),
 ):

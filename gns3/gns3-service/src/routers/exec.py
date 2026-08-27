@@ -19,9 +19,9 @@ router = APIRouter(prefix="/v1/exec", tags=["exec"])
 
 
 class VtyshRequest(BaseModel):
-    project_id: str = Field(description="UUID проекта GNS3")
-    node_id: str = Field(description="UUID узла GNS3 (должен быть docker-типа)")
-    command: str = Field(description="vtysh-команда без префикса `-c`")
+    project_id: str = Field(description="GNS3 project UUID")
+    node_id: str = Field(description="GNS3 node UUID (must be of docker type)")
+    command: str = Field(description="vtysh command without the `-c` prefix")
 
 
 class VtyshResponse(BaseModel):
@@ -31,6 +31,12 @@ class VtyshResponse(BaseModel):
 
 
 _EXEC_TIMEOUT = 10.0
+_DOCKER_INFRA_EXIT_CODES = frozenset({125, 126, 127})
+_DOCKER_UNREACHABLE_MARKERS = (
+    "cannot connect to the docker daemon",
+    "permission denied while trying to connect to the docker daemon",
+    "is the docker daemon running",
+)
 
 
 async def _fetch_container_id(admin_client, project_id: str, node_id: str) -> str:
@@ -62,11 +68,11 @@ async def _fetch_container_id(admin_client, project_id: str, node_id: str) -> st
 @router.post(
     "/vtysh",
     response_model=VtyshResponse,
-    summary="Выполнить vtysh-команду на FRR-узле",
+    summary="Run a vtysh command on an FRR node",
     description=(
-        'Запускает `vtysh -c "<command>"` внутри docker-контейнера узла GNS3 '
-        "и возвращает stdout/stderr/exit_code. Используется backend'ом для "
-        "проверки OSPF-соседей, маршрутов и прочей FRR-конфигурации."
+        'Runs `vtysh -c "<command>"` inside the docker container of a GNS3 node '
+        "and returns stdout/stderr/exit_code. Used by the backend to "
+        "check OSPF neighbors, routes and other FRR configuration."
     ),
     dependencies=[Depends(verify_internal_token)],
 )
@@ -94,8 +100,19 @@ async def exec_vtysh(req: VtyshRequest, request: Request) -> VtyshResponse:
     except FileNotFoundError:
         raise HTTPException(status_code=500, detail="docker CLI not available inside gns3-service")
 
+    exit_code = proc.returncode if proc.returncode is not None else -1
+    stderr_text = stderr.decode("utf-8", errors="replace")
+    lowered = stderr_text.lower()
+    if exit_code in _DOCKER_INFRA_EXIT_CODES or any(
+        marker in lowered for marker in _DOCKER_UNREACHABLE_MARKERS
+    ):
+        raise HTTPException(
+            status_code=503,
+            detail=f"docker exec failed before vtysh ran: {stderr_text.strip()}",
+        )
+
     return VtyshResponse(
         stdout=stdout.decode("utf-8", errors="replace"),
-        stderr=stderr.decode("utf-8", errors="replace"),
-        exit_code=proc.returncode if proc.returncode is not None else -1,
+        stderr=stderr_text,
+        exit_code=exit_code,
     )

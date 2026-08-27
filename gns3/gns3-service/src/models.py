@@ -10,11 +10,11 @@ class SessionCreate(BaseModel):
     """Request to create a lab session."""
 
     user_id: str = Field(
-        description="ID пользователя платформы",
+        description="Platform user ID",
         examples=["user-42"],
     )
     lab_template_project_id: str = Field(
-        description="UUID шаблонного проекта GNS3, который будет склонирован",
+        description="UUID of the GNS3 template project to be cloned",
         examples=["a1b2c3d4-e5f6-7890-abcd-ef1234567890"],
     )
 
@@ -23,32 +23,32 @@ class SessionResponse(BaseModel):
     """Data of the created session. The password is returned only once."""
 
     session_id: str = Field(
-        description="UUID сессии",
+        description="Session UUID",
         examples=["f47ac10b-58cc-4372-a567-0e02b2c3d479"],
     )
     gns3_jwt: str = Field(
-        description="JWT-токен для доступа к GNS3 API от имени пользователя",
+        description="JWT token for accessing the GNS3 API on behalf of the user",
     )
     project_id: str = Field(
-        description="UUID склонированного проекта в GNS3",
+        description="UUID of the cloned project in GNS3",
         examples=["b2c3d4e5-f6a7-8901-bcde-f12345678901"],
     )
     gns3_user_id: str = Field(
-        description="UUID пользователя в GNS3",
+        description="User UUID in GNS3",
     )
     gns3_username: str = Field(
-        description="Имя пользователя в GNS3",
+        description="Username in GNS3",
         examples=["student_user42"],
     )
     gns3_password: str = Field(
-        description="Пароль в открытом виде, отдаётся один раз. В БД больше не хранится.",
+        description="Plaintext password, returned once. No longer stored in the DB.",
     )
     gns3_url: str = Field(
-        description="URL GNS3-сервера для подключения клиента",
+        description="GNS3 server URL for client connection",
         examples=["http://gns3.example.com:3080"],
     )
     gns3_deep_url: str = Field(
-        description="Deep-link URL для прямого открытия проекта студента в GNS3 Web UI",
+        description="Deep-link URL to open the student's project directly in the GNS3 Web UI",
         examples=["http://gns3.example.com:3080/static/web-ui/controller/1/project/<uuid>"],
     )
 
@@ -57,18 +57,18 @@ class HistoryEvent(BaseModel):
     """Event from the action history of a lab session."""
 
     timestamp: datetime = Field(
-        description="Время события (UTC)",
+        description="Event time (UTC)",
     )
     event_type: str = Field(
-        description="Тип события",
+        description="Event type",
         examples=["node.started", "link.created", "node.console"],
     )
     component_id: str | None = Field(
         default=None,
-        description="UUID компонента GNS3 (узел, линк и т.д.), если применимо",
+        description="UUID of the GNS3 component (node, link, etc.), if applicable",
     )
     data: dict = Field(
-        description="Произвольные данные события",
+        description="Arbitrary event data",
         examples=[{"node_name": "R1", "status": "started"}],
     )
 
@@ -77,11 +77,11 @@ class ProjectResetResponse(BaseModel):
     """Data after resetting the session's project."""
 
     session_id: str = Field(
-        description="UUID сессии",
+        description="Session UUID",
         examples=["f47ac10b-58cc-4372-a567-0e02b2c3d479"],
     )
     project_id: str = Field(
-        description="UUID нового склонированного проекта в GNS3",
+        description="UUID of the newly cloned project in GNS3",
         examples=["c3d4e5f6-a7b8-9012-cdef-123456789012"],
     )
 
@@ -90,7 +90,7 @@ class ErrorResponse(BaseModel):
     """Standard error response."""
 
     detail: str = Field(
-        description="Описание ошибки",
+        description="Error description",
         examples=["Session not found"],
     )
 
@@ -98,49 +98,49 @@ class ErrorResponse(BaseModel):
 class NodeState(BaseModel):
     """State of a GNS3 node in the session."""
 
-    id: str = Field(description="UUID узла GNS3")
-    name: str = Field(description="Имя узла, видимое студенту")
+    id: str = Field(description="GNS3 node UUID")
+    name: str = Field(description="Node name visible to the student")
     node_type: str = Field(
-        description="Тип узла GNS3 (dynamips, qemu, ethernet_switch, vpcs и т.д.)"
+        description="GNS3 node type (dynamips, qemu, ethernet_switch, vpcs, etc.)"
     )
-    status: Literal["started", "stopped", "suspended"] = Field(description="Текущий статус узла")
-    console: int | None = Field(description="TCP-порт консоли (telnet/vnc/spice)")
-    console_type: str | None = Field(description="Тип консоли: telnet, vnc, spice")
-    console_host: str = Field(description="Hostname для подключения к консоли")
-    symbol: str = Field(description="Путь к SVG-символу узла внутри GNS3")
+    status: Literal["started", "stopped", "suspended"] = Field(description="Current node status")
+    console: int | None = Field(description="Console TCP port (telnet/vnc/spice)")
+    console_type: str | None = Field(description="Console type: telnet, vnc, spice")
+    console_host: str = Field(description="Hostname for connecting to the console")
+    symbol: str = Field(description="Path to the node's SVG symbol inside GNS3")
 
 
 class LinkEndpoint(BaseModel):
     """One end of a link between nodes."""
 
-    node_id: str = Field(description="UUID узла на этом конце link'а")
-    adapter_number: int = Field(description="Номер сетевого адаптера узла")
-    port_number: int = Field(description="Номер порта внутри адаптера")
+    node_id: str = Field(description="UUID of the node at this end of the link")
+    adapter_number: int = Field(description="Node network adapter number")
+    port_number: int = Field(description="Port number within the adapter")
 
 
 class LinkState(BaseModel):
     """Link between nodes in the GNS3 topology."""
 
-    id: str = Field(description="UUID линка GNS3")
-    nodes: list[LinkEndpoint] = Field(description="Концы link'а (обычно два узла)")
+    id: str = Field(description="GNS3 link UUID")
+    nodes: list[LinkEndpoint] = Field(description="Link endpoints (usually two nodes)")
 
 
 class SessionMetrics(BaseModel):
     """Aggregated session metrics for the UI."""
 
-    nodes_total: int = Field(description="Всего узлов в проекте")
-    nodes_started: int = Field(description="Узлов в статусе started")
-    links_count: int = Field(description="Количество link'ов")
-    uptime_seconds: int = Field(description="Сколько секунд прошло с момента запуска сессии")
+    nodes_total: int = Field(description="Total nodes in the project")
+    nodes_started: int = Field(description="Nodes in started status")
+    links_count: int = Field(description="Number of links")
+    uptime_seconds: int = Field(description="Seconds elapsed since the session started")
 
 
 class SessionStateResponse(BaseModel):
     """Full session state: nodes, links, metrics."""
 
-    session_id: str = Field(description="UUID сессии")
-    project_id: str = Field(description="UUID GNS3-проекта сессии")
-    status: Literal["active", "closed"] = Field(description="Статус сессии в gns3-service")
-    started_at: datetime = Field(description="Время старта сессии (UTC)")
-    nodes: list[NodeState] = Field(description="Список узлов с их статусами")
-    links: list[LinkState] = Field(description="Список link'ов")
-    metrics: SessionMetrics = Field(description="Агрегированные метрики")
+    session_id: str = Field(description="Session UUID")
+    project_id: str = Field(description="UUID of the session's GNS3 project")
+    status: Literal["active", "closed"] = Field(description="Session status in gns3-service")
+    started_at: datetime = Field(description="Session start time (UTC)")
+    nodes: list[NodeState] = Field(description="List of nodes with their statuses")
+    links: list[LinkState] = Field(description="List of links")
+    metrics: SessionMetrics = Field(description="Aggregated metrics")
