@@ -1,6 +1,18 @@
 # Reverse proxy with automatic TLS. Cloudflare proxy is off (DNS only), ACME needs 80/443 open.
 # Domains come from env APP_DOMAIN/DASHBOARD_DOMAIN. Both need an A record or Caddy fails to start.
 
+# Security headers, all origins. No CSP (Next inlines scripts).
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Frame-Options "SAMEORIGIN"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		-X-Powered-By
+	}
+}
+
 # Marketing origin, static pages with no session. Canonical host is bare APP_DOMAIN.
 # www redirects to it, analytics CORS and trustedOrigins accept exactly one origin.
 {$APP_DOMAIN} {
@@ -8,17 +20,21 @@
 	# Cloudflare Origin Certificate for proxied mode, restore if the proxy is turned back on.
 	# tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin-key.pem
 
+	import security_headers
 	reverse_proxy web:3001
 	encode gzip zstd
 }
 
 www.{$APP_DOMAIN} {
+	import security_headers
 	redir https://{$APP_DOMAIN}{uri} permanent
 }
 
 # App origin, session paths (WS, GNS3 Web UI) live here
 {$DASHBOARD_DOMAIN} {
 	# tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin-key.pem
+
+	import security_headers
 
 	# Public routes moved to the web origin. Labs are listed individually, not /labs/*, so session
 	# paths like /labs/<slug>/launch stay on the dashboard. {uri} has no locale, web adds it.

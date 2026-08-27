@@ -140,7 +140,8 @@ jobs:
             export DASHBOARD_DOMAIN='${{ vars.DASHBOARD_DOMAIN }}'
             dc='docker compose --env-file backend.env -f compose.yaml'
             \$dc pull
-            \$dc up -d
+            # Drop retired frontend orphan.
+            \$dc up -d --remove-orphans
             # Caddyfile sits in a bind-mount and up -d does not recreate caddy → apply the config explicitly
             \$dc exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile 2>/dev/null || \$dc restart caddy
             \$dc run --rm backend alembic upgrade head

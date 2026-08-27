@@ -15,11 +15,23 @@
 # those live in docker-compose.kvm.yml and must be layered separately on x86_64 Linux:
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.kvm.yml ...
 
+# Loopback-only publish, ufw bypass fix.
+# Log rotation cap.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "50m"
+    max-file: "5"
+
 services:
   gns3-server:
     restart: unless-stopped
+    logging: *default-logging
     mem_limit: 1536m
     cpus: 2.0
+    ports: !override
+      - "127.0.0.1:3080:3080"
+      - "127.0.0.1:5000-5199:5000-5199"
     environment:
       GNS3_AUTH: "true"
       GNS3_DEFAULT_ADMIN_USER: ${GNS3_ADMIN_USER:?set GNS3_ADMIN_USER in .env.prod}
@@ -28,8 +40,11 @@ services:
 
   postgres:
     restart: unless-stopped
+    logging: *default-logging
     mem_limit: 512m
     cpus: 0.5
+    ports: !override
+      - "127.0.0.1:5433:5432"
     environment:
       POSTGRES_USER: ${GNS3_DB_USER:?set GNS3_DB_USER in .env.prod}
       POSTGRES_PASSWORD: ${GNS3_DB_PASSWORD:?set GNS3_DB_PASSWORD in .env.prod}
@@ -44,8 +59,11 @@ services:
 
   gns3-service:
     restart: unless-stopped
+    logging: *default-logging
     mem_limit: 512m
     cpus: 0.5
+    ports: !override
+      - "127.0.0.1:8101:8101"
     environment:
       GNS3_ADMIN_USER: ${GNS3_ADMIN_USER:?set GNS3_ADMIN_USER in .env.prod}
       GNS3_ADMIN_PASSWORD: ${GNS3_ADMIN_PASSWORD:?set GNS3_ADMIN_PASSWORD in .env.prod}
@@ -65,10 +83,11 @@ services:
   pgbouncer:
     image: edoburu/pgbouncer:1.22.1-p0
     restart: unless-stopped
+    logging: *default-logging
     mem_limit: 128m
     cpus: 0.25
     ports:
-      - "6432:6432"
+      - "127.0.0.1:6432:6432"
     environment:
       GNS3_DB_USER: ${GNS3_DB_USER:?set GNS3_DB_USER in .env.prod}
       GNS3_DB_PASSWORD: ${GNS3_DB_PASSWORD:?set GNS3_DB_PASSWORD in .env.prod}
@@ -93,8 +112,11 @@ services:
 
   gns3-mcp:
     restart: unless-stopped
+    logging: *default-logging
     mem_limit: 256m
     cpus: 0.5
+    ports: !override
+      - "127.0.0.1:8100:8100"
 
 volumes:
   gns3_postgres_data:

@@ -1,9 +1,18 @@
 # PROD: images are pulled from ghcr.io (built in CI). The IMAGE_*/IMAGE_TAG variables
 # are exported by the workflow during deploy; for a manual run on the server, set the same ones.
+
+# Log rotation cap.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "50m"
+    max-file: "5"
+
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    logging: *default-logging
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD required}
@@ -20,6 +29,7 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    logging: *default-logging
     # the port is NOT published to the outside
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -33,6 +43,7 @@ services:
   backend:
     image: ${IMAGE_BACKEND:-ghcr.io/nevsky118/onlinetlabs-backend}:${IMAGE_TAG:-latest}
     restart: unless-stopped
+    logging: *default-logging
     env_file:
       - ./backend.env
     environment:
@@ -57,6 +68,7 @@ services:
   web:
     image: ${IMAGE_WEB:-ghcr.io/nevsky118/onlinetlabs-web}:${IMAGE_TAG:-latest}
     restart: unless-stopped
+    logging: *default-logging
     # web reads no runtime env, NEXT_PUBLIC_* are baked into the image, so no env_file
     environment:
       NODE_ENV: production
@@ -64,13 +76,13 @@ services:
   dashboard:
     image: ${IMAGE_DASHBOARD:-ghcr.io/nevsky118/onlinetlabs-dashboard}:${IMAGE_TAG:-latest}
     restart: unless-stopped
+    logging: *default-logging
     env_file:
       - ./frontend.env
     environment:
       BACKEND_URL: http://backend:8000
       NODE_ENV: production
-      # Domain is deployment config, not a secret, safe in tracked compose. See packages/auth/betterauth.ts.
-      COOKIE_DOMAIN: .sumuinen.com
+      # COOKIE_DOMAIN comes from frontend.env (dashboard env_file).
     depends_on:
       backend:
         condition: service_healthy
@@ -78,6 +90,7 @@ services:
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
+    logging: *default-logging
     environment:
       APP_DOMAIN: ${APP_DOMAIN:?APP_DOMAIN required}   # domain comes from env, not from the repo
       DASHBOARD_DOMAIN: ${DASHBOARD_DOMAIN:?DASHBOARD_DOMAIN required}
