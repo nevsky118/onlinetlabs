@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl docker-cli
     && rm -rf /var/lib/apt/lists/*
 # Copy the pre-built venv (deps only, resolved via the uv workspace lock).
 COPY --from=builder /app/.venv /app/.venv
+COPY mcp-sdk mcp-sdk
 COPY gns3/gns3-service gns3/gns3-service
 ENV PATH="/app/.venv/bin:${PATH}"
 WORKDIR /app/gns3/gns3-service
