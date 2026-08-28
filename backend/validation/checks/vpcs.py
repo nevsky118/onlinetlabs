@@ -22,6 +22,29 @@ _PING_READ_TIMEOUT = 8.0
 _PROMPT = b"> "
 
 
+async def _drain_idle(reader: asyncio.StreamReader, idle: float, total: float) -> bytes:
+    """Read until the console stays quiet for `idle` seconds, or `total` elapses.
+
+    Stopping at the first prompt leaves later banner chunks buffered, and the next
+    read then returns that stale prompt before the command has answered.
+    """
+    buf = bytearray()
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + total
+    while True:
+        remaining = min(idle, deadline - loop.time())
+        if remaining <= 0:
+            break
+        try:
+            chunk = await asyncio.wait_for(reader.read(1024), timeout=remaining)
+        except TimeoutError:
+            break
+        if not chunk:
+            break
+        buf.extend(chunk)
+    return bytes(buf)
+
+
 async def _drain_until_prompt(reader: asyncio.StreamReader, timeout: float) -> bytes:
     """Read from the console until a VPCS prompt appears or the timeout elapses."""
     buf = bytearray()
@@ -76,7 +99,7 @@ async def vpcs_show_ip(ctx: CheckContext, params: dict, expect: dict) -> CheckRe
         await writer.drain()
         await asyncio.sleep(0.3)
         # Shake off the accumulated prompt/echo.
-        await _drain_until_prompt(reader, timeout=0.5)
+        await _drain_idle(reader, idle=0.3, total=2.0)
 
         writer.write(b"show ip\r\n")
         await writer.drain()
@@ -203,7 +226,7 @@ async def vpcs_ping(ctx: CheckContext, params: dict, expect: dict) -> CheckResul
         writer.write(b"\r\n")
         await writer.drain()
         await asyncio.sleep(0.3)
-        await _drain_until_prompt(reader, timeout=0.5)
+        await _drain_idle(reader, idle=0.3, total=2.0)
 
         writer.write(f"ping {target}\r\n".encode())
         await writer.drain()
@@ -275,7 +298,7 @@ async def vpcs_ip_in_subnet(ctx: CheckContext, params: dict, expect: dict) -> Ch
         writer.write(b"\r\n")
         await writer.drain()
         await asyncio.sleep(0.3)
-        await _drain_until_prompt(reader, timeout=0.5)
+        await _drain_idle(reader, idle=0.3, total=2.0)
 
         writer.write(b"show ip\r\n")
         await writer.drain()

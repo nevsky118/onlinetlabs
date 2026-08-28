@@ -7,7 +7,7 @@ import pytest
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_false, assert_true
 
-from tests.settings.data.vpcs_data import VpcsPingConsoleData
+from tests.settings.data.vpcs_data import VpcsPingConsoleData, VpcsShowIpConsoleData
 from validation.checks import vpcs
 
 pytestmark = [pytest.mark.unit]
@@ -32,6 +32,36 @@ class _Writer:
         return None
 
 
+class _Reader:
+    """Console reader that yields queued chunks, then goes quiet until more are queued."""
+
+    def __init__(self, chunks: list[bytes]):
+        self._chunks = list(chunks)
+
+    def queue(self, chunk: bytes) -> None:
+        self._chunks.append(chunk)
+
+    async def read(self, _n: int) -> bytes:
+        if self._chunks:
+            return self._chunks.pop(0)
+        await asyncio.sleep(3600)
+
+
+class _AnsweringWriter(_Writer):
+    """Writer that makes the console answer only after the command is sent."""
+
+    def __init__(self, sink: list[bytes], reader: _Reader, command: bytes, answer: bytes):
+        super().__init__(sink)
+        self._reader = reader
+        self._command = command
+        self._answer = answer
+
+    def write(self, data: bytes) -> None:
+        super().write(data)
+        if data.startswith(self._command):
+            self._reader.queue(self._answer)
+
+
 def _patch_console(monkeypatch, console: VpcsPingConsoleData) -> list[bytes]:
     """Patch the console transport, return the list collecting written bytes."""
     writes: list[bytes] = []
@@ -43,7 +73,11 @@ def _patch_console(monkeypatch, console: VpcsPingConsoleData) -> list[bytes]:
     async def fake_drain(reader, timeout):
         return pending.pop(0) if pending else b""
 
+    async def no_preamble(reader, idle, total):
+        return b""
+
     monkeypatch.setattr(asyncio, "open_connection", fake_open_connection)
+    monkeypatch.setattr(vpcs, "_drain_idle", no_preamble)
     monkeypatch.setattr(vpcs, "_drain_until_prompt", fake_drain)
     return writes
 
@@ -95,3 +129,32 @@ class TestVpcsPingArpWarmup:
         with autotest.step("Assert: the warm-up does not mask a real failure"):
             assert_equal(result.actual["received"], 0, "no replies received")
             assert_false(result.ok, "the check fails")
+
+
+class TestVpcsShowIpChunkedBanner:
+    """A banner split across reads must not be mistaken for the command's answer."""
+
+    @autotest.num("3391")
+    @autotest.external_id("65773a61-953a-4ea1-b7db-7b7280e8d368")
+    @autotest.name("vpcs.show_ip: a chunked banner does not truncate the reply")
+    async def test_65773a61_chunked_banner_does_not_truncate_reply(self, monkeypatch):
+        with autotest.step("Arrange: a console whose banner arrives as three chunks"):
+            console = VpcsShowIpConsoleData()
+
+            reader = _Reader(console.banner_chunks)
+            writer = _AnsweringWriter([], reader, b"show ip", console.show_ip)
+
+            async def fake_open_connection(host, port):
+                return reader, writer
+
+            monkeypatch.setattr(asyncio, "open_connection", fake_open_connection)
+
+        with autotest.step("Act: run the vpcs.show_ip check"):
+            result = await vpcs.vpcs_show_ip(
+                _ctx(), {"node": "PC1"}, {"ip": console.ip, "gateway": console.gateway}
+            )
+
+        with autotest.step("Assert: the reply is parsed, not reported as empty"):
+            assert_equal(result.actual["ip"], console.ip, "ip parsed")
+            assert_equal(result.actual["gateway"], console.gateway, "gateway parsed")
+            assert_true(result.ok, "a configured PC passes")
