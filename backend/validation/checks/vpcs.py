@@ -73,7 +73,7 @@ async def _read_show_ip(reader, writer) -> bytes:
             await _drain_idle(reader, idle=0.3, total=1.0)
         writer.write(b"show ip\r\n")
         await writer.drain()
-        raw = await _drain_until_prompt(reader, timeout=_READ_TIMEOUT)
+        raw = await _drain_idle(reader, idle=0.4, total=_READ_TIMEOUT)
         if _parse_show_ip(raw.decode("utf-8", errors="replace"))["ip"]:
             return raw
     return raw
