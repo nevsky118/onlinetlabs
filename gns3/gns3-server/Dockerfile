@@ -13,13 +13,15 @@ RUN apk add --no-cache --virtual=build-deps gcc python3-dev musl-dev linux-heade
       busybox-static \
  && echo "https://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories \
  && apk add --no-cache \
-      dynamips ubridge vpcs \
+      dynamips ubridge vpcs docker-cli \
  && pip install --break-system-packages gns3-server==3.0.6 \
  && apk del --purge build-deps
 
 # Without the switching binaries the image is silently broken (409 "Could not find ..." on seed).
+# docker-cli is required too: gns3server shells out to `docker exec` in _fix_permissions()
+# before stopping a docker node, and without it every stop fails and is swallowed as 204.
 # We catch that at build time, not at runtime.
-RUN for bin in dynamips ubridge vpcs; do \
+RUN for bin in dynamips ubridge vpcs docker; do \
       command -v "$bin" >/dev/null || { echo "FATAL: $bin is missing from the image"; exit 1; }; \
     done
 

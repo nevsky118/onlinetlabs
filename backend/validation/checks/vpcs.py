@@ -13,6 +13,9 @@ _GW_RE = re.compile(r"GATEWAY\s*:\s*(\S+)", re.IGNORECASE)
 #   `84 bytes from 192.168.20.10 icmp_seq=1 ttl=62 time=2.345 ms`
 _PING_REPLY_RE = re.compile(r"^\s*\d+\s+bytes\s+from\s+\S+", re.MULTILINE)
 _PING_TTL_RE = re.compile(r"\bttl=(\d+)", re.IGNORECASE)
+# VPCS prints one of these when the target is genuinely unreachable; without any of
+# them and without replies the console simply did not answer.
+_PING_UNREACHABLE_RE = re.compile(r"not reachable|timeout|host unreachable", re.IGNORECASE)
 # `>=N` / `>N` / `==N` / `=N` / `N`. Strict equality by default.
 _COMPARE_RE = re.compile(r"^\s*(>=|<=|==|=|>|<)?\s*(\d+)\s*$")
 
@@ -167,8 +170,11 @@ async def vpcs_show_ip(ctx: CheckContext, params: dict, expect: dict) -> CheckRe
         return CheckResult(
             ok=False,
             expected=expect,
-            actual={"error": f"console for {node_name} unreadable"},
+            actual={},
             log=log,
+            observed=False,
+            error_key="error.validation.console_unreadable",
+            error_params={"node": node_name, "attempts": _READ_ATTEMPTS},
         )
 
     ok = parsed["ip"] == expect.get("ip") and parsed["gateway"] == expect.get("gateway")
@@ -295,6 +301,16 @@ async def vpcs_ping(ctx: CheckContext, params: dict, expect: dict) -> CheckResul
 
     text = raw.decode("utf-8", errors="replace")
     parsed = _parse_ping(text)
+    if parsed["received"] == 0 and not _PING_UNREACHABLE_RE.search(text):
+        return CheckResult(
+            ok=False,
+            expected=expect,
+            actual={},
+            log=text,
+            observed=False,
+            error_key="error.validation.console_unreadable",
+            error_params={"node": src_name, "attempts": 1},
+        )
 
     actual: dict = {"received": parsed["received"]}
     if parsed["ttl"] is not None:
@@ -339,8 +355,11 @@ async def vpcs_ip_in_subnet(ctx: CheckContext, params: dict, expect: dict) -> Ch
         return CheckResult(
             ok=False,
             expected=expect,
-            actual={"error": f"console for {node_name} unreadable"},
+            actual={},
             log=log,
+            observed=False,
+            error_key="error.validation.console_unreadable",
+            error_params={"node": node_name, "attempts": _READ_ATTEMPTS},
         )
 
     actual = {"ip": parsed["ip"], "gateway": parsed["gateway"]}

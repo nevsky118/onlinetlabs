@@ -7,12 +7,20 @@ from typing import Any
 
 @dataclass
 class CheckResult:
-    """Outcome of a single check: pass/fail, expected and actual values, console log."""
+    """Outcome of a single check.
+
+    `observed=False` means the environment never answered, so `ok` carries no verdict
+    about the student's work. Callers must render such a result as "could not check",
+    never as "wrong". `error_key` is an i18n catalog key the runner resolves.
+    """
 
     ok: bool
     expected: dict = field(default_factory=dict)
     actual: dict = field(default_factory=dict)
     log: str = ""
+    observed: bool = True
+    error_key: str = ""
+    error_params: dict = field(default_factory=dict)
 
 
 @dataclass

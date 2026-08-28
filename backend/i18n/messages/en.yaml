@@ -25,6 +25,10 @@ error:
     not_found: No progress found
   validation:
     spec_not_found: Lab validation spec not found
+    node_not_started: |-
+      Node {node} is not running. Start it and check again.
+    console_unreadable: |-
+      Could not read node {node} after {attempts} attempts. This is an environment problem, not your configuration. Try again.
     gns3_not_active: GNS3 session is not active
     run_not_found: Validation run not found
   instructor:

@@ -8,7 +8,6 @@ from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import (
     assert_equal,
     assert_false,
-    assert_in,
     assert_true,
 )
 
@@ -272,8 +271,10 @@ class TestVpcsUnreadableConsole:
                 _ctx(), {"node": "PC1"}, {"ip": console.ip, "gateway": console.gateway}
             )
 
-        with autotest.step("Assert: it reconnected, then reported unreadable, not a wrong ip"):
+        with autotest.step("Assert: it reconnected, then reported unobserved, not a wrong ip"):
             assert_equal(attempts["n"], vpcs._READ_ATTEMPTS, "reconnected for every attempt")
-            assert_in("unreadable", result.actual.get("error", ""))
+            assert_false(result.observed, "the environment never answered")
+            assert_equal(result.error_key, "error.validation.console_unreadable", "catalog key set")
+            assert_equal(result.error_params["node"], "PC1", "node named in the message")
             assert_true("ip" not in result.actual, "no empty address is reported as the answer")
             assert_false(result.ok, "the check does not pass")

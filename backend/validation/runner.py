@@ -5,7 +5,7 @@ from pathlib import Path
 
 import yaml
 
-from i18n import DEFAULT_LOCALE, Locale, resolve_localized
+from i18n import DEFAULT_LOCALE, Locale, resolve_localized, t
 from validation.checks import registry as _registry
 from validation.checks.registry import CheckContext, CheckResult
 from validation.stream import Event
@@ -25,6 +25,24 @@ async def _eval_check(ctx: CheckContext, check: dict) -> CheckResult:
         return await handler(ctx, params, expect)
     except Exception as exc:
         return CheckResult(ok=False, expected=expect, actual={"error": str(exc)})
+
+
+def _check_record(kind: str, params: dict, result: CheckResult, locale: Locale) -> dict:
+    """Serialise one check for the stream, rendering an unobserved outcome in the student's locale."""
+    record = {
+        "kind": kind,
+        "params": params,
+        "ok": result.ok,
+        "expected": result.expected,
+        "actual": dict(result.actual),
+    }
+    if not result.observed:
+        record["observed"] = False
+        record["actual"] = {
+            **record["actual"],
+            "error": t(result.error_key, locale, **result.error_params) if result.error_key else "",
+        }
+    return record
 
 
 _LABS_DIR = Path(__file__).parent / "labs"
@@ -62,15 +80,7 @@ async def evaluate_spec(
             params = {k: v for k, v in check.items() if k not in {"kind", "expect"}}
             expect = check.get("expect") or {}
             result = await _eval_check(ctx, check)
-            check_results.append(
-                {
-                    "kind": kind,
-                    "params": params,
-                    "ok": result.ok,
-                    "expected": result.expected,
-                    "actual": result.actual,
-                }
-            )
+            check_results.append(_check_record(kind, params, result, locale))
             if not result.ok:
                 step_ok = False
         accumulated.append(
@@ -140,15 +150,17 @@ async def run_validation(
                     accumulated_steps,
                 )
 
+            record = _check_record(kind, params, result, locale)
             yield (
                 Event(
                     "check.result",
                     {
                         "stepId": step_id,
                         "checkIndex": idx,
-                        "ok": result.ok,
-                        "expected": result.expected,
-                        "actual": result.actual,
+                        "ok": record["ok"],
+                        "expected": record["expected"],
+                        "actual": record["actual"],
+                        **({"observed": False} if not result.observed else {}),
                     },
                 ),
                 accumulated_steps,
@@ -160,7 +172,7 @@ async def run_validation(
                     "params": params,
                     "ok": result.ok,
                     "expected": result.expected,
-                    "actual": result.actual,
+                    "actual": record["actual"],
                 }
             )
             if not result.ok:
