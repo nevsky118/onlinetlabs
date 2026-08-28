@@ -232,6 +232,13 @@ class SessionService:
                 except Exception:
                     logger.exception("ws_proxy.stop_project failed for session %s", session.id)
 
+            # Deleting the project does not stop docker-typed nodes: their containers
+            # run on the host daemon and outlive the project record.
+            try:
+                await self._admin.bulk_node_action(session.gns3_project_id, "stop")
+            except Exception:
+                logger.exception("Failed to stop nodes of project %s", session.gns3_project_id)
+
             try:
                 await self._admin.delete_user(session.gns3_user_id)
             except Exception:

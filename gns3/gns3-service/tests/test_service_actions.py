@@ -233,3 +233,61 @@ class TestSessionServiceDeleteSession:
             assert session.status == SessionStatus.CLOSED
             assert session.closed_at is not None
             db.commit.assert_awaited_once()
+
+
+class TestSessionServiceDeleteStopsNodes:
+    """Deleting a project does not stop docker-typed nodes, so the service must."""
+
+    @pytest.mark.asyncio
+    @autotest.num("3397")
+    @autotest.external_id("57a08a06-0257-4fb0-9419-e6ecc8f468bc")
+    @autotest.name("SessionService.delete_session: stops the nodes before deleting the project")
+    async def test_57a08a06_delete_session_stops_nodes_first(self):
+        with autotest.step("Arrange: an active session with a working GNS3 admin client"):
+            admin = AsyncMock()
+            order: list[str] = []
+            admin.bulk_node_action.side_effect = lambda *a, **k: order.append("stop")
+            admin.delete_project.side_effect = lambda *a, **k: order.append("delete_project")
+
+            service = SessionService(admin_client=admin, gns3_url="http://gns3:3080")
+            session_uuid = uuid.UUID("33333333-3333-3333-3333-333333333333")
+            session = MagicMock(spec=Session)
+            session.id = session_uuid
+            session.gns3_user_id = "u-1"
+            session.gns3_project_id = "p-1"
+            session.status = SessionStatus.ACTIVE
+            db = AsyncMock()
+            db.get.return_value = session
+
+        with autotest.step("Act: delete the session"):
+            await service.delete_session(db, str(session_uuid))
+
+        with autotest.step("Assert: nodes were stopped, and before the project was deleted"):
+            admin.bulk_node_action.assert_awaited_once_with("p-1", "stop")
+            assert order == ["stop", "delete_project"]
+
+    @pytest.mark.asyncio
+    @autotest.num("3398")
+    @autotest.external_id("bcb1d2f9-6f1a-4a1e-9d0a-3f52c1f0a7e4")
+    @autotest.name("SessionService.delete_session: a failed node stop does not block teardown")
+    async def test_bcb1d2f9_delete_session_survives_stop_failure(self):
+        with autotest.step("Arrange: stopping the nodes fails"):
+            admin = AsyncMock()
+            admin.bulk_node_action.side_effect = RuntimeError("gns3 down")
+
+            service = SessionService(admin_client=admin, gns3_url="http://gns3:3080")
+            session_uuid = uuid.UUID("44444444-4444-4444-4444-444444444444")
+            session = MagicMock(spec=Session)
+            session.id = session_uuid
+            session.gns3_user_id = "u-2"
+            session.gns3_project_id = "p-2"
+            session.status = SessionStatus.ACTIVE
+            db = AsyncMock()
+            db.get.return_value = session
+
+        with autotest.step("Act: delete the session"):
+            await service.delete_session(db, str(session_uuid))
+
+        with autotest.step("Assert: the project is still deleted and the session closed"):
+            admin.delete_project.assert_awaited_once_with("p-2")
+            assert session.status == SessionStatus.CLOSED
