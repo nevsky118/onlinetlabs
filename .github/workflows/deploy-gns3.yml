@@ -59,6 +59,7 @@ jobs:
         run: |
           ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" '
             set -e
+            docker logout ghcr.io 2>/dev/null || true
             docker network create onlinetlabs_net 2>/dev/null || true
             cd /opt/onlinetlabs/gns3
             mkdir -p runtime/data runtime/gns3-resources images/IOS images/IOU images/QEMU

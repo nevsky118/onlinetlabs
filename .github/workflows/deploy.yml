@@ -151,4 +151,5 @@ jobs:
             \$dc ps
             docker image prune -af --filter 'until=168h'
             docker builder prune -f --filter 'unused-for=168h'
+            docker logout ghcr.io
           "
