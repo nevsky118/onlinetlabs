@@ -76,3 +76,19 @@ class VpcsShowIpConsoleData:
             "MTU         : 1500\r\n"
             "VPCS> "
         ).encode()
+
+
+class VpcsStalePromptConsoleData:
+    """Generates a console that answers the first `show ip` with only a stale prompt.
+
+    That is what a reconnect right after the previous check closed the same console
+    looks like: a reply that parses as no address rather than a wrong one.
+    """
+
+    def __init__(self, ip: str = "192.168.1.11/24", gateway: str = "192.168.1.1"):
+        self.ip = ip
+        self.gateway = gateway
+        self.stale = _PROMPT_BYTES
+        self.answer = (
+            f"show ip\r\nIP/MASK     : {ip}\r\nGATEWAY     : {gateway}\r\nVPCS> "
+        ).encode()

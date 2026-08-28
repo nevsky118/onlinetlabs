@@ -7,7 +7,11 @@ import pytest
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_false, assert_true
 
-from tests.settings.data.vpcs_data import VpcsPingConsoleData, VpcsShowIpConsoleData
+from tests.settings.data.vpcs_data import (
+    VpcsPingConsoleData,
+    VpcsShowIpConsoleData,
+    VpcsStalePromptConsoleData,
+)
 from validation.checks import vpcs
 
 pytestmark = [pytest.mark.unit]
@@ -157,4 +161,41 @@ class TestVpcsShowIpChunkedBanner:
         with autotest.step("Assert: the reply is parsed, not reported as empty"):
             assert_equal(result.actual["ip"], console.ip, "ip parsed")
             assert_equal(result.actual["gateway"], console.gateway, "gateway parsed")
+            assert_true(result.ok, "a configured PC passes")
+
+
+class TestVpcsShowIpStalePrompt:
+    """A stale prompt means the answer never arrived, so it is asked again."""
+
+    @autotest.num("3392")
+    @autotest.external_id("4df7c1bb-daba-4c2b-860d-b9d04c894a74")
+    @autotest.name("vpcs.show_ip: retries once when the first reply is only a stale prompt")
+    async def test_4df7c1bb_retries_once_on_stale_prompt(self, monkeypatch):
+        with autotest.step("Arrange: the first show ip returns a bare prompt"):
+            console = VpcsStalePromptConsoleData()
+            reader = _Reader([])
+            sent: list[bytes] = []
+            replies = [console.stale, console.answer]
+
+            class _Retrying(_Writer):
+                def write(self, data: bytes) -> None:
+                    super().write(data)
+                    if data.startswith(b"show ip") and replies:
+                        reader.queue(replies.pop(0))
+
+            writer = _Retrying(sent)
+
+            async def fake_open_connection(host, port):
+                return reader, writer
+
+            monkeypatch.setattr(asyncio, "open_connection", fake_open_connection)
+
+        with autotest.step("Act: run the vpcs.show_ip check"):
+            result = await vpcs.vpcs_show_ip(
+                _ctx(), {"node": "PC1"}, {"ip": console.ip, "gateway": console.gateway}
+            )
+
+        with autotest.step("Assert: asked twice and parsed the second reply"):
+            assert_equal(sum(1 for w in sent if w.startswith(b"show ip")), 2, "asked twice")
+            assert_equal(result.actual["ip"], console.ip, "ip parsed")
             assert_true(result.ok, "a configured PC passes")

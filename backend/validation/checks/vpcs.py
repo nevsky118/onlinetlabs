@@ -62,6 +62,23 @@ async def _drain_until_prompt(reader: asyncio.StreamReader, timeout: float) -> b
     return bytes(buf)
 
 
+async def _read_show_ip(reader, writer) -> bytes:
+    """Ask the console for `show ip`, retrying once when the reply comes back empty.
+
+    A reconnect right after the previous check closed the same console can yield a
+    stale prompt, which parses as no address rather than a wrong one.
+    """
+    for attempt in range(2):
+        if attempt:
+            await _drain_idle(reader, idle=0.3, total=1.0)
+        writer.write(b"show ip\r\n")
+        await writer.drain()
+        raw = await _drain_until_prompt(reader, timeout=_READ_TIMEOUT)
+        if _parse_show_ip(raw.decode("utf-8", errors="replace"))["ip"]:
+            return raw
+    return raw
+
+
 async def vpcs_show_ip(ctx: CheckContext, params: dict, expect: dict) -> CheckResult:
     """Connects via telnet to the VPCS console and parses `show ip`."""
     node_name = params.get("node")
@@ -101,10 +118,7 @@ async def vpcs_show_ip(ctx: CheckContext, params: dict, expect: dict) -> CheckRe
         # Shake off the accumulated prompt/echo.
         await _drain_idle(reader, idle=0.3, total=2.0)
 
-        writer.write(b"show ip\r\n")
-        await writer.drain()
-
-        raw = await _drain_until_prompt(reader, timeout=_READ_TIMEOUT)
+        raw = await _read_show_ip(reader, writer)
     finally:
         try:
             writer.close()
@@ -300,10 +314,7 @@ async def vpcs_ip_in_subnet(ctx: CheckContext, params: dict, expect: dict) -> Ch
         await asyncio.sleep(0.3)
         await _drain_idle(reader, idle=0.3, total=2.0)
 
-        writer.write(b"show ip\r\n")
-        await writer.drain()
-
-        raw = await _drain_until_prompt(reader, timeout=_READ_TIMEOUT)
+        raw = await _read_show_ip(reader, writer)
     finally:
         try:
             writer.close()
