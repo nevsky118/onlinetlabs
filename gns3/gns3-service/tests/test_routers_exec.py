@@ -57,6 +57,17 @@ VTYSH_BODY = {
     "command": "show ip ospf neighbor",
 }
 
+DOCKER_NODE = {"node_type": "docker", "properties": {"container_id": "container-xyz"}}
+
+DAEMON_UNREACHABLE_STDERR = (
+    b"Cannot connect to the Docker daemon at unix:///var/run/docker.sock. "
+    b"Is the docker daemon running?"
+)
+DOCKER_INFRA_STDERR = b"docker: Error response from daemon."
+DOCKER_INFRA_EXIT_CODE = 125
+VTYSH_REJECT_STDERR = b"% Unknown command"
+VTYSH_REJECT_EXIT_CODE = 1
+
 
 class TestExecAuth:
     @autotest.num("3353")
@@ -163,14 +174,10 @@ class TestExecInfrastructureFailure:
             admin = app.state.session_service._admin
             admin.request.return_value = _stub_response(
                 200,
-                {"node_type": "docker", "properties": {"container_id": "container-xyz"}},
+                DOCKER_NODE,
             )
             proc = AsyncMock()
-            proc.communicate.return_value = (
-                b"",
-                b"Cannot connect to the Docker daemon at unix:///var/run/docker.sock. "
-                b"Is the docker daemon running?",
-            )
+            proc.communicate.return_value = (b"", DAEMON_UNREACHABLE_STDERR)
             proc.returncode = 1
 
         with autotest.step("Act: POST vtysh with the subprocess spawn mocked"):
@@ -196,11 +203,11 @@ class TestExecInfrastructureFailure:
             admin = app.state.session_service._admin
             admin.request.return_value = _stub_response(
                 200,
-                {"node_type": "docker", "properties": {"container_id": "container-xyz"}},
+                DOCKER_NODE,
             )
             proc = AsyncMock()
-            proc.communicate.return_value = (b"", b"docker: Error response from daemon.")
-            proc.returncode = 125
+            proc.communicate.return_value = (b"", DOCKER_INFRA_STDERR)
+            proc.returncode = DOCKER_INFRA_EXIT_CODE
 
         with autotest.step("Act: POST vtysh with the subprocess spawn mocked"):
             with patch(
@@ -224,11 +231,11 @@ class TestExecInfrastructureFailure:
             admin = app.state.session_service._admin
             admin.request.return_value = _stub_response(
                 200,
-                {"node_type": "docker", "properties": {"container_id": "container-xyz"}},
+                DOCKER_NODE,
             )
             proc = AsyncMock()
-            proc.communicate.return_value = (b"", b"% Unknown command")
-            proc.returncode = 1
+            proc.communicate.return_value = (b"", VTYSH_REJECT_STDERR)
+            proc.returncode = VTYSH_REJECT_EXIT_CODE
 
         with autotest.step("Act: POST vtysh with the subprocess spawn mocked"):
             with patch(
@@ -243,5 +250,5 @@ class TestExecInfrastructureFailure:
 
         with autotest.step("Assert: 200 with the vtysh exit code preserved"):
             assert response.status_code == 200
-            assert response.json()["exit_code"] == 1
-            assert response.json()["stderr"] == "% Unknown command"
+            assert response.json()["exit_code"] == VTYSH_REJECT_EXIT_CODE
+            assert response.json()["stderr"] == VTYSH_REJECT_STDERR.decode()

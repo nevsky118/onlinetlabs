@@ -207,7 +207,10 @@ async def vpcs_ping(ctx: CheckContext, params: dict, expect: dict) -> CheckResul
 
         writer.write(f"ping {target}\r\n".encode())
         await writer.drain()
+        await _drain_until_prompt(reader, timeout=_PING_READ_TIMEOUT)
 
+        writer.write(f"ping {target}\r\n".encode())
+        await writer.drain()
         raw = await _drain_until_prompt(reader, timeout=_PING_READ_TIMEOUT)
     finally:
         try:

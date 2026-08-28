@@ -14,6 +14,8 @@ from admin.schemas import (
     AnnotationIrrResponse,
     CurvePoint,
     IdentifierEvalResponse,
+    LabProblemOut,
+    LabsReadiness,
     OverviewAb,
     OverviewCohort,
     OverviewIdentifier,
@@ -39,6 +41,7 @@ from evaluation.metrics import (
 )
 from evaluation.scenarios import build_synthetic_scenarios, build_synthetic_sessions
 from i18n import DEFAULT_LOCALE, LocalizedError, resolve_localized
+from labs.readiness import audit_labs, is_launchable
 from labs.service import get_all_labs, get_lab_by_slug, update_lab
 from models.experiment import ExperimentMetrics
 from models.session import LearningSession
@@ -333,7 +336,7 @@ def _to_admin_lab(lab) -> AdminLab:
     """Serialize Lab ORM object to AdminLab schema."""
     template_status = (lab.meta or {}).get("template_status", "unknown")
     # Non-gns3 labs need no template.
-    template_ready = True if lab.environment_type != "gns3" else bool(lab.gns3_template_project_id)
+    template_ready = is_launchable(lab)
     return AdminLab(
         slug=lab.slug,
         title=resolve_localized(lab.title_i18n, DEFAULT_LOCALE),
@@ -356,6 +359,22 @@ async def list_admin_labs(
     """List of labs for the administrator."""
     labs = await get_all_labs(db)
     return [_to_admin_lab(lab) for lab in labs]
+
+
+@router.get("/labs/readiness", response_model=LabsReadiness)
+async def labs_readiness(
+    db: AsyncSession = Depends(get_db),
+    _: dict = Depends(require_admin),
+) -> LabsReadiness:
+    """Every lab whose declarations do not add up, in one response."""
+    from validation.runner import spec_slugs
+
+    labs = await get_all_labs(db)
+    problems = audit_labs(labs, spec_slugs())
+    return LabsReadiness(
+        ok=not problems,
+        problems=[LabProblemOut(slug=p.slug, kind=p.kind, detail=p.detail) for p in problems],
+    )
 
 
 @router.patch("/labs/{slug}", response_model=AdminLab)

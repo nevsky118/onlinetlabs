@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from i18n import LocalizedError, as_locale_map
+from labs.readiness import NO_TEMPLATE_FRR, NO_TEMPLATE_IOSVL2, resolve_template_id
 from models.lab import Lab
 
 
@@ -28,19 +29,14 @@ def template_project_id_for(lab: Lab) -> str:
 
     Single source for launch and reset; they used to branch differently.
     """
-    if lab.slug.endswith("-ccna"):
-        template_pid = lab.gns3_template_project_id_iosvl2
-        if not template_pid:
-            raise LocalizedError("error.lab.iosvl2_missing", status_code=400, slug=lab.slug)
-    elif lab.slug.endswith("-frr"):
-        template_pid = getattr(lab, "gns3_template_project_id_frr", None)
-        if not template_pid:
-            raise LocalizedError("error.lab.no_template", status_code=400)
-    else:
-        template_pid = lab.gns3_template_project_id
-        if not template_pid:
-            raise LocalizedError("error.lab.no_template_project", status_code=400)
-    return template_pid
+    template_pid, blocker = resolve_template_id(lab)
+    if template_pid:
+        return template_pid
+    if blocker == NO_TEMPLATE_IOSVL2:
+        raise LocalizedError("error.lab.iosvl2_missing", status_code=400, slug=lab.slug)
+    if blocker == NO_TEMPLATE_FRR:
+        raise LocalizedError("error.lab.no_template", status_code=400)
+    raise LocalizedError("error.lab.no_template_project", status_code=400)
 
 
 async def create_lab(

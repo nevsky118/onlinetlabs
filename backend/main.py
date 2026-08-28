@@ -58,6 +58,26 @@ from validation.runs_router import router as validation_runs_router
 logger = logging.getLogger(__name__)
 
 
+async def _audit_lab_readiness() -> None:
+    """Log every lab whose declarations do not add up, so it is found before a student finds it."""
+    from labs.readiness import audit_labs
+    from labs.service import get_all_labs
+    from validation.runner import spec_slugs
+
+    try:
+        async with async_session() as db:
+            labs = await get_all_labs(db)
+        problems = audit_labs(labs, spec_slugs())
+    except Exception:
+        logger.warning("Lab readiness audit failed to run", exc_info=True)
+        return
+
+    for problem in problems:
+        logger.warning("Lab readiness: %s [%s] %s", problem.slug, problem.kind, problem.detail)
+    if problems:
+        logger.warning("Lab readiness: %d problem(s) found", len(problems))
+
+
 async def _restore_session_monitors(monitor_registry: SessionMonitorRegistry) -> None:
     """Restarts the SessionMonitor for active sessions after a backend restart.
 
@@ -141,8 +161,14 @@ async def lifespan(app: FastAPI):
     app.state.session_queue = session_queue
     app.state.bulk_gns3_semaphore = _BULK_GNS3_SEMAPHORE
     reclaim_task = asyncio.create_task(idle_reclaim_loop(gns3_client))
+    readiness_task = asyncio.create_task(_audit_lab_readiness())
     restore_task = asyncio.create_task(_restore_session_monitors(monitor_registry))
     yield
+    readiness_task.cancel()
+    try:
+        await readiness_task
+    except asyncio.CancelledError:
+        pass
     restore_task.cancel()
     try:
         await restore_task

@@ -125,3 +125,18 @@ class AnnotationIrrResponse(BaseModel):
     coder_a: str | None
     coder_b: str | None
     note: str
+
+
+class LabProblemOut(BaseModel):
+    """One lab misconfiguration reported by the readiness audit."""
+
+    slug: str
+    kind: str
+    detail: str
+
+
+class LabsReadiness(BaseModel):
+    """Result of auditing every lab against its specs and templates."""
+
+    ok: bool
+    problems: list[LabProblemOut]

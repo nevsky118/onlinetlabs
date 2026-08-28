@@ -183,3 +183,8 @@ async def run_validation(
 
     overall_ok = all(s["ok"] for s in accumulated_steps) if accumulated_steps else True
     yield Event("run.finish", {"ok": overall_ok}), accumulated_steps
+
+
+def spec_slugs() -> set[str]:
+    """Slugs of every lab validation spec present on disk."""
+    return {p.stem for p in _LABS_DIR.glob("*.yaml")}

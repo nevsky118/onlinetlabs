@@ -21,7 +21,11 @@ from models.lab import Lab
 CONTENT_DIR = (
     Path(os.environ["CONTENT_DIR"])
     if os.environ.get("CONTENT_DIR")
-    else Path(__file__).resolve().parent.parent / "frontend" / "apps" / "web" / "content"
+    else Path(__file__).resolve().parent.parent
+    / "frontend"
+    / "apps"
+    / "web"
+    / "content"
 )
 
 
@@ -46,9 +50,13 @@ def localized_frontmatter(directory: Path, stem: str) -> dict[str, dict]:
     return found
 
 
-def field_map(per_locale: dict[str, dict], field: str, default: str | None = None) -> dict | None:
+def field_map(
+    per_locale: dict[str, dict], field: str, default: str | None = None
+) -> dict | None:
     """Locale map for one frontmatter field, empty values dropped."""
-    return as_locale_map({loc: fm.get(field, default) for loc, fm in per_locale.items()})
+    return as_locale_map(
+        {loc: fm.get(field, default) for loc, fm in per_locale.items()}
+    )
 
 
 async def sync_courses(db: AsyncSession) -> int:
@@ -70,7 +78,10 @@ async def sync_courses(db: AsyncSession) -> int:
         course.description_i18n = field_map(per_locale, "description")
         default_fm = per_locale.get(DEFAULT_LOCALE) or next(iter(per_locale.values()))
         course.difficulty = default_fm.get("difficulty", "beginner")
-        course.meta = {"tags": default_fm.get("tags", []), "tasks": default_fm.get("tasks")}
+        course.meta = {
+            "tags": default_fm.get("tags", []),
+            "tasks": default_fm.get("tasks"),
+        }
         count += 1
     await db.commit()
     return count
@@ -88,7 +99,8 @@ async def sync_labs(db: AsyncSession) -> int:
             continue
         result = await db.execute(select(Lab).where(Lab.slug == slug))
         lab = result.scalar_one_or_none()
-        if lab is None:
+        is_new = lab is None
+        if is_new:
             lab = Lab(slug=slug)
             db.add(lab)
         lab.title_i18n = field_map(per_locale, "title", slug)
@@ -96,7 +108,10 @@ async def sync_labs(db: AsyncSession) -> int:
         default_fm = per_locale.get(DEFAULT_LOCALE) or next(iter(per_locale.values()))
         lab.difficulty = default_fm.get("difficulty", "beginner")
         lab.environment_type = default_fm.get("environment", "none")
+        if is_new and lab.environment_type == "gns3":
+            lab.enabled = False
         lab.meta = {
+            **(lab.meta or {}),
             "tags": default_fm.get("tags", []),
             "tasks": default_fm.get("tasks"),
             "skill": default_fm.get("skill"),
