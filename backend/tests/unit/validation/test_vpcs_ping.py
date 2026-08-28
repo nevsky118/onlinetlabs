@@ -5,7 +5,12 @@ from types import SimpleNamespace
 
 import pytest
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_false, assert_true
+from mcp_sdk.testing.custom_assertions import (
+    assert_equal,
+    assert_false,
+    assert_in,
+    assert_true,
+)
 
 from tests.settings.data.vpcs_data import (
     VpcsPingConsoleData,
@@ -231,3 +236,44 @@ class TestVpcsConsoleContention:
         with autotest.step("Assert: it reconnected and the check passed"):
             assert_equal(attempts["n"], 3, "connect retried until it succeeded")
             assert_true(result.ok, "a configured PC passes despite console contention")
+
+
+class TestVpcsUnreadableConsole:
+    """An unreadable console is a failure to observe, not a wrong answer."""
+
+    @autotest.num("3394")
+    @autotest.external_id("b16baf30-bbd5-4f5b-833b-22a996c0d097")
+    @autotest.name("vpcs.show_ip: reports an unreadable console instead of an empty address")
+    async def test_b16baf30_reports_unreadable_console(self, monkeypatch):
+        with autotest.step("Arrange: every read comes back as a bare prompt"):
+            console = VpcsStalePromptConsoleData()
+            attempts = {"n": 0}
+
+            def _fresh():
+                reader = _Reader([])
+
+                class _Stale(_Writer):
+                    def write(self, data: bytes) -> None:
+                        super().write(data)
+                        if data.startswith(b"show ip"):
+                            reader.queue(console.stale)
+
+                return reader, _Stale([])
+
+            async def fake_open_connection(host, port):
+                attempts["n"] += 1
+                return _fresh()
+
+            monkeypatch.setattr(asyncio, "open_connection", fake_open_connection)
+            monkeypatch.setattr(vpcs, "_READ_BACKOFF", 0.01)
+
+        with autotest.step("Act: run the vpcs.show_ip check"):
+            result = await vpcs.vpcs_show_ip(
+                _ctx(), {"node": "PC1"}, {"ip": console.ip, "gateway": console.gateway}
+            )
+
+        with autotest.step("Assert: it reconnected, then reported unreadable, not a wrong ip"):
+            assert_equal(attempts["n"], vpcs._READ_ATTEMPTS, "reconnected for every attempt")
+            assert_in("unreadable", result.actual.get("error", ""))
+            assert_true("ip" not in result.actual, "no empty address is reported as the answer")
+            assert_false(result.ok, "the check does not pass")

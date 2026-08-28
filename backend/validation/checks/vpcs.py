@@ -18,6 +18,8 @@ _COMPARE_RE = re.compile(r"^\s*(>=|<=|==|=|>|<)?\s*(\d+)\s*$")
 
 _CONNECT_TIMEOUT = 5.0
 _CONNECT_ATTEMPTS = 4
+_READ_ATTEMPTS = 3
+_READ_BACKOFF = 0.5
 _CONNECT_BACKOFF = 0.4
 _READ_TIMEOUT = 3.0
 _PING_READ_TIMEOUT = 8.0
@@ -99,6 +101,46 @@ async def _read_show_ip(reader, writer) -> bytes:
     return raw
 
 
+async def _show_ip_once(host: str, port: int) -> tuple[dict, str]:
+    """One connect-ask-parse cycle. Returns (parsed, log); parsed["ip"] is empty when unreadable."""
+    reader, writer = await _open_console(host, port)
+    try:
+        writer.write(b"\r\n")
+        await writer.drain()
+        await asyncio.sleep(0.3)
+        await _drain_idle(reader, idle=0.3, total=2.0)
+        raw = await _read_show_ip(reader, writer)
+    finally:
+        try:
+            writer.close()
+            await writer.wait_closed()
+        except Exception:
+            pass
+    text = raw.decode("utf-8", errors="replace")
+    return _parse_show_ip(text), text
+
+
+async def read_show_ip(host: str, port: int) -> tuple[dict | None, str]:
+    """Read `show ip` from a node, reconnecting while the console stays unreadable.
+
+    Returns (parsed, log), or (None, log) when every attempt came back without an
+    address. An unreadable console is a failure to observe, not a wrong answer, and
+    callers must report it as such.
+    """
+    log = ""
+    for attempt in range(_READ_ATTEMPTS):
+        if attempt:
+            await asyncio.sleep(_READ_BACKOFF * attempt)
+        try:
+            parsed, log = await _show_ip_once(host, port)
+        except (TimeoutError, OSError) as exc:
+            log = f"connect failed: {exc}"
+            continue
+        if parsed["ip"]:
+            return parsed, log
+    return None, log
+
+
 async def vpcs_show_ip(ctx: CheckContext, params: dict, expect: dict) -> CheckResult:
     """Connects via telnet to the VPCS console and parses `show ip`."""
     node_name = params.get("node")
@@ -120,40 +162,17 @@ async def vpcs_show_ip(ctx: CheckContext, params: dict, expect: dict) -> CheckRe
         )
     host = ctx.node_console_host(node_name)
 
-    try:
-        reader, writer = await _open_console(host, port)
-    except (TimeoutError, OSError) as exc:
+    parsed, log = await read_show_ip(host, port)
+    if parsed is None:
         return CheckResult(
             ok=False,
             expected=expect,
-            actual={"error": f"connect failed: {exc}"},
-            log="",
+            actual={"error": f"console for {node_name} unreadable"},
+            log=log,
         )
 
-    try:
-        writer.write(b"\r\n")
-        await writer.drain()
-        await asyncio.sleep(0.3)
-        # Shake off the accumulated prompt/echo.
-        await _drain_idle(reader, idle=0.3, total=2.0)
-
-        raw = await _read_show_ip(reader, writer)
-    finally:
-        try:
-            writer.close()
-            await writer.wait_closed()
-        except Exception:
-            pass
-
-    text = raw.decode("utf-8", errors="replace")
-    ip_match = _IP_RE.search(text)
-    gw_match = _GW_RE.search(text)
-    actual = {
-        "ip": ip_match.group(1) if ip_match else "",
-        "gateway": gw_match.group(1) if gw_match else "",
-    }
-    ok = actual["ip"] == expect.get("ip") and actual["gateway"] == expect.get("gateway")
-    return CheckResult(ok=ok, expected=expect, actual=actual, log=text)
+    ok = parsed["ip"] == expect.get("ip") and parsed["gateway"] == expect.get("gateway")
+    return CheckResult(ok=ok, expected=expect, actual=parsed, log=log)
 
 
 def _parse_ping(text: str) -> dict:
@@ -315,34 +334,16 @@ async def vpcs_ip_in_subnet(ctx: CheckContext, params: dict, expect: dict) -> Ch
         )
     host = ctx.node_console_host(node_name)
 
-    try:
-        reader, writer = await _open_console(host, port)
-    except (TimeoutError, OSError) as exc:
+    parsed, log = await read_show_ip(host, port)
+    if parsed is None:
         return CheckResult(
             ok=False,
             expected=expect,
-            actual={"error": f"connect failed: {exc}"},
-            log="",
+            actual={"error": f"console for {node_name} unreadable"},
+            log=log,
         )
 
-    try:
-        writer.write(b"\r\n")
-        await writer.drain()
-        await asyncio.sleep(0.3)
-        await _drain_idle(reader, idle=0.3, total=2.0)
-
-        raw = await _read_show_ip(reader, writer)
-    finally:
-        try:
-            writer.close()
-            await writer.wait_closed()
-        except Exception:
-            pass
-
-    text = raw.decode("utf-8", errors="replace")
-    parsed = _parse_show_ip(text)
     actual = {"ip": parsed["ip"], "gateway": parsed["gateway"]}
-
     subnet = expect.get("subnet", "")
     ok = _ip_in_subnet(parsed["ip"], subnet) and parsed["gateway"] == expect.get("gateway")
-    return CheckResult(ok=ok, expected=expect, actual=actual, log=text)
+    return CheckResult(ok=ok, expected=expect, actual=actual, log=log)
