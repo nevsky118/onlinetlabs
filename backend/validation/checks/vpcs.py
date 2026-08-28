@@ -17,9 +17,29 @@ _PING_TTL_RE = re.compile(r"\bttl=(\d+)", re.IGNORECASE)
 _COMPARE_RE = re.compile(r"^\s*(>=|<=|==|=|>|<)?\s*(\d+)\s*$")
 
 _CONNECT_TIMEOUT = 5.0
+_CONNECT_ATTEMPTS = 4
+_CONNECT_BACKOFF = 0.4
 _READ_TIMEOUT = 3.0
 _PING_READ_TIMEOUT = 8.0
 _PROMPT = b"> "
+
+
+async def _open_console(host: str, port: int):
+    """Open the node console, retrying while a previous session is still closing.
+
+    GNS3 serialises telnet consoles per node, so a reconnect right after the previous
+    check closed one is refused rather than queued.
+    """
+    last: Exception | None = None
+    for attempt in range(_CONNECT_ATTEMPTS):
+        if attempt:
+            await asyncio.sleep(_CONNECT_BACKOFF * attempt)
+        try:
+            async with asyncio.timeout(_CONNECT_TIMEOUT):
+                return await asyncio.open_connection(host, port)
+        except (TimeoutError, OSError) as exc:
+            last = exc
+    raise last if last else OSError("console connect failed")
 
 
 async def _drain_idle(reader: asyncio.StreamReader, idle: float, total: float) -> bytes:
@@ -101,8 +121,7 @@ async def vpcs_show_ip(ctx: CheckContext, params: dict, expect: dict) -> CheckRe
     host = ctx.node_console_host(node_name)
 
     try:
-        async with asyncio.timeout(_CONNECT_TIMEOUT):
-            reader, writer = await asyncio.open_connection(host, port)
+        reader, writer = await _open_console(host, port)
     except (TimeoutError, OSError) as exc:
         return CheckResult(
             ok=False,
@@ -226,8 +245,7 @@ async def vpcs_ping(ctx: CheckContext, params: dict, expect: dict) -> CheckResul
     host = ctx.node_console_host(src_name)
 
     try:
-        async with asyncio.timeout(_CONNECT_TIMEOUT):
-            reader, writer = await asyncio.open_connection(host, port)
+        reader, writer = await _open_console(host, port)
     except (TimeoutError, OSError) as exc:
         return CheckResult(
             ok=False,
@@ -298,8 +316,7 @@ async def vpcs_ip_in_subnet(ctx: CheckContext, params: dict, expect: dict) -> Ch
     host = ctx.node_console_host(node_name)
 
     try:
-        async with asyncio.timeout(_CONNECT_TIMEOUT):
-            reader, writer = await asyncio.open_connection(host, port)
+        reader, writer = await _open_console(host, port)
     except (TimeoutError, OSError) as exc:
         return CheckResult(
             ok=False,

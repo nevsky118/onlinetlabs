@@ -199,3 +199,35 @@ class TestVpcsShowIpStalePrompt:
             assert_equal(sum(1 for w in sent if w.startswith(b"show ip")), 2, "asked twice")
             assert_equal(result.actual["ip"], console.ip, "ip parsed")
             assert_true(result.ok, "a configured PC passes")
+
+
+class TestVpcsConsoleContention:
+    """GNS3 serialises node consoles, so a refused connect must be retried."""
+
+    @autotest.num("3393")
+    @autotest.external_id("09a239aa-bca5-4c3e-902c-2b5fa6f525b9")
+    @autotest.name("vpcs.show_ip: retries a console connect refused by a closing session")
+    async def test_09a239aa_retries_refused_console_connect(self, monkeypatch):
+        with autotest.step("Arrange: the first two connects are refused, the third succeeds"):
+            console = VpcsShowIpConsoleData()
+            reader = _Reader(console.banner_chunks)
+            writer = _AnsweringWriter([], reader, b"show ip", console.show_ip)
+            attempts = {"n": 0}
+
+            async def flaky_open_connection(host, port):
+                attempts["n"] += 1
+                if attempts["n"] < 3:
+                    raise ConnectionRefusedError(111, "Connection refused")
+                return reader, writer
+
+            monkeypatch.setattr(asyncio, "open_connection", flaky_open_connection)
+            monkeypatch.setattr(vpcs, "_CONNECT_BACKOFF", 0.01)
+
+        with autotest.step("Act: run the vpcs.show_ip check"):
+            result = await vpcs.vpcs_show_ip(
+                _ctx(), {"node": "PC1"}, {"ip": console.ip, "gateway": console.gateway}
+            )
+
+        with autotest.step("Assert: it reconnected and the check passed"):
+            assert_equal(attempts["n"], 3, "connect retried until it succeeded")
+            assert_true(result.ok, "a configured PC passes despite console contention")
