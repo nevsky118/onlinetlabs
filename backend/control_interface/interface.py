@@ -60,7 +60,13 @@ class ControlInterface:
                 raise InterfaceDenied("consent")
         # The typed mcp_client wrapper injects ctx and serializes arguments
         # (like act() -> execute_action). A direct _call_tool dropped ctx -> MCP error.
-        result = await getattr(self._mcp, tool)(ctx, **arguments)
+        try:
+            result = await getattr(self._mcp, tool)(ctx, **arguments)
+        except Exception as exc:
+            await self._audit(
+                user_id, session_id, tool, "observe", False, type(exc).__name__, lab_slug
+            )
+            raise
         await self._audit(user_id, session_id, tool, "observe", True, None, lab_slug)
         return result
 
@@ -105,9 +111,15 @@ class ControlInterface:
         await self.authorize_act(
             tool, user_id=user_id, session_id=session_id, arm=arm, lab_slug=lab_slug
         )
-        result = await self._mcp.execute_action(
-            ctx, arguments.get("action_name"), arguments.get("params", {})
-        )
+        try:
+            result = await self._mcp.execute_action(
+                ctx, arguments.get("action_name"), arguments.get("params", {})
+            )
+        except Exception:
+            await self.record_act(
+                tool, user_id=user_id, session_id=session_id, success=False, lab_slug=lab_slug
+            )
+            raise
         await self.record_act(
             tool, user_id=user_id, session_id=session_id, success=True, lab_slug=lab_slug
         )

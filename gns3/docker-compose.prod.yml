@@ -113,8 +113,10 @@ services:
   gns3-mcp:
     restart: unless-stopped
     logging: *default-logging
-    mem_limit: 256m
+    mem_limit: 768m
     cpus: 0.5
+    environment:
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?set INTERNAL_API_TOKEN in .env.prod}
     ports: !override
       - "127.0.0.1:8100:8100"
 

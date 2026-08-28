@@ -34,6 +34,7 @@ def _new_log_buffer() -> LogBuffer:
 impl = GNS3Server(
     pool=pool,
     history_url=settings.gns3_service_url,
+    internal_api_token=settings.internal_api_token,
     log_buffer_factory=_new_log_buffer,
 )
 server = OnlinetlabsMCPServer(

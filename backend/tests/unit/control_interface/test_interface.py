@@ -276,3 +276,70 @@ class TestControlInterface:
 
         with autotest.step("Assert: reason=consent"):
             assert_equal(exc_info.value.reason, "consent", "reason")
+
+
+class TestControlInterfaceFailureAudit:
+    """A tool that raises must be audited as a failure, never left recorded as success."""
+
+    @autotest.num("3395")
+    @autotest.external_id("1ffc0388-3c52-43fd-97e0-b6b9d3a1fc2f")
+    @autotest.name("observe: a raising tool is audited with success=False and re-raised")
+    async def test_1ffc0388_observe_failure_is_audited(self):
+        with autotest.step("Arrange: the observe tool raises"):
+            mcp = _make_mcp()
+            mcp.list_user_actions = AsyncMock(side_effect=RuntimeError("history 403"))
+            factory, _ = _make_db_factory()
+            iface = ControlInterface(mcp, factory, _make_config())
+
+        with autotest.step("Act: observe, expecting the error to propagate"):
+            with (
+                patch(
+                    "control_interface.interface.get_owned_session",
+                    new=AsyncMock(return_value=object()),
+                ),
+                patch("control_interface.interface.has_consent", new=AsyncMock(return_value=True)),
+                patch("control_interface.interface.record", new=AsyncMock()) as mock_record,
+            ):
+                with pytest.raises(RuntimeError):
+                    await iface.observe(
+                        _TOOL_OBS, ctx=None, arguments={}, user_id=_USER, session_id=_SESSION
+                    )
+
+        with autotest.step("Assert: the audit row says the call failed"):
+            assert_true(mock_record.called, "record called")
+            call_kwargs = mock_record.call_args.kwargs
+            assert_equal(call_kwargs["success"], False, "success")
+            assert_equal(call_kwargs["kind"], "observe", "kind")
+
+    @autotest.num("3396")
+    @autotest.external_id("3d14c40d-0e9a-4b17-9c0c-6d69e732a6de")
+    @autotest.name("act: a raising action is audited with success=False and re-raised")
+    async def test_3d14c40d_act_failure_is_audited(self):
+        with autotest.step("Arrange: the action raises"):
+            mcp = _make_mcp()
+            mcp.execute_action = AsyncMock(side_effect=RuntimeError("mcp down"))
+            factory, _ = _make_db_factory()
+            iface = ControlInterface(mcp, factory, _make_config())
+
+        with autotest.step("Act: act, expecting the error to propagate"):
+            with (
+                patch(
+                    "control_interface.interface.get_owned_session",
+                    new=AsyncMock(return_value=object()),
+                ),
+                patch("control_interface.interface.has_consent", new=AsyncMock(return_value=True)),
+                patch("control_interface.interface.record", new=AsyncMock()) as mock_record,
+            ):
+                with pytest.raises(RuntimeError):
+                    await iface.act(
+                        _TOOL_ACT,
+                        ctx=None,
+                        arguments={"action_name": "start", "params": {}},
+                        user_id=_USER,
+                        session_id=_SESSION,
+                        arm=ControlArm.CLOSED,
+                    )
+
+        with autotest.step("Assert: the audit row says the action failed"):
+            assert_true(mock_record.called, "record called")
+            assert_equal(mock_record.call_args.kwargs["success"], False, "success")

@@ -41,12 +41,14 @@ if __import__("typing").TYPE_CHECKING:
 _history_client: httpx.AsyncClient | None = None
 
 
-def _get_history_client(base_url: str) -> httpx.AsyncClient:
+def _get_history_client(base_url: str, internal_api_token: str | None) -> httpx.AsyncClient:
     global _history_client
     if _history_client is None:
+        headers = {"Authorization": f"Bearer {internal_api_token}"} if internal_api_token else {}
         _history_client = httpx.AsyncClient(
             base_url=base_url,
             timeout=30,
+            headers=headers,
             limits=httpx.Limits(max_connections=20, max_keepalive_connections=5),
         )
     return _history_client
@@ -149,12 +151,14 @@ class GNS3Server:
         self,
         api_client: GNS3ApiClient | None = None,
         history_url: str | None = None,
+        internal_api_token: str | None = None,
         pool: ConnectionPool | None = None,
         log_buffer_factory: Callable[[], LogBuffer] | None = None,
     ) -> None:
         self._api = api_client
         self._pool = pool
         self._history_url = history_url  # gns3-service base URL
+        self._internal_api_token = internal_api_token
         self._log_buffer_factory = log_buffer_factory or LogBuffer
         # One buffer per (user, project). A single process-wide buffer served the
         # first caller's project logs to every other student.
@@ -363,13 +367,16 @@ class GNS3Server:
         # is the backend LearningSession id. The real key comes in metadata; fallback for
         # backward compatibility (e.g. tests without metadata).
         history_session_id = (ctx.metadata or {}).get("gns3_session_id") or ctx.session_id
-        client = _get_history_client(self._history_url)
+        client = _get_history_client(self._history_url, self._internal_api_token)
         response = await client.get(
             f"/history/{history_session_id}/actions",
             params={"limit": limit},
         )
         if response.status_code != 200:
-            return []
+            raise RuntimeError(
+                f"gns3-service history returned {response.status_code} for "
+                f"session {history_session_id}"
+            )
         events = response.json()
         return [
             UserAction(
