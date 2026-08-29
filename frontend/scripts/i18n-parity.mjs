@@ -82,5 +82,25 @@ if (placeholderMismatches.length) {
   }
 }
 
+// The platform stores pseudonymous data, not anonymous data. A string that says
+// otherwise is a false consent claim, so it fails the build rather than shipping.
+// web.privacy is exempt: it exists to say the data is NOT anonymous.
+const ANONYMITY = /anonymi[sz]|обезличен|анонимн/i
+const claims = []
+for (const key of ruKeys) {
+  if (key.startsWith("web.privacy")) continue
+  for (const [loc, flat] of [["ru", ru], ["en", en]]) {
+    const value = flat[key]
+    if (typeof value === "string" && ANONYMITY.test(value)) {
+      claims.push(`  ${loc} ${key}: ${value.slice(0, 80)}`)
+    }
+  }
+}
+if (claims.length) {
+  failed = true
+  console.error(`ANONYMITY CLAIM (${claims.length}) -- data is pseudonymous, not anonymous:`)
+  for (const c of claims) console.error(c)
+}
+
 if (failed) process.exit(1)
-console.log(`i18n parity ok (${ruKeys.length} keys, placeholders match)`)
+console.log(`i18n parity ok (${ruKeys.length} keys, placeholders match, no anonymity claims)`)
