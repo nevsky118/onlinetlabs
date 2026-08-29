@@ -1,6 +1,7 @@
 import { ThemeProvider } from "@repo/design-system/components/theme-provider"
 import { fontVariables } from "@repo/design-system/lib/fonts"
 import { cn } from "@repo/design-system/lib/utils"
+import { pickMessages } from "@repo/i18n/messages"
 import { routing } from "@repo/i18n/routing"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
@@ -19,6 +20,8 @@ import { SiteFooter } from "@/app-components/site-footer"
 import { SiteHeader } from "@/app-components/site-header"
 import { course, labs } from "@/lib/source"
 import { webUrl } from "@/lib/urls"
+
+const webNamespaces = ["shared", "web"]
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }))
@@ -99,7 +102,9 @@ export default async function RootLayout({
           fontVariables
         )}
       >
-        <NextIntlClientProvider>
+        <NextIntlClientProvider
+          messages={await pickMessages(locale, webNamespaces)}
+        >
           <AnalyticsProvider>
             <ThemeProvider>
               <LayoutProvider>
@@ -113,7 +118,7 @@ export default async function RootLayout({
                       navTree={coursesPageTree}
                     />
                     <main className="flex flex-1 flex-col">{children}</main>
-                    <SiteFooter />
+                    <SiteFooter locale={locale} />
                   </div>
                 </TooltipProvider>
                 <Toaster position="bottom-right" />

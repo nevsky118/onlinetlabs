@@ -15,6 +15,7 @@ import { TooltipProvider } from "@repo/design-system/ui/tooltip"
 import { NuqsAdapter } from "nuqs/adapters/next/app"
 import { AnalyticsProvider } from "@/app-components/analytics-provider"
 import { QueryProvider } from "@/app-components/query-provider"
+import { rootMessages } from "@/lib/messages"
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }))
@@ -96,7 +97,7 @@ export default async function RootLayout({
           fontVariables
         )}
       >
-        <NextIntlClientProvider>
+        <NextIntlClientProvider messages={await rootMessages(locale)}>
           <QueryProvider>
             <AnalyticsProvider>
               <ThemeProvider>

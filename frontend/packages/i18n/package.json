@@ -6,6 +6,7 @@
     "./routing": "./routing.ts",
     "./request": "./request.ts",
     "./navigation": "./navigation.ts",
+    "./messages": "./messages.ts",
     "./messages/ru.json": "./messages/ru.json",
     "./messages/en.json": "./messages/en.json",
     "./components/locale-switcher": "./components/locale-switcher.tsx"

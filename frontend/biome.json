@@ -9,12 +9,13 @@
     "ignoreUnknown": true,
     "includes": [
       "**",
-      "!node_modules",
-      "!.next",
-      "!.source",
-      "!dist",
-      "!build",
-      "!next-env.d.ts"
+      "!**/node_modules",
+      "!**/.next",
+      "!**/.turbo",
+      "!**/.source",
+      "!**/dist",
+      "!**/build",
+      "!**/next-env.d.ts"
     ]
   },
   "css": {
@@ -62,9 +63,16 @@
       "includes": ["apps/*/shared/ui/**", "packages/design-system/ui/**"],
       "linter": {
         "rules": {
-          "a11y": { "useFocusableInteractive": "off" },
-          "suspicious": { "noDoubleEquals": "off", "noDocumentCookie": "off" },
-          "correctness": { "useExhaustiveDependencies": "off" }
+          "a11y": {
+            "useFocusableInteractive": "off"
+          },
+          "suspicious": {
+            "noDoubleEquals": "off",
+            "noDocumentCookie": "off"
+          },
+          "correctness": {
+            "useExhaustiveDependencies": "off"
+          }
         }
       }
     }
@@ -80,7 +88,11 @@
               ["^next$", "^next/"],
               [":PACKAGE:"],
               [":BLANK_LINE:"],
-              [{ "type": true }],
+              [
+                {
+                  "type": true
+                }
+              ],
               ["^@/types/"],
               ["^@/(lib|hooks|config|ui|shared|auth)/"],
               [":BLANK_LINE:"],

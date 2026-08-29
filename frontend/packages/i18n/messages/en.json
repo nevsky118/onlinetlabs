@@ -34,7 +34,9 @@
       "description": "Platform"
     },
     "footer": {
-      "sourceCode": "Source code available on"
+      "sourceCode": "Source code available on",
+      "privacy": "Privacy",
+      "terms": "Terms"
     },
     "contentCard": {
       "difficulty": {
@@ -85,6 +87,47 @@
       "copied": "Copied",
       "collapse": "Collapse",
       "expand": "Expand"
+    },
+    "notFound": {
+      "heading": "Page not found",
+      "description": "This page does not exist or has moved.",
+      "home": "Go home"
+    },
+    "error": {
+      "heading": "Something went wrong",
+      "description": "The page failed to load. Try again.",
+      "retry": "Try again"
+    },
+    "privacy": {
+      "title": "Privacy notice",
+      "intro": "This platform is a research environment for a doctoral study on adaptive tutoring in virtual network labs. This notice describes what it records about you, why, and what you can do about it.",
+      "collectHeading": "What is recorded",
+      "collectBody": "Your account details from sign-up, the labs you launch, and what happens inside them: the state of the devices you configure, the checks that pass or fail, your messages to the tutor, and timing. Nothing outside the lab environment is recorded.",
+      "purposeHeading": "Why",
+      "purposeBody": "Two purposes, kept apart. Running the platform needs your account and your progress. The research needs the behavioural record, and only if you agreed to take part. Declining changes nothing about your access to the labs.",
+      "pseudonymityHeading": "Pseudonymous, not anonymous",
+      "pseudonymityBody": "Research records are analysed under a study identifier rather than your name or address. That identifier can still be traced back to you through a single restricted link, which is what makes it possible to answer an export or deletion request. We do not describe this data as anonymous, because it is not.",
+      "retentionHeading": "How long",
+      "retentionBody": "Research records are kept for the duration of the study and its publication. Operational logs of the control loop are removed after 90 days. Deleting your account removes both.",
+      "rightsHeading": "Your rights",
+      "rightsBody": "You can see everything held about you, have it deleted, withdraw from the study at any time, or use the labs without taking part at all. Withdrawing stops future collection; deletion removes what was already collected.",
+      "exerciseHeading": "How to act on this",
+      "exerciseBody": "Export, deletion and study participation are all in your account settings:",
+      "exerciseLink": "open settings"
+    },
+    "terms": {
+      "title": "Terms of use",
+      "intro": "A short statement of what this platform is and how it may be used.",
+      "accessHeading": "Access",
+      "accessBody": "Accounts are approved individually. Signing up requests access; it does not grant it. Access may be withdrawn at any time.",
+      "acceptableHeading": "Acceptable use",
+      "acceptableBody": "The lab environments are for learning the exercises they contain. Do not use them to reach systems outside the lab, to run workloads unrelated to the exercise, or to attempt to reach another participant's environment.",
+      "environmentHeading": "Your lab environment",
+      "environmentBody": "Each session is temporary. An environment left idle is paused, and every session ends at its deadline. Configuration you save inside a device survives a pause; anything else may not.",
+      "availabilityHeading": "Availability",
+      "availabilityBody": "This is a research deployment on a single machine, not a production service. It may be unavailable, restarted, or reset without notice.",
+      "liabilityHeading": "No warranty",
+      "liabilityBody": "The platform is provided as is, without warranty. Do not store anything here that you cannot afford to lose."
     }
   },
   "dashboard": {
@@ -417,23 +460,32 @@
       "credentialsCard": {
         "heading": "GNS3 access",
         "fields": {
-          "username": "Username",
-          "password": "Password"
+          "username": "Username"
         },
         "copyUsername": "Copy username",
-        "copyPassword": "Copy password",
-        "hidePassword": "Hide password",
-        "showPassword": "Show password",
         "copiedToast": "{label} copied",
         "openGns3": "Open GNS3"
       },
       "consentGate": {
         "title": "Research participation",
-        "description": "The platform collects data on actions in the lab environment to adapt learning. Data is anonymized and used for research purposes only. You can change this in <settingsLink>settings</settingsLink>.",
-        "accept": "Accept",
-        "decline": "Decline",
+        "description": "Your actions in the lab environment are stored under a study identifier rather than your name, and the platform keeps one link back to you — that link is what makes export and deletion possible. Taking part is optional: a refusal changes nothing about your access to the labs. You can change the decision in <settingsLink>settings</settingsLink>, and ask for an export or deletion of your data at any time.",
+        "accept": "Take part",
+        "decline": "Not this time",
         "toastAccepted": "Consent recorded",
-        "toastFailed": "Failed to save consent"
+        "toastDeclined": "Recorded: you are not taking part",
+        "toastFailed": "Failed to save the decision"
+      },
+      "accountPending": {
+        "title": "Account awaiting approval",
+        "description": "The account exists but has not been activated yet. An instructor confirms access before labs can be launched.",
+        "close": "Close"
+      },
+      "pausedNotice": {
+        "title": "Environment paused",
+        "description": "The nodes were stopped after a spell of inactivity. Your configuration was saved — resume and the environment comes back as you left it.",
+        "resume": "Resume",
+        "toastResumed": "Environment resumed",
+        "toastFailed": "Failed to resume the environment"
       },
       "nodeDetailDrawer": {
         "status": {
@@ -451,10 +503,9 @@
       },
       "credentialsDialog": {
         "title": "Lab access",
-        "description": "Save the password — it's only shown in full right now.",
+        "description": "Open the lab in GNS3 — the link signs you in.",
         "fields": {
-          "username": "Username",
-          "password": "Password"
+          "username": "Username"
         },
         "copiedToast": "{label} copied",
         "openGns3": "Open GNS3",
@@ -699,7 +750,7 @@
       "research": "Research",
       "consent": {
         "label": "Research participation",
-        "hint": "Collects anonymized data on actions in the lab environment to adapt learning. Used for research purposes only.",
+        "hint": "Your actions in the lab environment are stored under a study identifier rather than your name. Taking part is optional and a refusal changes nothing about your access to the labs.",
         "enabled": "Enabled",
         "disabled": "Disabled",
         "ariaLabel": "Research participation",
@@ -896,6 +947,16 @@
         "heading": "Sign-in required",
         "description": "Sign in to open this page.",
         "signIn": "Sign in"
+      },
+      "notFound": {
+        "heading": "Page not found",
+        "description": "This page does not exist or has moved.",
+        "home": "Go home"
+      },
+      "error": {
+        "heading": "Something went wrong",
+        "description": "The page failed to load. Try again.",
+        "retry": "Try again"
       }
     }
   },
