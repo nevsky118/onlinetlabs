@@ -23,7 +23,7 @@ from deps import get_activity_log, get_gns3_client, get_locale, get_state_cache
 from i18n import Locale, LocalizedError, resolve_localized
 from models.lab import Lab
 from models.session import LearningSession
-from sessions.queue import QUEUE_AVG_PROVISION_SEC, SessionQueueService, get_queue_service
+from sessions.queue import SessionQueueService, get_queue_service
 from sessions.schemas import (
     ActivityResponseSchema,
     ChatMessageResponse,
@@ -86,7 +86,7 @@ async def queue_status(
         "in_queue": True,
         "queue_position": pos,
         "queue_depth": depth,
-        "eta_sec": pos * QUEUE_AVG_PROVISION_SEC,
+        "eta_sec": round(pos * await queue.avg_provision_seconds()),
     }
 
 

@@ -4,13 +4,26 @@ from fastapi import Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
+# Caddy appends the direct peer to X-Forwarded-For, so the last entry is the
+# real caller. Anything a client puts in the header itself sits to its left.
+TRUSTED_PROXY_HOPS = 1
+
+
+def client_ip(request: Request) -> str:
+    """The caller's address, trusting exactly one reverse-proxy hop."""
+    forwarded = request.headers.get("x-forwarded-for", "") if hasattr(request, "headers") else ""
+    parts = [p.strip() for p in forwarded.split(",") if p.strip()]
+    if len(parts) >= TRUSTED_PROXY_HOPS:
+        return parts[-TRUSTED_PROXY_HOPS]
+    return get_remote_address(request)
+
 
 def _rate_limit_key(request: Request) -> str:
     """Key on the user + session pair. If no user is attached, we use the IP."""
     user = getattr(request.state, "user", None) if hasattr(request, "state") else None
     sid = request.path_params.get("session_id", "unknown")
     if user is None:
-        return f"ip:{get_remote_address(request)}:{sid}"
+        return f"ip:{client_ip(request)}:{sid}"
     user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
     return f"user:{user_id}:{sid}"
 
@@ -29,4 +42,4 @@ def exchange_rate_limit_key(request: Request) -> str:
     subject = getattr(request.state, "exchange_subject", None)
     if subject:
         return f"exchange:user:{subject}"
-    return f"exchange:ip:{get_remote_address(request)}"
+    return f"exchange:ip:{client_ip(request)}"

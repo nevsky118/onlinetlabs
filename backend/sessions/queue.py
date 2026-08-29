@@ -3,9 +3,7 @@
 Counters per lab (with TTL crash-safety) + global counter + per-lab FIFO queue.
 """
 
-import json
 import logging
-import time
 
 import redis.asyncio as aioredis
 from fastapi import Request
@@ -14,15 +12,11 @@ from config import settings
 
 logger = logging.getLogger(__name__)
 
-LAB_CAPS = {
-    "lan-static-ip": 100,
-    "dhcp-basics": 60,
-    "inter-subnet-routing": 40,
-}
-GLOBAL_CAP = 50
 ACTIVE_TTL = 7 * 24 * 3600  # 7d crash-safety on counters
-# Average provisioning duration of one session, used for the queue ETA.
+# Fallback ETA before any provisioning has been timed.
 QUEUE_AVG_PROVISION_SEC = 30
+# Rolling window the ETA is averaged over.
+_PROVISION_SAMPLES = 20
 
 # Atomic slot acquisition. A GET/INCR pair leaks quota under load: another
 # request slips between read and increment. Lua is atomic, so both counters
@@ -62,6 +56,26 @@ end
 return 1
 """
 
+# Enqueue only if absent. A client polling every few seconds would otherwise
+# append a duplicate per poll, growing the list without bound and making both
+# position and depth meaningless.
+LUA_ENQUEUE = """
+local key = KEYS[1]
+local user = ARGV[1]
+local ttl = tonumber(ARGV[2])
+
+local items = redis.call('LRANGE', key, 0, -1)
+for i, v in ipairs(items) do
+    if v == user then
+        redis.call('EXPIRE', key, ttl)
+        return i
+    end
+end
+redis.call('RPUSH', key, user)
+redis.call('EXPIRE', key, ttl)
+return redis.call('LLEN', key)
+"""
+
 
 class SessionQueueService:
     """Session queue and active session counters on top of Redis.
@@ -86,19 +100,31 @@ class SessionQueueService:
         """Redis key for the global active session counter."""
         return "active_sessions_total"
 
+    def _provision_key(self) -> str:
+        """Redis key for the rolling provisioning-duration samples."""
+        return "provision_seconds"
+
+    def _caps(self, lab_slug: str) -> tuple[int, int]:
+        """The lab cap and the global cap, both read from settings."""
+        capacity = settings.capacity
+        return capacity.per_lab_caps.get(lab_slug, capacity.global_cap), capacity.global_cap
+
     async def try_acquire(self, user_id: str, lab_slug: str) -> bool:
         """Tries to atomically acquire a session slot. True if acquired, False otherwise."""
-        per_lab_cap = LAB_CAPS.get(lab_slug, GLOBAL_CAP)
+        per_lab_cap, global_cap = self._caps(lab_slug)
         result = await self._redis.eval(
             LUA_TRY_ACQUIRE,
             2,
             self._active_key(lab_slug),
             self._total_key(),
             per_lab_cap,
-            GLOBAL_CAP,
+            global_cap,
             ACTIVE_TTL,
         )
-        return int(result) == 1
+        acquired = int(result) == 1
+        if acquired:
+            await self.dequeue(user_id, lab_slug)
+        return acquired
 
     async def release(self, lab_slug: str) -> None:
         """Releases a slot, decrementing the lab counter and the global one.
@@ -113,24 +139,49 @@ class SessionQueueService:
         )
 
     async def enqueue(self, user_id: str, lab_slug: str) -> int:
-        """Appends the user to the end of the queue and returns its length."""
-        await self._redis.rpush(
+        """Puts the user in the queue once and returns their 1-based position."""
+        position = await self._redis.eval(
+            LUA_ENQUEUE,
+            1,
             self._queue_key(lab_slug),
-            json.dumps({"user_id": user_id, "ts": int(time.time())}),
+            user_id,
+            settings.capacity.queue_ttl_seconds,
         )
-        return await self._redis.llen(self._queue_key(lab_slug))
+        return int(position)
+
+    async def dequeue(self, user_id: str, lab_slug: str) -> int:
+        """Removes the user from the queue. Returns how many entries were dropped."""
+        removed = await self._redis.lrem(self._queue_key(lab_slug), 0, user_id)
+        return int(removed or 0)
 
     async def position(self, user_id: str, lab_slug: str) -> int | None:
         """Returns the user's 1-based position in the queue, or None if absent."""
         items = await self._redis.lrange(self._queue_key(lab_slug), 0, -1)
         for i, raw in enumerate(items):
-            if json.loads(raw)["user_id"] == user_id:
+            if raw == user_id:
                 return i + 1
         return None
 
     async def queue_depth(self, lab_slug: str) -> int:
         """Returns the current number of waiters in the lab's queue."""
         return await self._redis.llen(self._queue_key(lab_slug))
+
+    async def record_provision_seconds(self, seconds: float) -> None:
+        """Adds one observed provisioning duration to the rolling window."""
+        key = self._provision_key()
+        pipe = self._redis.pipeline()
+        pipe.lpush(key, seconds)
+        pipe.ltrim(key, 0, _PROVISION_SAMPLES - 1)
+        pipe.expire(key, ACTIVE_TTL)
+        await pipe.execute()
+
+    async def avg_provision_seconds(self) -> float:
+        """Mean observed provisioning duration, or the fallback before any sample."""
+        raw = await self._redis.lrange(self._provision_key(), 0, -1)
+        values = [float(v) for v in raw if v]
+        if not values:
+            return float(QUEUE_AVG_PROVISION_SEC)
+        return sum(values) / len(values)
 
 
 # lifespan puts the service on app.state.session_queue; get_queue_service reads it

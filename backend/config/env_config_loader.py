@@ -10,6 +10,7 @@ from mcp_sdk.config_bootstrap import LazySettings, resolve_env_path
 from config.config_model import (
     AgentsConfig,
     ApiConfig,
+    CapacityConfig,
     ConfigModel,
     DatabaseConfig,
     GNS3Config,
@@ -250,6 +251,14 @@ def _build(values: dict[str, str | None]) -> ConfigModel:
     observability = ObservabilityConfig(
         retention_per_session=int(values.get("OBSERVABILITY_RETENTION_PER_SESSION", "2000")),
     )
+    capacity = CapacityConfig(
+        global_cap=int(values.get("CAPACITY_GLOBAL_CAP", "6")),
+        per_lab_caps=json.loads(values.get("CAPACITY_PER_LAB_CAPS") or "{}"),
+        max_sessions_per_user=int(values.get("CAPACITY_MAX_SESSIONS_PER_USER", "2")),
+        session_max_hours=float(values.get("CAPACITY_SESSION_MAX_HOURS", "12")),
+        queue_ttl_seconds=int(values.get("CAPACITY_QUEUE_TTL_SECONDS", "900")),
+        mcp_audit_retention_days=int(values.get("CAPACITY_MCP_AUDIT_RETENTION_DAYS", "90")),
+    )
     learning_analytics = build_learning_analytics_config(values)
     return ConfigModel(
         database=database,
@@ -261,6 +270,7 @@ def _build(values: dict[str, str | None]) -> ConfigModel:
         mcp=mcp,
         security=security,
         observability=observability,
+        capacity=capacity,
         learning_analytics=learning_analytics,
     )
 

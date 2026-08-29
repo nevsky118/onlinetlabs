@@ -1,17 +1,21 @@
 import logging
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import func, select
 
+from config import settings
 from i18n import DEFAULT_LOCALE, Locale, LocalizedError
 from labs.service import template_project_id_for
 from models.lab import Lab
 from models.session import LearningSession
-from security.secrets import decrypt_secret, encrypt_secret
+from security.secrets import encrypt_secret
 from sessions.services.proxy import existing_gns3_deep_url, existing_gns3_url
 from sessions.services.query import get_active_session
+from sessions.services.ticket import get_ticket_store
 
 logger = logging.getLogger(__name__)
 
+# kept as a module attribute: sessions.service re-exports it
 MAX_CONCURRENT_SESSIONS_PER_USER = 2
 
 
@@ -30,7 +34,11 @@ async def _create_provisioning_row(db_factory, user_id: str, lab_slug: str, loca
     """Creates a session row with status provisioning in a separate transaction."""
     async with db_factory() as db:
         session = LearningSession(
-            user_id=user_id, lab_slug=lab_slug, status="provisioning", locale=locale
+            user_id=user_id,
+            lab_slug=lab_slug,
+            status="provisioning",
+            locale=locale,
+            expires_at=datetime.now(UTC) + timedelta(hours=settings.capacity.session_max_hours),
         )
         db.add(session)
         await db.commit()
@@ -66,18 +74,17 @@ async def launch_session(
         if existing.locale != locale:
             existing.locale = locale
         meta = existing.meta or {}
+        ticket = await get_ticket_store().issue(str(existing.id), user_id)
         return existing, {
             "gns3_username": meta["gns3_username"],
-            "gns3_password": decrypt_secret(meta["enc_password"]),
             "gns3_url": existing_gns3_url(existing),
-            "gns3_deep_url": existing_gns3_deep_url(existing),
+            "gns3_deep_url": existing_gns3_deep_url(existing, ticket),
         }
 
+    max_per_user = settings.capacity.max_sessions_per_user
     active_count = await count_active_sessions(db, user_id)
-    if active_count >= MAX_CONCURRENT_SESSIONS_PER_USER:
-        raise LocalizedError(
-            "error.session.limit_reached", status_code=400, max=MAX_CONCURRENT_SESSIONS_PER_USER
-        )
+    if active_count >= max_per_user:
+        raise LocalizedError("error.session.limit_reached", status_code=400, max=max_per_user)
 
     lab = await db.get(Lab, lab_slug)
     if lab is None:
@@ -107,9 +114,9 @@ async def launch_session(
     }
     session = await _finalize_session_row(db_factory, str(session.id), "active", meta)
 
+    ticket = await get_ticket_store().issue(str(session.id), user_id)
     return session, {
         "gns3_username": result["gns3_username"],
-        "gns3_password": result["gns3_password"],
         "gns3_url": existing_gns3_url(session),
-        "gns3_deep_url": existing_gns3_deep_url(session),
+        "gns3_deep_url": existing_gns3_deep_url(session, ticket),
     }

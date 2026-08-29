@@ -326,6 +326,17 @@ class SecurityConfig(BaseModel):
     )
 
 
+class CapacityConfig(BaseModel):
+    """Concurrency limits, sized to the machine rather than to a constant."""
+
+    global_cap: int = Field(default=6, ge=1)
+    per_lab_caps: dict[str, int] = Field(default_factory=dict)
+    max_sessions_per_user: int = Field(default=2, ge=1)
+    session_max_hours: float = Field(default=12.0, gt=0)
+    queue_ttl_seconds: int = Field(default=900, ge=60)
+    mcp_audit_retention_days: int = Field(default=90, ge=1)
+
+
 class ObservabilityConfig(BaseModel):
     """Observability configuration: event retention, viewer roles."""
 
@@ -346,3 +357,4 @@ class ConfigModel(BaseModel):
     mcp: MCPConfig
     security: SecurityConfig
     observability: ObservabilityConfig = Field(default_factory=ObservabilityConfig)
+    capacity: CapacityConfig = Field(default_factory=CapacityConfig)
