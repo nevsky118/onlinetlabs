@@ -29,17 +29,98 @@ from tenacity import (
 logger = logging.getLogger(__name__)
 
 
+class _Connection:
+    """One long-lived MCP session, owned by the task that opened it.
+
+    The transport contexts are entered and exited inside `_run` only: anyio
+    refuses a cancel scope exited from a different task, which is why a shared
+    session cannot be held open with a plain AsyncExitStack.
+    """
+
+    def __init__(self, mcp_url: str, timeout: float):
+        self._mcp_url = mcp_url
+        self._timeout = timeout
+        self._session: ClientSession | None = None
+        self._ready = asyncio.Event()
+        self._closing = asyncio.Event()
+        self._failure: BaseException | None = None
+        self._task = asyncio.create_task(self._run())
+
+    async def _run(self) -> None:
+        """Holds the session open until closed, then tears it down here."""
+        try:
+            async with (
+                streamablehttp_client(self._mcp_url, timeout=self._timeout) as (read, write, _),
+                ClientSession(read, write) as session,
+            ):
+                await session.initialize()
+                self._session = session
+                self._ready.set()
+                await self._closing.wait()
+        except BaseException as exc:
+            self._failure = exc
+            self._ready.set()
+        finally:
+            self._session = None
+
+    async def session(self) -> ClientSession:
+        """Waits for the session to come up, or raises what stopped it."""
+        await self._ready.wait()
+        if self._session is None:
+            raise self._failure or ConnectionError("MCP session unavailable")
+        return self._session
+
+    @property
+    def alive(self) -> bool:
+        """False once the owning task has finished or failed."""
+        return not self._task.done() and self._failure is None
+
+    async def close(self) -> None:
+        """Signals the owning task to unwind its contexts."""
+        self._closing.set()
+        try:
+            await asyncio.wait_for(self._task, timeout=5.0)
+        except (TimeoutError, asyncio.CancelledError, Exception):
+            self._task.cancel()
+
+
 class MCPClient:
     """Client to an MCP server via streamable HTTP transport.
 
     Implements StateProvider + ActionProvider + LogProvider + HistoryProvider.
-    Each call opens a session, calls the tool, closes the session.
+    One session is held open and shared; a broken one is rebuilt on the next call.
     """
 
     def __init__(self, server_url: str, timeout: float = 30.0):
         self._server_url = server_url.rstrip("/")
         self._mcp_url = f"{self._server_url}/mcp"
         self._timeout = timeout
+        self._connection: _Connection | None = None
+        self._connect_lock = asyncio.Lock()
+
+    async def _session(self) -> ClientSession:
+        """Returns the shared session, opening or replacing it when needed."""
+        connection = self._connection
+        if connection is not None and connection.alive:
+            return await connection.session()
+        async with self._connect_lock:
+            if self._connection is not None and self._connection.alive:
+                return await self._connection.session()
+            if self._connection is not None:
+                await self._connection.close()
+            self._connection = _Connection(self._mcp_url, self._timeout)
+            return await self._connection.session()
+
+    async def _drop_connection(self) -> None:
+        """Discards the shared session so the next call reconnects."""
+        async with self._connect_lock:
+            connection, self._connection = self._connection, None
+        if connection is not None:
+            await connection.close()
+
+    async def close(self) -> None:
+        """Closes the shared session."""
+        await self._drop_connection()
 
     def _ctx_dict(self, ctx: SessionContext) -> dict[str, Any]:
         """Serialize SessionContext into a dict for MCP tool arguments."""
@@ -59,17 +140,15 @@ class MCPClient:
         Transient network failures are retried three times with exponential backoff.
         MCPToolError (tool-level logical errors) is not retried, to avoid masking a bug.
         """
-        result = None
-        async with (
-            streamablehttp_client(self._mcp_url, timeout=self._timeout) as (
-                read,
-                write,
-                _,
-            ),
-            ClientSession(read, write) as session,
-        ):
-            await session.initialize()
+        try:
+            session = await self._session()
             result = await session.call_tool(name, arguments)
+        except MCPToolError:
+            raise
+        except Exception:
+            # a broken stream must not be reused by the retry
+            await self._drop_connection()
+            raise
 
         # Parse the result outside the async with, otherwise MCP wraps exceptions
         # in an ExceptionGroup and we lose the original traceback.
