@@ -11,6 +11,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server"
 import z from "zod"
 import { absoluteUrl } from "@/lib/absolute-url"
 import { siteConfig } from "@/lib/config"
+import { ogImagePath, ogSize } from "@/lib/og-image"
 import { course } from "@/lib/source"
 import { getMdxComponents } from "@/mdx-components"
 
@@ -38,6 +39,13 @@ export async function generateMetadata(props: {
     notFound()
   }
 
+  const ogImage = {
+    url: absoluteUrl(ogImagePath(params.locale, "courses", params.slug ?? [])),
+    width: ogSize.width,
+    height: ogSize.height,
+    alt: doc.title,
+  }
+
   return {
     title: doc.title,
     description: doc.description,
@@ -55,25 +63,13 @@ export async function generateMetadata(props: {
       description: doc.description,
       type: "article",
       url: absoluteUrl(page.url),
-      images: [
-        {
-          url: `/og?title=${encodeURIComponent(
-            doc.title
-          )}&description=${encodeURIComponent(doc.description)}`,
-        },
-      ],
+      images: [ogImage],
     },
     twitter: {
       card: "summary_large_image",
       title: doc.title,
       description: doc.description,
-      images: [
-        {
-          url: `/og?title=${encodeURIComponent(
-            doc.title
-          )}&description=${encodeURIComponent(doc.description)}`,
-        },
-      ],
+      images: [ogImage],
       creator: siteConfig.author,
     },
   }
@@ -190,6 +186,7 @@ export default async function Page(props: {
           <div className="w-full flex-1 *:data-[slot=alert]:first:mt-0">
             <MDX
               components={getMdxComponents({
+                locale: params.locale,
                 labelCopy: tMdx("copy"),
                 labelCopied: tMdx("copied"),
                 labelCollapse: tMdx("collapse"),

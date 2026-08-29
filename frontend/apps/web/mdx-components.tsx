@@ -38,8 +38,10 @@ import {
 import Image from "next/image"
 import Link from "next/link"
 import type * as React from "react"
+import { appUrl } from "@/lib/urls"
 
-export type MdxLabels = {
+export type MdxOptions = {
+  locale?: string
   labelCopy?: string
   labelCopied?: string
   labelCollapse?: string
@@ -47,7 +49,9 @@ export type MdxLabels = {
 }
 
 /** Built per call, not as a static object, because CopyButton, CodeBlockCommand and CodeCollapsibleWrapper labels are locale-dependent. */
-export function getMdxComponents(labels: MdxLabels = {}) {
+export function getMdxComponents(labels: MdxOptions = {}) {
+  const localePrefix = labels.locale ? `/${labels.locale}` : ""
+
   return {
     h1: ({ className, ...props }: React.ComponentProps<"h1">) => (
       <h1
@@ -397,6 +401,26 @@ export function getMdxComponents(labels: MdxLabels = {}) {
     Link: ({ className, ...props }: React.ComponentProps<typeof Link>) => (
       <Link
         className={cn("font-medium underline underline-offset-4", className)}
+        {...props}
+      />
+    ),
+    /** Same origin, locale prefixed. */
+    SiteLink: ({
+      className,
+      href,
+      ...props
+    }: React.ComponentProps<typeof Link>) => (
+      <Link
+        className={cn("font-medium underline underline-offset-4", className)}
+        href={`${localePrefix}${href}`}
+        {...props}
+      />
+    ),
+    /** Dashboard origin, locale prefixed. */
+    AppLink: ({ className, href, ...props }: React.ComponentProps<"a">) => (
+      <a
+        className={cn("font-medium underline underline-offset-4", className)}
+        href={`${appUrl}${localePrefix}${href}`}
         {...props}
       />
     ),
