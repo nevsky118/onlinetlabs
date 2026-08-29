@@ -1,5 +1,6 @@
 "use server"
 
+import { rethrowControlFlow } from "@repo/api/rethrow-control-flow"
 import { getTranslations } from "next-intl/server"
 import type {
   AdminCohortMetrics,
@@ -185,7 +186,8 @@ export async function updateAdminUser(
     }
     const d = await res.json()
     return { ok: true, user: mapAdminUser(d as Record<string, unknown>) }
-  } catch {
+  } catch (error) {
+    rethrowControlFlow(error)
     return { ok: false, error: t("networkError") }
   }
 }
@@ -241,7 +243,8 @@ export async function updateAdminLab(
     }
     const d = await res.json()
     return { ok: true, lab: mapAdminLab(d as Record<string, unknown>) }
-  } catch {
+  } catch (error) {
+    rethrowControlFlow(error)
     return { ok: false, error: t("networkError") }
   }
 }
@@ -262,7 +265,8 @@ export async function rebuildLabTemplate(
       }
     }
     return { ok: true }
-  } catch {
+  } catch (error) {
+    rethrowControlFlow(error)
     return { ok: false, error: t("networkError") }
   }
 }

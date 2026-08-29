@@ -1,3 +1,4 @@
+import { rethrowControlFlow } from "@repo/api/rethrow-control-flow"
 import { canViewAgentLogs } from "@repo/auth/server"
 import { notFound } from "next/navigation"
 import { setRequestLocale } from "next-intl/server"
@@ -33,7 +34,8 @@ export default async function SessionPage(props: {
         />
       </HydrateClient>
     )
-  } catch {
+  } catch (error) {
+    rethrowControlFlow(error)
     notFound()
   }
 }

@@ -6,6 +6,7 @@
     "./env": "./env.ts",
     "./env.client": "./env.client.ts",
     "./authed-fetch": "./authed-fetch.ts",
+    "./rethrow-control-flow": "./rethrow-control-flow.ts",
     "./analytics": "./analytics.ts",
     "./realtime-token": "./realtime-token.ts",
     "./http": "./http.ts",

@@ -1,3 +1,4 @@
+import { rethrowControlFlow } from "@repo/api/rethrow-control-flow"
 import { canViewAgentLogs } from "@repo/auth/server"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
@@ -34,7 +35,8 @@ export default async function SessionChatPage(props: {
         <ChatView sessionId={sessionId} canViewLogs={canViewLogs} />
       </HydrateClient>
     )
-  } catch {
+  } catch (error) {
+    rethrowControlFlow(error)
     notFound()
   }
 }
