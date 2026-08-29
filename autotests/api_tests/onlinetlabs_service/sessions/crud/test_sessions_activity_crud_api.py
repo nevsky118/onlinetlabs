@@ -5,6 +5,7 @@ import pytest
 from autotests.api.api_methods.onlinetlabs_service.sessions_api import SessionsApi
 from autotests.settings.constants.constants_settings import ConstantsSettings
 from autotests.settings.reports import autotest
+from autotests.settings.utils.custom_assertions import assert_in
 
 
 @pytest.mark.api
@@ -31,6 +32,4 @@ class TestSessionsActivityCrudApi:
 
         # Assert
         with autotest.step("Check status code 422 or 404"):
-            assert response.status_code in (422, 404), (
-                f"Expected 422 or 404, got {response.status_code}"
-            )
+            assert_in(response.status_code, (422, 404), "status code")

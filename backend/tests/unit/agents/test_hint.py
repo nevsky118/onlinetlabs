@@ -6,7 +6,7 @@ from mcp_sdk.testing.custom_assertions import (
 )
 
 from agents.hint.agent import HintAgent
-from agents.hint.models import HintInput
+from agents.hint.schemas import HintInput
 from agents.hint.tools import MAX_HINTS, HintTools
 
 pytestmark = [pytest.mark.unit, pytest.mark.agents]

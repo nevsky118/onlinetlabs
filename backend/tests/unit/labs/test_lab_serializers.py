@@ -3,7 +3,7 @@ from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal
 
 from labs.serializers import to_lab_response
-from models.lab import Lab
+from models.catalog import Lab
 
 pytestmark = [pytest.mark.unit]
 

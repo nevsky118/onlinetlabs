@@ -13,7 +13,7 @@ from chat.persistence import (
     save_user_message,
     to_openai_messages,
 )
-from models.chat_message import ChatMessage
+from models.learning import ChatMessage
 
 pytestmark = [pytest.mark.unit]
 
@@ -40,7 +40,7 @@ class TestToOpenAIMessages:
             result = to_openai_messages(sdk_messages)
 
         with autotest.step("Texts joined with \\n, role preserved"):
-            assert_equal(len(result), 1, "len(result)")
+            assert_equal(len(result), 1, "result count")
             assert_equal(result[0]["role"], "user", "role")
             assert_equal(result[0]["content"], "hello\nworld", "content")
 
@@ -55,7 +55,7 @@ class TestToOpenAIMessages:
             result = to_openai_messages(sdk_messages)
 
         with autotest.step("Takes content"):
-            assert_equal(len(result), 1, "len(result)")
+            assert_equal(len(result), 1, "result count")
             assert_equal(result[0]["content"], "plain answer", "content")
             assert_equal(result[0]["role"], "assistant", "role")
 
@@ -74,7 +74,7 @@ class TestToOpenAIMessages:
             result = to_openai_messages(sdk_messages)
 
         with autotest.step("Only non-empty messages make it into the result"):
-            assert_equal(len(result), 1, "len(result)")
+            assert_equal(len(result), 1, "result count")
             assert_equal(result[0]["content"], "kept", "content")
 
     @autotest.num("1913")
@@ -96,7 +96,7 @@ class TestToOpenAIMessages:
             result = to_openai_messages(sdk_messages)
 
         with autotest.step("Only the text part ends up in content"):
-            assert_equal(len(result), 1, "len(result)")
+            assert_equal(len(result), 1, "result count")
             assert_equal(result[0]["content"], "describe", "content")
 
 
@@ -247,9 +247,9 @@ class TestGetChatHistory(_DBTestBase):
 
         with autotest.step("ASC order by created_at"):
             assert_equal(len(rows), 3, "rows count")
-            assert_equal(rows[0].parts[0]["text"], "first", "rows[0]")
-            assert_equal(rows[1].parts[0]["text"], "second", "rows[1]")
-            assert_equal(rows[2].parts[0]["text"], "third", "rows[2]")
+            assert_equal(rows[0].parts[0]["text"], "first", "text")
+            assert_equal(rows[1].parts[0]["text"], "second", "text")
+            assert_equal(rows[2].parts[0]["text"], "third", "text")
             assert_true(
                 rows[0].created_at <= rows[1].created_at <= rows[2].created_at,
                 "monotonic created_at",

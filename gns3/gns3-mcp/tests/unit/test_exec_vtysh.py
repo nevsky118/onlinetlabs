@@ -6,8 +6,15 @@ import httpx
 import pytest
 import respx
 from mcp_sdk.testing import autotest
+from mcp_sdk.testing.custom_assertions import (
+    assert_equal,
+    assert_false,
+    assert_is_none,
+    assert_true,
+)
 
 from src.domain_tools import register_domain_tools
+from tests.settings.data.server_data import StubServerData
 
 pytestmark = [pytest.mark.unit, pytest.mark.domain_tools]
 
@@ -18,20 +25,8 @@ CMD = "show ip route"
 TOKEN = "test-internal-token"
 
 
-class _StubServer:
-    def __init__(self):
-        self.tools = {}
-
-    def domain_tool(self, **kwargs):
-        def wrapper(fn):
-            self.tools[fn.__name__] = fn
-            return fn
-
-        return wrapper
-
-
 def _register(service_url, internal_api_token=TOKEN):
-    server = _StubServer()
+    server = StubServerData()
 
     async def get_client(session):
         return None
@@ -59,10 +54,10 @@ def _ctx():
 
 
 class TestExecVtysh:
-    @autotest.num("817")
-    @autotest.external_id("gns3-exec-vtysh-posts-to-service")
+    @autotest.num("3468")
+    @autotest.external_id("42171fe4-80ae-43da-849c-a0c8a641bb0b")
     @autotest.name("exec_vtysh: POST /v1/exec/vtysh to gns3-service, returns output")
-    async def test_gns3exec_exec_vtysh_posts_to_service(self):
+    async def test_42171fe4_exec_vtysh_posts_to_service(self):
         with autotest.step("Arrange: tool registered with service_url"):
             server = _register(SERVICE_URL)
 
@@ -74,28 +69,32 @@ class TestExecVtysh:
                 result = await server.tools["exec_vtysh"](_ctx(), NODE_ID, CMD)
 
         with autotest.step("Assert: success, output passed through, payload correct"):
-            assert route.called
-            assert result["success"] is True
-            assert result["data"]["output"] == "10.0.0.1 is up"
+            assert_true(route.called, "called")
+            assert_equal(result["success"], True, "success")
+            assert_equal(result["data"]["output"], "10.0.0.1 is up", "output")
             body = json.loads(route.calls.last.request.content)
             expected = {"project_id": PROJECT_ID, "node_id": NODE_ID, "command": CMD}
-            assert body == expected
+            assert_equal(body, expected, "body")
             # gns3-service /v1/exec is token-gated; without this header it 403s.
-            assert route.calls.last.request.headers["Authorization"] == f"Bearer {TOKEN}"
+            assert_equal(
+                route.calls.last.request.headers["Authorization"],
+                f"Bearer {TOKEN}",
+                "Authorization header",
+            )
 
-    @autotest.num("818")
-    @autotest.external_id("gns3-exec-vtysh-no-service-url")
+    @autotest.num("3469")
+    @autotest.external_id("306bbb0b-3a71-4ce8-b3c7-ba31f63f92d7")
     @autotest.name("exec_vtysh: without service_url → success=False")
-    async def test_gns3exec_exec_vtysh_no_service_url(self):
+    async def test_306bbb0b_exec_vtysh_no_service_url(self):
         with autotest.step("Arrange: tool without service_url"):
             server = _register(None)
 
         with autotest.step("Act+Assert: configuration error, no exception raised"):
             result = await server.tools["exec_vtysh"](_ctx(), NODE_ID, CMD)
-            assert result["success"] is False
-            assert result["data"] is None
+            assert_equal(result["success"], False, "success")
+            assert_is_none(result["data"], "data")
 
-    @autotest.num("819")
+    @autotest.num("3470")
     @autotest.external_id("f0c9d4b7-7a3f-4a26-8a54-9c3a1f7de2b1")
     @autotest.name("exec_vtysh: without an internal token → success=False, no request sent")
     async def test_f0c9d4b7_exec_vtysh_no_internal_token(self):
@@ -108,6 +107,6 @@ class TestExecVtysh:
                 result = await server.tools["exec_vtysh"](_ctx(), NODE_ID, CMD)
 
         with autotest.step("Assert: fails before sending, does not 403 at the service"):
-            assert not route.called
-            assert result["success"] is False
-            assert result["data"] is None
+            assert_false(route.called, "called")
+            assert_equal(result["success"], False, "success")
+            assert_is_none(result["data"], "data")

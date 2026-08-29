@@ -8,11 +8,11 @@ from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from auth.dependencies import get_current_user
-from control_interface.consent import grant, revoke
-from control_interface.router import router as consent_router
-from db.session import get_db
-from models.consent import Consent
-from models.user import User
+from consent.consent import grant, revoke
+from consent.router import router as consent_router
+from kit.db import get_db
+from models.audit import Consent
+from models.identity import User
 
 pytestmark = [pytest.mark.unit]
 
@@ -35,7 +35,7 @@ class TestConsentGet:
             await db.commit()
 
         app = FastAPI()
-        app.include_router(consent_router, prefix="/users/me")
+        app.include_router(consent_router)
 
         async def _override_db():
             async with self.session_factory() as db:
@@ -47,7 +47,7 @@ class TestConsentGet:
 
         # App without authentication (dependency_overrides does not override get_current_user)
         self.unauth_app = FastAPI()
-        self.unauth_app.include_router(consent_router, prefix="/users/me")
+        self.unauth_app.include_router(consent_router)
         self.unauth_app.dependency_overrides[get_db] = _override_db
 
         yield

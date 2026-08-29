@@ -13,9 +13,9 @@ class TestControlArm:
     @autotest.name("ControlArm: enum values are open and closed")
     def test_a929abc0_arm_values(self):
         with autotest.step("Act: collect enum values"):
-            values = {a.value for a in ControlArm}
+            arms = {member.value for member in ControlArm}
         with autotest.step("Assert: exactly open and closed"):
-            assert_equal(values, {"open", "closed"}, "two arms")
+            assert_equal(arms, {"open", "closed"}, "two arms")
 
     @autotest.num("1033")
     @autotest.external_id("6e20da78-7625-4360-961b-6d07d68afcd5")

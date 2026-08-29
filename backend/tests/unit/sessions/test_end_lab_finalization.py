@@ -32,7 +32,10 @@ def _patch_queue():
     """Queue singleton: release() is expected to be awaited."""
     queue = MagicMock()
     queue.release = AsyncMock()
-    return patch("sessions.queue._get_or_create_singleton", new=MagicMock(return_value=queue))
+    return patch(
+        "sessions.services.lifecycle._get_or_create_singleton",
+        new=MagicMock(return_value=queue),
+    )
 
 
 class TestEndLabFinalization:

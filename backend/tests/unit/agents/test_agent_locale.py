@@ -4,10 +4,10 @@ from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 
 from agents._shared import format_failing_check
 from agents.base import BaseAgent
-from agents.hint.models import HintInput
-from agents.tutor.models import TutorInput
+from agents.hint.schemas import HintInput
+from agents.tutor.schemas import TutorInput
+from analytics.runtime.context import AgentContext
 from i18n import DEFAULT_LOCALE
-from learning_analytics.context import AgentContext
 
 pytestmark = [pytest.mark.unit, pytest.mark.agents]
 

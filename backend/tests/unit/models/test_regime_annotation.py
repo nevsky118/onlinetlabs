@@ -11,7 +11,7 @@ class TestRegimeAnnotation:
     @autotest.name("RegimeAnnotation: table has all required columns")
     def test_51f61070_model_columns_present(self):
         with autotest.step("Act: get the model's column names"):
-            from models.regime_annotation import RegimeAnnotation
+            from models.research import RegimeAnnotation
 
             cols = set(RegimeAnnotation.__table__.columns.keys())
 

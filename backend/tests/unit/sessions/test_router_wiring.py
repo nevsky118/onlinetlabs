@@ -1,25 +1,26 @@
 """Characterization of the session routers' route table.
 
-Pins the exact set of (method, path) registered under /users/me/sessions
-(via sessions.router) and separately under /sessions (agent_activity, registered
-in main.py via a separate include_router with a different prefix, NOT via sessions.router).
-Separately pins that the literal `/queue-status` resolves before the catch-all
-`/{session_id}`. With the wrong registration order, queue-status would be
-swallowed by the query router's catch-all.
+Pins the exact set of (method, path) the session routers declare: /users/me/sessions
+for commands, queries and websockets, /sessions for agent_activity, which is a
+separate router and not part of sessions.router. Separately pins that the literal
+`/queue-status` resolves before the catch-all `/{session_id}`. With the wrong
+registration order, queue-status would be swallowed by the query router's catch-all.
 
-The test must stay green before and after consolidating the 8 router files
-into commands.py/queries.py/ws.py, that is exactly the point of this characterization.
+The prefixes now live on the routers themselves, so this test mounts them the way
+api.py does: with no arguments.
 """
 
+import pytest
 from fastapi import FastAPI
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_is_not_none
 from starlette.routing import Match
 
 from sessions.router import router as sessions_router
+from sessions.router import ws_router
 from sessions.routers.queries import agent_activity_router
 
-pytestmark = []
+pytestmark = [pytest.mark.unit]
 
 # Exact set of (method, path), collected from the current (pre-refactor) code.
 _EXPECTED_ROUTES = {
@@ -45,10 +46,11 @@ _EXPECTED_ROUTES = {
 
 
 def _build_app() -> FastAPI:
-    """Reproduces exactly how main.py mounts the session routers."""
+    """Mounts the session routers exactly as api.py does."""
     app = FastAPI()
-    app.include_router(sessions_router, prefix="/users/me/sessions", tags=["sessions"])
-    app.include_router(agent_activity_router, prefix="/sessions", tags=["observability"])
+    app.include_router(sessions_router)
+    app.include_router(ws_router)
+    app.include_router(agent_activity_router)
     return app
 
 
@@ -60,7 +62,7 @@ def _route_table(app: FastAPI) -> set[tuple[str, str]]:
             continue
         methods = getattr(route, "methods", None)
         if methods:
-            rows.update((m, path) for m in methods)
+            rows.update((method, path) for method in methods)
         else:
             rows.add(("WS", path))
     return rows
@@ -96,7 +98,7 @@ class TestSessionRouterWiring:
         with autotest.step("Act: resolve GET /users/me/sessions/queue-status"):
             route = _first_match(app, "GET", "/users/me/sessions/queue-status")
         with autotest.step("Assert: resolves to queue_status, not get_session_endpoint"):
-            assert route is not None, "route not found"
+            assert_is_not_none(route, "route not found")
             assert_equal(route.endpoint.__name__, "queue_status", "resolved to the wrong handler")
 
     @autotest.num("2512")
@@ -108,7 +110,7 @@ class TestSessionRouterWiring:
         with autotest.step("Act: resolve GET /users/me/sessions/<regular id>"):
             route = _first_match(app, "GET", "/users/me/sessions/some-session-id")
         with autotest.step("Assert: resolves to get_session_endpoint"):
-            assert route is not None, "route not found"
+            assert_is_not_none(route, "route not found")
             assert_equal(
                 route.endpoint.__name__, "get_session_endpoint", "resolved to the wrong handler"
             )

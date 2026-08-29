@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 import pytest
 from mcp_sdk.testing import autotest
+from mcp_sdk.testing.custom_assertions import assert_equal
 
 from agents.orchestrator.agent import Orchestrator
 from config.config_model import LlmProvider, ModelEntry, ProviderCreds
@@ -21,7 +22,7 @@ class TestResolveInterventionModel:
 
         with autotest.step("Resolve without context gives default"):
             result = orch._resolve_intervention_model(context={})
-            assert result == config_model.agents.intervention_model
+            assert_equal(result, config_model.agents.intervention_model, "result")
 
     @autotest.num("2606")
     @autotest.external_id("71310acd-74d5-4d8d-9913-b61ee64412c5")
@@ -37,7 +38,7 @@ class TestResolveInterventionModel:
             result = orch._resolve_intervention_model(
                 context={"session_model_id": "yandex-gpt-5.1"}
             )
-            assert result == "yandex-gpt-5.1"
+            assert_equal(result, "yandex-gpt-5.1", "result")
 
     @autotest.num("2607")
     @autotest.external_id("9a370a8f-8c08-4385-b971-23563eae9cda")
@@ -53,7 +54,7 @@ class TestResolveInterventionModel:
             result = orch._resolve_intervention_model(
                 context={"session_model_id": "does-not-exist"}
             )
-            assert result == config_model.agents.intervention_model
+            assert_equal(result, config_model.agents.intervention_model, "result")
 
     @autotest.num("2608")
     @autotest.external_id("705fe41b-caa9-4f53-bb17-af190b4c51b3")
@@ -67,7 +68,7 @@ class TestResolveInterventionModel:
 
         with autotest.step("Empty payload without session_model_id should not raise KeyError"):
             result = orch._resolve_intervention_model(context={})
-            assert result == config_model.agents.intervention_model
+            assert_equal(result, config_model.agents.intervention_model, "result")
 
     @autotest.num("1794")
     @autotest.external_id("f8527a65-43fd-48d6-8de9-bf1e10c91e75")
@@ -83,7 +84,7 @@ class TestResolveInterventionModel:
             result = orch._resolve_intervention_model(
                 context={"session_model_id": "yandex-gpt-5.1"}
             )
-            assert result == "yandex-gpt-5.1"
+            assert_equal(result, "yandex-gpt-5.1", "result")
 
 
 class TestInterventionMetadata:
@@ -117,5 +118,5 @@ class TestInterventionMetadata:
                 ).resolve_model(model_id)
                 llm_meta = {"model": model_id, "provider": creds.provider.value}
 
-            assert llm_meta["model"] == model_id
-            assert llm_meta["provider"] == LlmProvider.YANDEX.value
+            assert_equal(llm_meta["model"], model_id, "model")
+            assert_equal(llm_meta["provider"], LlmProvider.YANDEX.value, "provider")

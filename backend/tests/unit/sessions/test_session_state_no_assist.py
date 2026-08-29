@@ -8,24 +8,16 @@ from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from models.lab import Lab
-from models.progress import LabProgress
-from models.session import LearningSession
-from models.user import User
+from models.catalog import Lab
+from models.identity import User
+from models.learning import LabProgress, LearningSession
 from sessions.schemas import FullSessionStateResponse
-from sessions.services.query import get_session_state
+from sessions.services.state import get_session_state
+from tests.settings.data.sessions_data import StateCacheData
 
 pytestmark = [pytest.mark.unit]
 
 _SKILL = "static-ip-addressing"
-
-
-class _Cache:
-    async def get(self, sid):
-        return None
-
-    async def set(self, sid, val):
-        return None
 
 
 @pytest.fixture
@@ -93,7 +85,7 @@ class TestSessionStateNoAssist:
     async def test_d60f1ae3_no_assist_true_on_l2(self, db_factory):
         with autotest.step("Act: session state for u1 on l2 (has a completed l1)"):
             async with db_factory() as db:
-                state = await get_session_state(db, "sess-u1", "u1", _gns3(), _Cache())
+                state = await get_session_state(db, "sess-u1", "u1", _gns3(), StateCacheData())
 
         with autotest.step("Assert: no_assist == True"):
             assert_true(state is not None, "state retrieved")
@@ -105,7 +97,7 @@ class TestSessionStateNoAssist:
     async def test_4ba89ec7_no_assist_false_otherwise(self, db_factory):
         with autotest.step("Act: session state for u2 on l2 (no completed labs)"):
             async with db_factory() as db:
-                state = await get_session_state(db, "sess-u2", "u2", _gns3(), _Cache())
+                state = await get_session_state(db, "sess-u2", "u2", _gns3(), StateCacheData())
 
         with autotest.step("Assert: no_assist == False"):
             assert_equal(state["no_assist"], False, "not L2 → no_assist False")

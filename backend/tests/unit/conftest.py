@@ -3,7 +3,7 @@
 import os
 
 # Override required env vars before importing modules that need them
-# at load time (config.env_config_loader is triggered lazily from db.session, etc.).
+# at load time (config.env_config_loader is triggered lazily from kit.db, etc.).
 _TEST_ENV_DEFAULTS = {
     "DB_USER": "test",
     "DB_PASSWORD": "test",
@@ -85,14 +85,14 @@ class FakeMCPClient:
 
     async def get_component(self, ctx: SessionContext, component_id: str) -> ComponentDetail:
         self.calls.append(("get_component", (ctx, component_id), {}))
-        for c in self._components:
-            if c.id == component_id:
+        for component in self._components:
+            if component.id == component_id:
                 return ComponentDetail(
-                    id=c.id,
-                    name=c.name,
-                    type=c.type,
-                    status=c.status,
-                    summary=c.summary,
+                    id=component.id,
+                    name=component.name,
+                    type=component.type,
+                    status=component.status,
+                    summary=component.summary,
                     properties={},
                     relationships=[],
                 )

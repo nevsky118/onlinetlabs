@@ -6,7 +6,7 @@ from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from models.regime_annotation import RegimeAnnotation
+from models.research import RegimeAnnotation
 
 pytestmark = [pytest.mark.unit]
 

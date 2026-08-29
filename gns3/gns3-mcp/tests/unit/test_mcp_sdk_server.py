@@ -8,9 +8,11 @@ a bad level/since is no longer masked and surfaces as SessionContextError.
 
 import pytest
 from mcp_sdk.errors import ComponentNotFoundError, MCPServerError, SessionContextError
-from mcp_sdk.models import ActionResult, ComponentDetail, LogLevel, SystemOverview
 from mcp_sdk.server import OnlinetlabsMCPServer
 from mcp_sdk.testing import autotest
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_in
+
+from tests.settings.data.server_data import FakeMcpTransportData, ProbeImplData
 
 pytestmark = [pytest.mark.unit]
 
@@ -42,85 +44,14 @@ def _call_kwargs(name: str, ctx: dict) -> dict:
     return {"ctx": ctx}
 
 
-class _ProbeImpl:
-    """Implementation of all 4 SDK protocols with a controllable exception from the impl methods."""
-
-    def __init__(self, raise_error: Exception | None = None) -> None:
-        self._raise_error = raise_error
-
-    def _maybe_raise(self) -> None:
-        if self._raise_error is not None:
-            raise self._raise_error
-
-    async def list_components(self, ctx):
-        self._maybe_raise()
-        return []
-
-    async def get_component(self, ctx, component_id):
-        self._maybe_raise()
-        return ComponentDetail(
-            id=component_id,
-            name="n",
-            type="t",
-            status="s",
-            summary="sum",
-            properties={},
-            relationships=[],
-        )
-
-    async def get_system_overview(self, ctx):
-        self._maybe_raise()
-        return SystemOverview(
-            system_name="x",
-            component_count=0,
-            components_by_type={},
-            components_by_status={},
-            summary="s",
-        )
-
-    async def list_errors(self, ctx, since=None):
-        self._maybe_raise()
-        return []
-
-    async def get_logs(self, ctx, level=LogLevel.ALL, limit=100):
-        self._maybe_raise()
-        return []
-
-    async def list_user_actions(self, ctx, limit=50):
-        self._maybe_raise()
-        return []
-
-    async def list_available_actions(self, ctx, component_id=None):
-        self._maybe_raise()
-        return []
-
-    async def execute_action(self, ctx, action_name, params):
-        self._maybe_raise()
-        return ActionResult(success=True, message="ok")
-
-
-class _FakeMCP:
-    """FastMCP stand-in, captures the registered tool functions by name with no real transport."""
-
-    def __init__(self, name, **kwargs) -> None:
-        self.tools: dict[str, callable] = {}
-
-    def tool(self, **kwargs):
-        def decorator(fn):
-            self.tools[fn.__name__] = fn
-            return fn
-
-        return decorator
-
-
 @pytest.fixture()
 def make_server(monkeypatch):
-    """Builds an OnlinetlabsMCPServer on top of _FakeMCP, returning a factory keyed by raise_error."""
-    monkeypatch.setattr("mcp_sdk.server.FastMCP", _FakeMCP)
+    """Builds an OnlinetlabsMCPServer on top of FakeMcpTransportData, returning a factory keyed by raise_error."""
+    monkeypatch.setattr("mcp_sdk.server.FastMCP", FakeMcpTransportData)
 
     def _make(raise_error: Exception | None = None) -> OnlinetlabsMCPServer:
         return OnlinetlabsMCPServer(
-            name="probe", implementation=_ProbeImpl(raise_error=raise_error)
+            name="probe", implementation=ProbeImplData(raise_error=raise_error)
         )
 
     return _make
@@ -164,7 +95,7 @@ class TestToolErrorContract:
             fn = server.mcp.tools["list_components"]
             with pytest.raises(MCPServerError) as exc_info:
                 await fn(ctx=_ctx_dict())
-            assert str(exc_info.value) == "Internal server error"
+            assert_equal(str(exc_info.value), "Internal server error", "str")
 
 
 class TestBonusArgumentValidation:
@@ -179,7 +110,7 @@ class TestBonusArgumentValidation:
         with autotest.step("Call with a nonexistent level"):
             with pytest.raises(SessionContextError) as exc_info:
                 await fn(ctx=_ctx_dict(), level="not-a-level")
-            assert "not-a-level" in str(exc_info.value)
+            assert_in("not-a-level", str(exc_info.value), "'not-a-level'")
 
     @autotest.num("831")
     @autotest.external_id("a03f92dc-71cd-4332-92b1-e0678ec5f80e")
@@ -194,4 +125,4 @@ class TestBonusArgumentValidation:
         with autotest.step("Call with an invalid since"):
             with pytest.raises(SessionContextError) as exc_info:
                 await fn(ctx=_ctx_dict(), since="not-a-date")
-            assert "not-a-date" in str(exc_info.value)
+            assert_in("not-a-date", str(exc_info.value), "'not-a-date'")

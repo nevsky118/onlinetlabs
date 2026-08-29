@@ -13,12 +13,12 @@ class TestLearningAnalyticsConfig:
     @autotest.name("LearningAnalyticsConfig: default cohort values are correct")
     def test_a5dfe4a8_cohort_params_defaults(self):
         with autotest.step("Act: create a config with defaults"):
-            c = LearningAnalyticsConfig()
+            config = LearningAnalyticsConfig()
 
         with autotest.step(
             "Assert: cohort_horizon_days > 0 and autonomy_intervention_threshold >= 0"
         ):
-            assert_greater(c.cohort_horizon_days, 0, "cohort_horizon_days > 0")
+            assert_greater(config.cohort_horizon_days, 0, "cohort_horizon_days > 0")
             assert_greater_equal(
-                c.autonomy_intervention_threshold, 0, "autonomy_intervention_threshold >= 0"
+                config.autonomy_intervention_threshold, 0, "autonomy_intervention_threshold >= 0"
             )

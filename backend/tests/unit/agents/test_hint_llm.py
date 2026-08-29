@@ -4,7 +4,7 @@ from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 from pydantic_ai.models.test import TestModel
 
 from agents.hint.agent import HintAgent
-from agents.hint.models import HintInput
+from agents.hint.schemas import HintInput
 from tests.settings.data.analytics_data import AgentContextData
 
 pytestmark = [pytest.mark.unit, pytest.mark.agents]
@@ -86,9 +86,9 @@ class TestHintAgentLLM:
 
             async def fake_run(prompt: str):
                 captured_prompt.append(prompt)
-                r = AsyncMock()
-                r.output = "тест"
-                return r
+                reply = AsyncMock()
+                reply.output = "тест"
+                return reply
 
             monkeypatch.setattr(agent, "_agent_for", lambda mid, locale: AsyncMock(run=fake_run))
             inp = HintInput(
@@ -111,7 +111,7 @@ class TestHintAgentLLM:
             await agent.run(inp)
 
         with autotest.step("Assert: expected/actual failing_check values reached the prompt"):
-            assert captured_prompt, "the LLM was not called"
+            assert_true(captured_prompt, "the LLM was not called")
             prompt = captured_prompt[0]
             assert_true("10.0.0.1/24" in prompt, "expected is in the prompt")
             assert_true("10.0.0.2/24" in prompt, "actual is in the prompt")

@@ -24,7 +24,7 @@ class TestGns3SessionsSmokeApi:
         self.gns3_sessions_api = Gns3SessionsApi(anon_client, config, base_url=config.gns3_base_url)
         self.gns3_sessions_helper = Gns3SessionsHelperApi(anon_client, config, base_url=config.gns3_base_url)
 
-    @autotest.num("101")
+    @autotest.num("3471")
     @autotest.external_id("5fa35cd6-e3d3-4ed7-b586-a7cd16a31e04")
     @autotest.name("Smoke: POST /sessions — 201 creates GNS3 session")
     async def test_5fa35cd6_create_gns3_session(self):
@@ -69,7 +69,7 @@ class TestGns3SessionsSmokeApi:
         with autotest.step("Verify status code 200"):
             check_response_status(response, 200)
 
-    @autotest.num("105")
+    @autotest.num("3472")
     @autotest.external_id("0463e32e-ceb5-49ee-9f0b-7500189c0940")
     @autotest.name("Smoke: GET /history/{session_id}/actions — 200 action history")
     async def test_0463e32e_get_gns3_history(self):

@@ -1,0 +1,36 @@
+"""Latency: p50/p95/p99 percentiles (Hyndman-Fan Type 7, numpy/R default), not the mean."""
+
+import pytest
+from mcp_sdk.testing import autotest
+from mcp_sdk.testing.custom_assertions import assert_equal
+
+pytestmark = [pytest.mark.unit]
+
+
+class TestLatencyPercentiles:
+    @autotest.num("1988")
+    @autotest.external_id("a42fd0a1-66ac-47d1-9040-895d390317e3")
+    @autotest.name("percentiles: Type 7 linear interpolation p50/p95/p99 over 10..100")
+    def test_a42fd0a1_type7_interpolation(self):
+        with autotest.step("Arrange: ten evenly spaced values"):
+            from analytics.runtime.latency import percentiles
+
+            vals = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+
+        with autotest.step("Act: percentiles over 10 values 10..100"):
+            out = percentiles(vals, [50, 95, 99])
+
+        with autotest.step("Assert: p50=55.0, p95=95.5, p99=99.1 (Type 7)"):
+            assert_equal(out[50], 55.0, "p50 == 55.0")
+            assert_equal(out[95], 95.5, "p95 == 95.5")
+            assert_equal(out[99], 99.1, "p99 == 99.1")
+
+    @autotest.num("1989")
+    @autotest.external_id("a5fa3234-7851-4752-82ce-f0db942f5430")
+    @autotest.name("percentiles: empty input → zeros")
+    def test_a5fa3234_empty(self):
+        with autotest.step("Act+Assert: empty list → all percentiles 0.0"):
+            from analytics.runtime.latency import percentiles
+
+            out = percentiles([], [50, 95, 99])
+            assert_equal(out, {50: 0.0, 95: 0.0, 99: 0.0}, "empty → zeros")

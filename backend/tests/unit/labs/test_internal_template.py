@@ -8,10 +8,10 @@ from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from auth.dependencies import require_internal_caller
-from db.session import get_db
 from i18n import LocalizedError, localized_error_handler
+from kit.db import get_db
 from labs.router import internal_router
-from models.lab import Lab
+from models.catalog import Lab
 
 pytestmark = [pytest.mark.unit]
 
@@ -27,7 +27,7 @@ async def _build_app() -> tuple[FastAPI, async_sessionmaker]:
         await conn.run_sync(Lab.__table__.create)
 
     app = FastAPI()
-    app.include_router(internal_router, prefix="/internal")
+    app.include_router(internal_router)
 
     async def _override_db():
         async with session_factory() as db:
@@ -50,7 +50,7 @@ class TestInternalLabTemplate:
             await conn.run_sync(Lab.__table__.create)
 
         self.app = FastAPI()
-        self.app.include_router(internal_router, prefix="/internal")
+        self.app.include_router(internal_router)
         self.app.add_exception_handler(LocalizedError, localized_error_handler)
 
         async def _override_db():
@@ -65,7 +65,7 @@ class TestInternalLabTemplate:
 
         # app without token override, for testing 401
         self.raw_app = FastAPI()
-        self.raw_app.include_router(internal_router, prefix="/internal")
+        self.raw_app.include_router(internal_router)
         self.raw_app.dependency_overrides[get_db] = _override_db
 
         async with self.session_factory() as db:

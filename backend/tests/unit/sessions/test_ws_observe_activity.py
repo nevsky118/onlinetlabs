@@ -16,13 +16,13 @@ from httpx import AsyncClient
 from httpx_ws import WebSocketDisconnect, aconnect_ws
 from httpx_ws.transport import ASGIWebSocketTransport
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_false, assert_is_not_none
 
 from auth.dependencies import create_backend_token
-from models.agent_activity_event import AgentActivityEventRow
-from models.session import LearningSession
+from models.audit import AgentActivityEventRow
+from models.learning import LearningSession
 from observability.activity import AgentActivityLog
-from observability.models import ActivityKind, ActivitySource, AgentActivityEvent
+from observability.schemas import ActivityKind, ActivitySource, AgentActivityEvent
 from sessions.routers.ws import router as ws_router
 from sessions.ws.gateway import WebSocketGateway
 
@@ -75,7 +75,9 @@ class TestSessionActivityObserveWs:
         with autotest.step("Act: connect to /ws/observe/{session_id}"):
             async with AsyncClient(transport=transport, base_url="http://testserver") as client:
                 with pytest.raises(WebSocketDisconnect) as exc_info:
-                    async with aconnect_ws(f"/ws/observe/{_SESSION_ID}?token={token}", client):
+                    async with aconnect_ws(
+                        f"/users/me/sessions/ws/observe/{_SESSION_ID}?token={token}", client
+                    ):
                         pytest.fail("the connection must not be accepted")
 
         with autotest.step("Assert: closed with code 4403 (can_view_session_activity=False)"):
@@ -97,7 +99,7 @@ class TestSessionActivityObserveWs:
                         transport=transport, base_url="http://testserver"
                     ) as client:
                         async with aconnect_ws(
-                            f"/ws/observe/{_SESSION_ID}?token={token}", client
+                            f"/users/me/sessions/ws/observe/{_SESSION_ID}?token={token}", client
                         ) as ws:
                             for _ in range(500):
                                 if _SESSION_ID in self.app.state.activity_log._subs:
@@ -125,7 +127,7 @@ class TestSessionActivityObserveWs:
         with autotest.step(
             "Assert: event is forwarded as agent_activity with the original's fields"
         ):
-            assert received is not None, "event must be received before the timeout"
+            assert_is_not_none(received, "event must be received before the timeout")
             assert_equal(received["type"], "agent_activity", "type=agent_activity")
             assert_equal(received["session_id"], _SESSION_ID, "session_id is forwarded")
             assert_equal(received["summary"], "test hint", "summary is forwarded")
@@ -146,7 +148,9 @@ class TestSessionActivityObserveWs:
             # q.get() and unsubscribe would never be called, so the test would time out.
             async with asyncio.timeout(5):
                 async with AsyncClient(transport=transport, base_url="http://testserver") as client:
-                    async with aconnect_ws(f"/ws/observe/{_SESSION_ID}?token={token}", client):
+                    async with aconnect_ws(
+                        f"/users/me/sessions/ws/observe/{_SESSION_ID}?token={token}", client
+                    ):
                         for _ in range(500):
                             if _SESSION_ID in activity._subs:
                                 break
@@ -161,6 +165,6 @@ class TestSessionActivityObserveWs:
                         await asyncio.sleep(0)
 
         with autotest.step("Assert: subscription removed after disconnect (handler didn't hang)"):
-            assert _SESSION_ID not in activity._subs, (
-                "subscription must be removed after disconnect"
+            assert_false(
+                _SESSION_ID in activity._subs, "subscription must be removed after disconnect"
             )

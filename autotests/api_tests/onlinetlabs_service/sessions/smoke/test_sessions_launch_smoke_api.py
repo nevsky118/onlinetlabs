@@ -6,8 +6,7 @@ from autotests.api.api_helpers.onlinetlabs_service.sessions_helper_api import Se
 from autotests.api.api_methods.onlinetlabs_service.sessions_api import SessionsApi
 from autotests.settings.constants.constants_settings import ConstantsSettings
 from autotests.settings.reports import autotest
-from autotests.settings.utils.custom_assertions import assert_is_not_none
-from autotests.settings.utils.utils import check_response_status
+from autotests.settings.utils.custom_assertions import assert_equal, assert_false, assert_is_not_none
 
 
 @pytest.mark.api
@@ -35,7 +34,7 @@ class TestSessionsLaunchSmokeApi:
             assert_is_not_none(body.get("session_id"), "session_id must not be None")
 
         with autotest.step("Check status=active"):
-            assert body.get("status") == "active", f"Expected status=active, got: {body.get('status')}"
+            assert_equal(body.get("status"), "active", "get")
 
         with autotest.step("Check gns3_username is present"):
             assert_is_not_none(body.get("gns3_username"), "gns3_username must not be None")
@@ -47,6 +46,4 @@ class TestSessionsLaunchSmokeApi:
             assert_is_not_none(body.get("gns3_url"), "gns3_url must not be None")
 
         with autotest.step("Check gns3_url uses a public host, not Docker-internal"):
-            assert "gns3-server" not in body["gns3_url"], (
-                f"gns3_url must be browser-reachable (public), got: {body['gns3_url']}"
-            )
+            assert_false("gns3-server" in body["gns3_url"], "'gns3-server' absent")

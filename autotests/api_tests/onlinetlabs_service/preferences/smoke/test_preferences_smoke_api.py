@@ -21,7 +21,7 @@ class TestPreferencesSmokeApi:
             anon_client, config, ConstantsSettings.REGISTERED_ACCOUNT
         )
 
-    @autotest.num("801")
+    @autotest.num("3488")
     @autotest.external_id("c1edee66-bbdc-492f-9521-8f573a0725a6")
     @autotest.name("Smoke: GET /users/me/preferences — 200")
     async def test_c1edee66_get_preferences(self):
@@ -40,7 +40,7 @@ class TestPreferencesSmokeApi:
                 "field default_model_id is present",
             )
 
-    @autotest.num("802")
+    @autotest.num("3489")
     @autotest.external_id("d924753b-1a0f-4006-9eca-231618d7f838")
     @autotest.name("Smoke: PATCH /users/me/preferences — clear model (200)")
     async def test_d924753b_clear_default_model(self):

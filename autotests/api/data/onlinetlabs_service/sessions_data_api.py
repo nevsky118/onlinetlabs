@@ -13,7 +13,6 @@ class SessionCreateData(DataAbstractionGenerator):
     """
 
     def __init__(self, lab_slug: str = None):
-        uid = Randomizer.uuid()
         self.lab_slug = lab_slug or f"lab-{Randomizer.random_string(8).lower()}"
 
         self.data = {

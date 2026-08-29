@@ -2,16 +2,14 @@ from datetime import UTC, datetime
 
 import pytest
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_is_none
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_in, assert_is_none
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from instructor.service import get_student_detail, get_students_overview
-from models.behavioral_event import BehavioralEvent
-from models.chat_message import ChatMessage
-from models.lab import Lab
-from models.progress import LabProgress, StepAttempt
-from models.session import LearningSession
-from models.user import User
+from models.catalog import Lab
+from models.identity import User
+from models.learning import ChatMessage, LabProgress, LearningSession, StepAttempt
+from models.research import BehavioralEvent
 
 pytestmark = [pytest.mark.unit]
 
@@ -153,7 +151,7 @@ class TestInstructorService:
         with autotest.step("Assert: 2 students, instructor excluded, hints=2"):
             assert_equal(result["total_students"], 2, "students only")
             assert_equal(result["total_hints"], 2, "total hints")
-            by_id = {s["user_id"]: s for s in result["students"]}
+            by_id = {student["user_id"]: student for student in result["students"]}
             assert_equal(by_id["stud-1"]["total_hints"], 2, "stud-1 hints")
             assert_equal(by_id["stud-1"]["labs_completed"], 1, "completed labs")
             assert_equal(by_id["stud-1"]["avg_score"], 90.0, "average score")
@@ -202,8 +200,8 @@ class TestInstructorService:
                 detail = await get_student_detail(db, "stud-c")
 
         with autotest.step("Assert"):
-            assert "sessions" in detail, "sessions is present in the detail"
+            assert_in("sessions", detail, "sessions is present in the detail")
             assert_equal(len(detail["sessions"]), 1, "one session")
-            s = detail["sessions"][0]
-            assert_equal(s["message_count"], 2, "two messages")
-            assert_equal(s["hint_count"], 1, "one hint")
+            detail_2 = detail["sessions"][0]
+            assert_equal(detail_2["message_count"], 2, "two messages")
+            assert_equal(detail_2["hint_count"], 1, "one hint")

@@ -6,9 +6,9 @@ from mcp_sdk.testing.custom_assertions import assert_equal
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from experiment.assignment import ControlArm, effective_arm
-from models.lab import Lab
-from models.progress import LabProgress
-from models.user import User
+from models.catalog import Lab
+from models.identity import User
+from models.learning import LabProgress
 
 pytestmark = [pytest.mark.unit]
 

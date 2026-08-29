@@ -21,7 +21,7 @@ class TestDataRecordingE2E:
         self.chat_api = ChatApi(anon_client, config, acc)
         self.sessions_helper = SessionsHelperApi(anon_client, config)
 
-    @autotest.num("710")
+    @autotest.num("3483")
     @autotest.external_id("3362daa1-99ff-4094-ac1d-6c82bf45d971")
     @autotest.name("E2E: chat writes chat_messages (user+assistant) to DB")
     async def test_3362daa1_chat_persisted(self):
@@ -35,7 +35,7 @@ class TestDataRecordingE2E:
 
         with autotest.step("Read-back DB — user and assistant messages present"):
             rows = await fetch_chat_messages(session_id)
-            roles = [r.role for r in rows]
+            roles = [row.role for row in rows]
             assert_greater_equal(len(rows), 2, "at least 2 messages")
             assert_in("user", roles, "user present")
             assert_in("assistant", roles, "assistant present")

@@ -87,7 +87,7 @@ class Gns3SessionsHelperApi:
             last_status = None
             while asyncio.get_event_loop().time() < deadline:
                 state = await self.get_state_and_verify(session_id)
-                node = next((n for n in state["nodes"] if n["id"] == node_id), None)
+                node = next((row for row in state["nodes"] if row["id"] == node_id), None)
                 last_status = node["status"] if node else "missing"
                 if last_status == expected:
                     return

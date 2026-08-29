@@ -13,7 +13,7 @@ class TestEvalConfig:
     @autotest.name("LearningAnalyticsConfig: eval params are set")
     def test_e5c1862c_eval_params(self):
         with autotest.step("Act: default config"):
-            c = LearningAnalyticsConfig()
+            config = LearningAnalyticsConfig()
         with autotest.step("Assert: the T_k grid is non-empty and increasing, window > 0"):
-            assert_true(len(c.eval_t_k_grid) >= 2, "T_k grid")
-            assert_greater(c.eval_onset_window_seconds, 0.0, "onset window")
+            assert_true(len(config.eval_t_k_grid) >= 2, "T_k grid")
+            assert_greater(config.eval_onset_window_seconds, 0.0, "onset window")

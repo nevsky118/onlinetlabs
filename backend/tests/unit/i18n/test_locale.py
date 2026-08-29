@@ -3,8 +3,8 @@ from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal
 from starlette.requests import Request
 
-from deps import get_locale
 from i18n import DEFAULT_LOCALE, LOCALES, negotiate
+from kit.deps import get_locale
 
 pytestmark = [pytest.mark.unit]
 

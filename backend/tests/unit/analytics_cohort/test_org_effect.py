@@ -1,0 +1,58 @@
+import pytest
+from mcp_sdk.testing import autotest
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_is_none, assert_true
+
+from analytics.cohort.metrics import SURVIVORSHIP_NOTE, LearnerOutcome, org_effect_trend
+
+pytestmark = [pytest.mark.unit]
+
+
+def _rec(reached, l1e, l2e, l1r, l2r):
+    return LearnerOutcome(
+        user_id="u",
+        skill="s",
+        arm="closed",
+        reached_l2=reached,
+        time_to_l2_seconds=10.0 if reached else None,
+        active_seconds=None,
+        sessions_to_l2=1,
+        l1_interventions=0,
+        l2_interventions=0,
+        l1_escalations=l1e,
+        l2_escalations=l2e,
+        l1_repeated_errors=l1r,
+        l2_repeated_errors=l2r,
+        observation_seconds=100.0,
+        censored=not reached,
+    )
+
+
+class TestOrgEffect:
+    @autotest.num("852")
+    @autotest.external_id("bf4b4d6e-c9a4-40e3-ad32-a980ebf91b16")
+    @autotest.name("OrgEffect: descriptive trend and survivorship tag")
+    def test_bf4b4d6e_trend_descriptive_and_tagged(self):
+        with autotest.step("Arrange: 2 records with different escalations"):
+            recs = [_rec(True, 2, 0, 3, 1), _rec(True, 3, 1, 2, 0)]
+        with autotest.step("Act: org_effect_trend"):
+            trend = org_effect_trend(recs)
+        with autotest.step("Assert: means and the survivorship note are correct"):
+            assert_equal(trend.l1_escalations_mean, 2.5, "l1_escalations_mean == 2.5")
+            assert_equal(trend.l2_escalations_mean, 0.5, "l2_escalations_mean == 0.5")
+            assert_equal(trend.l1_repeated_errors_mean, 2.5, "l1_repeated_errors_mean == 2.5")
+            assert_equal(trend.l2_repeated_errors_mean, 0.5, "l2_repeated_errors_mean == 0.5")
+            assert_true("описатель" in trend.note.lower(), "note is tagged as descriptive")
+            assert_equal(trend.note, SURVIVORSHIP_NOTE, "note == SURVIVORSHIP_NOTE")
+
+    @autotest.num("853")
+    @autotest.external_id("88f109b7-6e44-4688-81ff-866f0528f2c8")
+    @autotest.name("OrgEffect: l2_means None when there is no L2 data")
+    def test_88f109b7_l2_means_none_when_no_l2(self):
+        with autotest.step("Arrange: 1 record without L2 (did not reach)"):
+            recs = [_rec(False, 5, None, 4, None)]
+        with autotest.step("Act: org_effect_trend"):
+            trend = org_effect_trend(recs)
+        with autotest.step("Assert: l2_escalations_mean is None"):
+            assert_is_none(
+                trend.l2_escalations_mean, "l2_escalations_mean is None when there is no L2"
+            )

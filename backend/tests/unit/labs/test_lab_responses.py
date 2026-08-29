@@ -8,10 +8,10 @@ from mcp_sdk.testing.custom_assertions import assert_equal
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from auth.dependencies import get_current_user
-from db.session import get_db
 from i18n import LocalizedError, localized_error_handler
+from kit.db import get_db
 from labs.router import router as labs_router
-from models.lab import Lab, LabStep
+from models.catalog import Lab, LabStep
 
 pytestmark = [pytest.mark.unit]
 
@@ -50,7 +50,7 @@ class TestLabResponses:
             await db.commit()
 
         self.app = FastAPI()
-        self.app.include_router(labs_router, prefix="/labs")
+        self.app.include_router(labs_router)
 
         async def _override_db():
             async with self.session_factory() as db:
@@ -182,7 +182,7 @@ class TestLabsLocaleHeaderEndToEnd:
             await db.commit()
 
         self.app = FastAPI()
-        self.app.include_router(labs_router, prefix="/labs")
+        self.app.include_router(labs_router)
         self.app.add_exception_handler(LocalizedError, localized_error_handler)
 
         async def _override_db():

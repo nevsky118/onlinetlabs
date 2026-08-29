@@ -43,8 +43,8 @@ class TestStudentProfile:
                 profile.pace,
                 profile.help_propensity,
             )
-            for value in traits:
-                assert_true(0.0 <= value <= 1.0, f"trait {value} outside [0,1]")
+            for trait in traits:
+                assert_true(0.0 <= trait <= 1.0, f"trait {trait} outside [0,1]")
 
     @autotest.num("2031")
     @autotest.external_id("5c4d3e42-66f5-4421-85fa-deaeb48083fd")
@@ -59,5 +59,5 @@ class TestStudentProfile:
         with autotest.step("Assert: size is correct and each trait is spread out"):
             assert_equal(len(cohort), 50, "cohort size")
             for attr in ("skill", "persistence", "strategy", "pace", "help_propensity"):
-                values = [getattr(p, attr) for p in cohort]
+                values = [getattr(learner, attr) for learner in cohort]
                 assert_true(statistics.stdev(values) > 0.1, f"trait {attr} not diverse enough")

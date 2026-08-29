@@ -4,7 +4,7 @@ import pytest
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal
 
-from chat.router import MAX_TOOL_ROUNDS
+from chat.service import MAX_TOOL_ROUNDS
 
 pytestmark = [pytest.mark.unit]
 
@@ -15,4 +15,4 @@ class TestRouterConstants:
     @autotest.name("MAX_TOOL_ROUNDS == 5, guards against an infinite tool loop")
     def test_5d0b1f3a_max_tool_rounds_is_5(self):
         with autotest.step("Check the constant's value"):
-            assert_equal(MAX_TOOL_ROUNDS, 5, "MAX_TOOL_ROUNDS")
+            assert_equal(MAX_TOOL_ROUNDS, 5, "MAX TOOL ROUNDS")

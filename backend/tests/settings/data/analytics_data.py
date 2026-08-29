@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime, timedelta
 
-from learning_analytics.context import AgentContext
+from analytics.runtime.context import AgentContext
 
 
 class AttemptData:

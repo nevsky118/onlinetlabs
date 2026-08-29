@@ -5,7 +5,7 @@ from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 
 from agents.identifier.agent import identify_regime
-from agents.identifier.models import SessionFeatures, StruggleType, SuggestedIntervention
+from agents.identifier.schemas import SessionFeatures, StruggleType, SuggestedIntervention
 from config.config_model import LearningAnalyticsConfig
 from tests.settings.data.analytics_data import SessionFeaturesData
 

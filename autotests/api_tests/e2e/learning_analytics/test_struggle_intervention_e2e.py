@@ -1,6 +1,5 @@
 # E2E (Tier 2): REPEATING_ERRORS is detected and an intervention is sent through the gateway.
 
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -9,25 +8,14 @@ pytest.importorskip("pydantic_ai")  # Tier 2: runs only in the backend venv, oth
 
 from autotests.settings.configuration.env_paths import env_file
 from autotests.settings.reports import autotest
-
-
-def _error_events(n: int):
-    from models.behavioral_event import BehavioralEvent
-    now = datetime.now(tz=timezone.utc)
-    return [
-        BehavioralEvent(
-            id=f"e{i}", session_id="s1", user_id="u1", lab_slug="autotest-lab",
-            timestamp=now, event_type="error", action="cmd",
-            success=False, message="same error", severity="error",
-        )
-        for i in range(n)
-    ]
+from autotests.settings.utils.custom_assertions import assert_equal, assert_greater_equal
+from autotests.api.data.e2e.learning_analytics_data import RepeatedErrorEventsData
 
 
 @pytest.mark.e2e
 @pytest.mark.asyncio
 class TestStruggleInterventionE2E:
-    @autotest.num("711")
+    @autotest.num("3484")
     @autotest.external_id("0315969a-1f8c-4527-b83b-01e6dcc99a34")
     @autotest.name("E2E: 3 identical errors -> struggle REPEATING_ERRORS -> HINT")
     async def test_0315969a_detection(self):
@@ -41,16 +29,16 @@ class TestStruggleInterventionE2E:
             backend_config = EnvConfigLoader().load(str(env_file("backend")))
             la_cfg = LearningAnalyticsConfig()
         with autotest.step("FeatureExtractor on 3 identical errors"):
-            features = FeatureExtractor(la_cfg).compute("s1", _error_events(3))
-            assert features.error_repeat_count >= la_cfg.error_repeat_threshold
+            features = FeatureExtractor(la_cfg).compute("s1", RepeatedErrorEventsData(3).events)
+            assert_greater_equal(features.error_repeat_count, la_cfg.error_repeat_threshold, "error repeat count")
 
         with autotest.step("AnalyticsAgent detects REPEATING_ERRORS -> HINT"):
             result = AnalyticsAgent(backend_config, None).analyze_session(features, la_cfg)
-            assert result.struggle_detected is True
-            assert result.struggle_type == StruggleType.REPEATING_ERRORS
-            assert result.suggested_intervention == SuggestedIntervention.HINT
+            assert_equal(result.struggle_detected, True, "struggle detected")
+            assert_equal(result.struggle_type, StruggleType.REPEATING_ERRORS, "struggle type")
+            assert_equal(result.suggested_intervention, SuggestedIntervention.HINT, "suggested intervention")
 
-    @autotest.num("712")
+    @autotest.num("3485")
     @autotest.external_id("60fffc56-e8cf-4f59-a5f0-1f874f77195e")
     @autotest.name("E2E: monitor._run_analysis sends intervention to gateway")
     async def test_60fffc56_intervention_sent(self):
@@ -64,7 +52,7 @@ class TestStruggleInterventionE2E:
 
             backend_config = EnvConfigLoader().load(str(env_file("backend")))
             la_cfg = LearningAnalyticsConfig()
-            events = _error_events(3)
+            events = RepeatedErrorEventsData(3).events
 
             class _Result:
                 def scalars(self): return self
@@ -129,4 +117,4 @@ class TestStruggleInterventionE2E:
         with autotest.step("Intervention sent to gateway"):
             gateway.send_intervention.assert_awaited()
             args = gateway.send_intervention.await_args.args
-            assert args[0] == "s1"
+            assert_equal(args[0], "s1", "args[0]")

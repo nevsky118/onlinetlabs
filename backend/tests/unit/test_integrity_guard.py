@@ -11,16 +11,12 @@ pytestmark = [pytest.mark.unit]
 
 # Production directories of the backend (excluding tests/, .e2e/, migrations/, scripts/).
 _PROD_DIRS = [
-    "learning_analytics",
-    "control",
+    "analytics",
     "agents",
     "experiment",
     "sessions",
-    "evaluation",
-    "cohort",
     "admin",
-    "escalation",
-    "control_interface",
+    "consent",
 ]
 # The seeded A/B lives only in .e2e/ab_run.py (l2_pass). No analysis/production
 # path should pull it in, otherwise seeded data leaks into submission artifacts.
@@ -37,8 +33,8 @@ class TestIntegrityGuard:
 
         with autotest.step("Act: scan production modules for seeded dependencies"):
             offenders = []
-            for d in _PROD_DIRS:
-                for py in (backend / d).rglob("*.py"):
+            for directory in _PROD_DIRS:
+                for py in (backend / directory).rglob("*.py"):
                     if _BANNED.search(py.read_text(encoding="utf-8")):
                         offenders.append(str(py.relative_to(backend)))
 

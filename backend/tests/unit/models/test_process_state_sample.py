@@ -11,7 +11,7 @@ class TestProcessStateSample:
     @autotest.name("ProcessStateSample: table has all required columns")
     def test_cd5f06eb_model_columns_present(self):
         with autotest.step("Act: get the model's column names"):
-            from models.process_state_sample import ProcessStateSample
+            from models.research import ProcessStateSample
 
             cols = set(ProcessStateSample.__table__.columns.keys())
 

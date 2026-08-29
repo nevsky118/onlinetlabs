@@ -10,10 +10,10 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from auth.dependencies import decode_backend_token
 from auth.router import router as auth_router
 from config import settings
-from db.session import get_db
 from i18n import LocalizedError, localized_error_handler
-from models.user import Account, User
-from rate_limit import limiter
+from kit.db import get_db
+from kit.rate_limit import limiter
+from models.identity import Account, StudyParticipant, User
 
 pytestmark = [pytest.mark.unit, pytest.mark.auth]
 
@@ -28,6 +28,7 @@ class TestAuthRouter:
         async with self.engine.begin() as conn:
             await conn.run_sync(User.__table__.create)
             await conn.run_sync(Account.__table__.create)
+            await conn.run_sync(StudyParticipant.__table__.create)
 
         # Minimal app with only the auth router.
         app = FastAPI()
@@ -37,7 +38,7 @@ class TestAuthRouter:
         async def _rate_limit_handler(request: Request, exc: RateLimitExceeded):
             return JSONResponse(status_code=429, content={"detail": "too many"})
 
-        app.include_router(auth_router, prefix="/auth")
+        app.include_router(auth_router)
         app.add_exception_handler(LocalizedError, localized_error_handler)
 
         async def _override_get_db():

@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock
 import pytest
 from mcp_sdk.context import SessionContext
 from mcp_sdk.testing import autotest
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_in, assert_true
 
 from src.server import GNS3Server
 
@@ -42,10 +43,10 @@ class TestLogBufferIsolation:
             second = await server._ensure_log_buffer(_ctx("u2", "p2"))
 
         with autotest.step("Assert: two buffers, each connected to its own project"):
-            assert first is not second
-            assert len(server._log_buffers) == 2
-            assert "p1" in first.ensure_connected.await_args.args[0]
-            assert "p2" in second.ensure_connected.await_args.args[0]
+            assert_true(first is not second, "first is not second")
+            assert_equal(len(server._log_buffers), 2, "log buffers count")
+            assert_in("p1", first.ensure_connected.await_args.args[0], "'p1'")
+            assert_in("p2", second.ensure_connected.await_args.args[0], "'p2'")
 
     @autotest.num("861")
     @autotest.external_id("e0363a2c-0fe6-4d78-a5df-45ddef3dbfc8")
@@ -59,5 +60,5 @@ class TestLogBufferIsolation:
             second = await server._ensure_log_buffer(_ctx("u1", "p1"))
 
         with autotest.step("Assert: one buffer is kept"):
-            assert first is second
-            assert len(server._log_buffers) == 1
+            assert_true(first is second, "first is second")
+            assert_equal(len(server._log_buffers), 1, "log buffers count")

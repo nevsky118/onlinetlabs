@@ -11,7 +11,7 @@ class TestSessionEvidenceSnapshot:
     @autotest.name("SessionEvidenceSnapshot: table has all required columns")
     def test_811b4689_model_columns_present(self):
         with autotest.step("Act: get the model's column names"):
-            from models.session_evidence_snapshot import SessionEvidenceSnapshot
+            from models.research import SessionEvidenceSnapshot
 
             cols = set(SessionEvidenceSnapshot.__table__.columns.keys())
 

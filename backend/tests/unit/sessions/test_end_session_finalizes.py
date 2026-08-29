@@ -13,12 +13,10 @@ from mcp_sdk.testing.custom_assertions import (
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from models.behavioral_event import BehavioralEvent
-from models.experiment import ExperimentMetrics
-from models.lab import Lab, LabStep
-from models.progress import LabProgress
-from models.session import LearningSession
-from models.user import User
+from models.catalog import Lab, LabStep
+from models.identity import User
+from models.learning import LabProgress, LearningSession
+from models.research import BehavioralEvent, ExperimentMetrics
 from sessions.services.lifecycle import end_session
 
 pytestmark = [pytest.mark.unit]
@@ -121,20 +119,20 @@ class TestEndSessionFinalizes:
                     .all()
                 )
             assert_equal(len(rows), 1, "exactly one metrics row")
-            m = rows[0]
-            assert_equal(m.session_id, "sess-1", "session_id")
-            assert_equal(m.user_id, "u1", "user_id")
-            assert_equal(m.lab_slug, "lab-a", "lab_slug")
-            assert_equal(m.experiment_group, "group_b", "experiment_group")
+            rows_2 = rows[0]
+            assert_equal(rows_2.session_id, "sess-1", "session_id")
+            assert_equal(rows_2.user_id, "u1", "user_id")
+            assert_equal(rows_2.lab_slug, "lab-a", "lab_slug")
+            assert_equal(rows_2.experiment_group, "group_b", "experiment_group")
             # control_arm = effective arm of the session (L1 → matches training arm)
-            assert_equal(m.control_arm, "closed", "control_arm = closed")
+            assert_equal(rows_2.control_arm, "closed", "control_arm = closed")
             # base_arm = the user's persistent training arm (User.control_arm)
-            assert_equal(m.base_arm, "closed", "base_arm = closed")
-            assert_equal(m.interventions_received, 1, "1 intervention")
-            assert_equal(m.total_errors, 1, "1 error")
-            assert_true(m.total_time_seconds > 0, "total_time_seconds > 0")
+            assert_equal(rows_2.base_arm, "closed", "base_arm = closed")
+            assert_equal(rows_2.interventions_received, 1, "1 intervention")
+            assert_equal(rows_2.total_errors, 1, "1 error")
+            assert_true(rows_2.total_time_seconds > 0, "total_time_seconds > 0")
             # current_step=1 of 2 (LabStep fallback, no spec) → not completed
-            assert_false(m.completed, "not completed")
+            assert_false(rows_2.completed, "not completed")
 
     @autotest.num("1303")
     @autotest.external_id("4750257f-ef70-4e5b-8b1d-e6c106b90512")

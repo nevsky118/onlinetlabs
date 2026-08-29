@@ -8,8 +8,8 @@ from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from models.regime_annotation import RegimeAnnotation
-from models.user import User
+from models.identity import User
+from models.research import RegimeAnnotation
 
 pytestmark = [pytest.mark.unit]
 
@@ -71,5 +71,5 @@ class TestRunCohort:
                 users = (await db.execute(select(User))).scalars().all()
                 truths = (await db.execute(select(RegimeAnnotation))).scalars().all()
             assert_equal(len(users), 6, "users created")
-            assert_true(all(u.is_simulated for u in users), "all users is_simulated")
+            assert_true(all(user.is_simulated for user in users), "all users is_simulated")
             assert_true(len(truths) > 0, "ground truth recorded")

@@ -1,6 +1,6 @@
 # Test data generators for labs.
 
-from models.lab import Lab
+from models.catalog import Lab
 
 
 class LabData:

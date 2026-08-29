@@ -7,7 +7,7 @@ from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal
 
 from agents.orchestrator.agent import Orchestrator
-from agents.orchestrator.models import InterventionInput
+from agents.orchestrator.schemas import InterventionInput
 
 pytestmark = [pytest.mark.unit]
 

@@ -4,7 +4,7 @@ import pytest
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_is_none, assert_true
 
-from agents.hint.models import HintResponse
+from agents.hint.schemas import HintResponse
 from agents.orchestrator.agent import Orchestrator
 from agents.orchestrator.router import INTENT_TO_AGENT, resolve_agent
 
@@ -59,7 +59,7 @@ class TestOrchestrator:
             assert_equal(orch._agents, {}, "agents is empty")
 
 
-from agents.orchestrator.models import InterventionInput
+from agents.orchestrator.schemas import InterventionInput
 
 
 class TestOrchestratorIntervene:

@@ -12,6 +12,9 @@ from mcp_sdk.testing.custom_assertions import (
 )
 
 from tests.settings.data.vpcs_data import (
+    AnsweringConsoleWriterData,
+    ConsoleReaderData,
+    ConsoleWriterData,
     VpcsPingConsoleData,
     VpcsShowIpConsoleData,
     VpcsStalePromptConsoleData,
@@ -21,62 +24,13 @@ from validation.checks import vpcs
 pytestmark = [pytest.mark.unit]
 
 
-class _Writer:
-    """Console writer that records what the handler sent."""
-
-    def __init__(self, sink: list[bytes]):
-        self._sink = sink
-
-    def write(self, data: bytes) -> None:
-        self._sink.append(data)
-
-    async def drain(self) -> None:
-        return None
-
-    def close(self) -> None:
-        return None
-
-    async def wait_closed(self) -> None:
-        return None
-
-
-class _Reader:
-    """Console reader that yields queued chunks, then goes quiet until more are queued."""
-
-    def __init__(self, chunks: list[bytes]):
-        self._chunks = list(chunks)
-
-    def queue(self, chunk: bytes) -> None:
-        self._chunks.append(chunk)
-
-    async def read(self, _n: int) -> bytes:
-        if self._chunks:
-            return self._chunks.pop(0)
-        await asyncio.sleep(3600)
-
-
-class _AnsweringWriter(_Writer):
-    """Writer that makes the console answer only after the command is sent."""
-
-    def __init__(self, sink: list[bytes], reader: _Reader, command: bytes, answer: bytes):
-        super().__init__(sink)
-        self._reader = reader
-        self._command = command
-        self._answer = answer
-
-    def write(self, data: bytes) -> None:
-        super().write(data)
-        if data.startswith(self._command):
-            self._reader.queue(self._answer)
-
-
 def _patch_console(monkeypatch, console: VpcsPingConsoleData) -> list[bytes]:
     """Patch the console transport, return the list collecting written bytes."""
     writes: list[bytes] = []
     pending = list(console.replies)
 
     async def fake_open_connection(host, port):
-        return object(), _Writer(writes)
+        return object(), ConsoleWriterData(writes)
 
     async def fake_drain(reader, timeout):
         return pending.pop(0) if pending else b""
@@ -115,7 +69,9 @@ class TestVpcsPingArpWarmup:
             )
 
         with autotest.step("Assert: two pings were sent and the warm result is reported"):
-            assert_equal(sum(1 for w in writes if w.startswith(b"ping ")), 2, "two pings sent")
+            assert_equal(
+                sum(1 for write in writes if write.startswith(b"ping ")), 2, "two pings sent"
+            )
             assert_equal(
                 result.actual["received"], console.second.replies, "received from second ping"
             )
@@ -149,8 +105,8 @@ class TestVpcsShowIpChunkedBanner:
         with autotest.step("Arrange: a console whose banner arrives as three chunks"):
             console = VpcsShowIpConsoleData()
 
-            reader = _Reader(console.banner_chunks)
-            writer = _AnsweringWriter([], reader, b"show ip", console.show_ip)
+            reader = ConsoleReaderData(console.banner_chunks)
+            writer = AnsweringConsoleWriterData([], reader, b"show ip", console.show_ip)
 
             async def fake_open_connection(host, port):
                 return reader, writer
@@ -177,11 +133,11 @@ class TestVpcsShowIpStalePrompt:
     async def test_4df7c1bb_retries_once_on_stale_prompt(self, monkeypatch):
         with autotest.step("Arrange: the first show ip returns a bare prompt"):
             console = VpcsStalePromptConsoleData()
-            reader = _Reader([])
+            reader = ConsoleReaderData([])
             sent: list[bytes] = []
             replies = [console.stale, console.answer]
 
-            class _Retrying(_Writer):
+            class _Retrying(ConsoleWriterData):
                 def write(self, data: bytes) -> None:
                     super().write(data)
                     if data.startswith(b"show ip") and replies:
@@ -200,7 +156,7 @@ class TestVpcsShowIpStalePrompt:
             )
 
         with autotest.step("Assert: asked twice and parsed the second reply"):
-            assert_equal(sum(1 for w in sent if w.startswith(b"show ip")), 2, "asked twice")
+            assert_equal(sum(1 for line in sent if line.startswith(b"show ip")), 2, "asked twice")
             assert_equal(result.actual["ip"], console.ip, "ip parsed")
             assert_true(result.ok, "a configured PC passes")
 
@@ -214,8 +170,8 @@ class TestVpcsConsoleContention:
     async def test_09a239aa_retries_refused_console_connect(self, monkeypatch):
         with autotest.step("Arrange: the first two connects are refused, the third succeeds"):
             console = VpcsShowIpConsoleData()
-            reader = _Reader(console.banner_chunks)
-            writer = _AnsweringWriter([], reader, b"show ip", console.show_ip)
+            reader = ConsoleReaderData(console.banner_chunks)
+            writer = AnsweringConsoleWriterData([], reader, b"show ip", console.show_ip)
             attempts = {"n": 0}
 
             async def flaky_open_connection(host, port):
@@ -249,9 +205,9 @@ class TestVpcsUnreadableConsole:
             attempts = {"n": 0}
 
             def _fresh():
-                reader = _Reader([])
+                reader = ConsoleReaderData([])
 
-                class _Stale(_Writer):
+                class _Stale(ConsoleWriterData):
                     def write(self, data: bytes) -> None:
                         super().write(data)
                         if data.startswith(b"show ip"):

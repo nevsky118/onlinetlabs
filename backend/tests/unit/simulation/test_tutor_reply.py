@@ -28,9 +28,8 @@ class TestTutorReplyFallback:
     async def test_70b076e0_fallback_is_progressive_not_repeated(self):
         with autotest.step("Arrange: LLM unavailable → template fallback kicks in"):
             context = {"node": "PC1", "tried": "ip 192.168.2.11/24"}
-            # build_client gets bound when the closure is created → patch it BEFORE that happens,
-            # otherwise the unit test would hit the real YandexGPT.
-            patcher = patch("core.llm.client.build_client", side_effect=RuntimeError("llm down"))
+            # patch where simulation.run binds it, else the test hits the real YandexGPT
+            patcher = patch("simulation.run.build_client", side_effect=RuntimeError("llm down"))
 
         with autotest.step("Act: student reaches out 4 times in a row"):
             with patcher:

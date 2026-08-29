@@ -11,7 +11,7 @@ class TestInterventionDecision:
     @autotest.name("InterventionDecision: table has all required columns")
     def test_ff5ef85c_model_columns_present(self):
         with autotest.step("Act: get the model's column names"):
-            from models.intervention_decision import InterventionDecision
+            from models.research import InterventionDecision
 
             cols = set(InterventionDecision.__table__.columns.keys())
 

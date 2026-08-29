@@ -13,8 +13,8 @@ class TestExperimentConfig:
     @autotest.name("LearningAnalyticsConfig: key experiment parameters have valid values")
     def test_ba8bba52_experiment_params(self):
         with autotest.step("Act: create default config"):
-            c = LearningAnalyticsConfig()
+            config = LearningAnalyticsConfig()
         with autotest.step("Assert: parameters within valid ranges"):
-            assert_greater(c.escalation_max_dwell, 0, "escalation_max_dwell > 0")
-            assert_greater(c.mentor_handling_seconds, 0, "mentor_handling_seconds > 0")
-            assert_greater_equal(c.l2_intervention_cap, 0, "l2_intervention_cap >= 0")
+            assert_greater(config.escalation_max_dwell, 0, "escalation_max_dwell > 0")
+            assert_greater(config.mentor_handling_seconds, 0, "mentor_handling_seconds > 0")
+            assert_greater_equal(config.l2_intervention_cap, 0, "l2_intervention_cap >= 0")

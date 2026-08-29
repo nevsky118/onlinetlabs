@@ -3,11 +3,10 @@
 import pytest
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from models.experiment import ExperimentMetrics
-from models.lab import Lab
-from models.progress import LabProgress
-from models.session import LearningSession
-from models.user import User
+from models.catalog import Lab
+from models.identity import User
+from models.learning import LabProgress, LearningSession
+from models.research import ExperimentMetrics
 
 
 async def _make_engine_and_tables():

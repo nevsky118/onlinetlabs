@@ -1,0 +1,345 @@
+"""Tests for ControlInterface: 5 denial branches + 2 happy paths."""
+
+from contextlib import asynccontextmanager
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from mcp_sdk.testing import autotest
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
+
+from consent.interface import ControlInterface, InterfaceDenied
+from experiment.assignment import ControlArm
+
+pytestmark = [pytest.mark.unit]
+
+_TOOL_OBS = "list_user_actions"
+_TOOL_ACT = "execute_action"
+_USER = "user-11111111"
+_SESSION = "sess-22222222"
+
+
+def _make_mcp():
+    mcp = MagicMock()
+    mcp._call_tool = AsyncMock(return_value={"data": "ok"})
+    mcp.execute_action = AsyncMock(return_value={"done": True})
+    # observe dispatches through a typed wrapper (ctx injection + serialization).
+    mcp.list_user_actions = AsyncMock(return_value={"data": "ok"})
+    return mcp
+
+
+def _make_config(cooldown: float = 60.0):
+    cfg = MagicMock()
+    cfg.cooldown_period = cooldown
+    return cfg
+
+
+def _make_db_factory(owned=True, consent=True):
+    """Fake db_factory: async ctx manager, returns a stub db."""
+    db = MagicMock()
+
+    @asynccontextmanager
+    async def factory():
+        yield db
+
+    return factory, db
+
+
+class TestControlInterface:
+    # ── observe happy path ────────────────────────────────────────────────
+
+    @autotest.num("1770")
+    @autotest.external_id("8d4e6106-a42a-42a4-ac83-587b9ca6830f")
+    @autotest.name("observe: classify+consent+owner → _call_tool called, audit(success=True)")
+    async def test_8d4e6106_observe_happy(self):
+        with autotest.step("Arrange: build interface with mock mcp, db factory, config"):
+            mcp = _make_mcp()
+            factory, db = _make_db_factory()
+            iface = ControlInterface(mcp, factory, _make_config())
+
+        with autotest.step("Act: observe with owner+consent patched in"):
+            with (
+                patch(
+                    "consent.interface.get_owned_session",
+                    new=AsyncMock(return_value=object()),
+                ),
+                patch("consent.interface.has_consent", new=AsyncMock(return_value=True)),
+                patch("consent.interface.record", new=AsyncMock()) as mock_record,
+            ):
+                result = await iface.observe(
+                    _TOOL_OBS, ctx=None, arguments={}, user_id=_USER, session_id=_SESSION
+                )
+
+        with autotest.step("Assert: typed wrapper called with ctx"):
+            mcp.list_user_actions.assert_awaited_once_with(None)
+        with autotest.step("Assert: audit recorded with success=True"):
+            assert_true(mock_record.called, "record called")
+            call_kwargs = mock_record.call_args.kwargs
+            assert_equal(call_kwargs["success"], True, "success")
+            assert_equal(call_kwargs["kind"], "observe", "kind")
+
+    # ── act happy path + rate-backstop ───────────────────────────────────
+
+    @autotest.num("1771")
+    @autotest.external_id("c21fc83a-4d93-4c05-bfcc-667a29b2e159")
+    @autotest.name("act: first call → execute_action; second < cooldown → rate-denied")
+    async def test_c21fc83a_act_then_rate(self):
+        with autotest.step("Arrange: build interface with a 60s cooldown"):
+            mcp = _make_mcp()
+            factory, db = _make_db_factory()
+            cfg = _make_config(cooldown=60.0)
+            iface = ControlInterface(mcp, factory, cfg)
+
+        with autotest.step("Act: first call, owner+consent patched in"):
+            with (
+                patch(
+                    "consent.interface.get_owned_session",
+                    new=AsyncMock(return_value=object()),
+                ),
+                patch("consent.interface.has_consent", new=AsyncMock(return_value=True)),
+                patch("consent.interface.record", new=AsyncMock()),
+            ):
+                # first call succeeds
+                await iface.act(
+                    _TOOL_ACT,
+                    ctx=None,
+                    arguments={"action_name": "start_node", "params": {}},
+                    user_id=_USER,
+                    session_id=_SESSION,
+                    arm=ControlArm.CLOSED,
+                )
+
+        with autotest.step("Assert: execute_action called the first time"):
+            mcp.execute_action.assert_awaited_once()
+
+        with autotest.step("Act: second call immediately, still within the cooldown"):
+            # second call immediately should fail with rate limit
+            with (
+                patch(
+                    "consent.interface.get_owned_session",
+                    new=AsyncMock(return_value=object()),
+                ),
+                patch("consent.interface.has_consent", new=AsyncMock(return_value=True)),
+                patch("consent.interface.record", new=AsyncMock()),
+            ):
+                with pytest.raises(InterfaceDenied) as exc_info:
+                    await iface.act(
+                        _TOOL_ACT,
+                        ctx=None,
+                        arguments={"action_name": "start_node", "params": {}},
+                        user_id=_USER,
+                        session_id=_SESSION,
+                        arm=ControlArm.CLOSED,
+                    )
+
+        with autotest.step("Assert: reason is rate"):
+            assert_equal(exc_info.value.reason, "rate", "reason")
+
+    # ── act in open arm → open_arm ────────────────────────────────────────
+
+    @autotest.num("1772")
+    @autotest.external_id("e896a19f-9527-4485-8534-fb6bc2de6ece")
+    @autotest.name("act in OPEN arm → InterfaceDenied(open_arm), execute_action not called")
+    async def test_e896a19f_act_open_arm(self):
+        with autotest.step("Arrange: build interface with mock mcp, db factory, config"):
+            mcp = _make_mcp()
+            factory, db = _make_db_factory()
+            iface = ControlInterface(mcp, factory, _make_config())
+
+        with autotest.step("Act: act in the OPEN arm, owner+consent patched in"):
+            with (
+                patch(
+                    "consent.interface.get_owned_session",
+                    new=AsyncMock(return_value=object()),
+                ),
+                patch("consent.interface.has_consent", new=AsyncMock(return_value=True)),
+                patch("consent.interface.record", new=AsyncMock()),
+            ):
+                with pytest.raises(InterfaceDenied) as exc_info:
+                    await iface.act(
+                        _TOOL_ACT,
+                        ctx=None,
+                        arguments={},
+                        user_id=_USER,
+                        session_id=_SESSION,
+                        arm=ControlArm.OPEN,
+                    )
+
+        with autotest.step("Assert: reason=open_arm, execute_action untouched"):
+            assert_equal(exc_info.value.reason, "open_arm", "reason")
+            mcp.execute_action.assert_not_awaited()
+
+    # ── unclassified tool → unclassified ──────────────────────────────────
+
+    @autotest.num("1773")
+    @autotest.external_id("3f314b4d-7ba2-4615-9889-24a00f12e5e8")
+    @autotest.name("observe: unclassified tool → InterfaceDenied(unclassified)")
+    async def test_3f314b4d_unclassified(self):
+        with autotest.step("Arrange: build interface with mock mcp, db factory, config"):
+            mcp = _make_mcp()
+            factory, _ = _make_db_factory()
+            iface = ControlInterface(mcp, factory, _make_config())
+
+        with autotest.step("Act: observe an unclassified tool"):
+            with patch("consent.interface.record", new=AsyncMock()):
+                with pytest.raises(InterfaceDenied) as exc_info:
+                    await iface.observe(
+                        "rm_rf_all", ctx=None, arguments={}, user_id=_USER, session_id=_SESSION
+                    )
+
+        with autotest.step("Assert: reason=unclassified"):
+            assert_equal(exc_info.value.reason, "unclassified", "reason")
+
+    # ── foreign session → isolation ───────────────────────────────────────
+
+    @autotest.num("1774")
+    @autotest.external_id("aa9acc55-89a8-4137-9094-2d6ab2c34102")
+    @autotest.name("observe: foreign session (get_owned_session→None) → InterfaceDenied(isolation)")
+    async def test_aa9acc55_isolation(self):
+        with autotest.step("Arrange: build interface with mock mcp, db factory, config"):
+            mcp = _make_mcp()
+            factory, _ = _make_db_factory()
+            iface = ControlInterface(mcp, factory, _make_config())
+
+        with autotest.step("Act: observe with get_owned_session patched to None"):
+            with (
+                patch(
+                    "consent.interface.get_owned_session",
+                    new=AsyncMock(return_value=None),
+                ),
+                patch("consent.interface.record", new=AsyncMock()),
+            ):
+                with pytest.raises(InterfaceDenied) as exc_info:
+                    await iface.observe(
+                        _TOOL_OBS, ctx=None, arguments={}, user_id=_USER, session_id=_SESSION
+                    )
+
+        with autotest.step("Assert: reason=isolation"):
+            assert_equal(exc_info.value.reason, "isolation", "reason")
+
+    # ── act: no consent → consent ─────────────────────────────────────────
+
+    @autotest.num("1775")
+    @autotest.external_id("881af810-b603-4689-b511-e03c76db5616")
+    @autotest.name("act: no consent → InterfaceDenied(consent)")
+    async def test_881af810_no_consent(self):
+        with autotest.step("Arrange: build interface with mock mcp, db factory, config"):
+            mcp = _make_mcp()
+            factory, _ = _make_db_factory()
+            iface = ControlInterface(mcp, factory, _make_config())
+
+        with autotest.step("Act: act with consent patched to False"):
+            with (
+                patch(
+                    "consent.interface.get_owned_session",
+                    new=AsyncMock(return_value=object()),
+                ),
+                patch("consent.interface.has_consent", new=AsyncMock(return_value=False)),
+                patch("consent.interface.record", new=AsyncMock()),
+            ):
+                with pytest.raises(InterfaceDenied) as exc_info:
+                    await iface.act(
+                        _TOOL_ACT,
+                        ctx=None,
+                        arguments={},
+                        user_id=_USER,
+                        session_id=_SESSION,
+                        arm=ControlArm.CLOSED,
+                    )
+
+        with autotest.step("Assert: reason=consent"):
+            assert_equal(exc_info.value.reason, "consent", "reason")
+
+    # ── observe: no consent → consent ─────────────────────────────────────
+
+    @autotest.num("1776")
+    @autotest.external_id("507643b8-80b1-4f98-b42a-a1b346faade5")
+    @autotest.name("observe: no consent → InterfaceDenied(consent)")
+    async def test_507643b8_observe_no_consent(self):
+        with autotest.step("Arrange: build interface with mock mcp, db factory, config"):
+            mcp = _make_mcp()
+            factory, _ = _make_db_factory()
+            iface = ControlInterface(mcp, factory, _make_config())
+
+        with autotest.step("Act: observe with consent patched to False"):
+            with (
+                patch(
+                    "consent.interface.get_owned_session",
+                    new=AsyncMock(return_value=object()),
+                ),
+                patch("consent.interface.has_consent", new=AsyncMock(return_value=False)),
+                patch("consent.interface.record", new=AsyncMock()),
+            ):
+                with pytest.raises(InterfaceDenied) as exc_info:
+                    await iface.observe(
+                        _TOOL_OBS, ctx=None, arguments={}, user_id=_USER, session_id=_SESSION
+                    )
+
+        with autotest.step("Assert: reason=consent"):
+            assert_equal(exc_info.value.reason, "consent", "reason")
+
+
+class TestControlInterfaceFailureAudit:
+    """A tool that raises must be audited as a failure, never left recorded as success."""
+
+    @autotest.num("3395")
+    @autotest.external_id("1ffc0388-3c52-43fd-97e0-b6b9d3a1fc2f")
+    @autotest.name("observe: a raising tool is audited with success=False and re-raised")
+    async def test_1ffc0388_observe_failure_is_audited(self):
+        with autotest.step("Arrange: the observe tool raises"):
+            mcp = _make_mcp()
+            mcp.list_user_actions = AsyncMock(side_effect=RuntimeError("history 403"))
+            factory, _ = _make_db_factory()
+            iface = ControlInterface(mcp, factory, _make_config())
+
+        with autotest.step("Act: observe, expecting the error to propagate"):
+            with (
+                patch(
+                    "consent.interface.get_owned_session",
+                    new=AsyncMock(return_value=object()),
+                ),
+                patch("consent.interface.has_consent", new=AsyncMock(return_value=True)),
+                patch("consent.interface.record", new=AsyncMock()) as mock_record,
+            ):
+                with pytest.raises(RuntimeError):
+                    await iface.observe(
+                        _TOOL_OBS, ctx=None, arguments={}, user_id=_USER, session_id=_SESSION
+                    )
+
+        with autotest.step("Assert: the audit row says the call failed"):
+            assert_true(mock_record.called, "record called")
+            call_kwargs = mock_record.call_args.kwargs
+            assert_equal(call_kwargs["success"], False, "success")
+            assert_equal(call_kwargs["kind"], "observe", "kind")
+
+    @autotest.num("3396")
+    @autotest.external_id("3d14c40d-0e9a-4b17-9c0c-6d69e732a6de")
+    @autotest.name("act: a raising action is audited with success=False and re-raised")
+    async def test_3d14c40d_act_failure_is_audited(self):
+        with autotest.step("Arrange: the action raises"):
+            mcp = _make_mcp()
+            mcp.execute_action = AsyncMock(side_effect=RuntimeError("mcp down"))
+            factory, _ = _make_db_factory()
+            iface = ControlInterface(mcp, factory, _make_config())
+
+        with autotest.step("Act: act, expecting the error to propagate"):
+            with (
+                patch(
+                    "consent.interface.get_owned_session",
+                    new=AsyncMock(return_value=object()),
+                ),
+                patch("consent.interface.has_consent", new=AsyncMock(return_value=True)),
+                patch("consent.interface.record", new=AsyncMock()) as mock_record,
+            ):
+                with pytest.raises(RuntimeError):
+                    await iface.act(
+                        _TOOL_ACT,
+                        ctx=None,
+                        arguments={"action_name": "start", "params": {}},
+                        user_id=_USER,
+                        session_id=_SESSION,
+                        arm=ControlArm.CLOSED,
+                    )
+
+        with autotest.step("Assert: the audit row says the action failed"):
+            assert_true(mock_record.called, "record called")
+            assert_equal(mock_record.call_args.kwargs["success"], False, "success")

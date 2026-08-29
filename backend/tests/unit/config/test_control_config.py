@@ -13,25 +13,27 @@ class TestControlConfig:
     @autotest.name("LearningAnalyticsConfig: default control values are correct")
     def test_3d1bea8a_control_defaults(self):
         with autotest.step("Act: create the default config"):
-            c = LearningAnalyticsConfig()
+            config = LearningAnalyticsConfig()
 
         with autotest.step("Assert: dwell_thresholds is a dict, stuck_on_step >= 0, costs > 0"):
-            assert_is_instance(c.dwell_thresholds, dict, "dwell_thresholds is dict")
-            assert_true(c.dwell_thresholds.get("stuck_on_step", 0.0) >= 0.0, "stuck_on_step >= 0")
-            assert_true(c.cost_stuck > 0, "cost_stuck > 0")
-            assert_true(c.cost_intervention > 0, "cost_intervention > 0")
-            assert_true(c.cost_false_intervention >= 0, "cost_false_intervention >= 0")
+            assert_is_instance(config.dwell_thresholds, dict, "dwell_thresholds is dict")
+            assert_true(
+                config.dwell_thresholds.get("stuck_on_step", 0.0) >= 0.0, "stuck_on_step >= 0"
+            )
+            assert_true(config.cost_stuck > 0, "cost_stuck > 0")
+            assert_true(config.cost_intervention > 0, "cost_intervention > 0")
+            assert_true(config.cost_false_intervention >= 0, "cost_false_intervention >= 0")
 
     @autotest.num("1393")
     @autotest.external_id("9ecd9582-1ccc-4458-9785-49af12a9bf1e")
     @autotest.name("LearningAnalyticsConfig: dwell_thresholds contains all regimes")
     def test_9ecd9582_dwell_thresholds_has_all_regimes(self):
         with autotest.step("Act: create the default config"):
-            c = LearningAnalyticsConfig()
+            config = LearningAnalyticsConfig()
 
         with autotest.step("Assert: dwell_thresholds keys match the expected set"):
             assert_equal(
-                set(c.dwell_thresholds),
+                set(config.dwell_thresholds),
                 {"stuck_on_step", "repeating_errors", "idle", "trial_and_error"},
                 "all four regimes are present",
             )

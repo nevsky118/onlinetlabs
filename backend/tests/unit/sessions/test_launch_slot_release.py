@@ -5,8 +5,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from mcp_sdk.testing import autotest
+from mcp_sdk.testing.custom_assertions import assert_equal
 
-from rate_limit import limiter
+from kit.rate_limit import limiter
 from sessions.routers import commands as launch_mod
 
 pytestmark = [pytest.mark.unit]
@@ -61,12 +62,13 @@ class TestLaunchSlotRelease:
 
         with autotest.step("Act: relaunch an already active session"):
             with (
+                patch.object(launch_mod, "study_decision", AsyncMock(return_value="granted")),
                 patch.object(launch_mod, "get_active_session", AsyncMock(return_value=existing)),
                 patch.object(
                     launch_mod, "launch_session", AsyncMock(return_value=(existing, _CREDS))
                 ),
                 patch.object(launch_mod, "build_session_context", MagicMock(return_value=object())),
-                patch("observability.metrics.active_sessions_gauge") as gauge,
+                patch("sessions.routers.commands.active_sessions_gauge") as gauge,
             ):
                 resp = await self._call(queue, monitor_registry)
 
@@ -77,7 +79,7 @@ class TestLaunchSlotRelease:
             queue.release.assert_not_awaited()
             monitor_registry.start.assert_not_awaited()
             gauge.labels.assert_not_called()
-            assert resp.status == "active"
+            assert_equal(resp.status, "active", "status")
 
     @autotest.num("2451")
     @autotest.external_id("cbca5d12-5297-4d74-bc26-1c2b3862e671")
@@ -89,12 +91,13 @@ class TestLaunchSlotRelease:
 
         with autotest.step("Act: fresh launch"):
             with (
+                patch.object(launch_mod, "study_decision", AsyncMock(return_value="granted")),
                 patch.object(launch_mod, "get_active_session", AsyncMock(return_value=None)),
                 patch.object(
                     launch_mod, "launch_session", AsyncMock(return_value=(new_sess, _CREDS))
                 ),
                 patch.object(launch_mod, "build_session_context", MagicMock(return_value=object())),
-                patch("observability.metrics.active_sessions_gauge") as gauge,
+                patch("sessions.routers.commands.active_sessions_gauge") as gauge,
             ):
                 await self._call(queue, monitor_registry)
 

@@ -4,7 +4,7 @@ from mcp_sdk.testing.custom_assertions import assert_equal, assert_in
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from experiment.assignment import ControlArm, UserNotFound, resolve_control_arm
-from models.user import User
+from models.identity import User
 
 pytestmark = [pytest.mark.unit]
 

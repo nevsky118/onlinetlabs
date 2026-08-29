@@ -9,12 +9,10 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from i18n import LocalizedError
 from instructor.service import build_session_timeline
-from models.behavioral_event import BehavioralEvent
-from models.chat_message import ChatMessage
-from models.lab import Lab
-from models.progress import LabProgress, StepAttempt
-from models.session import LearningSession
-from models.user import User
+from models.catalog import Lab
+from models.identity import User
+from models.learning import ChatMessage, LabProgress, LearningSession, StepAttempt
+from models.research import BehavioralEvent
 
 pytestmark = [pytest.mark.unit]
 
@@ -99,7 +97,9 @@ class TestBuildSessionTimeline:
                 items = await build_session_timeline(db, "sess-tl")
 
         with autotest.step("Assert: kind order and intervention fields"):
-            assert_equal([i["kind"] for i in items], ["student", "intervention", "tutor"], "order")
+            assert_equal(
+                [entry["kind"] for entry in items], ["student", "intervention", "tutor"], "order"
+            )
             assert_equal(items[1]["hint_level"], 2, "hint_level from extra_data")
             assert_equal(items[1]["struggle_type"], "config_error", "struggle_type")
             assert_equal(items[1]["text"], "Подсказка", "intervention text")

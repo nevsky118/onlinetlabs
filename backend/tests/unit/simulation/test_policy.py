@@ -55,10 +55,16 @@ class TestGenerativePolicy:
             _, high_regimes = _run(high, seed=1)
 
         with autotest.step("Assert: the share of unproductive regimes is higher for the weak one"):
-            low_share = sum(1 for r in low_regimes if r != TrueRegime.PRODUCTIVE) / len(low_regimes)
-            high_share = sum(1 for r in high_regimes if r != TrueRegime.PRODUCTIVE) / len(
-                high_regimes
-            )
+            low_share = sum(
+                1
+                for high_regimeow_regime in low_regimes
+                if high_regimeow_regime != TrueRegime.PRODUCTIVE
+            ) / len(low_regimes)
+            high_share = sum(
+                1
+                for high_regimeow_regime in high_regimes
+                if high_regimeow_regime != TrueRegime.PRODUCTIVE
+            ) / len(high_regimes)
             assert_true(low_share > high_share, "weak student struggles more than strong")
 
     @autotest.num("2034")
@@ -90,8 +96,8 @@ class TestGenerativePolicy:
             actions_2, regimes_2 = _run(profile, seed=5)
 
         with autotest.step("Assert: actions and regimes match"):
-            assert_equal(actions_1, actions_2, "actions")
-            assert_equal(regimes_1, regimes_2, "regimes")
+            assert_equal(actions_1, actions_2, "actions 1")
+            assert_equal(regimes_1, regimes_2, "regimes 1")
 
     @autotest.num("2036")
     @autotest.external_id("e68a9ba1-4ad1-46b2-9415-f4462170de34")

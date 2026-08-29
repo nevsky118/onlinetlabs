@@ -10,13 +10,13 @@ from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from admin.router import _rebuild_worker
 from admin.router import router as admin_router
+from admin.service import rebuild_template
 from auth.dependencies import get_current_user
-from db.session import get_db
-from deps import get_gns3_client, get_session_factory
 from i18n import LocalizedError, localized_error_handler
-from models.lab import Lab, LabStep
+from kit.db import get_db
+from kit.deps import get_gns3_client, get_session_factory
+from models.catalog import Lab, LabStep
 
 pytestmark = [pytest.mark.unit]
 
@@ -36,7 +36,7 @@ class TestAdminLabsEndpoints:
             await conn.run_sync(LabStep.__table__.create)
 
         app = FastAPI()
-        app.include_router(admin_router, prefix="/admin")
+        app.include_router(admin_router)
         app.add_exception_handler(LocalizedError, localized_error_handler)
 
         async def _override_db():
@@ -54,7 +54,7 @@ class TestAdminLabsEndpoints:
         self.app = app
 
         self.student_app = FastAPI()
-        self.student_app.include_router(admin_router, prefix="/admin")
+        self.student_app.include_router(admin_router)
         self.student_app.add_exception_handler(LocalizedError, localized_error_handler)
         self.student_app.dependency_overrides[get_db] = _override_db
         self.student_app.dependency_overrides[get_current_user] = _override_student
@@ -125,15 +125,25 @@ class TestAdminLabsEndpoints:
             assert_equal(len(items), 3, "3 labs")
 
         with autotest.step("Assert: template_ready for none-env is True"):
-            none_item = next(i for i in items if i["slug"] == "none-lab")
+            none_item = next(
+                itemtem_2tem_3 for itemtem_2tem_3 in items if itemtem_2tem_3["slug"] == "none-lab"
+            )
             assert_true(none_item["template_ready"] is True, "none env → template_ready True")
 
         with autotest.step("Assert: template_ready for gns3+id is True"):
-            gns3_with = next(i for i in items if i["slug"] == "gns3-lab-with-tpl")
+            gns3_with = next(
+                itemtem_2tem_3
+                for itemtem_2tem_3 in items
+                if itemtem_2tem_3["slug"] == "gns3-lab-with-tpl"
+            )
             assert_true(gns3_with["template_ready"] is True, "gns3 with tpl → template_ready True")
 
         with autotest.step("Assert: template_ready for gns3 without id is False"):
-            gns3_no = next(i for i in items if i["slug"] == "gns3-lab-no-tpl")
+            gns3_no = next(
+                itemtem_2tem_3
+                for itemtem_2tem_3 in items
+                if itemtem_2tem_3["slug"] == "gns3-lab-no-tpl"
+            )
             assert_true(gns3_no["template_ready"] is False, "gns3 no tpl → template_ready False")
 
     @autotest.num("1934")
@@ -228,8 +238,8 @@ class TestAdminLabsEndpoints:
 
         with autotest.step("Assert: template_status='unknown' when meta=null"):
             assert_equal(resp.status_code, 200, "status 200")
-            item = resp.json()[0]
-            assert_equal(item["template_status"], "unknown", "template_status=unknown")
+            lab = resp.json()[0]
+            assert_equal(lab["template_status"], "unknown", "template_status=unknown")
 
 
 class TestRebuildTemplate:
@@ -247,7 +257,7 @@ class TestRebuildTemplate:
         self.stub_client.build_template = AsyncMock(return_value=str(uuid.uuid4()))
 
         app = FastAPI()
-        app.include_router(admin_router, prefix="/admin")
+        app.include_router(admin_router)
         app.add_exception_handler(LocalizedError, localized_error_handler)
 
         async def _override_db():
@@ -263,7 +273,7 @@ class TestRebuildTemplate:
 
         # student app needs same overrides so FastAPI resolves deps before 403
         student_app = FastAPI()
-        student_app.include_router(admin_router, prefix="/admin")
+        student_app.include_router(admin_router)
         student_app.add_exception_handler(LocalizedError, localized_error_handler)
         student_app.dependency_overrides[get_db] = _override_db
         student_app.dependency_overrides[get_current_user] = lambda: _STUDENT_USER
@@ -421,7 +431,7 @@ class TestRebuildTemplate:
             client.build_template = AsyncMock(return_value=expected_id)
 
         with autotest.step("Act: call worker directly with the test session_factory"):
-            await _rebuild_worker("worker-ok", client, session_factory=self.session_factory)
+            await rebuild_template("worker-ok", client, session_factory=self.session_factory)
 
         with autotest.step("Assert: template_id and status=ready in DB"):
             async with self.session_factory() as db:
@@ -450,7 +460,7 @@ class TestRebuildTemplate:
             client.build_template = AsyncMock(side_effect=RuntimeError("gns3 down"))
 
         with autotest.step("Act: call worker with an error"):
-            await _rebuild_worker("worker-err", client, session_factory=self.session_factory)
+            await rebuild_template("worker-err", client, session_factory=self.session_factory)
 
         with autotest.step("Assert: status=error, template_id not overwritten"):
             async with self.session_factory() as db:

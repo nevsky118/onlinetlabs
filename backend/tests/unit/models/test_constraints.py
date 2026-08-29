@@ -11,10 +11,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-from models.course import Course
-from models.lab import Lab
-from models.session import LearningSession
-from models.user import Account, Session, User, UserRole
+from models.catalog import Course, Lab
+from models.identity import Account, Session, User, UserRole
+from models.learning import LearningSession
 
 pytestmark = [pytest.mark.unit]
 
@@ -28,7 +27,7 @@ class TestModelConstraints:
         engine = create_async_engine("sqlite+aiosqlite:///:memory:")
 
         @event.listens_for(engine.sync_engine, "connect")
-        def _fk_on(dbapi_conn, _):
+        def _fk_on(dbapi_conn, value):
             dbapi_conn.execute("PRAGMA foreign_keys=ON")
 
         async with engine.begin() as conn:
@@ -40,8 +39,8 @@ class TestModelConstraints:
             await conn.run_sync(LearningSession.__table__.create)
 
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-        async with async_session() as s:
-            yield s
+        async with async_session() as async_session_2:
+            yield async_session_2
 
         await engine.dispose()
 

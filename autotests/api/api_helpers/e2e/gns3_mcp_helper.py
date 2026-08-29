@@ -81,10 +81,10 @@ class GNS3MCPHelper:
                         break
 
                 nodes = []
-                for i, name in enumerate(names):
+                for value, name in enumerate(names):
                     response = await client.post(
                         f"/v3/projects/{self._project_id}/templates/{vpcs_id}",
-                        json={"x": i * 200, "y": 0},
+                        json={"x": value * 200, "y": 0},
                     )
                     node = response.json()
                     await client.put(

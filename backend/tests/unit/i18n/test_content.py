@@ -23,11 +23,13 @@ class TestResolveLocalized:
     @autotest.name("resolve_localized: a locale map returns the requested locale")
     def test_fdb685f8_map_hit(self):
         with autotest.step("Act: resolve a fully populated map"):
-            value = {"en": "Static IP", "ru": "Статический IP"}
+            translations = {"en": "Static IP", "ru": "Статический IP"}
 
         with autotest.step("Assert: each locale gets its own text"):
-            assert_equal(resolve_localized(value, "en"), "Static IP", "en resolves to en")
-            assert_equal(resolve_localized(value, "ru"), "Статический IP", "ru resolves to ru")
+            assert_equal(resolve_localized(translations, "en"), "Static IP", "en resolves to en")
+            assert_equal(
+                resolve_localized(translations, "ru"), "Статический IP", "ru resolves to ru"
+            )
 
     @autotest.num("3113")
     @autotest.external_id("b7cfd103-b1db-4a5c-9cbd-124ce8d9a974")

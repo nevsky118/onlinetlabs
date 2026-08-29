@@ -1,6 +1,5 @@
 # E2E: end-to-end student path (HTTP), browsing → launch → chat → progress → lifecycle → end.
 
-import json
 
 import pytest
 
@@ -20,28 +19,10 @@ from autotests.settings.utils.custom_assertions import (
     assert_true,
 )
 from autotests.settings.utils.utils import check_response_status
+from autotests.api.api_helpers.onlinetlabs_service.sse_helper_api import SseHelper
 
 _LAB = "autotest-lab"
 _STEP = "step-1"
-
-
-def _parse_sse(lines: list[str]) -> tuple[set[str], bool]:
-    types: set[str] = set()
-    done = False
-    for line in lines:
-        if not line.startswith("data:"):
-            continue
-        payload = line[len("data:"):].strip()
-        if payload == "[DONE]":
-            done = True
-            continue
-        try:
-            evt = json.loads(payload)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(evt, dict) and "type" in evt:
-            types.add(evt["type"])
-    return types, done
 
 
 @pytest.mark.e2e
@@ -59,7 +40,7 @@ class TestStudentJourneyE2E:
         self.sessions_api = SessionsApi(anon_client, config, acc)
         self.sessions_helper = SessionsHelperApi(anon_client, config)
 
-    @autotest.num("800")
+    @autotest.num("3487")
     @autotest.external_id("de5178f0-ac90-49f6-930e-edbe1f8f6dbd")
     @autotest.name("E2E: student journey — browsing→launch→chat→progress→lifecycle→end")
     async def test_de5178f0_student_journey(self):
@@ -69,8 +50,8 @@ class TestStudentJourneyE2E:
             check_response_status(await self.labs_api.get_lab_by_slug(_LAB), 200)
 
         with autotest.step("Start progress on lab"):
-            r = await self.progress_api.post_start_lab(_LAB)
-            assert_true(r.status_code in (200, 201), f"start_lab status {r.status_code}")
+            post_start_lab = await self.progress_api.post_start_lab(_LAB)
+            assert_true(post_start_lab.status_code in (200, 201), f"start_lab status {post_start_lab.status_code}")
 
         with autotest.step("Launch session"):
             launched = await self.sessions_helper.launch_session(_LAB)
@@ -90,7 +71,7 @@ class TestStudentJourneyE2E:
                 session_id,
                 messages=[{"role": "user", "parts": [{"type": "text", "text": "Что такое VLAN?"}]}],
             )
-            types, done = _parse_sse(lines)
+            types, done = SseHelper.parse_event_types(lines)
             assert_in("start", types, "event start")
             assert_in("text-delta", types, "event text-delta")
             assert_true(done, "stream finished [DONE]")
@@ -108,7 +89,11 @@ class TestStudentJourneyE2E:
         with autotest.step("Readback progress — attempts recorded"):
             detail = await self.progress_api.get_lab_progress(_LAB)
             check_response_status(detail, 200)
-            results = [a["result"] for a in detail.json()["attempts"] if a["step_slug"] == _STEP]
+            results = [
+            attempt["result"]
+            for attempt in detail.json()["attempts"]
+            if attempt["step_slug"] == _STEP
+        ]
             assert_in("fail", results, "fail present")
             assert_in("pass", results, "pass present")
 

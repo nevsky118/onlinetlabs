@@ -54,7 +54,7 @@ class TestMCPAgentPipelineE2E:
         await self.helper.create_project(self.test_data.project_name)
         await self.helper.create_vpcs_nodes(["PC1", "PC2"])
 
-    @autotest.num("700")
+    @autotest.num("3478")
     @autotest.external_id("33ed8a6f-1427-4ca5-ae78-0c02325d906e")
     @autotest.name("E2E: MCP list_components returns GNS3 project nodes")
     async def test_33ed8a6f_mcp_list_components(self):
@@ -68,11 +68,11 @@ class TestMCPAgentPipelineE2E:
 
         with autotest.step("Verify components"):
             assert_greater_equal(len(components), 2, "at least 2 components")
-            names = {c.name for c in components}
+            names = {component.name for component in components}
             assert_true("PC1" in names, "PC1 present")
             assert_true("PC2" in names, "PC2 present")
 
-    @autotest.num("701")
+    @autotest.num("3479")
     @autotest.external_id("9447c714-8252-46c6-b9b3-3941c2f3a573")
     @autotest.name("E2E: MCPContextBuilder builds context from GNS3")
     async def test_9447c714_context_builder(self):
@@ -99,7 +99,7 @@ class TestMCPAgentPipelineE2E:
             assert_true("СОСТОЯНИЕ СРЕДЫ" in prompt, "header")
             assert_true("PC1" in prompt, "PC1 in prompt")
 
-    @autotest.num("702")
+    @autotest.num("3480")
     @autotest.external_id("752a12bb-29a5-4e0e-91eb-2b7f57744743")
     @autotest.name("E2E: TutorAgent responds with MCP context via YandexGPT")
     async def test_752a12bb_tutor_agent_with_context(self):
@@ -129,7 +129,7 @@ class TestMCPAgentPipelineE2E:
         with autotest.step("Answer is substantive"):
             assert_true(len(result.answer) > 20, "answer longer than 20 characters")
 
-    @autotest.num("703")
+    @autotest.num("3481")
     @autotest.external_id("6f520261-c159-4e1e-bbf9-d0d84f555df8")
     @autotest.name("E2E: HintAgent gives a hint with MCP context")
     async def test_6f520261_hint_agent_with_context(self):
@@ -167,7 +167,7 @@ class TestMCPAgentPipelineE2E:
             assert_true(len(result.hint) > 10, "hint not empty")
             assert_equal(result.remaining_hints, 0, "no hints remaining")
 
-    @autotest.num("704")
+    @autotest.num("3482")
     @autotest.external_id("2be04b9b-fa9d-47e3-a254-b49383d4ae5c")
     @autotest.name("E2E: get_system_overview returns project summary")
     async def test_2be04b9b_system_overview(self):

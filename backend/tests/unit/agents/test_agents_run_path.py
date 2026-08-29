@@ -12,9 +12,9 @@ from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 from pydantic_ai.models.test import TestModel
 
 from agents.hint.agent import HintAgent
-from agents.hint.models import HintInput
+from agents.hint.schemas import HintInput
 from agents.tutor.agent import TutorAgent
-from agents.tutor.models import TutorInput, TutorResponse
+from agents.tutor.schemas import TutorInput, TutorResponse
 from tests.settings.data.analytics_data import AgentContextData
 
 pytestmark = [pytest.mark.unit, pytest.mark.agents]

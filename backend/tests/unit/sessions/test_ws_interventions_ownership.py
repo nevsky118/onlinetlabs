@@ -10,24 +10,12 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from fastapi import WebSocketDisconnect
 from mcp_sdk.testing import autotest
 
 from sessions.routers.ws import session_interventions_ws
+from tests.settings.data.sessions_data import WebSocketData
 
 pytestmark = [pytest.mark.unit]
-
-
-class _FakeWebSocket:
-    """Minimal WebSocket stub: close/accept/receive_text + app.state.gateway."""
-
-    def __init__(self, gateway):
-        self.close = AsyncMock()
-        self.accept = AsyncMock()
-        # By default receive_text immediately drops the connection, so an unfixed
-        # handler (without an ownership check) doesn't hang in `while True` when called.
-        self.receive_text = AsyncMock(side_effect=WebSocketDisconnect())
-        self.app = SimpleNamespace(state=SimpleNamespace(gateway=gateway))
 
 
 def _fake_gateway():
@@ -48,7 +36,7 @@ class TestSessionInterventionsWsOwnership:
             "Arrange: valid token, get_session returns None (session not owned by user-1)"
         ):
             gateway = _fake_gateway()
-            fake_ws = _FakeWebSocket(gateway)
+            fake_ws = WebSocketData(gateway)
 
         with autotest.step("Act: connect to someone else's session_id"):
             with (
@@ -69,7 +57,7 @@ class TestSessionInterventionsWsOwnership:
     async def test_9a0f526e_connects_owner_to_gateway(self):
         with autotest.step("Arrange: valid token, get_session returns user-1's session"):
             gateway = _fake_gateway()
-            fake_ws = _FakeWebSocket(gateway)
+            fake_ws = WebSocketData(gateway)
             owned_session = SimpleNamespace(id="session-1", user_id="user-1")
 
         with autotest.step("Act: owner connects to their own session"):

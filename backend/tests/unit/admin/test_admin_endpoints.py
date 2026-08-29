@@ -13,10 +13,10 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from admin.data_registry import ADMIN_TABLES
 from admin.router import router as admin_router
 from auth.dependencies import get_current_user
-from db.session import get_db
 from i18n import LocalizedError, localized_error_handler
-from models.mcp_audit import MCPAudit
-from models.user import User
+from kit.db import get_db
+from models.audit import MCPAudit
+from models.identity import User
 
 pytestmark = [pytest.mark.unit]
 
@@ -27,7 +27,7 @@ class TestAdminEndpoints:
     @autotest.name("admin: identifier-eval response shape on synthetic data")
     def test_a3f7c2d1_identifier_eval_shape(self):
         with autotest.step("Arrange: import build_identifier_eval"):
-            from admin.router import build_identifier_eval
+            from admin.reports import build_identifier_eval
 
         with autotest.step("Act: build eval on synthetic data"):
             out = build_identifier_eval()
@@ -35,8 +35,8 @@ class TestAdminEndpoints:
         with autotest.step(
             "Assert: curve, J-optimum, confusion matrix, first-match, preliminary are present"
         ):
-            for k in ("curve", "j_optimal_t_k", "confusion", "first_match", "preliminary"):
-                assert_in(k, out, k)
+            for key in ("curve", "j_optimal_t_k", "confusion", "first_match", "preliminary"):
+                assert_in(key, out, key)
 
         with autotest.step("Assert: preliminary=True for synthetic data"):
             assert_true(out["preliminary"] is True, "synthetic data → preliminary")
@@ -57,7 +57,7 @@ class TestAdminEndpoints:
     @autotest.name("admin: tk-sensitivity response shape")
     def test_0955923d_tk_sensitivity_shape(self):
         with autotest.step("Arrange: import build_tk_sensitivity"):
-            from admin.router import build_tk_sensitivity
+            from admin.reports import build_tk_sensitivity
 
         with autotest.step("Act: build the sensitivity curve"):
             out = build_tk_sensitivity()
@@ -83,18 +83,18 @@ class TestAdminEndpoints:
     )
     async def test_29876633_overview_empty_db(self, empty_admin_db):
         with autotest.step("Arrange: import build_overview"):
-            from admin.router import build_overview
+            from admin.reports import build_overview
 
         with autotest.step("Act: build_overview on an empty DB"):
             out = await build_overview(empty_admin_db)
 
         with autotest.step("Assert: all top-level keys are present"):
-            for k in ("ab", "cohort", "identifier", "ops"):
-                assert_in(k, out, k)
+            for itemtem_2 in ("ab", "cohort", "identifier", "ops"):
+                assert_in(itemtem_2, out, itemtem_2)
 
         with autotest.step("Assert: ab contains l2_pass_closed/open/mentor_hours_saved"):
-            for k in ("l2_pass_closed", "l2_pass_open", "mentor_hours_saved"):
-                assert_in(k, out["ab"], k)
+            for itemtem_2 in ("l2_pass_closed", "l2_pass_open", "mentor_hours_saved"):
+                assert_in(itemtem_2, out["ab"], itemtem_2)
 
         with autotest.step("Assert: ops.active_sessions >= 0"):
             assert_true(out["ops"]["active_sessions"] >= 0, "active_sessions is non-negative")
@@ -104,30 +104,30 @@ class TestAdminEndpoints:
     @autotest.name("admin: build_overview with a single metric doesn't fail, returns numbers")
     async def test_68b00e53_overview_with_seed(self, seeded_admin_db):
         with autotest.step("Arrange: import build_overview"):
-            from admin.router import build_overview
+            from admin.reports import build_overview
 
         with autotest.step("Act: build_overview with seed data"):
             out = await build_overview(seeded_admin_db)
 
         with autotest.step("Assert: structure is complete"):
-            for k in ("ab", "cohort", "identifier", "ops"):
-                assert_in(k, out, k)
+            for key in ("ab", "cohort", "identifier", "ops"):
+                assert_in(key, out, key)
 
         with autotest.step("Assert: ops.finished_sessions_n >= 1"):
             assert_true(out["ops"]["finished_sessions_n"] >= 1, "at least one metric")
 
     @autotest.num("1814")
     @autotest.external_id("e9e284ed-16e2-4481-a76e-908aef728a03")
-    @autotest.name("admin: router is registered under /admin in main.py")
+    @autotest.name("admin: the router carries its own /admin prefix")
     def test_e9e284ed_router_registered(self):
         with autotest.step("Import admin_router"):
             from admin.router import router as admin_router
 
         with autotest.step("Assert: router has overview/identifier-eval/tk-sensitivity paths"):
-            paths = {r.path for r in admin_router.routes}
-            assert_in("/overview", paths, "/overview")
-            assert_in("/identifier-eval", paths, "/identifier-eval")
-            assert_in("/tk-sensitivity", paths, "/tk-sensitivity")
+            paths = {route.path for route in admin_router.routes}
+            assert_in("/admin/overview", paths, "/admin/overview")
+            assert_in("/admin/identifier-eval", paths, "/admin/identifier-eval")
+            assert_in("/admin/tk-sensitivity", paths, "/admin/tk-sensitivity")
 
     @autotest.num("1815")
     @autotest.external_id("45ff77c3-a01a-4b80-865d-e89b51b6d9d3")
@@ -165,7 +165,7 @@ class TestAdminUsersEndpoints:
             await conn.run_sync(User.__table__.create)
 
         app = FastAPI()
-        app.include_router(admin_router, prefix="/admin")
+        app.include_router(admin_router)
         app.add_exception_handler(LocalizedError, localized_error_handler)
 
         async def _override_db():
@@ -182,7 +182,7 @@ class TestAdminUsersEndpoints:
         app.dependency_overrides[get_current_user] = _override_admin
         self.app = app
         self.student_app = FastAPI()
-        self.student_app.include_router(admin_router, prefix="/admin")
+        self.student_app.include_router(admin_router)
         self.student_app.add_exception_handler(LocalizedError, localized_error_handler)
         self.student_app.dependency_overrides[get_db] = _override_db
         self.student_app.dependency_overrides[get_current_user] = _override_student
@@ -239,7 +239,7 @@ class TestAdminUsersEndpoints:
 
         with autotest.step("Assert: 200, first email is lexically largest"):
             assert_equal(resp.status_code, 200, "status 200")
-            emails = [item["email"] for item in resp.json()["items"]]
+            emails = [row["email"] for row in resp.json()["items"]]
             assert_true(emails == sorted(emails, reverse=True), "desc order")
 
     @autotest.num("1818")
@@ -334,7 +334,7 @@ class TestAdminDataEndpoints:
             await conn.run_sync(MCPAudit.__table__.create)
 
         app = FastAPI()
-        app.include_router(admin_router, prefix="/admin")
+        app.include_router(admin_router)
         app.add_exception_handler(LocalizedError, localized_error_handler)
 
         async def _override_db():
@@ -352,7 +352,7 @@ class TestAdminDataEndpoints:
         self.app = app
 
         self.student_app = FastAPI()
-        self.student_app.include_router(admin_router, prefix="/admin")
+        self.student_app.include_router(admin_router)
         self.student_app.add_exception_handler(LocalizedError, localized_error_handler)
         self.student_app.dependency_overrides[get_db] = _override_db
         self.student_app.dependency_overrides[get_current_user] = _override_student

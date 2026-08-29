@@ -31,3 +31,48 @@ class HintTestData:
         self.step_slug = "step-1"
         self.last_error = "VLAN 10 not found on SW1"
         self.attempts_count = attempts_count
+
+
+class ArmMetricData:
+    """
+    Metric row holding only the fields the arm analysis reads.
+
+    :ivar experiment_group: Arm the session belongs to.
+    :ivar total_time_seconds: Time the session took.
+    :ivar repeated_errors: Number of repeated errors.
+    """
+
+    def __init__(self, group: str, time_s: float, repeated: int):
+        self.experiment_group = group
+        self.total_time_seconds = time_s
+        self.repeated_errors = repeated
+
+
+class RepeatedErrorEventsData:
+    """
+    A run of identical error events, which is what the identifier reads as a struggle.
+
+    :ivar events: Behavioral events, all carrying the same error.
+    """
+
+    def __init__(self, count: int, session_id: str = "s1", user_id: str = "u1"):
+        from datetime import datetime, timezone
+
+        from models.behavioral_event import BehavioralEvent
+
+        now = datetime.now(tz=timezone.utc)
+        self.events = [
+            BehavioralEvent(
+                id=f"e{i}",
+                session_id=session_id,
+                user_id=user_id,
+                lab_slug="autotest-lab",
+                timestamp=now,
+                event_type="error",
+                action="cmd",
+                success=False,
+                message="same error",
+                severity="error",
+            )
+            for i in range(count)
+        ]

@@ -1,6 +1,5 @@
 # Smoke test for the tutor SSE chat stream POST /chat/stream (Vercel AI SDK v1).
 
-import json
 
 import pytest
 
@@ -8,21 +7,8 @@ from autotests.api.api_methods.onlinetlabs_service.chat_api import ChatApi
 from autotests.api.api_helpers.onlinetlabs_service.sessions_helper_api import SessionsHelperApi
 from autotests.settings.constants.constants_settings import ConstantsSettings
 from autotests.settings.reports import autotest
-
-
-def _parse_sse(lines: list[str]) -> tuple[list[dict], bool]:
-    """Parses SSE lines into events and the [DONE] flag."""
-    events: list[dict] = []
-    done = False
-    for line in lines:
-        if not line.startswith("data: "):
-            continue
-        payload = line[len("data: "):]
-        if payload == "[DONE]":
-            done = True
-            continue
-        events.append(json.loads(payload))
-    return events, done
+from autotests.settings.utils.custom_assertions import assert_false, assert_in, assert_true
+from autotests.api.api_helpers.onlinetlabs_service.sse_helper_api import SseHelper
 
 
 @pytest.mark.api
@@ -54,21 +40,18 @@ class TestChatStreamSmokeApi:
             )
 
         with autotest.step("Act: parse the SSE stream into events and types"):
-            events, done = _parse_sse(lines)
-            types = [e.get("type") for e in events]
+            events, done = SseHelper.parse_events(lines)
+            types = [event.get("type") for event in events]
 
         # Assert
         with autotest.step("Verify start event present"):
-            assert "start" in types, f"Expected start event, got types: {types}"
+            assert_in("start", types, "'start'")
 
         with autotest.step("Verify at least one text-delta present"):
-            assert "text-delta" in types, f"Expected at least one text-delta, got types: {types}"
+            assert_in("text-delta", types, "'text-delta'")
 
         with autotest.step("Verify final [DONE] signal"):
-            assert done, "Expected final SSE signal [DONE]"
+            assert_true(done, "Expected final SSE signal [DONE]")
 
         with autotest.step("Verify no error event"):
-            assert "error" not in types, (
-                f"Stream ended with error: "
-                f"{[e for e in events if e.get('type') == 'error']}"
-            )
+            assert_false("error" in types, "'error' absent")

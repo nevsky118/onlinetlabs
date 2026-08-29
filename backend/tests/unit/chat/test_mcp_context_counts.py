@@ -4,28 +4,11 @@ import pytest
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 
-from chat.router import _fetch_mcp_context
+from chat.service import _fetch_mcp_context
 from i18n import t
+from tests.settings.data.mcp_data import McpClientData
 
 pytestmark = [pytest.mark.unit]
-
-
-class _Client:
-    """MCP client stub returning fixed components and errors, or raising if given an Exception."""
-
-    def __init__(self, components, errors):
-        self._components = components
-        self._errors = errors
-
-    async def list_components(self, ctx):
-        if isinstance(self._components, Exception):
-            raise self._components
-        return self._components
-
-    async def list_errors(self, ctx):
-        if isinstance(self._errors, Exception):
-            raise self._errors
-        return self._errors
 
 
 def _component(name: str) -> SimpleNamespace:
@@ -43,7 +26,9 @@ class TestMcpContextCounts:
     @pytest.mark.asyncio
     async def test_694fcab8_counts_are_structural(self):
         with autotest.step("Arrange: a client with two components and one error"):
-            client = _Client([_component("SW1"), _component("SW2")], [_error("link down")])
+            client = McpClientData(
+                [_component("SW1"), _component("SW2")], errors=[_error("link down")]
+            )
 
         with autotest.step("Act: fetch context in both locales"):
             _, en_components, en_errors = await _fetch_mcp_context(client, None, "en")
@@ -59,7 +44,7 @@ class TestMcpContextCounts:
     @pytest.mark.asyncio
     async def test_2c64c427_zero_errors(self):
         with autotest.step("Arrange: a client with one component and no errors"):
-            client = _Client([_component("SW1")], [])
+            client = McpClientData([_component("SW1")], errors=[])
 
         with autotest.step("Act: fetch context in both locales"):
             _, _, en_errors = await _fetch_mcp_context(client, None, "en")
@@ -85,8 +70,8 @@ class TestMcpContextCounts:
     @pytest.mark.asyncio
     async def test_244e2f7f_component_failure_is_not_empty(self):
         with autotest.step("Arrange: list_components fails while list_errors succeeds"):
-            failing = _Client(RuntimeError("mcp down"), [])
-            genuinely_empty = _Client([], [])
+            failing = McpClientData(RuntimeError("mcp down"), errors=[])
+            genuinely_empty = McpClientData([], errors=[])
 
         with autotest.step("Act: fetch context for both, in both locales"):
             failed_en, _, _ = await _fetch_mcp_context(failing, None, "en")
@@ -114,8 +99,8 @@ class TestMcpContextCounts:
     @pytest.mark.asyncio
     async def test_79ca0dd8_error_failure_is_not_no_errors(self):
         with autotest.step("Arrange: list_errors fails while list_components succeeds"):
-            failing = _Client([_component("SW1")], RuntimeError("mcp down"))
-            clean = _Client([_component("SW1")], [])
+            failing = McpClientData([_component("SW1")], errors=RuntimeError("mcp down"))
+            clean = McpClientData([_component("SW1")], errors=[])
 
         with autotest.step("Act: fetch context for both"):
             failed_text, _, failed_count = await _fetch_mcp_context(failing, None, "en")

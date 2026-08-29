@@ -5,22 +5,14 @@ from a refreshed page removed the live socket and interventions stopped arriving
 A session now holds a set, and a disconnect removes only the socket it names.
 """
 
-from unittest.mock import AsyncMock
-
 import pytest
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_true
 
 from sessions.ws.gateway import WebSocketGateway
+from tests.settings.data.sessions_data import WebSocketData
 
 pytestmark = [pytest.mark.unit]
-
-
-class _FakeWebSocket:
-    """Minimal WebSocket stub: gateway.connect only needs async accept()."""
-
-    def __init__(self):
-        self.accept = AsyncMock()
 
 
 class TestGatewayReconnect:
@@ -32,7 +24,7 @@ class TestGatewayReconnect:
     async def test_501b5e1f_stale_disconnect_does_not_evict_new_socket(self):
         with autotest.step("Arrange: gateway, old and new socket of the same session"):
             gw = WebSocketGateway()
-            ws_old, ws_new = _FakeWebSocket(), _FakeWebSocket()
+            ws_old, ws_new = WebSocketData(), WebSocketData()
 
         with autotest.step(
             "Act: connect(old) → connect(new, reconnect) → disconnect(old) with delay"
@@ -52,7 +44,7 @@ class TestGatewayReconnect:
     async def test_175fcb15_disconnect_same_socket_removes_connection(self):
         with autotest.step("Arrange: gateway with one connected socket"):
             gw = WebSocketGateway()
-            ws = _FakeWebSocket()
+            ws = WebSocketData()
             await gw.connect("s1", ws)
 
         with autotest.step("Act: disconnect with the same socket"):
@@ -69,7 +61,7 @@ class TestGatewayReconnect:
     async def test_5735fc50_disconnect_without_websocket_arg_removes_connection(self):
         with autotest.step("Arrange: gateway with one connected socket"):
             gw = WebSocketGateway()
-            ws = _FakeWebSocket()
+            ws = WebSocketData()
             await gw.connect("s1", ws)
 
         with autotest.step("Act: disconnect without websocket (back-compat call)"):

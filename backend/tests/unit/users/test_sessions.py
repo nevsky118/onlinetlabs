@@ -11,9 +11,9 @@ from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from auth.dependencies import get_current_user
-from db.session import get_db
 from i18n import LocalizedError, localized_error_handler
-from models.user import Session, User
+from kit.db import get_db
+from models.identity import Session, User
 from users.router import router as users_router
 
 pytestmark = [pytest.mark.unit]
@@ -59,7 +59,7 @@ class TestSessionEndpoints:
 
     def _build_app(self, user: dict) -> FastAPI:
         app = FastAPI()
-        app.include_router(users_router, prefix="/users/me")
+        app.include_router(users_router)
         app.add_exception_handler(LocalizedError, localized_error_handler)
 
         async def _override_db():
@@ -100,7 +100,7 @@ class TestSessionEndpoints:
             body = resp.json()
             assert_equal(body["count"], 2, "count=2")
             assert_equal(len(body["sessions"]), 2, "sessions len=2")
-            ids = {s["id"] for s in body["sessions"]}
+            ids = {row["id"] for row in body["sessions"]}
             assert_true("s1" in ids and "s2" in ids, "only s1 and s2")
             assert_true("s3" not in ids, "s3 belongs to someone else, not returned")
 

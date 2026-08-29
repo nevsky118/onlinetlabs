@@ -20,7 +20,7 @@ class TestPreferencesCrudApi:
             anon_client, config, ConstantsSettings.REGISTERED_ACCOUNT
         )
 
-    @autotest.num("803")
+    @autotest.num("3490")
     @autotest.external_id("bbaf4a63-0451-480f-8dff-4f2b491c93b4")
     @autotest.name("CRUD: PATCH /users/me/preferences — model selection without permission → 403")
     async def test_bbaf4a63_set_model_without_permission_forbidden(self):

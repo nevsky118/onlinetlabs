@@ -59,7 +59,7 @@ class TestBuildNodeTasks:
             tasks = build_node_tasks(spec)
 
         with autotest.step("Assert: commands are built from expect.ip per node"):
-            assert_equal([t.node for t in tasks], ["PC1", "PC2"], "nodes")
+            assert_equal([task.node for task in tasks], ["PC1", "PC2"], "nodes")
             assert_equal(tasks[0].correct_cmd, "ip 192.168.1.11/24", "PC1 command")
             assert_equal(tasks[1].correct_cmd, "ip 192.168.1.12/24", "PC2 command")
 

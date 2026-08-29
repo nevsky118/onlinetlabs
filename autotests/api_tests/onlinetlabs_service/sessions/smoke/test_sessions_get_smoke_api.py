@@ -6,6 +6,7 @@ from autotests.api.api_helpers.onlinetlabs_service.sessions_helper_api import Se
 from autotests.api.api_methods.onlinetlabs_service.sessions_api import SessionsApi
 from autotests.settings.constants.constants_settings import ConstantsSettings
 from autotests.settings.reports import autotest
+from autotests.settings.utils.custom_assertions import assert_equal
 from autotests.settings.utils.utils import check_response_status
 
 
@@ -37,10 +38,10 @@ class TestSessionsGetSmokeApi:
             body = response.json()
 
         with autotest.step("Check lab_slug"):
-            assert body.get("lab_slug") == "autotest-lab", f"Expected lab_slug=autotest-lab, got: {body.get('lab_slug')}"
+            assert_equal(body.get("lab_slug"), "autotest-lab", "get")
 
         with autotest.step("Check status=active"):
-            assert body.get("status") == "active", f"Expected status=active, got: {body.get('status')}"
+            assert_equal(body.get("status"), "active", "get")
 
         with autotest.step("Check lab_title"):
-            assert body.get("lab_title") == "Autotest Lab", f"Expected lab_title=Autotest Lab, got: {body.get('lab_title')}"
+            assert_equal(body.get("lab_title"), "Autotest Lab", "get")

@@ -5,7 +5,7 @@ from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_greater, assert_true
 
 from agents.tutor.agent import TutorAgent
-from agents.tutor.models import TutorInput, TutorResponse
+from agents.tutor.schemas import TutorInput, TutorResponse
 
 pytestmark = [pytest.mark.unit, pytest.mark.agents]
 

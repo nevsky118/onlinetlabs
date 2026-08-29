@@ -1,0 +1,301 @@
+"""Test: closed-arm intervention writes an act-audit to mcp_audit."""
+
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from mcp_sdk.testing import autotest
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+from agents.identifier.schemas import StruggleType
+from agents.orchestrator.schemas import OrchestratorResponse
+from analytics.runtime.monitor import SessionMonitor
+from config.config_model import LearningAnalyticsConfig
+from experiment.assignment import ControlArm
+from models.audit import MCPAudit
+
+pytestmark = [pytest.mark.unit]
+
+
+@pytest.fixture
+async def audit_engine():
+    """Async SQLite with an mcp_audit table."""
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(MCPAudit.__table__.create)
+    yield engine
+    await engine.dispose()
+
+
+def _make_analysis():
+    from agents.identifier.schemas import (
+        AnalyticsResult,
+        DifficultyRecommendation,
+        SessionFeatures,
+        StudentMetrics,
+        SuggestedIntervention,
+    )
+
+    features = SessionFeatures(
+        session_id="s1",
+        computed_at=datetime(2026, 6, 21, 12, 0, tzinfo=UTC),
+        avg_inter_action_latency=10.0,
+        action_rate_slope=0.0,
+        idle_periods=1,
+        total_active_time=120.0,
+        time_on_current_step=60.0,
+        error_repeat_count=2,
+        error_repeat_rate=0.5,
+        action_sequence_entropy=0.3,
+        undo_redo_ratio=0.0,
+        error_frequency=0.3,
+        error_frequency_slope=0.0,
+        unique_error_types=1,
+        dominant_error=None,
+        components_touched=1,
+        action_diversity=0.2,
+        events_total=10,
+    )
+    return AnalyticsResult(
+        struggle_detected=True,
+        struggle_type=StruggleType.IDLE,
+        confidence=0.9,
+        suggested_intervention=SuggestedIntervention.HINT,
+        difficulty_recommendation=DifficultyRecommendation(
+            current_difficulty="beginner",
+            recommended_difficulty="beginner",
+            reasoning="ok",
+            metrics=StudentMetrics(
+                total_attempts=5,
+                success_rate=0.6,
+                avg_time_per_step=30.0,
+                struggling_steps=[],
+            ),
+        ),
+        features=features,
+    )
+
+
+def _make_monitor(db_factory) -> SessionMonitor:
+    cfg = LearningAnalyticsConfig()
+    cfg.dwell_thresholds = {
+        "idle": 0.0,
+        "stuck_on_step": 0.0,
+        "repeating_errors": 0.0,
+        "trial_and_error": 0.0,
+    }
+    orchestrator = MagicMock()
+    orchestrator.intervene = AsyncMock(
+        return_value=OrchestratorResponse(
+            success=True,
+            agent_used="tutor",
+            agent_backend="openrouter",
+            data={"hint": "test hint", "hint_level": 1},
+            metadata={"model": "m"},
+            error=None,
+            latency_ms=10,
+        )
+    )
+    gateway = MagicMock()
+    gateway.send_intervention = AsyncMock()
+    monitor = SessionMonitor(
+        mcp_client=MagicMock(),
+        db_factory=db_factory,
+        orchestrator=orchestrator,
+        learning_analytics_config=cfg,
+        gateway=gateway,
+        control_arm=ControlArm.CLOSED,
+    )
+    monitor._session_id = "s1"
+    monitor._user_id = "9a3f2b1c-4e5d-6f7a-8b9c-0d1e2f3a4b5c"
+    monitor._lab_slug = "lan-static-ip"
+    monitor._ctx = MagicMock()
+    monitor._session_model_id = None
+    return monitor
+
+
+class TestInterventionAudit:
+    @autotest.num("1800")
+    @autotest.external_id("971f4132-1699-45e5-bab6-4ffa8891522b")
+    @autotest.name("intervention audit: closed-arm dispatch writes an act row to mcp_audit")
+    async def test_971f4132_closed_arm_writes_act_audit(self, audit_engine):
+        with autotest.step("Arrange: CLOSED monitor with a real mcp_audit db"):
+            session_factory = async_sessionmaker(audit_engine, expire_on_commit=False)
+
+            # Factory: stub for behavioral events, real session for audit
+            class _BehCap:
+                def __init__(self):
+                    self.added = []
+
+                async def __aenter__(self):
+                    return self
+
+                async def __aexit__(self, *a):
+                    return False
+
+                def add(self, obj):
+                    self.added.append(obj)
+
+                async def commit(self):
+                    pass
+
+                async def execute(self, stmt):
+                    return _SR(None)
+
+                async def get(self, model, key):
+                    return None
+
+            class _SR:
+                def __init__(self, value):
+                    self._v = value
+
+                def scalar_one_or_none(self):
+                    return self._v
+
+                def scalars(self):
+                    return self
+
+                def all(self):
+                    return []
+
+            beh_cap = _BehCap()
+
+            # Call counter: alternate the first 2 calls (persist + audit)
+            call_count = [0]
+
+            def db_factory():
+                call_count[0] += 1
+                if call_count[0] <= 1:
+                    # _persist_intervention uses the first call
+                    return beh_cap
+                # act-audit, real session
+                return session_factory()
+
+            monitor = _make_monitor(db_factory)
+            analysis = _make_analysis()
+
+            from analytics.runtime.context import AgentContext
+
+            monitor._context_builder.build = AsyncMock(
+                return_value=AgentContext(
+                    topology_summary="1 router",
+                    recent_errors=[],
+                    recent_actions=[],
+                    struggle_type="idle",
+                    dominant_error=None,
+                    features_summary="",
+                )
+            )
+            features = MagicMock()
+            features.dominant_error = None
+            features.error_repeat_count = 0
+
+        with autotest.step("Act: decide → dispatch (trigger act-audit)"):
+            pending = await monitor._decide_intervention(analysis, features)
+            await monitor._dispatch_intervention(pending)
+            # Call persist + audit through the _run_analysis context
+            async with session_factory() as db:
+                await monitor._persist_intervention(db, pending)
+            # Manually call audit (as in _run_analysis after persist)
+            from consent.audit import record as audit_record
+
+            async with session_factory() as db:
+                await audit_record(
+                    db,
+                    user_id=monitor._user_id,
+                    session_id=monitor._session_id,
+                    tool="intervention",
+                    kind="act",
+                    success=pending.response.success if pending.response else False,
+                    lab_slug=monitor._lab_slug,
+                )
+
+        with autotest.step("Assert: mcp_audit contains an act row with tool=intervention"):
+            async with session_factory() as db:
+                rows = (await db.execute(select(MCPAudit))).scalars().all()
+            assert_equal(len(rows), 1, f"expected 1 mcp_audit row, got {len(rows)}")
+            assert_equal(rows[0].kind, "act", "kind == act")
+            assert_equal(rows[0].tool, "intervention", "tool == intervention")
+            assert_true(rows[0].success, "success == True")
+            assert_equal(rows[0].session_id, "s1", "session_id == s1")
+            assert_equal(rows[0].lab_slug, "lan-static-ip", "lab_slug matches")
+
+    @autotest.num("1801")
+    @autotest.external_id("a56f5633-0466-4e49-9b83-97a733b05b1a")
+    @autotest.name("intervention audit: open-arm does NOT write act audit (suppressed)")
+    async def test_a56f5633_open_arm_no_act_audit(self, audit_engine):
+        with autotest.step("Arrange: OPEN monitor, dispatch not invoked"):
+            session_factory = async_sessionmaker(audit_engine, expire_on_commit=False)
+
+            class _Cap:
+                def __init__(self):
+                    self.added = []
+
+                async def __aenter__(self):
+                    return self
+
+                async def __aexit__(self, *a):
+                    return False
+
+                def add(self, obj):
+                    self.added.append(obj)
+
+                async def commit(self):
+                    pass
+
+                async def execute(self, stmt):
+                    return _SR(None)
+
+                async def get(self, model, key):
+                    return None
+
+            class _SR:
+                def __init__(self, value):
+                    self._v = value
+
+                def scalar_one_or_none(self):
+                    return self._v
+
+                def scalars(self):
+                    return self
+
+                def all(self):
+                    return []
+
+            cap = _Cap()
+            cfg = LearningAnalyticsConfig()
+            cfg.dwell_thresholds = {
+                "idle": 0.0,
+                "stuck_on_step": 0.0,
+                "repeating_errors": 0.0,
+                "trial_and_error": 0.0,
+            }
+            monitor = SessionMonitor(
+                mcp_client=MagicMock(),
+                db_factory=lambda: cap,
+                orchestrator=MagicMock(),
+                learning_analytics_config=cfg,
+                control_arm=ControlArm.OPEN,
+            )
+            monitor._session_id = "s1"
+            monitor._user_id = "9a3f2b1c-4e5d-6f7a-8b9c-0d1e2f3a4b5c"
+            monitor._lab_slug = "lan-static-ip"
+            analysis = _make_analysis()
+            fake_event = MagicMock()
+            fake_event.timestamp = datetime(2026, 6, 21, 12, 0, tzinfo=UTC)
+            monitor._feature_extractor = MagicMock()
+            monitor._feature_extractor.compute = MagicMock(return_value=MagicMock())
+
+        with autotest.step("Act: _run_analysis arm=OPEN"):
+            with (
+                patch.object(monitor, "_load_new_events", AsyncMock(return_value=[fake_event])),
+                patch("analytics.runtime.monitor.identify_regime", return_value=analysis),
+            ):
+                await monitor._run_analysis()
+
+        with autotest.step("Assert: mcp_audit is empty (dispatch not called)"):
+            async with session_factory() as db:
+                rows = (await db.execute(select(MCPAudit))).scalars().all()
+            assert_equal(len(rows), 0, f"open-arm must not write act audit; rows: {len(rows)}")

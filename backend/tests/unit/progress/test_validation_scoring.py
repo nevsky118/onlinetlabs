@@ -1,12 +1,12 @@
 import pytest
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_false, assert_true
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from models.lab import Lab
-from models.progress import LabProgress
-from models.user import User
+from models.catalog import Lab
+from models.identity import User
+from models.learning import LabProgress
 from progress.service import record_lab_validation, score_from_steps
 
 pytestmark = [pytest.mark.unit]
@@ -16,12 +16,12 @@ def _steps(*step_specs: list[bool]) -> list[dict]:
     """Builds a steps snapshot: each argument is a list of ok flags for a step's checks."""
     return [
         {
-            "id": f"s{i}",
-            "title": f"Step {i}",
+            "id": f"s{value}",
+            "title": f"Step {value}",
             "ok": all(checks),
             "checks": [{"kind": "x", "ok": ok} for ok in checks],
         }
-        for i, checks in enumerate(step_specs)
+        for value, checks in enumerate(step_specs)
     ]
 
 
@@ -34,7 +34,7 @@ class TestScoreFromSteps:
             score, all_passed = score_from_steps(_steps([True, True], [True, True]))
         with autotest.step("Assert: 100 and all_passed"):
             assert_equal(score, 100.0, "score")
-            assert_true(all_passed, "all_passed")
+            assert_true(all_passed, "all passed")
 
     @autotest.num("761")
     @autotest.external_id("7b9c375d-4d9b-4d28-8d17-116c1d5be5e8")
@@ -44,7 +44,7 @@ class TestScoreFromSteps:
             score, all_passed = score_from_steps(_steps([True, True], [True, False]))
         with autotest.step("Assert: 75 and not all_passed"):
             assert_equal(score, 75.0, "score")
-            assert_true(not all_passed, "not all_passed")
+            assert_false(all_passed, "not every step passed")
 
     @autotest.num("762")
     @autotest.external_id("9fb96f02-f65a-4ca2-bcdf-d03970b35531")
@@ -79,8 +79,8 @@ class TestRecordLabValidation:
 
     async def _get(self) -> LabProgress:
         async with self.session_factory() as db:
-            r = await db.execute(select(LabProgress).where(LabProgress.user_id == "u1"))
-            return r.scalar_one()
+            execute = await db.execute(select(LabProgress).where(LabProgress.user_id == "u1"))
+            return execute.scalar_one()
 
     @autotest.num("763")
     @autotest.external_id("fe763752-c2c6-4d9b-97b6-3d77f68ae4c8")

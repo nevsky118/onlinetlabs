@@ -23,7 +23,7 @@ class TestActivationSmokeApi:
     def setup(self, anon_client, config):
         self.sessions_helper = SessionsHelperApi(anon_client, config)
 
-    @autotest.num("804")
+    @autotest.num("3491")
     @autotest.external_id("3a985e9f-26b7-4fe1-84dc-9834a296fa67")
     @autotest.name(
         "Smoke: active user passes the activation gate and launches the lab"

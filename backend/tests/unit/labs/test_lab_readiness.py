@@ -83,10 +83,12 @@ class TestAuditLabs:
             problems = audit_labs(data.labs, data.spec_slugs)
 
         with autotest.step("Assert: both problems are reported, the healthy lab is not"):
-            kinds = {(p.slug, p.kind) for p in problems}
-            assert_in((data.broken.slug, "enabled_but_unlaunchable"), kinds)
-            assert_in((data.orphan_spec_slug, "spec_orphan"), kinds)
+            kinds = {(problemroblem_2.slug, problemroblem_2.kind) for problemroblem_2 in problems}
+            assert_in(
+                (data.broken.slug, "enabled_but_unlaunchable"), kinds, "unlaunchable lab reported"
+            )
+            assert_in((data.orphan_spec_slug, "spec_orphan"), kinds, "orphan spec reported")
             assert_false(
-                any(p.slug == data.healthy.slug for p in problems),
+                any(problemroblem_2.slug == data.healthy.slug for problemroblem_2 in problems),
                 "healthy lab is not reported",
             )

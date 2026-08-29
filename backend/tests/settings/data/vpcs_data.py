@@ -1,5 +1,7 @@
 # Test data generators for VPCS console output.
 
+import asyncio
+
 _DEFAULT_TARGET = "192.168.1.12"
 _PROMPT = "VPCS> "
 _PROMPT_BYTES = b"VPCS> "
@@ -92,3 +94,134 @@ class VpcsStalePromptConsoleData:
         self.answer = (
             f"show ip\r\nIP/MASK     : {ip}\r\nGATEWAY     : {gateway}\r\nVPCS> "
         ).encode()
+
+
+class VpcsSaveConsoleData:
+    """Generates the console reply to `save`, as captured from a real VPCS node."""
+
+    def __init__(self, node: str = "PC1", started: bool = True):
+        self.node = node
+        self.started = started
+        self.ok_text = (
+            "save\r\nSaving startup configuration to startup.vpc\r\n.  done\r\n\r\n\rVPCS> "
+        )
+        self.silent_text = "\r\nVPCS> "
+        self.truncated_text = "save\r\nSaving startup configuration to startup.vpc\r\n"
+
+    @property
+    def ok(self) -> bytes:
+        """A completed save."""
+        return self.ok_text.encode()
+
+    @property
+    def silent(self) -> bytes:
+        """A console that answered with nothing but a prompt."""
+        return self.silent_text.encode()
+
+    @property
+    def truncated(self) -> bytes:
+        """A save that started and never reported done."""
+        return self.truncated_text.encode()
+
+
+class Gns3NodeStateData:
+    """Generates the node dicts a CheckContext holds.
+
+    Two shapes exist: gns3-service sends snake_case over the wire, while the
+    backend's own session-state response renames the same fields to camelCase.
+    """
+
+    def __init__(self, camel: bool = False):
+        self.camel = camel
+        self.nodes = {
+            "SW1": self._node("ethernet_switch", 2010, "none", "started"),
+            "PC1": self._node("vpcs", 2011, "telnet", "started"),
+            "PC2": self._node("vpcs", 2013, "telnet", "started"),
+        }
+
+    def _node(self, node_type: str, console: int, console_type: str, status: str) -> dict:
+        """One node entry in the configured shape."""
+        keys = (
+            ("nodeType", "consoleHost", "consoleType")
+            if self.camel
+            else ("node_type", "console_host", "console_type")
+        )
+        return {
+            "id": f"node-{console}",
+            "name": f"n{console}",
+            keys[0]: node_type,
+            "console": console,
+            keys[1]: "0.0.0.0",
+            keys[2]: console_type,
+            "status": status,
+        }
+
+    def with_stopped(self, name: str) -> "Gns3NodeStateData":
+        """Marks one node stopped, so it must be skipped."""
+        self.nodes[name] = {**self.nodes[name], "status": "stopped"}
+        return self
+
+    @property
+    def vpcs_ports(self) -> list[int]:
+        """Console ports of started vpcs nodes, which are the save targets."""
+        from validation.checks.registry import CheckContext
+
+        ctx = CheckContext(gns3_host="gns3", nodes_by_name=self.nodes)
+        return [
+            value["console"]
+            for name, value in self.nodes.items()
+            if ctx.node_type(name) == "vpcs" and ctx.node_status(name) == "started"
+        ]
+
+
+class ConsoleWriterData:
+    """Console writer that records what the handler sent, and closes cleanly."""
+
+    def __init__(self, sink: list | None = None):
+        self.sink = sink if sink is not None else []
+
+    def write(self, data: bytes) -> None:
+        """Records the bytes instead of sending them."""
+        self.sink.append(data)
+
+    async def drain(self) -> None:
+        """No-op drain."""
+
+    def close(self) -> None:
+        """No-op close."""
+
+    async def wait_closed(self) -> None:
+        """No-op wait."""
+
+
+class ConsoleReaderData:
+    """Console reader that yields queued chunks, then goes quiet until more are queued."""
+
+    def __init__(self, chunks: list):
+        self.chunks = list(chunks)
+
+    def queue(self, chunk: bytes) -> None:
+        """Makes another chunk available to the next read."""
+        self.chunks.append(chunk)
+
+    async def read(self, _n: int) -> bytes:
+        """The next queued chunk, or a wait that never returns."""
+        if self.chunks:
+            return self.chunks.pop(0)
+        await asyncio.sleep(3600)
+
+
+class AnsweringConsoleWriterData(ConsoleWriterData):
+    """Writer that makes the console answer only after the command is sent."""
+
+    def __init__(self, sink: list, reader: ConsoleReaderData, command: bytes, answer: bytes):
+        super().__init__(sink)
+        self.reader = reader
+        self.command = command
+        self.answer = answer
+
+    def write(self, data: bytes) -> None:
+        """Records the bytes and queues the reply when the command goes out."""
+        super().write(data)
+        if data.startswith(self.command):
+            self.reader.queue(self.answer)

@@ -11,7 +11,7 @@ class TestUserIsSimulated:
     @autotest.name("User: is_simulated column exists, default False")
     def test_db42e7b5_user_has_is_simulated(self):
         with autotest.step("Act+Assert: column present, default False"):
-            from models.user import User
+            from models.identity import User
 
             col = User.__table__.columns.get("is_simulated")
             assert_true(col is not None, "is_simulated column present")

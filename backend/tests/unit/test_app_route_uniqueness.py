@@ -7,13 +7,14 @@ builds a mini app from the session routers alone and cannot see cross-router col
 
 from collections import Counter
 
+import pytest
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_is_not_none
 from starlette.routing import Match
 
 from main import app
 
-pytestmark = []
+pytestmark = [pytest.mark.unit]
 
 
 def _route_table() -> list[tuple[str, str]]:
@@ -23,7 +24,7 @@ def _route_table() -> list[tuple[str, str]]:
         if not path:
             continue
         methods = getattr(route, "methods", None)
-        rows.extend((m, path) for m in (methods or ["WS"]))
+        rows.extend((method, path) for method in (methods or ["WS"]))
     return rows
 
 
@@ -33,7 +34,9 @@ class TestAppRouteUniqueness:
     @autotest.name("app routes: no (method, path) is registered twice")
     def test_816e6547_no_duplicate_method_path(self):
         with autotest.step("Act: collect (method, path) from every route of the real app"):
-            duplicates = sorted(k for k, n in Counter(_route_table()).items() if n > 1)
+            duplicates = sorted(
+                route for route, count in Counter(_route_table()).items() if count > 1
+            )
         with autotest.step("Assert: nothing is registered twice"):
             assert_equal(duplicates, [], "a route is shadowed by an earlier registration")
 
@@ -46,7 +49,7 @@ class TestAppRouteUniqueness:
 
         with autotest.step("Act: resolve GET /users/me/sessions"):
             matched = next(
-                (r for r in app.routes if r.matches(scope)[0] == Match.FULL),
+                (route for route in app.routes if route.matches(scope)[0] == Match.FULL),
                 None,
             )
         with autotest.step("Assert: it lands on list_sessions, not on the login session list"):

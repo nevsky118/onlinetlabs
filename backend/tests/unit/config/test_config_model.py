@@ -3,6 +3,7 @@ from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import (
     assert_equal,
     assert_is_none,
+    assert_is_not_none,
     assert_true,
 )
 
@@ -21,6 +22,8 @@ from config.config_model import (
     RedisConfig,
     SecurityConfig,
 )
+
+pytestmark = [pytest.mark.unit, pytest.mark.config]
 
 
 def _agents(**overrides):
@@ -119,7 +122,7 @@ class TestAgentsConfig:
 
         with autotest.step("Look up an existing and a nonexistent entry"):
             entry = cfg.get_entry("yandex-gpt-5.1")
-            assert entry is not None
+            assert_is_not_none(entry, "entry")
             assert_equal(entry.id, "yandex-gpt-5.1", "entry id")
             assert_is_none(cfg.get_entry("nope"), "nonexistent entry → None")
 

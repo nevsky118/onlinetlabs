@@ -10,9 +10,9 @@ from mcp_sdk.testing.custom_assertions import assert_equal
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from auth.dependencies import get_current_user
-from db.session import get_db
-from models.progress import CourseProgress, LabProgress, StepAttempt
-from models.user import User
+from kit.db import get_db
+from models.identity import User
+from models.learning import CourseProgress, LabProgress, StepAttempt
 from progress.router import router as progress_router
 
 pytestmark = [pytest.mark.unit]
@@ -74,7 +74,7 @@ class TestProgressResponses:
             await db.commit()
 
         self.app = FastAPI()
-        self.app.include_router(progress_router, prefix="/progress")
+        self.app.include_router(progress_router)
 
         async def _override_db():
             async with self.session_factory() as db:
@@ -97,7 +97,7 @@ class TestProgressResponses:
     async def test_0155438f_get_progress_exact_json(self):
         with autotest.step("Act: GET /progress"):
             async with self._client() as client:
-                resp = await client.get("/progress")
+                resp = await client.get("/users/me/progress")
 
         with autotest.step("Assert: 200 and full JSON matches the expected value"):
             assert_equal(resp.status_code, 200, "status 200")
@@ -131,11 +131,11 @@ class TestProgressResponses:
 
     @autotest.num("2506")
     @autotest.external_id("2a344044-f0ba-45e3-8cfd-df8eb011ee71")
-    @autotest.name("GET /progress/labs/{slug}: full lab progress JSON with attempts")
+    @autotest.name("GET /users/me/progress/labs/{slug}: full lab progress JSON with attempts")
     async def test_2a344044_get_lab_progress_exact_json(self):
         with autotest.step("Act: GET /progress/labs/ospf-lab"):
             async with self._client() as client:
-                resp = await client.get("/progress/labs/ospf-lab")
+                resp = await client.get("/users/me/progress/labs/ospf-lab")
 
         with autotest.step("Assert: 200 and full JSON matches the expected value"):
             assert_equal(resp.status_code, 200, "status 200")
@@ -166,17 +166,17 @@ class TestProgressResponses:
 
     @autotest.num("2507")
     @autotest.external_id("b628b96a-a6c7-4c6f-8660-a76f406ae2dc")
-    @autotest.name("POST /progress/labs/{slug}/start: full JSON of the started progress")
+    @autotest.name("POST /users/me/progress/labs/{slug}/start: full JSON of the started progress")
     async def test_b628b96a_start_lab_exact_json(self):
         with autotest.step("Act: POST /progress/labs/bgp-lab/start"):
             async with self._client() as client:
-                resp = await client.post("/progress/labs/bgp-lab/start")
+                resp = await client.post("/users/me/progress/labs/bgp-lab/start")
 
         with autotest.step("Assert: 200 and JSON of the new lab progress record"):
             assert_equal(resp.status_code, 200, "status 200")
             body = resp.json()
             assert_equal(
-                {k: v for k, v in body.items() if k != "id"},
+                {value: value_2 for value, value_2 in body.items() if value != "id"},
                 {
                     "lab_slug": "bgp-lab",
                     "status": "in_progress",
@@ -203,12 +203,12 @@ class TestProgressResponses:
 
     @autotest.num("2508")
     @autotest.external_id("d4e4685d-6253-43e2-aeea-fee865fa3616")
-    @autotest.name("POST /progress/labs/{slug}/steps/{slug}/attempt: full attempt JSON")
+    @autotest.name("POST /users/me/progress/labs/{slug}/steps/{slug}/attempt: full attempt JSON")
     async def test_d4e4685d_record_attempt_exact_json(self):
         with autotest.step("Act: POST a step attempt"):
             async with self._client() as client:
                 resp = await client.post(
-                    "/progress/labs/ospf-lab/steps/step-2/attempt",
+                    "/users/me/progress/labs/ospf-lab/steps/step-2/attempt",
                     json={"result": "fail", "score": 25.0, "error_details": {"reason": "timeout"}},
                 )
 
@@ -216,7 +216,7 @@ class TestProgressResponses:
             assert_equal(resp.status_code, 200, "status 200")
             body = resp.json()
             assert_equal(
-                {k: v for k, v in body.items() if k != "id"},
+                {value: value_2 for value, value_2 in body.items() if value != "id"},
                 {
                     "step_slug": "step-2",
                     "attempt_number": 1,

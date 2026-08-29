@@ -6,7 +6,7 @@ from autotests.api.api_helpers.onlinetlabs_service.sessions_helper_api import Se
 from autotests.api.api_methods.onlinetlabs_service.sessions_api import SessionsApi
 from autotests.settings.constants.constants_settings import ConstantsSettings
 from autotests.settings.reports import autotest
-from autotests.settings.utils.custom_assertions import assert_is_not_none
+from autotests.settings.utils.custom_assertions import assert_equal, assert_is_not_none, assert_not_equal
 from autotests.settings.utils.utils import check_response_status
 
 
@@ -42,9 +42,7 @@ class TestSessionsLifecycleCrudApi:
 
         with autotest.step("Check that session_id did not change"):
             body = response.json()
-            assert body.get("session_id") == session_id, (
-                f"Expected session_id={session_id}, got: {body.get('session_id')}"
-            )
+            assert_equal(body.get("session_id"), session_id, "get")
 
     @autotest.num("52")
     @autotest.external_id("cc04a575-ddbe-4aa3-822c-5847bd1d5bcf")
@@ -93,7 +91,7 @@ class TestSessionsLifecycleCrudApi:
             check_response_status(response, 200)
 
         with autotest.step("Check body {ok: true}"):
-            assert response.json() == {"ok": True}, f"Expected {{ok: true}}, got: {response.json()}"
+            assert_equal(response.json(), {"ok": True}, "json")
 
     @autotest.num("54")
     @autotest.external_id("aa41e3a9-7705-4c3c-a687-8eec71420767")
@@ -114,7 +112,7 @@ class TestSessionsLifecycleCrudApi:
             check_response_status(response, 200)
 
         with autotest.step("Check body {ok: true}"):
-            assert response.json() == {"ok": True}, f"Expected {{ok: true}}, got: {response.json()}"
+            assert_equal(response.json(), {"ok": True}, "json")
 
     @autotest.num("55")
     @autotest.external_id("c0aaca3c-e670-4aba-8769-18d0c1cf2979")
@@ -135,7 +133,7 @@ class TestSessionsLifecycleCrudApi:
             check_response_status(response, 200)
 
         with autotest.step("Check body {ok: true}"):
-            assert response.json() == {"ok": True}, f"Expected {{ok: true}}, got: {response.json()}"
+            assert_equal(response.json(), {"ok": True}, "json")
 
     @autotest.num("56")
     @autotest.external_id("57ae6f91-abc0-42e9-8847-6ed3685c9f5e")
@@ -156,7 +154,7 @@ class TestSessionsLifecycleCrudApi:
             check_response_status(end_response, 200)
 
         with autotest.step("Check body {ok: true}"):
-            assert end_response.json() == {"ok": True}, f"Expected {{ok: true}}, got: {end_response.json()}"
+            assert_equal(end_response.json(), {"ok": True}, "json")
 
         # Act — relaunch after end
         with autotest.step("Relaunch the session after end"):
@@ -165,9 +163,7 @@ class TestSessionsLifecycleCrudApi:
 
         # Assert — new session created
         with autotest.step("Check that the new session has a different session_id"):
-            assert new_session_id != session_id, (
-                f"Expected a new session_id, but got the same one: {new_session_id}"
-            )
+            assert_not_equal(new_session_id, session_id, "new session id")
 
     @autotest.num("57")
     @autotest.external_id("280a74b1-653c-4b27-abee-3e3ce988f76c")
@@ -180,7 +176,7 @@ class TestSessionsLifecycleCrudApi:
             session_id = launched["session_id"]
 
         # Act — request with ANON_ACCOUNT token
-        with autotest.step(f"GET credentials with the ANON_ACCOUNT token → expect 404"):
+        with autotest.step("GET credentials with the ANON_ACCOUNT token → expect 404"):
             response = await self.sessions_api_anon.get_credentials(session_id)
 
         # Assert
@@ -198,7 +194,7 @@ class TestSessionsLifecycleCrudApi:
             session_id = launched["session_id"]
 
         # Act
-        with autotest.step(f"POST stop with the ANON_ACCOUNT token → expect 404"):
+        with autotest.step("POST stop with the ANON_ACCOUNT token → expect 404"):
             response = await self.sessions_api_anon.post_stop(session_id)
 
         # Assert

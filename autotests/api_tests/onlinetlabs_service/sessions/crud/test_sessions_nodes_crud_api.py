@@ -8,6 +8,7 @@ from autotests.api.api_helpers.onlinetlabs_service.sessions_helper_api import Se
 from autotests.api.api_methods.onlinetlabs_service.sessions_api import SessionsApi
 from autotests.settings.constants.constants_settings import ConstantsSettings
 from autotests.settings.reports import autotest
+from autotests.settings.utils.custom_assertions import assert_in
 from autotests.settings.utils.utils import check_response_status
 
 
@@ -61,5 +62,5 @@ class TestSessionsNodesCrudApi:
 
         # Assert
         with autotest.step("Check that 429 appears among the responses"):
-            codes = [getattr(r, "status_code", None) for r in results]
-            assert 429 in codes, f"Expected 429 in {codes}"
+            codes = [getattr(result, "status_code", None) for result in results]
+            assert_in(429, codes, "429")

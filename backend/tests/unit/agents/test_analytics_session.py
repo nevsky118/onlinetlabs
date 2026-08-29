@@ -3,7 +3,7 @@ from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 
 from agents.identifier.agent import identify_regime
-from agents.identifier.models import (
+from agents.identifier.schemas import (
     AnalyticsResult,
     SessionFeatures,
     StruggleType,

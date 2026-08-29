@@ -4,10 +4,10 @@ from mcp_sdk.testing.custom_assertions import assert_equal
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from i18n import LocalizedError
-from models.lab import Lab
-from models.session import LearningSession
-from models.user import User
-from security.secrets import encrypt_secret
+from kit.secrets import encrypt_secret
+from models.catalog import Lab
+from models.identity import User
+from models.learning import LearningSession
 from sessions.services.launch import _create_provisioning_row, launch_session
 
 pytestmark = [pytest.mark.unit]

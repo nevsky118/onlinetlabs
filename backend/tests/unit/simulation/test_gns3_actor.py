@@ -11,6 +11,7 @@ from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 
 from simulation.lab_config import NodeTask
+from tests.settings.data.db_data import NullDbSessionData
 
 pytestmark = [pytest.mark.unit]
 
@@ -21,14 +22,6 @@ _TASKS = [
 _CONSOLES = {"PC1": ("localhost", 5000), "PC2": ("localhost", 5001)}
 
 
-class _FakeDb:
-    async def __aenter__(self):
-        return self
-
-    async def __aexit__(self, *a):
-        return False
-
-
 def _make_actor(save_user_message=None):
     from simulation.env.gns3_actor import GNS3Actor
     from simulation.help_text import HelpTextGen
@@ -37,7 +30,7 @@ def _make_actor(save_user_message=None):
     return GNS3Actor(
         node_tasks=_TASKS,
         consoles=_CONSOLES,
-        db_factory=lambda: _FakeDb(),
+        db_factory=lambda: NullDbSessionData(),
         backend_session_id="s1",
         help_gen=HelpTextGen(llm_enabled=False, budget_rub=0, price_per_1k_rub=0),
         profile=StudentProfile(

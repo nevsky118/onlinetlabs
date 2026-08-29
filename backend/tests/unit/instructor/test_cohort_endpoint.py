@@ -2,7 +2,7 @@ import pytest
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 
-from cohort.metrics import LearnerOutcome, aggregate_cohort
+from analytics.cohort.metrics import LearnerOutcome, aggregate_cohort
 
 pytestmark = [pytest.mark.unit]
 

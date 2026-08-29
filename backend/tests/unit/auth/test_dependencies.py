@@ -8,7 +8,7 @@ from mcp_sdk.testing.custom_assertions import (
     assert_equal,
     assert_in,
     assert_is_none,
-    assert_true,
+    assert_is_not_none,
 )
 
 from auth.dependencies import (
@@ -87,7 +87,7 @@ class TestVerifyJwtForWs:
             result = await verify_jwt_for_ws(token)
 
         with autotest.step("Assert: dict contains id and role"):
-            assert_true(result is not None, "result is not None")
+            assert_is_not_none(result, "a claims dict")
             assert_equal(result["id"], "user-704", "id claim")
             assert_equal(result["role"], "admin", "role claim")
 

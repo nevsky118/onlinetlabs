@@ -3,7 +3,7 @@ from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 from starlette.requests import Request
 
-from rate_limit import exchange_rate_limit_key
+from kit.rate_limit import exchange_rate_limit_key
 
 pytestmark = [pytest.mark.unit]
 

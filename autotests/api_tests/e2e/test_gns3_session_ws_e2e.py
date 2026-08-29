@@ -6,6 +6,7 @@ from autotests.api.api_helpers.gns3_service.gns3_sessions_helper_api import Gns3
 from autotests.api.api_methods.gns3_service.gns3_sessions_api import Gns3SessionsApi
 from autotests.settings.api_client.ws_client import WSClient
 from autotests.settings.reports import autotest
+from autotests.settings.utils.custom_assertions import assert_equal
 
 
 @pytest.mark.e2e
@@ -32,5 +33,5 @@ class TestGns3SessionWsE2E:
         with autotest.step("Act + Assert: connect and check the first message is a snapshot for this session"):
             async with await ws_client.connect(f"/sessions/{session_id}/events") as ws:
                 msg = await ws_client.recv_json(ws, timeout=15)
-                assert msg["type"] == "snapshot", f"Expected snapshot, got {msg['type']}"
-                assert msg["payload"]["session_id"] == session_id
+                assert_equal(msg["type"], "snapshot", "type")
+                assert_equal(msg["payload"]["session_id"], session_id, "session id")
