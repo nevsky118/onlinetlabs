@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.dependencies import get_current_user
-from control_interface.consent import grant, list_active, revoke
+from control_interface.consent import CURRENT_POLICY_VERSION, list_active, record, revoke
 from control_interface.schemas import (
     ConsentGrantRequest,
     ConsentItem,
@@ -22,8 +22,17 @@ async def grant_consent(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Grants or updates consent for the current user."""
-    c = await grant(db, current_user["id"], req.scope, req.observe, req.act, req.data_policy)
+    """Records the learner's answer for the current user."""
+    c = await record(
+        db,
+        current_user["id"],
+        req.scope,
+        req.observe,
+        req.act,
+        req.data_policy,
+        decision=req.decision,
+        policy_version=CURRENT_POLICY_VERSION,
+    )
     return ConsentResponse.model_validate(c)
 
 

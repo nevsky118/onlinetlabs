@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth.dependencies import get_current_user_optional
+from auth.dependencies import get_current_user
+from control_interface.consent import may_collect
 from db.session import get_db
 from models.platform_event import PlatformEvent
 from rate_limit import limiter
@@ -19,10 +20,12 @@ async def ingest_events(
     request: Request,
     body: AnalyticsIngestRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: dict | None = Depends(get_current_user_optional),
+    current_user: dict = Depends(get_current_user),
 ):
     """Accepts a batch of platform telemetry events and saves them to the DB."""
-    user_id = current_user["id"] if current_user else None
+    user_id = current_user["id"]
+    if not await may_collect(db, user_id):
+        return Response(status_code=204)
     now = datetime.now(UTC)
 
     for evt in body.events:

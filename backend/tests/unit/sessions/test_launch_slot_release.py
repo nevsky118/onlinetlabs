@@ -61,6 +61,7 @@ class TestLaunchSlotRelease:
 
         with autotest.step("Act: relaunch an already active session"):
             with (
+                patch.object(launch_mod, "study_decision", AsyncMock(return_value="granted")),
                 patch.object(launch_mod, "get_active_session", AsyncMock(return_value=existing)),
                 patch.object(
                     launch_mod, "launch_session", AsyncMock(return_value=(existing, _CREDS))
@@ -89,6 +90,7 @@ class TestLaunchSlotRelease:
 
         with autotest.step("Act: fresh launch"):
             with (
+                patch.object(launch_mod, "study_decision", AsyncMock(return_value="granted")),
                 patch.object(launch_mod, "get_active_session", AsyncMock(return_value=None)),
                 patch.object(
                     launch_mod, "launch_session", AsyncMock(return_value=(new_sess, _CREDS))
