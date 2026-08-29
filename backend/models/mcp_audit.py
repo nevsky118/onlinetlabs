@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import Boolean, DateTime, String, Text
+from sqlalchemy import Boolean, DateTime, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.base import Base
@@ -11,6 +11,7 @@ from models.base import Base
 
 class MCPAudit(Base):
     __tablename__ = "mcp_audit"
+    __table_args__ = (Index("ix_mcp_audit_ts", "ts"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     user_id: Mapped[str] = mapped_column(String(255), index=True)

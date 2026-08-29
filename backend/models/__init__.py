@@ -16,6 +16,7 @@ from models.progress import CourseProgress, LabProgress, StepAttempt
 from models.regime_annotation import RegimeAnnotation
 from models.session import LearningSession
 from models.session_evidence_snapshot import SessionEvidenceSnapshot
+from models.study_participant import StudyParticipant
 from models.user import Account, Session, User, UserRole, VerificationToken
 from models.validation_run import ValidationRun
 
@@ -40,6 +41,7 @@ __all__ = [
     "Session",
     "SessionEvidenceSnapshot",
     "StepAttempt",
+    "StudyParticipant",
     "User",
     "UserRole",
     "ValidationRun",

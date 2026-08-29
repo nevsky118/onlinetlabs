@@ -37,9 +37,7 @@ class User(Base):
     # Firewall: a simulated student; excluded from "real results"
     is_simulated: Mapped[bool] = mapped_column(default=False)
     default_model_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    is_active: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, server_default="true", default=False
-    )
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     accounts: Mapped[list["Account"]] = relationship(
         back_populates="user", cascade="all, delete-orphan", lazy="raise"

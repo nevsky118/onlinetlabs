@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 from uuid import uuid4
 
+import sqlalchemy as sa
 from sqlalchemy import DateTime, ForeignKey, Index, String, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -28,8 +29,12 @@ class ValidationRun(Base):
     )
     lab_slug: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[str] = mapped_column(String(50), nullable=False)
+    # JSONB in Postgres; plain JSON elsewhere so the SQLite unit-test harness can compile it.
     steps: Mapped[list] = mapped_column(
-        JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb")
+        sa.JSON().with_variant(JSONB(), "postgresql"),
+        nullable=False,
+        default=list,
+        server_default=text("'[]'"),
     )
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

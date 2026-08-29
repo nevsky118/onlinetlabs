@@ -14,6 +14,8 @@ class Consent(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     user_id: Mapped[str] = mapped_column(String(255), index=True)
     scope: Mapped[str] = mapped_column(String(20))  # study | product
+    decision: Mapped[str] = mapped_column(String(20), default="granted")
+    policy_version: Mapped[str] = mapped_column(String(20), default="1")
     observe: Mapped[bool] = mapped_column(Boolean, default=False)
     act: Mapped[bool] = mapped_column(Boolean, default=False)
     granted_at: Mapped[datetime] = mapped_column(
