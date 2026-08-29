@@ -1,7 +1,8 @@
+import Link from "next/link"
 import { getTranslations } from "next-intl/server"
 import { siteConfig } from "@/lib/config"
 
-export async function SiteFooter() {
+export async function SiteFooter({ locale }: { locale: string }) {
   const t = await getTranslations("web.footer")
 
   return (
@@ -18,7 +19,20 @@ export async function SiteFooter() {
             >
               GitHub
             </a>
-            .
+            .{" "}
+            <Link
+              href={`/${locale}/privacy`}
+              className="font-medium underline underline-offset-4"
+            >
+              {t("privacy")}
+            </Link>
+            {" · "}
+            <Link
+              href={`/${locale}/terms`}
+              className="font-medium underline underline-offset-4"
+            >
+              {t("terms")}
+            </Link>
           </div>
         </div>
       </div>
