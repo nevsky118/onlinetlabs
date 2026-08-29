@@ -75,6 +75,18 @@ services:
     # web reads no runtime env, NEXT_PUBLIC_* are baked into the image, so no env_file
     environment:
       NODE_ENV: production
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - |
+          require('http').get({host:'127.0.0.1',port:3001,path:'/',timeout:3000},
+            r => process.exit(r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 10s
 
   dashboard:
     image: ${IMAGE_DASHBOARD:-ghcr.io/nevsky118/onlinetlabs-dashboard}:${IMAGE_TAG:-latest}
@@ -86,6 +98,18 @@ services:
       BACKEND_URL: http://backend:8000
       NODE_ENV: production
       # COOKIE_DOMAIN comes from frontend.env (dashboard env_file).
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - |
+          require('http').get({host:'127.0.0.1',port:3000,path:'/',timeout:3000},
+            r => process.exit(r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 10s
     depends_on:
       backend:
         condition: service_healthy
