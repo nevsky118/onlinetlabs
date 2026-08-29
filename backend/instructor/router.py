@@ -1,11 +1,13 @@
-from fastapi import APIRouter, Depends, status
-from sqlalchemy import select
+"""Instructor dashboard: cohort metrics, student progress, MCP audit."""
+
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from analytics.cohort.service import compute_cohort_metrics
 from auth.dependencies import require_instructor
-from cohort.service import compute_cohort_metrics
 from config import settings
-from db.session import get_db
 from i18n import LocalizedError
 from instructor.schemas import (
     CohortMetricsResponse,
@@ -18,11 +20,18 @@ from instructor.schemas import (
     TimelineItem,
     cohort_response_from_result,
 )
-from instructor.service import build_session_timeline, get_student_detail, get_students_overview
-from models.mcp_audit import MCPAudit
-from models.session import LearningSession
+from instructor.service import (
+    MCP_AUDIT_MAX_PAGE,
+    MCP_AUDIT_PAGE,
+    build_session_timeline,
+    get_mcp_audit,
+    get_student_detail,
+    get_student_session,
+    get_students_overview,
+)
+from kit.db import get_db
 
-router = APIRouter()
+router = APIRouter(prefix="/instructor", tags=["instructor"])
 
 
 @router.get("/cohort-metrics", response_model=CohortMetricsResponse)
@@ -74,16 +83,13 @@ async def student_detail(
 async def list_mcp_audit(
     session_id: str | None = None,
     kind: str | None = None,
+    before: datetime | None = None,
+    limit: int = Query(MCP_AUDIT_PAGE, ge=1, le=MCP_AUDIT_MAX_PAGE),
     _: dict = Depends(require_instructor),
     db: AsyncSession = Depends(get_db),
 ):
-    """Log of MCP calls through the control loop, filterable by session and kind (observe/act)."""
-    q = select(MCPAudit).order_by(MCPAudit.ts.desc())
-    if session_id is not None:
-        q = q.where(MCPAudit.session_id == session_id)
-    if kind is not None:
-        q = q.where(MCPAudit.kind == kind)
-    rows = (await db.execute(q)).scalars().all()
+    """Log of MCP calls through the control loop, newest first."""
+    rows = await get_mcp_audit(db, session_id=session_id, kind=kind, before=before, limit=limit)
     return [MCPAuditRow.model_validate(r) for r in rows]
 
 
@@ -98,10 +104,6 @@ async def student_session_timeline(
     db: AsyncSession = Depends(get_db),
 ):
     """Timeline of a student's session dialogue (chat + interventions)."""
-    session = (
-        await db.execute(select(LearningSession).where(LearningSession.id == session_id))
-    ).scalar_one_or_none()
-    if session is None or session.user_id != user_id:
+    if await get_student_session(db, user_id, session_id) is None:
         raise LocalizedError("error.session.not_found", status_code=status.HTTP_404_NOT_FOUND)
-    items = await build_session_timeline(db, session_id)
-    return [TimelineItem(**i) for i in items]
+    return [TimelineItem(**i) for i in await build_session_timeline(db, session_id)]

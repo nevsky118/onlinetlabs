@@ -10,13 +10,13 @@ from datetime import UTC, datetime
 from sqlalchemy import delete, select
 
 from config.env_config_loader import load_settings
-from control_interface.consent import grant
-from control_interface.interface import ControlInterface, InterfaceDenied
-from db.session import async_session
+from consent.consent import grant
+from consent.interface import ControlInterface, InterfaceDenied
 from experiment.assignment import ControlArm
-from models.mcp_audit import MCPAudit
-from models.session import LearningSession
-from models.user import User
+from kit.db import async_session
+from models.audit import MCPAudit
+from models.identity import User
+from models.learning import LearningSession
 
 PREFIX = "gov-demo-"
 

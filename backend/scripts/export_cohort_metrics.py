@@ -2,10 +2,10 @@
 
 import asyncio
 
-from cohort.report import render_cohort_table
-from cohort.service import compute_cohort_metrics
+from analytics.cohort.report import render_cohort_table
+from analytics.cohort.service import compute_cohort_metrics
 from config.env_config_loader import load_settings
-from db.session import async_session
+from kit.db import async_session
 
 
 async def main():

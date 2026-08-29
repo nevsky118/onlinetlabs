@@ -2,7 +2,7 @@
 
 from sqlalchemy import select
 
-from models.chat_message import ChatMessage
+from models.learning import ChatMessage
 
 
 def to_openai_messages(sdk_messages: list[dict]) -> list[dict]:

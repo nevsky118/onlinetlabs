@@ -15,13 +15,13 @@ steps:
         expect:
           subnet: "192.168.10.0/24"
           gateway: "192.168.10.1"
-  - id: gateway
+  - id: connectivity
     title:
-      en: Gateway reachable
-      ru: Шлюз доступен
+      en: PC1 reaches PC2
+      ru: PC1 видит PC2
     checks:
-      - kind: vpcs.ping
+      - kind: vpcs.ping_node
         from: PC1
-        to: "192.168.10.1"
+        to_node: PC2
         expect:
           received: ">=4"

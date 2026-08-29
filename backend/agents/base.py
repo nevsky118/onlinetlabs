@@ -6,8 +6,8 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.settings import ModelSettings
 
+from clients.llm import build_client, model_uri, resolve_model
 from config.config_model import ConfigModel, LlmProvider
-from core.llm.client import build_client, model_uri, resolve_model
 from i18n import Locale
 
 

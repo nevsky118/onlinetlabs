@@ -1,10 +1,21 @@
+import logging
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from i18n import LocalizedError, as_locale_map
-from labs.readiness import NO_TEMPLATE_FRR, NO_TEMPLATE_IOSVL2, resolve_template_id
-from models.lab import Lab
+from kit.db import async_session
+from labs.readiness import (
+    NO_TEMPLATE_FRR,
+    NO_TEMPLATE_IOSVL2,
+    audit_labs,
+    resolve_template_id,
+)
+from models.catalog import Lab
+from validation.runner import spec_slugs
+
+logger = logging.getLogger(__name__)
 
 
 async def get_all_labs(
@@ -122,3 +133,20 @@ async def set_lab_template(
     await db.flush()
     await db.refresh(lab)
     return lab
+
+
+async def log_lab_problems() -> int:
+    """Logs every lab whose declarations do not add up. Returns the problem count."""
+    try:
+        async with async_session() as db:
+            labs = await get_all_labs(db)
+        problems = audit_labs(labs, spec_slugs())
+    except Exception:
+        logger.warning("Lab readiness audit failed to run", exc_info=True)
+        return 0
+
+    for problem in problems:
+        logger.warning("Lab readiness: %s [%s] %s", problem.slug, problem.kind, problem.detail)
+    if problems:
+        logger.warning("Lab readiness: %d problem(s) found", len(problems))
+    return len(problems)

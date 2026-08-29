@@ -1,12 +1,12 @@
-"""Admin router: /admin/overview, /admin/identifier-eval, /admin/tk-sensitivity, /admin/users."""
+"""Admin console: KPI reports, users, labs and the whitelisted data browser."""
 
 from typing import Literal
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
-from sqlalchemy import String, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from admin.data_registry import ADMIN_TABLES, serialize_row
+from admin.data_registry import ADMIN_TABLES
+from admin.reports import build_identifier_eval, build_overview, build_tk_sensitivity
 from admin.schemas import (
     AdminDataResponse,
     AdminLab,
@@ -21,186 +21,40 @@ from admin.schemas import (
     OverviewIdentifier,
     OverviewOps,
     OverviewResponse,
+    TemplateBuildStatus,
     TkPoint,
     TkSensitivityResponse,
     UserListItem,
     UserListResponse,
     UserUpdate,
 )
+from admin.service import browse_table, list_users, rebuild_template, to_admin_lab
+from analytics.metrics.annotation import gold_label_count, inter_rater_kappa
+from analytics.metrics.reproducibility import build_reproducibility_bundle
 from auth.dependencies import require_admin
-from config.config_model import LearningAnalyticsConfig
-from control.criterion import costs_from_config
-from control.derive_thresholds import sensitivity_curve
-from db.session import async_session, get_db
-from deps import get_gns3_client, get_session_factory
-from evaluation.metrics import (
-    confusion_matrix,
-    first_match_diagnostics,
-    j_optimal,
-    operating_curve,
-)
-from evaluation.scenarios import build_synthetic_scenarios, build_synthetic_sessions
-from i18n import DEFAULT_LOCALE, LocalizedError, resolve_localized
-from labs.readiness import audit_labs, is_launchable
+from i18n import LocalizedError
+from kit.db import get_db
+from kit.deps import get_gns3_client, get_session_factory
+from labs.readiness import audit_labs
 from labs.service import get_all_labs, get_lab_by_slug, update_lab
-from models.experiment import ExperimentMetrics
-from models.session import LearningSession
-from models.user import User, UserRole
+from models.identity import User, UserRole
+from validation.runner import spec_slugs
 
-router = APIRouter()
-
-# Cost ratios for the sensitivity curve.
-_RATIOS = [0.2, 0.5, 1.0, 2.0, 5.0]
+router = APIRouter(prefix="/admin", tags=["admin"])
 
 
-def _default_la_config() -> LearningAnalyticsConfig:
-    """LA config without ENV: default Pydantic values."""
-    return LearningAnalyticsConfig()
-
-
-def build_identifier_eval(cfg: LearningAnalyticsConfig | None = None) -> dict:
-    """Builds the operating curve + matrix + first-match on synthetic data. preliminary=True."""
-    if cfg is None:
-        cfg = _default_la_config()
-
-    scns = build_synthetic_scenarios()
-    curve = operating_curve(scns, cfg.eval_t_k_grid, cfg, costs_from_config(cfg))
-    opt = j_optimal(curve)
-
-    # confusion_matrix: run harness @ j_optimal_t_k
-    from evaluation.harness import run_identifier
-
-    pairs = [(scn, run_identifier(scn, opt.t_k, cfg)) for scn in scns]
-    cm_raw = confusion_matrix(pairs)
-    # serialize keys to str
-    cm_ser = {r.value: {c.value: v for c, v in row.items()} for r, row in cm_raw.items()}
-
-    fm = first_match_diagnostics(scns, cfg)
-
-    return {
-        "curve": [
-            {
-                "t_k": p.t_k,
-                "latency_median": p.latency_median,
-                "false_per_hour": p.false_per_hour,
-                "recall": p.recall,
-                "j": p.J,
-            }
-            for p in curve
-        ],
-        "j_optimal_t_k": opt.t_k,
-        "confusion": cm_ser,
-        "first_match": fm,
-        "costs": {
-            "c_stuck": cfg.cost_stuck,
-            "c_intervention": cfg.cost_intervention,
-            "c_false": cfg.cost_false_intervention,
-        },
-        # synthetic → always preliminary
-        "preliminary": True,
-    }
-
-
-def build_tk_sensitivity(cfg: LearningAnalyticsConfig | None = None) -> dict:
-    """T_k sensitivity curve over cost ratios on synthetic sessions."""
-    if cfg is None:
-        cfg = _default_la_config()
-
-    sessions = build_synthetic_sessions()
-    grid = {"stuck_on_step": cfg.eval_t_k_grid}
-
-    curve = sensitivity_curve(
-        sessions,
-        _RATIOS,
-        grid,
-        base_c_intervention=cfg.cost_intervention,
-        c_false=cfg.cost_false_intervention,
-        cooldown_seconds=cfg.cooldown_period,
-        time_unit_seconds=60.0,
+def _to_user_item(user: User) -> UserListItem:
+    """Serializes a user row for the admin console."""
+    return UserListItem(
+        id=user.id,
+        name=user.name,
+        email=user.email,
+        image=user.image,
+        role=user.role,
+        can_select_model=user.can_select_model,
+        can_view_agent_logs=user.can_view_agent_logs,
+        is_active=user.is_active,
     )
-
-    points = []
-    for ratio, tk_dict, j in curve:
-        # tk_dict: {regime: float}; take stuck_on_step as representative
-        t_k_val = tk_dict.get("stuck_on_step", 0.0)
-        points.append({"ratio": ratio, "t_k": t_k_val, "J": j})
-
-    return {
-        "points": points,
-        "costs": {
-            "c_stuck": cfg.cost_stuck,
-            "c_intervention": cfg.cost_intervention,
-        },
-    }
-
-
-async def build_overview(db: AsyncSession) -> dict:
-    """KPI aggregate from the DB. Numbers come from pure functions."""
-    from cohort.service import compute_cohort_metrics
-    from evaluation.arm_analysis import compute_arm_analysis
-
-    la_cfg = _default_la_config()
-
-    # A/B
-    metrics = (await db.execute(select(ExperimentMetrics))).scalars().all()
-    ab = compute_arm_analysis(metrics, mentor_seconds=la_cfg.mentor_handling_seconds)
-
-    # Cohort
-    cohort = await compute_cohort_metrics(
-        db,
-        horizon_seconds=la_cfg.cohort_horizon_days * 86400,
-        by_arm=False,
-    )
-    # pooled: aggregate_cohort returns a ready-made pooled cell (CohortCell), not a dict.
-    pooled_cell = cohort.get("pooled")
-    pooled_reach = pooled_cell.time_to_competence.reach_rate if pooled_cell else 0.0
-    pooled_n = pooled_cell.n if pooled_cell else 0
-
-    # Identifier (synthetic)
-    eval_data = build_identifier_eval(la_cfg)
-
-    # Ops
-    active = (
-        await db.execute(
-            select(func.count(LearningSession.id)).where(LearningSession.status == "active")
-        )
-    ).scalar() or 0
-    total_ivs = (
-        await db.execute(
-            select(func.coalesce(func.sum(ExperimentMetrics.interventions_received), 0))
-        )
-    ).scalar() or 0
-    finished_n = len(metrics)  # sessions with a metrics row, not labeled scenarios
-
-    return {
-        "ab": {
-            "l2_pass_closed": ab.l2_pass_rate_closed,
-            "l2_pass_open": ab.l2_pass_rate_open,
-            "mentor_hours_saved": ab.mentor_hours_saved,
-        },
-        "cohort": {
-            "pooled_reach_rate": pooled_reach,
-            "pooled_n": pooled_n,
-        },
-        "identifier": {
-            "j_optimal_t_k": eval_data["j_optimal_t_k"],
-            "recall_at_opt": eval_data["curve"][
-                next(
-                    i
-                    for i, p in enumerate(eval_data["curve"])
-                    if p["t_k"] == eval_data["j_optimal_t_k"]
-                )
-            ]["recall"]
-            if eval_data["curve"]
-            else 0.0,
-            "costs": eval_data["costs"],
-        },
-        "ops": {
-            "active_sessions": active,
-            "total_interventions": int(total_ivs),
-            "finished_sessions_n": finished_n,
-        },
-    }
 
 
 @router.get("/overview", response_model=OverviewResponse)
@@ -243,51 +97,31 @@ def get_tk_sensitivity(_: dict = Depends(require_admin)):
 
 
 @router.get("/users", response_model=UserListResponse)
-async def list_users(
+async def get_users(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     sort: Literal["name", "email", "role"] = "name",
     order: Literal["asc", "desc"] = "asc",
     search: str | None = None,
     role: UserRole | None = None,
+    is_active: bool | None = None,
     db: AsyncSession = Depends(get_db),
     _: dict = Depends(require_admin),
 ) -> UserListResponse:
-    """List of users with pagination, sorting, search, and role filter."""
-    col = getattr(User, sort)
-    order_col = col.asc() if order == "asc" else col.desc()
-
-    base_q = select(User)
-    if search:
-        pattern = f"%{search}%"
-        base_q = base_q.where(or_(User.name.ilike(pattern), User.email.ilike(pattern)))
-    if role is not None:
-        base_q = base_q.where(User.role == role.value)
-
-    total = (await db.execute(select(func.count()).select_from(base_q.subquery()))).scalar() or 0
-
-    offset = (page - 1) * page_size
-    rows = (
-        (await db.execute(base_q.order_by(order_col).offset(offset).limit(page_size)))
-        .scalars()
-        .all()
+    """List of users with pagination, sorting, search, role and activation filter."""
+    result = await list_users(
+        db,
+        page=page,
+        page_size=page_size,
+        sort=sort,
+        order=order,
+        search=search,
+        role=role,
+        is_active=is_active,
     )
-
     return UserListResponse(
-        items=[
-            UserListItem(
-                id=u.id,
-                name=u.name,
-                email=u.email,
-                image=u.image,
-                role=u.role,
-                can_select_model=u.can_select_model,
-                can_view_agent_logs=u.can_view_agent_logs,
-                is_active=u.is_active,
-            )
-            for u in rows
-        ],
-        total=total,
+        items=[_to_user_item(u) for u in result.rows],
+        total=result.total,
         page=page,
         page_size=page_size,
     )
@@ -304,7 +138,6 @@ async def update_user(
     user = await db.get(User, user_id)
     if user is None:
         raise LocalizedError("error.user.not_found", status_code=404)
-
     if body.role is not None and user_id == current_user["id"]:
         raise LocalizedError("error.admin.own_role", status_code=400)
 
@@ -319,36 +152,7 @@ async def update_user(
 
     await db.commit()
     await db.refresh(user)
-
-    return UserListItem(
-        id=user.id,
-        name=user.name,
-        email=user.email,
-        image=user.image,
-        role=user.role,
-        can_select_model=user.can_select_model,
-        can_view_agent_logs=user.can_view_agent_logs,
-        is_active=user.is_active,
-    )
-
-
-def _to_admin_lab(lab) -> AdminLab:
-    """Serialize Lab ORM object to AdminLab schema."""
-    template_status = (lab.meta or {}).get("template_status", "unknown")
-    # Non-gns3 labs need no template.
-    template_ready = is_launchable(lab)
-    return AdminLab(
-        slug=lab.slug,
-        title=resolve_localized(lab.title_i18n, DEFAULT_LOCALE),
-        enabled=lab.enabled,
-        environment_type=lab.environment_type,
-        course_slug=lab.course_slug,
-        gns3_template_project_id=lab.gns3_template_project_id,
-        gns3_template_project_id_frr=lab.gns3_template_project_id_frr,
-        gns3_template_project_id_iosvl2=lab.gns3_template_project_id_iosvl2,
-        template_ready=template_ready,
-        template_status=template_status,
-    )
+    return _to_user_item(user)
 
 
 @router.get("/labs", response_model=list[AdminLab])
@@ -357,8 +161,7 @@ async def list_admin_labs(
     _: dict = Depends(require_admin),
 ) -> list[AdminLab]:
     """List of labs for the administrator."""
-    labs = await get_all_labs(db)
-    return [_to_admin_lab(lab) for lab in labs]
+    return [to_admin_lab(lab) for lab in await get_all_labs(db)]
 
 
 @router.get("/labs/readiness", response_model=LabsReadiness)
@@ -367,10 +170,7 @@ async def labs_readiness(
     _: dict = Depends(require_admin),
 ) -> LabsReadiness:
     """Every lab whose declarations do not add up, in one response."""
-    from validation.runner import spec_slugs
-
-    labs = await get_all_labs(db)
-    problems = audit_labs(labs, spec_slugs())
+    problems = audit_labs(await get_all_labs(db), spec_slugs())
     return LabsReadiness(
         ok=not problems,
         problems=[LabProblemOut(slug=p.slug, kind=p.kind, detail=p.detail) for p in problems],
@@ -385,31 +185,13 @@ async def patch_admin_lab(
     _: dict = Depends(require_admin),
 ) -> AdminLab:
     """Update enabled/gns3_template_project_id* of a lab."""
-    fields = body.model_dump(exclude_unset=True)
-    lab = await update_lab(db, slug, fields)
+    lab = await update_lab(db, slug, body.model_dump(exclude_unset=True))
     if lab is None:
         raise LocalizedError("error.lab.not_found", status_code=404)
-    return _to_admin_lab(lab)
+    return to_admin_lab(lab)
 
 
-async def _rebuild_worker(slug: str, gns3_client, session_factory=async_session) -> None:
-    """Background task: builds the template and updates the lab's status in the DB."""
-    try:
-        template_id = await gns3_client.build_template(slug)
-        new_status, tid = "ready", template_id
-    except Exception:
-        new_status, tid = "error", None
-    async with session_factory() as session:
-        lab = await get_lab_by_slug(session, slug)
-        if lab is None:
-            return
-        if tid:
-            lab.gns3_template_project_id = tid
-        lab.meta = {**(lab.meta or {}), "template_status": new_status}
-        await session.commit()
-
-
-@router.post("/labs/{slug}/rebuild-template", status_code=202)
+@router.post("/labs/{slug}/rebuild-template", status_code=202, response_model=TemplateBuildStatus)
 async def rebuild_lab_template(
     slug: str,
     background_tasks: BackgroundTasks,
@@ -417,7 +199,7 @@ async def rebuild_lab_template(
     gns3_client=Depends(get_gns3_client),
     session_factory=Depends(get_session_factory),
     _: dict = Depends(require_admin),
-) -> dict:
+) -> TemplateBuildStatus:
     """Trigger a rebuild of the GNS3 template for a lab. Idempotent, returns 202."""
     lab = await get_lab_by_slug(db, slug)
     if lab is None:
@@ -425,11 +207,11 @@ async def rebuild_lab_template(
     if lab.environment_type != "gns3":
         raise LocalizedError("error.lab.not_gns3", status_code=400)
     if (lab.meta or {}).get("template_status") == "building":
-        return {"status": "building"}
+        return TemplateBuildStatus(status="building")
     lab.meta = {**(lab.meta or {}), "template_status": "building"}
     await db.commit()
-    background_tasks.add_task(_rebuild_worker, slug, gns3_client, session_factory)
-    return {"status": "building"}
+    background_tasks.add_task(rebuild_template, slug, gns3_client, session_factory)
+    return TemplateBuildStatus(status="building")
 
 
 @router.get("/data/{table}", response_model=AdminDataResponse)
@@ -448,33 +230,13 @@ async def get_admin_data(
     if spec is None:
         raise LocalizedError("error.admin.unknown_table", status_code=status.HTTP_404_NOT_FOUND)
 
-    sort_col = sort if sort in spec.sortable else spec.default_sort
-    model = spec.model
-    col = getattr(model, sort_col)
-    order_col = col.asc() if order == "asc" else col.desc()
-
-    base_q = select(model)
-    if search:
-        pattern = f"%{search}%"
-        base_q = base_q.where(
-            or_(*[cast(getattr(model, c), String).ilike(pattern) for c in spec.searchable])
-        )
-
-    total = (await db.execute(select(func.count()).select_from(base_q.subquery()))).scalar() or 0
-
-    rows = (
-        (
-            await db.execute(
-                base_q.order_by(order_col).offset((page - 1) * page_size).limit(page_size)
-            )
-        )
-        .scalars()
-        .all()
+    result = await browse_table(
+        db, spec, page=page, page_size=page_size, sort=sort, order=order, search=search
     )
-
     return AdminDataResponse(
-        items=[serialize_row(spec, r) for r in rows],
-        total=total,
+        items=result.rows,
+        total=result.total,
+        total_is_exact=result.total_is_exact,
         page=page,
         page_size=page_size,
         columns=spec.columns,
@@ -495,12 +257,9 @@ async def get_annotation_irr(
     Simulated ground truth is excluded by evaluation.annotation, so the count
     reports human labels only.
     """
-    from evaluation.annotation import gold_label_count, inter_rater_kappa
-
-    kappa = await inter_rater_kappa(db, session_id, coder_a, coder_b)
     return AnnotationIrrResponse(
         gold_label_count=await gold_label_count(db, session_id),
-        kappa=kappa,
+        kappa=await inter_rater_kappa(db, session_id, coder_a, coder_b),
         coder_a=coder_a,
         coder_b=coder_b,
         note="Kappa over windows both coders labelled; sim-truth excluded.",
@@ -513,6 +272,4 @@ async def get_reproducibility_bundle(
     _: dict = Depends(require_admin),
 ):
     """Anonymised MRT bundle for independent re-analysis (simulated users excluded)."""
-    from evaluation.reproducibility import build_reproducibility_bundle
-
     return await build_reproducibility_bundle(db)

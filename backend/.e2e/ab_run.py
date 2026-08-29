@@ -11,14 +11,12 @@ from uuid import uuid4
 
 from sqlalchemy import delete, select
 
+from analytics.metrics.arm_analysis import compute_arm_analysis
 from config.env_config_loader import load_settings
-from db.session import async_session
-from evaluation.arm_analysis import compute_arm_analysis
-from models.behavioral_event import BehavioralEvent
-from models.experiment import ExperimentMetrics
-from models.progress import LabProgress
-from models.session import LearningSession
-from models.user import User
+from kit.db import async_session
+from models.identity import User
+from models.learning import LabProgress, LearningSession
+from models.research import BehavioralEvent, ExperimentMetrics
 from sessions.services.lifecycle import end_session
 
 PREFIX = "ab-demo-"

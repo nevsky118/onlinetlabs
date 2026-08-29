@@ -2,10 +2,13 @@
 
 import logging
 
+from analytics.runtime.monitor import SessionMonitor
+from analytics.runtime.progress_observer import LabProgressObserver
 from config.config_model import ConfigModel
-from control_interface.interface import ControlInterface
+from consent.interface import ControlInterface
 from experiment.assignment import effective_arm
-from learning_analytics.monitor import SessionMonitor
+from kit.db import async_session
+from models.learning import LearningSession
 
 logger = logging.getLogger(__name__)
 
@@ -44,10 +47,6 @@ class SessionMonitorRegistry:
         observer = None
         if self._gns3_client is not None:
             try:
-                from db.session import async_session
-                from learning_analytics.progress_observer import LabProgressObserver
-                from models.session import LearningSession
-
                 async with async_session() as db:
                     ls = await db.get(LearningSession, session_id)
                 gns3_sid = (ls.meta or {}).get("gns3_service_session_id") if ls else None

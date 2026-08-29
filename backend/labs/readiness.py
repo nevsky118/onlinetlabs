@@ -6,7 +6,7 @@ they cannot drift apart.
 
 from dataclasses import dataclass
 
-from models.lab import Lab
+from models.catalog import Lab
 
 NO_TEMPLATE_IOSVL2 = "error.lab.iosvl2_missing"
 NO_TEMPLATE_FRR = "error.lab.no_template"

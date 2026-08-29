@@ -3,16 +3,30 @@
 import asyncio
 from pathlib import Path
 
-from config.env_config_loader import load_settings
-from control.criterion import costs_from_config
-from evaluation.metrics import (
+from sqlalchemy import select
+
+from analytics.cohort.metrics import retention_metric
+from analytics.cohort.report import render_cohort_table
+from analytics.cohort.service import compute_cohort_metrics
+from analytics.criterion import costs_from_config
+from analytics.metrics.arm_analysis import compute_arm_analysis
+from analytics.metrics.harness import run_identifier
+from analytics.metrics.help_dependence import help_dependence_trajectory, is_declining
+from analytics.metrics.metrics import (
     confusion_matrix,
     first_match_diagnostics,
     j_optimal,
     operating_curve,
 )
-from evaluation.scenarios import build_synthetic_scenarios, build_synthetic_sessions
-from learning_analytics.process_state import ProcessRegime
+from analytics.metrics.scenarios import build_synthetic_scenarios, build_synthetic_sessions
+from analytics.runtime.latency import stage_percentiles
+from analytics.runtime.process_state import ProcessRegime
+from analytics.thresholds import sensitivity_curve
+from config.config_model import LearningAnalyticsConfig
+from config.env_config_loader import load_settings
+from kit.db import async_session
+from models.learning import LearningSession
+from models.research import ExperimentMetrics
 
 _REGIMES = [
     ProcessRegime.PRODUCTIVE,
@@ -32,7 +46,6 @@ _LABELS = {
 
 def _section_ab(lines, db_metrics, cfg):
     """Section 1. A/B effect computed via compute_arm_analysis."""
-    from evaluation.arm_analysis import compute_arm_analysis
 
     r = compute_arm_analysis(db_metrics, mentor_seconds=cfg.mentor_handling_seconds)
     lines += [
@@ -70,7 +83,6 @@ def _section_ab(lines, db_metrics, cfg):
 
 async def _section_latency(lines, db):
     """Section 5. Closed-loop cycle latency."""
-    from learning_analytics.latency import stage_percentiles
 
     pct = await stage_percentiles(db, "analysis", [50, 95, 99])
     lines += [
@@ -87,10 +99,6 @@ async def _section_latency(lines, db):
 
 async def _section_help_dependence(lines, db):
     """Section 6. Help-dependence trajectory (MRT secondary endpoint)."""
-    from sqlalchemy import select
-
-    from evaluation.help_dependence import help_dependence_trajectory, is_declining
-    from models.session import LearningSession
 
     session_ids = [
         str(sid)
@@ -112,10 +120,6 @@ async def _section_help_dependence(lines, db):
 
 async def _section_retention(lines, db):
     """Section 7. Retention (opportunistic, explicitly not a result)."""
-    from sqlalchemy import select
-
-    from cohort.metrics import retention_metric
-    from models.experiment import ExperimentMetrics
 
     retests = [
         bool(flag)
@@ -143,8 +147,6 @@ async def _section_retention(lines, db):
 
 async def _section_cohort(lines, db, cfg):
     """Section 2. Cohort metrics per skill."""
-    from cohort.report import render_cohort_table
-    from cohort.service import compute_cohort_metrics
 
     horizon = cfg.cohort_horizon_days * 86400.0
     out = await compute_cohort_metrics(db, horizon_seconds=horizon, by_arm=True)
@@ -167,7 +169,6 @@ async def _section_cohort(lines, db, cfg):
 
 def _section_identifier(lines, cfg):
     """Section 3. Operating curve, confusion matrix and first-match (synthetic)."""
-    from evaluation.harness import run_identifier
 
     costs = costs_from_config(cfg)
     lines += [
@@ -228,7 +229,6 @@ def _section_identifier(lines, cfg):
 
 def _section_tk(lines, cfg):
     """Section 4. T_k sensitivity curve."""
-    from control.derive_thresholds import sensitivity_curve
 
     sessions = build_synthetic_sessions()
     grid = {"stuck_on_step": [0.0, 15.0, 30.0, 60.0, 90.0, 120.0, 150.0, 180.0, 240.0, 300.0]}
@@ -276,8 +276,6 @@ async def main():
         cfg_obj = load_settings()
         cfg = cfg_obj.learning_analytics
     except Exception:
-        from config.config_model import LearningAnalyticsConfig
-
         cfg = LearningAnalyticsConfig()
 
     lines = [
@@ -290,11 +288,6 @@ async def main():
 
     # Section order 1→2→3→4 (the logical one for the defense). Sections 1+2 require the DB.
     try:
-        from sqlalchemy import select
-
-        from db.session import async_session
-        from models.experiment import ExperimentMetrics
-
         async with async_session() as db:
             db_metrics = (await db.execute(select(ExperimentMetrics))).scalars().all()
             _section_ab(lines, db_metrics, cfg)
@@ -317,8 +310,6 @@ async def main():
 
     # Sections 5-7 need the DB; each degrades to a note rather than sinking the report.
     try:
-        from db.session import async_session
-
         async with async_session() as db:
             await _section_latency(lines, db)
             await _section_help_dependence(lines, db)

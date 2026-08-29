@@ -1,10 +1,14 @@
 error:
+  consent:
+    required: Answer the research participation question before starting a lab.
   user:
     not_found: User not found
     model_selection_denied: Model selection is not available for your account
     unknown_model: Unknown model
   session:
     not_found: Session not found
+    already_launching: This lab is already starting for you. Wait for it to finish.
+    ticket_invalid: This lab link has expired. Open the lab again from your session page.
     forbidden: You do not have permission to view this session
     limit_reached: |-
       You have reached the limit of {max} active sessions. Finish one of them before starting another.
@@ -22,6 +26,7 @@ error:
   course:
     not_found: Course not found
   progress:
+    attempt_conflict: Could not record the attempt. Try again.
     not_found: No progress found
   validation:
     spec_not_found: Lab validation spec not found

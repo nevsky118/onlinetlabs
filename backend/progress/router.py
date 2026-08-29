@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.dependencies import get_current_user
-from db.session import get_db
 from i18n import LocalizedError
+from kit.db import get_db
 from progress.schemas import (
     AllProgressResponse,
     LabProgressDetailResponse,
@@ -18,7 +18,7 @@ from progress.service import (
     start_lab,
 )
 
-router = APIRouter()
+router = APIRouter(prefix="/users/me/progress", tags=["progress"])
 
 
 @router.get("", response_model=AllProgressResponse)

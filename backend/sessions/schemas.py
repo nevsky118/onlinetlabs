@@ -4,6 +4,21 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class OkResponse(BaseModel):
+    """Acknowledgement of a command that carries no payload back."""
+
+    ok: bool = True
+
+
+class QueueStatusResponse(BaseModel):
+    """Place in a lab's queue. Position and ETA are absent when not queued."""
+
+    in_queue: bool
+    queue_depth: int
+    queue_position: int | None = None
+    eta_sec: int | None = None
+
+
 class LearningSessionCreate(BaseModel):
     """Data for creating a learning session by lab slug."""
 
@@ -34,21 +49,19 @@ class LearningSessionResponse(BaseModel):
 
 
 class LaunchResponse(BaseModel):
-    """Session launch response with GNS3 credentials and links."""
+    """Session launch response with the GNS3 links."""
 
     session_id: str
     status: str
     gns3_username: str
-    gns3_password: str
     gns3_url: str
     gns3_deep_url: str
 
 
 class CredentialsResponse(BaseModel):
-    """GNS3 credentials and links for the active session."""
+    """GNS3 links for the active session. The password never leaves the backend."""
 
     gns3_username: str
-    gns3_password: str
     gns3_url: str
     gns3_deep_url: str
 
@@ -115,6 +128,8 @@ class FullSessionStateResponse(BaseModel):
     metrics: SessionMetricsSchema
     # L2 holdout: proactive hints suppressed (unassisted near-transfer)
     no_assist: bool = Field(default=False, alias="noAssist")
+    # idle reclaim stopped the nodes, the saved configuration survives
+    paused: bool = False
 
     model_config = {"populate_by_name": True}
 

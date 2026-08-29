@@ -5,6 +5,7 @@ import json
 from urllib.parse import urlparse
 
 from i18n import Locale, t
+from validation.checks.vpcs import _drain_until_prompt, _parse_show_ip
 
 TOOL_DEFINITIONS = [
     {
@@ -62,7 +63,6 @@ ALLOWED_TOOLS = {t["function"]["name"] for t in TOOL_DEFINITIONS}
 
 async def run_vpcs_show_ip(node_name: str, ctx, mcp_client, locale: Locale) -> dict:
     """Connects via telnet to the VPCS console and runs show ip."""
-    from validation.checks.vpcs import _drain_until_prompt, _parse_show_ip
 
     components = await mcp_client.list_components(ctx)
     node = next((c for c in components if c.name == node_name and c.type == "vpcs"), None)

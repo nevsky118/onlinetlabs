@@ -8,7 +8,9 @@ from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
 from auth.dependencies import can_view_session_activity, decode_backend_token, verify_jwt_for_ws
 from config import settings
-from db.session import async_session
+from kit.db import async_session
+from models.learning import LearningSession
+from sessions.activity import touch_session
 from sessions.service import get_session
 from sessions.ws import (
     forward_session_events,
@@ -18,7 +20,7 @@ from sessions.ws import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(prefix="/users/me/sessions", tags=["sessions"])
 
 
 @router.websocket("/ws/sessions/{session_id}")
@@ -36,6 +38,8 @@ async def session_interventions_ws(websocket: WebSocket, session_id: str, token:
 
     async with async_session() as db:
         session = await get_session(db, session_id, user_id)
+        if session is not None:
+            await touch_session(db, session_id, user_id)
     if session is None:
         await websocket.close(code=4404)
         return
@@ -71,6 +75,8 @@ async def session_events_ws(
 
     async with async_session() as db:
         session = await get_session(db, session_id, user["id"])
+        if session is not None:
+            await touch_session(db, session_id, user["id"])
     if session is None:
         await websocket.close(code=4404)
         return
@@ -110,8 +116,6 @@ async def session_activity_observe_ws(
         await websocket.close(code=4401)
         return
     async with async_session() as db:
-        from models.session import LearningSession
-
         session = await db.get(LearningSession, session_id)
     if session is None or not can_view_session_activity(user, session):
         await websocket.close(code=4403)

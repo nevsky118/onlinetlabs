@@ -2,7 +2,7 @@
 
 from i18n import Locale, resolve_localized
 from labs.schemas import LabDetailResponse, LabResponse, LabStepResponse
-from models.lab import Lab
+from models.catalog import Lab
 
 
 def to_lab_response(lab: Lab, locale: Locale) -> LabResponse:

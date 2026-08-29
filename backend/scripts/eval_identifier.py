@@ -2,16 +2,18 @@
 
 import asyncio
 
-from config.env_config_loader import load_settings
-from control.criterion import costs_from_config
-from evaluation.metrics import (
+from analytics.criterion import costs_from_config
+from analytics.metrics.harness import run_identifier
+from analytics.metrics.metrics import (
     confusion_matrix,
     first_match_diagnostics,
     j_optimal,
     operating_curve,
 )
-from evaluation.scenarios import build_synthetic_scenarios
-from learning_analytics.process_state import ProcessRegime
+from analytics.metrics.scenarios import build_synthetic_scenarios, is_normal
+from analytics.runtime.process_state import ProcessRegime
+from config.config_model import LearningAnalyticsConfig
+from config.env_config_loader import load_settings
 
 # Regime order for the 5×5 matrix
 _REGIMES = [
@@ -34,8 +36,6 @@ _LABELS = {
 
 def _per_type_recall(pairs, curve_t_k, config) -> dict[ProcessRegime, float]:
     """Recall for each type at the given T_k."""
-    from evaluation.harness import run_identifier
-    from evaluation.scenarios import is_normal
 
     type_tp: dict[ProcessRegime, int] = {}
     type_n: dict[ProcessRegime, int] = {}
@@ -62,8 +62,6 @@ async def main():
         settings = load_settings()
         cfg = settings.learning_analytics
     except Exception:
-        from config.config_model import LearningAnalyticsConfig
-
         cfg = LearningAnalyticsConfig()
 
     costs = costs_from_config(cfg)
@@ -82,7 +80,6 @@ async def main():
     best = j_optimal(curve)
 
     # Matrix and recall at the J-optimal T_k
-    from evaluation.harness import run_identifier
 
     pairs_best = [(scn, run_identifier(scn, best.t_k, cfg)) for scn in scns]
     cm = confusion_matrix(pairs_best)

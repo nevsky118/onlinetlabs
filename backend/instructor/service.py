@@ -2,21 +2,26 @@
 
 Hints are counted as behavioral events with event_type='intervention'; that's
 how the learning session monitor logs interventions delivered to the student
-(see learning_analytics/monitor.py).
+(see analytics/runtime/monitor.py).
 """
+
+from datetime import datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from i18n import DEFAULT_LOCALE, resolve_localized
-from models.behavioral_event import BehavioralEvent
-from models.chat_message import ChatMessage
-from models.lab import Lab
-from models.progress import LabProgress, StepAttempt
-from models.session import LearningSession
-from models.user import User
+from models.audit import MCPAudit
+from models.catalog import Lab
+from models.identity import User
+from models.learning import ChatMessage, LabProgress, LearningSession, StepAttempt
+from models.research import BehavioralEvent
 
 HINT_EVENT_TYPE = "intervention"
+
+# the table grows ~33 rows a minute per active session
+MCP_AUDIT_PAGE = 100
+MCP_AUDIT_MAX_PAGE = 500
 
 
 def _avg(scores: list[float]) -> float | None:
@@ -279,3 +284,35 @@ async def build_session_timeline(db: AsyncSession, session_id: str) -> list[dict
 
     items.sort(key=lambda x: x["ts"])
     return items
+
+
+async def get_mcp_audit(
+    db: AsyncSession,
+    *,
+    session_id: str | None = None,
+    kind: str | None = None,
+    before: datetime | None = None,
+    limit: int = MCP_AUDIT_PAGE,
+) -> list[MCPAudit]:
+    """MCP calls, newest first, always bounded.
+
+    Page backwards by passing the `ts` of the last row as `before`.
+    """
+    q = select(MCPAudit).order_by(MCPAudit.ts.desc(), MCPAudit.id.desc()).limit(limit)
+    if session_id is not None:
+        q = q.where(MCPAudit.session_id == session_id)
+    if kind is not None:
+        q = q.where(MCPAudit.kind == kind)
+    if before is not None:
+        q = q.where(MCPAudit.ts < before)
+    return list((await db.execute(q)).scalars().all())
+
+
+async def get_student_session(
+    db: AsyncSession, user_id: str, session_id: str
+) -> LearningSession | None:
+    """The session, only if it belongs to that student."""
+    session = (
+        await db.execute(select(LearningSession).where(LearningSession.id == session_id))
+    ).scalar_one_or_none()
+    return session if session is not None and session.user_id == user_id else None

@@ -6,9 +6,9 @@ from datetime import datetime
 
 from sqlalchemy import delete, select
 
-from models.agent_activity_event import AgentActivityEventRow
-from observability.models import AgentActivityEvent
+from models.audit import AgentActivityEventRow
 from observability.redact import redact
+from observability.schemas import AgentActivityEvent
 
 logger = logging.getLogger(__name__)
 

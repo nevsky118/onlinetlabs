@@ -6,7 +6,7 @@ is_simulated sessions (session-level firewall), marked as simulation.
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.regime_annotation import RegimeAnnotation
+from models.research import RegimeAnnotation
 
 SIM_TRUTH_CODER = "sim-truth"
 

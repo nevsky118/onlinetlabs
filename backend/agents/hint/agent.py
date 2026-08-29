@@ -4,7 +4,7 @@ import logging
 
 from agents._shared import format_failing_check, language_directive
 from agents.base import BaseAgent
-from agents.hint.models import HintInput, HintResponse
+from agents.hint.schemas import HintInput, HintResponse
 from agents.hint.tools import HintTools
 from config.config_model import ConfigModel
 from i18n import Locale, t

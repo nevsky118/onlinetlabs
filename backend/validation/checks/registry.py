@@ -1,5 +1,6 @@
 """Registry of check handlers: kind -> async callable."""
 
+import importlib
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any
@@ -46,12 +47,24 @@ class CheckContext:
         node = self.nodes_by_name.get(name)
         if not node:
             return self.gns3_host
-        host = node.get("console_host") or ""
+        host = node.get("console_host") or node.get("consoleHost") or ""
         # GNS3 returns "0.0.0.0" as the listening address inside the container,
         # which is useless for outbound TCP connections. Fall back to gns3_host.
         if not host or host in ("0.0.0.0", "::"):
             return self.gns3_host
         return host
+
+    def node_type(self, name: str) -> str:
+        """Node type by name. gns3-service sends snake_case, the API layer camelCase."""
+        node = self.nodes_by_name.get(name)
+        if not node:
+            return ""
+        return node.get("node_type") or node.get("nodeType") or ""
+
+    def node_status(self, name: str) -> str:
+        """Node run state by name."""
+        node = self.nodes_by_name.get(name)
+        return (node or {}).get("status") or ""
 
     def node_id(self, name: str) -> str | None:
         """Return the node's id by name. None if the node doesn't exist."""
@@ -78,7 +91,6 @@ def _bootstrap() -> None:
     global _BOOTSTRAPPED
     if _BOOTSTRAPPED:
         return
-    import importlib
 
     vpcs = importlib.import_module("validation.checks.vpcs")
     frr = importlib.import_module("validation.checks.frr")
@@ -87,6 +99,7 @@ def _bootstrap() -> None:
     register("vpcs.show_ip", vpcs.vpcs_show_ip)
     register("vpcs.ping", vpcs.vpcs_ping)
     register("vpcs.ip_in_subnet", vpcs.vpcs_ip_in_subnet)
+    register("vpcs.ping_node", vpcs.vpcs_ping_node)
     register("frr.ospf_neighbor", frr.frr_ospf_neighbor)
     register("frr.route_in_table", frr.frr_route_in_table)
     register("cisco.ospf_neighbor", cisco.cisco_ospf_neighbor)

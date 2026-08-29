@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-from cohort.metrics import CohortCell
+from analytics.cohort.metrics import CohortCell
 
 
 class MCPAuditRow(BaseModel):

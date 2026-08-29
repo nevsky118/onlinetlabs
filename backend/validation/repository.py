@@ -6,7 +6,7 @@ from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.validation_run import ValidationRun
+from models.learning import ValidationRun
 
 
 async def list_for_session(

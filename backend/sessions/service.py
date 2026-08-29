@@ -24,9 +24,9 @@ from sessions.services.query import (
     get_active_session,
     get_owned_session,
     get_session,
-    get_session_state,
     get_user_sessions,
 )
+from sessions.services.state import get_session_state
 
 __all__ = [
     "MAX_CONCURRENT_SESSIONS_PER_USER",

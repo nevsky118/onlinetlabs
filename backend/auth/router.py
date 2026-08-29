@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from fastapi import Request as FastAPIRequest
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +11,7 @@ from auth.dependencies import (
 )
 from auth.schemas import (
     ActivateRequest,
+    ActivationResponse,
     ExchangeRequest,
     GitHubCallbackRequest,
     LoginRequest,
@@ -20,18 +21,19 @@ from auth.schemas import (
 )
 from auth.service import (
     create_user,
-    delete_user,
     get_user_by_email,
     hash_password_async,
     upsert_github_user,
     verify_password_async,
 )
 from config import settings
-from db.session import get_db
 from i18n import LocalizedError
-from rate_limit import exchange_rate_limit_key, limiter
+from kit.db import get_db
+from kit.rate_limit import exchange_rate_limit_key, limiter
+from models.identity import User
+from users.data_export import erase_subject
 
-router = APIRouter()
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -115,7 +117,7 @@ async def exchange(
     """
     user = await get_user_by_email(db, req.email)
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+        raise LocalizedError("error.user.not_found", status_code=status.HTTP_401_UNAUTHORIZED)
 
     can_select = may_select_model(
         user.role, user.can_select_model, settings.agents.selectable_roles
@@ -139,10 +141,11 @@ async def delete_user_endpoint(
     db: AsyncSession = Depends(get_db),
     _: dict = Depends(require_admin),
 ):
-    """Deletes a user by id (admin only). Returns 404 if not found."""
-    deleted = await delete_user(db, user_id)
-    if not deleted:
+    """Deletes a user by id and all their data (admin only). 404 if not found."""
+
+    if await db.get(User, user_id) is None:
         raise LocalizedError("error.user.not_found", status_code=status.HTTP_404_NOT_FOUND)
+    await erase_subject(db, user_id)
 
 
 @router.post("/github-callback", response_model=UserResponse)
@@ -168,7 +171,7 @@ async def github_callback(
     )
 
 
-@router.post("/activate", status_code=200)
+@router.post("/activate", status_code=200, response_model=ActivationResponse)
 async def activate(
     req: ActivateRequest,
     db: AsyncSession = Depends(get_db),
@@ -177,7 +180,7 @@ async def activate(
     """Activates a user's account by email. Server-to-server only."""
     user = await get_user_by_email(db, req.email)
     if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise LocalizedError("error.user.not_found", status_code=status.HTTP_404_NOT_FOUND)
     user.is_active = True
     await db.commit()
-    return {"email": req.email, "is_active": True}
+    return ActivationResponse(email=req.email, is_active=True)

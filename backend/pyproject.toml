@@ -56,12 +56,13 @@ select = ["E", "W", "F", "I", "UP", "B", "C4", "SIM", "ASYNC", "DTZ", "T20", "RU
 ignore = [
     "E501", "B008", "RUF001", "RUF002", "RUF003",
     # Ratchet backlog: pre-existing violations, fix incrementally then re-enable.
-    "E402", "SIM117", "SIM105", "C408", "C416", "B904", "B905",
+    "SIM117", "SIM105", "C408", "C416", "B904", "B905",
     "RUF059", "RUF012", "RUF005", "RUF006", "ASYNC109", "F841", "T201",
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "ARG", "PLR2004", "T20", "B017"]
+# conftest sets the environment before importing anything that reads it
+"tests/**" = ["S101", "ARG", "PLR2004", "T20", "B017", "E402"]
 "scripts/**" = ["T20"]
 
 [tool.ruff.lint.pyupgrade]

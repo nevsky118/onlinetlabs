@@ -12,10 +12,35 @@ reproducibility bundle.
 
 import argparse
 import asyncio
-from datetime import UTC
+import asyncio as _asyncio
+from datetime import UTC, datetime, timedelta
+from uuid import uuid4
 
+from sqlalchemy import select
+
+from agents.orchestrator.agent import Orchestrator
+from chat.persistence import save_assistant_message, save_user_message
+from clients.gns3 import Gns3ServiceClient
+from clients.llm import build_client, model_uri
+from clients.mcp import MCPClient
+from config import settings
+from consent.consent import grant as grant_consent
+from kit.db import async_session
+from models.catalog import Lab
+from models.learning import LabProgress, LearningSession
+from observability.activity import AgentActivityLog
+from sessions.context import build_session_context
+from sessions.monitor_registry import SessionMonitorRegistry
+from sessions.queue import _get_or_create_singleton as _get_or_create_queue
+from sessions.service import launch_session
+from sessions.services.lifecycle import end_lab, end_session
+from sessions.ws import WebSocketGateway
+from simulation.env.gns3_actor import GNS3Actor
 from simulation.ground_truth import record_truth
+from simulation.help_text import HelpTextGen
+from simulation.lab_config import build_node_tasks
 from simulation.orchestrator import run_cohort
+from validation.runner import load_lab_spec
 
 # YandexGPT price (rub/1k tokens), verify against the current rate; budget 500 rub.
 _PRICE_PER_1K_RUB = 1.20
@@ -31,7 +56,6 @@ _CONSOLE_WARMUP_SEC = 6.0
 
 async def _build_deps():
     """Live app dependencies (1:1 with main.py lifespan)."""
-    from config import settings
 
     # MRT-track instruments are off by default (gated-off). The sim exists to
     # exercise them: enable decision-log/evidence/latency on the live loop.
@@ -48,13 +72,6 @@ async def _build_deps():
     # is the baseline snapshot). At the 25s default a compressed sim session never reaches
     # a second cycle, so spec checks never turn into check_failing and the detector goes blind.
     settings.learning_analytics.progress_poll_interval = 6.0
-    from agents.orchestrator.agent import Orchestrator
-    from db.session import async_session
-    from gns3_service_client import Gns3ServiceClient
-    from mcp_client.client import MCPClient
-    from observability.activity import AgentActivityLog
-    from sessions.monitor_registry import SessionMonitorRegistry
-    from sessions.ws import WebSocketGateway
 
     mcp_client = MCPClient(settings.mcp.server_url)
     gateway = WebSocketGateway()
@@ -86,17 +103,6 @@ def _console_host(node: dict) -> str:
 
 
 def _make_provision(settings, gns3_client, monitor_registry, lab_slug, tutor_reply):
-    from chat.persistence import save_assistant_message, save_user_message
-    from control_interface.consent import grant as grant_consent
-    from db.session import async_session
-    from sessions.context import build_session_context
-    from sessions.queue import _get_or_create_singleton as _get_or_create_queue
-    from sessions.service import launch_session
-    from simulation.env.gns3_actor import GNS3Actor
-    from simulation.help_text import HelpTextGen
-    from simulation.lab_config import build_node_tasks
-    from validation.runner import load_lab_spec
-
     async def provision(profile, seed, user_id):
         # The sim user must have study-consent, otherwise the seam cuts observe → empty pipeline.
         async with async_session() as db:
@@ -174,14 +180,6 @@ def _make_finalize(lab_slug, l2_lab, gns3_client, monitor_registry, settle_sec: 
     L2 pass is modelled from the student's skill alone, with no arm effect baked
     in, so the arms come out roughly equal: an honest null, not a seeded A/B.
     """
-    from datetime import datetime
-    from uuid import uuid4
-
-    from db.session import async_session
-    from models.progress import LabProgress
-    from models.session import LearningSession
-    from sessions.services.lifecycle import end_lab, end_session
-    from validation.runner import load_lab_spec
 
     def _total(slug):
         spec = load_lab_spec(slug)
@@ -210,8 +208,6 @@ def _make_finalize(lab_slug, l2_lab, gns3_client, monitor_registry, settle_sec: 
         return completed
 
     async def finalize(session_id, user_id, profile, state):
-        from datetime import timedelta
-
         now = datetime.now(UTC)
         # Timestamps: L1 before L2, positive duration within the cohort's horizon.
         l1_start, l1_end = now - timedelta(minutes=14), now - timedelta(minutes=9)
@@ -259,9 +255,6 @@ def _make_tutor_reply(settings, lab_slug):
     same answer verbatim, and the dialogue looped. A live tutor escalates gradually:
     first clarifying, then hinting, and only then giving specifics (like HintAgent's levels).
     """
-    import asyncio as _asyncio
-
-    from core.llm.client import build_client, model_uri
 
     model = settings.agents.chat_model
 
@@ -334,10 +327,6 @@ def _make_tutor_reply(settings, lab_slug):
 
 async def _find_l2_pair(lab_slug):
     """Another enabled lab with the same skill (meta.skill) → near-transfer L2. None if no pair."""
-    from sqlalchemy import select
-
-    from db.session import async_session
-    from models.lab import Lab
 
     async with async_session() as db:
         l1 = await db.get(Lab, lab_slug)
@@ -352,8 +341,6 @@ async def _find_l2_pair(lab_slug):
 
 
 async def _run(args) -> None:
-    from db.session import async_session
-
     def db_factory():
         return async_session()
 

@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.dependencies import require_admin, require_internal_caller
-from db.session import get_db
-from deps import get_locale
 from i18n import Locale, LocalizedError
+from kit.db import get_db
+from kit.deps import get_locale
 from labs.schemas import (
     LabCreate,
     LabDetailResponse,
@@ -15,8 +15,8 @@ from labs.schemas import (
 from labs.serializers import to_lab_detail_response, to_lab_response
 from labs.service import create_lab, delete_lab, get_all_labs, get_lab_by_slug, set_lab_template
 
-router = APIRouter()
-internal_router = APIRouter()
+router = APIRouter(prefix="/labs", tags=["labs"])
+internal_router = APIRouter(prefix="/internal", tags=["internal"])
 
 
 @router.get("", response_model=list[LabResponse])

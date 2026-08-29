@@ -1,31 +1,32 @@
-from datetime import datetime
+"""Account endpoints: preferences, login sessions, subject data."""
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
-from sqlalchemy import delete, select
 
 from auth.dependencies import get_current_user
-from config import settings
-from db.session import get_db
-from i18n import LocalizedError
-from models.user import Session, User
+from kit.db import get_db
+from users.data_export import collect_subject_data, erase_subject
+from users.schemas import (
+    ErasureResponse,
+    PreferencesResponse,
+    PreferencesUpdate,
+    RevokeResponse,
+    SessionsResponse,
+)
+from users.service import (
+    get_preferences,
+    list_login_sessions,
+    revoke_all_login_sessions,
+    revoke_login_session,
+    set_default_model,
+)
 
-router = APIRouter()
-
-
-class PreferencesResponse(BaseModel):
-    default_model_id: str | None
-
-
-class PreferencesUpdate(BaseModel):
-    default_model_id: str | None = None
+router = APIRouter(prefix="/users/me", tags=["users"])
 
 
 @router.get("/preferences", response_model=PreferencesResponse)
-async def get_preferences(current_user=Depends(get_current_user), db=Depends(get_db)):
-    user = await db.get(User, current_user["id"])
-    if user is None:
-        raise LocalizedError("error.user.not_found", status_code=404)
+async def read_preferences(current_user=Depends(get_current_user), db=Depends(get_db)):
+    """The caller's account preferences."""
+    user = await get_preferences(db, current_user["id"])
     return PreferencesResponse(default_model_id=user.default_model_id)
 
 
@@ -35,49 +36,24 @@ async def update_preferences(
     current_user=Depends(get_current_user),
     db=Depends(get_db),
 ):
-    user = await db.get(User, current_user["id"])
-    if user is None:
-        raise LocalizedError("error.user.not_found", status_code=404)
-    if "default_model_id" in body.model_fields_set:
-        val = body.default_model_id
-        if val is not None:
-            if not current_user.get("can_select", False):
-                raise LocalizedError("error.user.model_selection_denied", status_code=403)
-            if settings.agents.get_entry(val) is None:
-                raise LocalizedError("error.user.unknown_model", status_code=422)
-            user.default_model_id = val
-        else:
-            user.default_model_id = None  # clear
-        await db.commit()
-        await db.refresh(user)
+    """Updates only the fields the caller actually sent."""
+    if "default_model_id" not in body.model_fields_set:
+        user = await get_preferences(db, current_user["id"])
+    else:
+        user = await set_default_model(
+            db,
+            current_user["id"],
+            body.default_model_id,
+            can_select=current_user.get("can_select", False),
+        )
     return PreferencesResponse(default_model_id=user.default_model_id)
-
-
-class SessionItem(BaseModel):
-    id: str
-    expires: datetime
-    current: bool = False
-    model_config = {"from_attributes": True}
-
-
-class SessionsResponse(BaseModel):
-    sessions: list[SessionItem]
-    count: int
-
-
-class RevokeResponse(BaseModel):
-    revoked: int
 
 
 # Login sessions. Path must stay distinct from /users/me/sessions, owned by sessions_router.
 @router.get("/auth-sessions", response_model=SessionsResponse)
 async def list_auth_sessions(current_user=Depends(get_current_user), db=Depends(get_db)):
-    result = await db.execute(
-        select(Session)
-        .where(Session.user_id == current_user["id"])
-        .order_by(Session.expires.desc())
-    )
-    sessions = result.scalars().all()
+    """Every login session the caller holds."""
+    sessions = await list_login_sessions(db, current_user["id"])
     return SessionsResponse(sessions=sessions, count=len(sessions))
 
 
@@ -87,22 +63,23 @@ async def revoke_auth_session(
     current_user=Depends(get_current_user),
     db=Depends(get_db),
 ):
-    result = await db.execute(
-        select(Session).where(
-            Session.id == session_id,
-            Session.user_id == current_user["id"],
-        )
-    )
-    session = result.scalar_one_or_none()
-    if session is None:
-        raise LocalizedError("error.session.not_found", status_code=404)
-    await db.delete(session)
-    await db.commit()
-    return RevokeResponse(revoked=1)
+    """Revokes one login session."""
+    return RevokeResponse(revoked=await revoke_login_session(db, current_user["id"], session_id))
 
 
 @router.delete("/auth-sessions", response_model=RevokeResponse)
 async def revoke_all_auth_sessions(current_user=Depends(get_current_user), db=Depends(get_db)):
-    result = await db.execute(delete(Session).where(Session.user_id == current_user["id"]))
-    await db.commit()
-    return RevokeResponse(revoked=result.rowcount)
+    """Revokes every login session the caller holds."""
+    return RevokeResponse(revoked=await revoke_all_login_sessions(db, current_user["id"]))
+
+
+@router.get("/data")
+async def export_my_data(current_user=Depends(get_current_user), db=Depends(get_db)):
+    """Everything the platform holds about the caller, table by table."""
+    return await collect_subject_data(db, current_user["id"])
+
+
+@router.delete("/data", response_model=ErasureResponse)
+async def erase_my_data(current_user=Depends(get_current_user), db=Depends(get_db)):
+    """Erases the caller's data and their account."""
+    return ErasureResponse(removed=await erase_subject(db, current_user["id"]))

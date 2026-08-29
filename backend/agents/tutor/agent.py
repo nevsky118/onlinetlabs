@@ -4,7 +4,7 @@ import logging
 
 from agents._shared import format_failing_check, language_directive
 from agents.base import BaseAgent
-from agents.tutor.models import TutorInput, TutorResponse
+from agents.tutor.schemas import TutorInput, TutorResponse
 from i18n import Locale, t
 
 logger = logging.getLogger(__name__)

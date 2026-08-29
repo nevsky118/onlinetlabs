@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel
 
-from models.user import UserRole
+from models.identity import UserRole
 
 
 class OverviewAb(BaseModel):
@@ -111,6 +111,8 @@ class AdminLabUpdate(BaseModel):
 class AdminDataResponse(BaseModel):
     items: list[dict]
     total: int
+    # False when the row count was capped rather than counted to the end
+    total_is_exact: bool = True
     page: int
     page_size: int
     columns: list[str]
@@ -140,3 +142,9 @@ class LabsReadiness(BaseModel):
 
     ok: bool
     problems: list[LabProblemOut]
+
+
+class TemplateBuildStatus(BaseModel):
+    """Where a lab's GNS3 template build currently stands."""
+
+    status: str

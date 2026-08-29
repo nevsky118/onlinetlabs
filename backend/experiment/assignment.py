@@ -9,7 +9,9 @@ from enum import Enum
 
 from sqlalchemy import select
 
-from models.user import User
+from models.catalog import Lab
+from models.identity import User
+from models.learning import LabProgress
 
 
 class ControlArm(str, Enum):
@@ -50,8 +52,6 @@ async def resolve_control_arm(db, user_id) -> ControlArm:
 
 async def is_l2_session(db, user_id: str, lab_slug: str) -> bool:
     """True if the user has already completed another lab of the same skill (L2 holdout)."""
-    from models.lab import Lab
-    from models.progress import LabProgress
 
     current = (await db.execute(select(Lab).where(Lab.slug == lab_slug))).scalar_one_or_none()
     skill = skill_tag(current) if current else None

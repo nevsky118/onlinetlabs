@@ -6,17 +6,26 @@ import re
 import uuid
 from dataclasses import dataclass
 
-from models.agent_activity_event import AgentActivityEventRow
-from models.behavioral_event import BehavioralEvent
-from models.chat_message import ChatMessage
-from models.consent import Consent
-from models.experiment import ExperimentMetrics
-from models.mcp_audit import MCPAudit
-from models.platform_event import PlatformEvent
-from models.process_state_sample import ProcessStateSample
-from models.progress import CourseProgress, LabProgress, StepAttempt
-from models.session import LearningSession
-from models.validation_run import ValidationRun
+from models.audit import AgentActivityEventRow, Consent, MCPAudit, PlatformEvent
+from models.identity import StudyParticipant
+from models.learning import (
+    ChatMessage,
+    CourseProgress,
+    LabProgress,
+    LearningSession,
+    StepAttempt,
+    ValidationRun,
+)
+from models.research import (
+    BehavioralEvent,
+    CycleLatencySample,
+    ExperimentMetrics,
+    GroundingComparison,
+    InterventionDecision,
+    ProcessStateSample,
+    RegimeAnnotation,
+    SessionEvidenceSnapshot,
+)
 
 SECRET_RE = re.compile(r"(token|secret|key|jwt|password)", re.I)
 
@@ -282,6 +291,76 @@ ADMIN_TABLES: dict[str, TableSpec] = {
         ],
         masked=set(),
         default_sort="created_at",
+    ),
+    "intervention_decisions": TableSpec(
+        model=InterventionDecision,
+        columns=[
+            "id",
+            "session_id",
+            "user_id",
+            "lab_slug",
+            "spell_id",
+            "ts",
+            "regime",
+            "dwell_seconds",
+            "t_k_applied",
+            "assignment",
+            "subsequent_exit_ts",
+            "censored",
+            "created_at",
+        ],
+        sortable={"id", "ts", "user_id", "session_id", "regime"},
+        searchable=["id", "user_id", "session_id", "lab_slug", "regime", "assignment"],
+        masked=set(),
+        default_sort="ts",
+    ),
+    "session_evidence_snapshots": TableSpec(
+        model=SessionEvidenceSnapshot,
+        columns=["id", "session_id", "user_id", "lab_slug", "ts", "kind", "payload", "created_at"],
+        sortable={"id", "ts", "user_id", "session_id", "kind"},
+        searchable=["id", "user_id", "session_id", "lab_slug", "kind"],
+        masked=set(),
+        default_sort="ts",
+    ),
+    "regime_annotations": TableSpec(
+        model=RegimeAnnotation,
+        columns=[
+            "id",
+            "session_id",
+            "coder_id",
+            "window_index",
+            "regime_label",
+            "is_gold",
+            "created_at",
+        ],
+        sortable={"id", "created_at", "session_id", "regime_label"},
+        searchable=["id", "session_id", "coder_id", "regime_label"],
+        masked=set(),
+        default_sort="created_at",
+    ),
+    "grounding_comparisons": TableSpec(
+        model=GroundingComparison,
+        columns=["id", "session_id", "grounded_text", "ungrounded_text", "ts", "created_at"],
+        sortable={"id", "ts", "session_id"},
+        searchable=["id", "session_id"],
+        masked=set(),
+        default_sort="ts",
+    ),
+    "cycle_latency_samples": TableSpec(
+        model=CycleLatencySample,
+        columns=["id", "session_id", "stage", "duration_ms", "ts", "created_at"],
+        sortable={"id", "ts", "session_id", "stage"},
+        searchable=["id", "session_id", "stage"],
+        masked=set(),
+        default_sort="ts",
+    ),
+    "study_participants": TableSpec(
+        model=StudyParticipant,
+        columns=["id", "user_id", "pseudonym", "enrolled_at", "withdrawn_at"],
+        sortable={"id", "enrolled_at", "user_id"},
+        searchable=["id", "user_id", "pseudonym"],
+        masked=set(),
+        default_sort="enrolled_at",
     ),
 }
 

@@ -326,6 +326,32 @@ class SecurityConfig(BaseModel):
     )
 
 
+# Regimes an intervention may respond to. Config validates against it, the
+# control law reads it.
+BAD_REGIMES = frozenset({"stuck_on_step", "repeating_errors", "idle", "trial_and_error"})
+
+
+class CapacityConfig(BaseModel):
+    """Concurrency limits, sized to the machine rather than to a constant."""
+
+    global_cap: int = Field(default=6, ge=1, description="Concurrent sessions across all labs")
+    per_lab_caps: dict[str, int] = Field(
+        default_factory=dict, description="Per-lab session cap; falls back to global_cap"
+    )
+    max_sessions_per_user: int = Field(
+        default=2, ge=1, description="Concurrent sessions one learner may hold"
+    )
+    session_max_hours: float = Field(
+        default=12.0, gt=0, description="Session lifetime before the reaper ends it (hours)"
+    )
+    queue_ttl_seconds: int = Field(
+        default=900, ge=60, description="Expiry of a lab's waiting queue in Redis (sec)"
+    )
+    mcp_audit_retention_days: int = Field(
+        default=90, ge=1, description="Age at which the retention sweep drops mcp_audit rows"
+    )
+
+
 class ObservabilityConfig(BaseModel):
     """Observability configuration: event retention, viewer roles."""
 
@@ -346,3 +372,4 @@ class ConfigModel(BaseModel):
     mcp: MCPConfig
     security: SecurityConfig
     observability: ObservabilityConfig = Field(default_factory=ObservabilityConfig)
+    capacity: CapacityConfig = Field(default_factory=CapacityConfig)

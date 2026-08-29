@@ -1,15 +1,14 @@
 """Validation service layer. Owner-guards the session, runs the runner, records the result."""
 
 from collections.abc import AsyncIterator
-from urllib.parse import urlparse
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from gns3_service_client import Gns3ServiceClient
+from clients.gns3 import Gns3ServiceClient
 from i18n import DEFAULT_LOCALE, negotiate
 from progress.service import record_lab_validation
 from sessions.services.query import get_owned_session
-from validation.checks.registry import CheckContext
+from validation.checks.context import build_check_context
 from validation.repository import create_run, finish_run
 from validation.runner import load_lab_spec, run_validation
 from validation.stream import Event
@@ -39,22 +38,6 @@ class GNS3SessionMissing(ValidationError):
     pass
 
 
-def _gns3_host_from_settings(settings) -> str:
-    """Determine the GNS3 host for outbound connections from settings."""
-    gns3 = getattr(settings, "gns3", None)
-    if gns3 is not None:
-        node_host = getattr(gns3, "node_host", "") or ""
-        if node_host:
-            return node_host
-        for attr in ("internal_url", "public_url"):
-            url = getattr(gns3, attr, "") or ""
-            if url:
-                host = urlparse(url).hostname or ""
-                if host and host not in ("gns3-server",):
-                    return host
-    raise ValueError("cannot derive GNS3 node host from settings")
-
-
 async def prepare_validation(
     db: AsyncSession,
     session_id: str,
@@ -79,19 +62,6 @@ async def prepare_validation(
         raise GNS3SessionMissing(session_id)
 
     return spec, gns3_sid
-
-
-async def build_check_context(gns3_client, gns3_sid: str, settings) -> CheckContext:
-    """GNS3 session state -> CheckContext for running checks."""
-    state = await gns3_client.get_state(gns3_sid)
-    nodes = state.get("nodes") or []
-    nodes_by_name = {n.get("name"): n for n in nodes if n.get("name")}
-    return CheckContext(
-        gns3_host=_gns3_host_from_settings(settings),
-        nodes_by_name=nodes_by_name,
-        gns3_project_id=state.get("project_id", ""),
-        frr_client=gns3_client,
-    )
 
 
 async def stream_validation(

@@ -3,8 +3,8 @@
 from mcp_sdk.context import SessionContext
 
 from config import settings
-from models.session import LearningSession
-from security.secrets import decrypt_secret
+from kit.secrets import decrypt_secret
+from models.learning import LearningSession
 
 
 def build_session_context(session: LearningSession) -> SessionContext:

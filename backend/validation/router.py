@@ -1,14 +1,15 @@
 """POST /labs/{slug}/sessions/{sid}/validate (SSE validation stream)."""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.dependencies import get_current_user
 from config import settings
-from db.session import get_db
-from deps import get_gns3_client
 from i18n import LocalizedError
+from kit.db import get_db
+from kit.deps import get_gns3_client
+from kit.rate_limit import limiter
 from validation.service import (
     GNS3SessionMissing,
     LabSpecNotFound,
@@ -17,11 +18,13 @@ from validation.service import (
     stream_validation,
 )
 
-router = APIRouter()
+router = APIRouter(prefix="/labs", tags=["validation"])
 
 
 @router.post("/{slug}/sessions/{sid}/validate")
+@limiter.limit("20/minute")
 async def validate_lab(
+    request: Request,
     slug: str,
     sid: str,
     current_user: dict = Depends(get_current_user),

@@ -4,13 +4,16 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.dependencies import get_current_user
-from db.session import get_db
 from i18n import LocalizedError
+from kit.db import get_db
+from sessions.activity import touch_path_session
 from sessions.services.query import get_owned_session
 from validation.repository import get_one, list_for_session
 from validation.schemas import ValidationRunDetail, ValidationRunListItem
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/sessions", tags=["validation"], dependencies=[Depends(touch_path_session)]
+)
 
 
 def _count_checks(steps: list) -> tuple[int, int]:

@@ -2,15 +2,15 @@
 
 import logging
 
-from agents.orchestrator.models import (
+from agents.orchestrator.router import resolve_agent
+from agents.orchestrator.schemas import (
     InterventionInput,
     OrchestratorInput,
     OrchestratorResponse,
 )
-from agents.orchestrator.router import resolve_agent
 from agents.registry import AGENT_REGISTRY
+from clients.llm import resolve_model
 from config.config_model import ConfigModel
-from core.llm.client import resolve_model
 
 logger = logging.getLogger(__name__)
 

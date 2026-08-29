@@ -1,131 +1,44 @@
 import asyncio
 import logging
-import os
 from contextlib import asynccontextmanager
 
-import httpx
-import redis.asyncio as aioredis
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
-from sqlalchemy import text
 
-from config import settings
-from observability.logging import configure_logging
-from observability.metrics import configure_metrics
-from observability.sentry import configure_sentry
-
-configure_logging(
-    "backend",
-    level=getattr(getattr(settings, "log", None), "log_level", "INFO"),
-    environment=getattr(getattr(settings, "api", None), "environment", "production"),
-)
-configure_sentry("backend", environment=os.getenv("ENVIRONMENT", "dev"))
-
-from admin.router import router as admin_router
+import api
 from agents.orchestrator.agent import Orchestrator
-from auth.router import router as auth_router
-from chat.router import router as chat_router
-from control_interface.router import router as consent_router
-from core.middleware.request_id import RequestIDMiddleware
-from courses.router import router as courses_router
-from db.session import async_session
-from escalation.router import router as escalation_router
-from experiment.router import router as experiment_router
-from gns3_service_client import Gns3ServiceClient
+from clients.gns3 import Gns3ServiceClient
+from clients.mcp import MCPClient
+from config import settings
 from i18n import LocalizedError, localized_error_handler, negotiate, t, validate_catalogs
-from instructor.router import router as instructor_router
-from labs.router import internal_router as labs_internal_router
-from labs.router import router as labs_router
-from mcp_client.client import MCPClient
+from kit.db import async_session
+from kit.middleware import RequestIDMiddleware
+from kit.rate_limit import limiter
+from kit.redis import redis_client
+from labs.service import log_lab_problems
 from observability.activity import AgentActivityLog
-from progress.router import router as progress_router
-from rate_limit import limiter
-from sessions.idle_reclaim import idle_reclaim_loop
+from observability.bootstrap import bootstrap
+from observability.metrics import configure_metrics
 from sessions.monitor_registry import SessionMonitorRegistry
 from sessions.queue import SessionQueueService
-from sessions.router import router as sessions_router
-from sessions.routers.queries import agent_activity_router
 from sessions.services.proxy import _BULK_GNS3_SEMAPHORE
 from sessions.state_cache import StateCache
 from sessions.ws import WebSocketGateway, close_all_connections
-from telemetry.router import router as analytics_router
-from users.router import router as users_router
-from validation.router import router as validation_router
-from validation.runs_router import router as validation_runs_router
+from worker.idle_reclaim import idle_reclaim_loop
+from worker.reaper import session_reaper_loop
+from worker.restore import restore_session_monitors
+from worker.retention import retention_loop
+
+bootstrap()
 
 logger = logging.getLogger(__name__)
 
 
-async def _audit_lab_readiness() -> None:
-    """Log every lab whose declarations do not add up, so it is found before a student finds it."""
-    from labs.readiness import audit_labs
-    from labs.service import get_all_labs
-    from validation.runner import spec_slugs
-
-    try:
-        async with async_session() as db:
-            labs = await get_all_labs(db)
-        problems = audit_labs(labs, spec_slugs())
-    except Exception:
-        logger.warning("Lab readiness audit failed to run", exc_info=True)
-        return
-
-    for problem in problems:
-        logger.warning("Lab readiness: %s [%s] %s", problem.slug, problem.kind, problem.detail)
-    if problems:
-        logger.warning("Lab readiness: %d problem(s) found", len(problems))
-
-
-async def _restore_session_monitors(monitor_registry: SessionMonitorRegistry) -> None:
-    """Restarts the SessionMonitor for active sessions after a backend restart.
-
-    The monitor registry lives in memory (app.state) and is lost when the
-    container restarts, so without this restore the active sessions are left
-    without proactive interventions until the next launch.
-    """
-    from datetime import UTC, datetime, timedelta
-
-    from sqlalchemy import select
-
-    from models.session import LearningSession
-    from sessions.context import build_session_context
-
-    cutoff = datetime.now(tz=UTC) - timedelta(
-        hours=settings.learning_analytics.progress_max_duration_hours
-    )
-    try:
-        async with async_session() as db:
-            result = await db.execute(
-                select(LearningSession).where(
-                    LearningSession.status == "active",
-                    LearningSession.started_at >= cutoff,
-                )
-            )
-            sessions = result.scalars().all()
-    except Exception:
-        logger.warning("Failed to load active sessions for monitoring", exc_info=True)
-        return
-
-    for session in sessions:
-        try:
-            ctx = build_session_context(session)
-            await monitor_registry.start(session.id, session.user_id, session.lab_slug, ctx)
-        except Exception:
-            logger.warning("Failed to restore the SessionMonitor for %s", session.id, exc_info=True)
-    if sessions:
-        logger.info("Session monitors restored: %d", len(sessions))
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Brings up app dependencies, puts them in app.state and shuts them down cleanly on stop.
-
-    Creates the MCP client, the gateway, the orchestrator, the clients and the
-    background tasks on startup, and closes the connections and tasks on exit.
-    """
-
+    """Brings up app dependencies, puts them in app.state and shuts them down cleanly on stop."""
     # Fail at boot, not at a student's first message.
     validate_catalogs()
 
@@ -147,49 +60,43 @@ async def lifespan(app: FastAPI):
         activity_log=activity_log,
         gns3_client=gns3_client,
     )
-    redis_url = settings.redis.url
-    redis_client = aioredis.from_url(redis_url, decode_responses=True)
-    state_cache = StateCache(redis_client, ttl_seconds=5)
-    session_queue = SessionQueueService()
+    redis = redis_client()
+
     app.state.mcp_client = mcp_client
     app.state.gateway = gateway
     app.state.orchestrator = orchestrator
     app.state.gns3_client = gns3_client
     app.state.monitor_registry = monitor_registry
     app.state.activity_log = activity_log
-    app.state.state_cache = state_cache
-    app.state.session_queue = session_queue
+    app.state.state_cache = StateCache(redis, ttl_seconds=5)
+    app.state.session_queue = SessionQueueService()
     app.state.bulk_gns3_semaphore = _BULK_GNS3_SEMAPHORE
-    reclaim_task = asyncio.create_task(idle_reclaim_loop(gns3_client))
-    readiness_task = asyncio.create_task(_audit_lab_readiness())
-    restore_task = asyncio.create_task(_restore_session_monitors(monitor_registry))
+
+    tasks = [
+        asyncio.create_task(idle_reclaim_loop(gns3_client)),
+        asyncio.create_task(session_reaper_loop(gns3_client, monitor_registry)),
+        asyncio.create_task(retention_loop()),
+        asyncio.create_task(log_lab_problems()),
+        asyncio.create_task(restore_session_monitors(monitor_registry)),
+    ]
     yield
-    readiness_task.cancel()
-    try:
-        await readiness_task
-    except asyncio.CancelledError:
-        pass
-    restore_task.cancel()
-    try:
-        await restore_task
-    except asyncio.CancelledError:
-        pass
-    reclaim_task.cancel()
-    try:
-        await reclaim_task
-    except asyncio.CancelledError:
-        pass
+    for task in tasks:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
     await close_all_connections()
     await activity_log.stop()
-    await redis_client.close()
+    await redis.close()
     await monitor_registry.stop_all()
     await gns3_client.close()
+    await mcp_client.close()
 
 
 app = FastAPI(lifespan=lifespan)
 
 app.state.limiter = limiter
-
 app.add_exception_handler(LocalizedError, localized_error_handler)
 
 
@@ -215,76 +122,4 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(admin_router, prefix="/admin", tags=["admin"])
-app.include_router(analytics_router, prefix="/analytics", tags=["analytics"])
-app.include_router(auth_router, prefix="/auth", tags=["auth"])
-app.include_router(consent_router, prefix="/users/me", tags=["consent"])
-app.include_router(users_router, prefix="/users/me", tags=["users"])
-app.include_router(courses_router, prefix="/courses", tags=["courses"])
-app.include_router(labs_router, prefix="/labs", tags=["labs"])
-app.include_router(labs_internal_router, prefix="/internal", tags=["internal"])
-app.include_router(progress_router, prefix="/users/me/progress", tags=["progress"])
-app.include_router(instructor_router, prefix="/instructor", tags=["instructor"])
-app.include_router(sessions_router, prefix="/users/me/sessions", tags=["sessions"])
-app.include_router(escalation_router, prefix="/users/me/sessions", tags=["escalation"])
-app.include_router(experiment_router, prefix="/experiment", tags=["experiment"])
-app.include_router(validation_router, prefix="/labs", tags=["validation"])
-app.include_router(validation_runs_router, prefix="/sessions", tags=["validation"])
-app.include_router(agent_activity_router, prefix="/sessions", tags=["observability"])
-app.include_router(chat_router, tags=["chat"])
-
-
-@app.get("/")
-def root():
-    """Root endpoint with a greeting message."""
-    return {"message": "Hello World"}
-
-
-@app.get("/health")
-async def health():
-    """Instant process liveness check for k8s liveness. No external calls."""
-    return {"status": "ok"}
-
-
-@app.get("/health/deep")
-async def health_deep():
-    """Deep dependency check for the readiness probe and alerts.
-
-    Polls the DB, Redis and gns3-service. On a 503 k8s takes the pod out of
-    rotation but does not kill it, so a temporary dependency dip does not cascade.
-    """
-    checks: dict[str, str] = {}
-    overall_ok = True
-
-    try:
-        async with async_session() as db:
-            await db.execute(text("SELECT 1"))
-        checks["db"] = "ok"
-    except Exception as exc:
-        checks["db"] = f"error: {exc.__class__.__name__}"
-        overall_ok = False
-
-    try:
-        client = aioredis.from_url(settings.redis.url)
-        try:
-            await client.ping()
-        finally:
-            await client.aclose()
-        checks["redis"] = "ok"
-    except Exception as exc:
-        checks["redis"] = f"error: {exc.__class__.__name__}"
-        overall_ok = False
-
-    try:
-        async with httpx.AsyncClient(timeout=2.0) as c:
-            r = await c.get(f"{settings.gns3.service_url}/health")
-            r.raise_for_status()
-        checks["gns3_service"] = "ok"
-    except Exception as exc:
-        checks["gns3_service"] = f"error: {exc.__class__.__name__}"
-        overall_ok = False
-
-    return JSONResponse(
-        content={"status": "ok" if overall_ok else "degraded", "checks": checks},
-        status_code=200 if overall_ok else 503,
-    )
+api.register(app)

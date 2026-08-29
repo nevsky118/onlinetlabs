@@ -1,9 +1,14 @@
 from datetime import UTC, datetime
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.progress import CourseProgress, LabProgress, StepAttempt
+from i18n import LocalizedError
+from models.learning import CourseProgress, LabProgress, StepAttempt
+
+# Concurrent attempts can pick the same number; the unique index rejects the loser.
+_ATTEMPT_RETRIES = 3
 
 
 def score_from_steps(steps: list[dict]) -> tuple[float, bool]:
@@ -90,28 +95,40 @@ async def record_step_attempt(
     score: float | None = None,
     error_details: dict | None = None,
 ) -> StepAttempt:
-    """Creates a step attempt with an auto-incremented number and saves it to the DB."""
-    count_result = await db.execute(
-        select(func.count()).where(
+    """Creates a step attempt with the next number and saves it to the DB.
+
+    Read Committed gives the max-plus-one subquery no lock, so two concurrent
+    attempts can pick the same number. A unique index turns that into an error
+    instead of a duplicate, and the loop takes the next one.
+    """
+    next_number = (
+        select(func.coalesce(func.max(StepAttempt.attempt_number), 0) + 1)
+        .where(
             StepAttempt.user_id == user_id,
             StepAttempt.lab_slug == lab_slug,
             StepAttempt.step_slug == step_slug,
         )
+        .scalar_subquery()
     )
-    attempt_number = count_result.scalar() + 1
-    attempt = StepAttempt(
-        user_id=user_id,
-        lab_slug=lab_slug,
-        step_slug=step_slug,
-        attempt_number=attempt_number,
-        result=result,
-        score=score,
-        error_details=error_details,
-    )
-    db.add(attempt)
-    await db.flush()
-    await db.refresh(attempt)
-    return attempt
+    for _ in range(_ATTEMPT_RETRIES):
+        attempt = StepAttempt(
+            user_id=user_id,
+            lab_slug=lab_slug,
+            step_slug=step_slug,
+            attempt_number=next_number,
+            result=result,
+            score=score,
+            error_details=error_details,
+        )
+        db.add(attempt)
+        try:
+            await db.flush()
+        except IntegrityError:
+            await db.rollback()
+            continue
+        await db.refresh(attempt)
+        return attempt
+    raise LocalizedError("error.progress.attempt_conflict", status_code=409)
 
 
 async def get_all_progress(db: AsyncSession, user_id: str) -> dict:

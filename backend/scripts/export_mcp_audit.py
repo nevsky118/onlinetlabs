@@ -4,12 +4,12 @@ import asyncio
 
 from sqlalchemy import func, select
 
-from models.mcp_audit import MCPAudit  # check the dependency without env
+from kit.db import async_session
+from models.audit import MCPAudit  # check the dependency without env
 
 
 async def main():
-    # Lazy import. db.session pulls in config, which requires an env file
-    from db.session import async_session
+    # Lazy import. kit.db pulls in config, which requires an env file
 
     async with async_session() as db:
         rows = (

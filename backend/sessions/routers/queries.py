@@ -18,18 +18,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.dependencies import can_view_session_activity, get_current_user
 from chat.persistence import get_chat_history
-from db.session import get_db
-from deps import get_activity_log, get_gns3_client, get_locale, get_state_cache
 from i18n import Locale, LocalizedError, resolve_localized
-from models.lab import Lab
-from models.session import LearningSession
-from sessions.queue import QUEUE_AVG_PROVISION_SEC, SessionQueueService, get_queue_service
+from kit.db import get_db
+from kit.deps import get_activity_log, get_gns3_client, get_locale, get_state_cache
+from models.catalog import Lab
+from models.learning import LearningSession
+from observability.schemas import AgentActivityEvent
+from sessions.activity import touch_path_session
+from sessions.queue import SessionQueueService, get_queue_service
 from sessions.schemas import (
     ActivityResponseSchema,
     ChatMessageResponse,
     CredentialsResponse,
     FullSessionStateResponse,
     LearningSessionResponse,
+    QueueStatusResponse,
 )
 from sessions.service import (
     get_credentials,
@@ -41,7 +44,11 @@ from sessions.service import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/users/me/sessions",
+    tags=["sessions"],
+    dependencies=[Depends(touch_path_session)],
+)
 
 
 @router.get("", response_model=list[LearningSessionResponse])
@@ -71,7 +78,7 @@ async def list_sessions(
     ]
 
 
-@router.get("/queue-status")
+@router.get("/queue-status", response_model=QueueStatusResponse, response_model_exclude_none=True)
 async def queue_status(
     lab_slug: str,
     current_user: dict = Depends(get_current_user),
@@ -86,7 +93,7 @@ async def queue_status(
         "in_queue": True,
         "queue_position": pos,
         "queue_depth": depth,
-        "eta_sec": pos * QUEUE_AVG_PROVISION_SEC,
+        "eta_sec": round(pos * await queue.avg_provision_seconds()),
     }
 
 
@@ -182,10 +189,10 @@ async def get_activity_endpoint(
 
 # agent_activity_router is mounted separately; see the module docstring above.
 
-agent_activity_router = APIRouter()
+agent_activity_router = APIRouter(prefix="/sessions", tags=["observability"])
 
 
-@agent_activity_router.get("/{session_id}/agent-activity")
+@agent_activity_router.get("/{session_id}/agent-activity", response_model=list[AgentActivityEvent])
 async def get_agent_activity(
     session_id: str,
     since: datetime | None = None,

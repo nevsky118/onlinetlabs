@@ -3,6 +3,7 @@
 import asyncio
 import ipaddress
 import re
+from contextlib import asynccontextmanager
 
 from validation.checks.registry import CheckContext, CheckResult
 
@@ -16,6 +17,8 @@ _PING_TTL_RE = re.compile(r"\bttl=(\d+)", re.IGNORECASE)
 # VPCS prints one of these when the target is genuinely unreachable; without any of
 # them and without replies the console simply did not answer.
 _PING_UNREACHABLE_RE = re.compile(r"not reachable|timeout|host unreachable", re.IGNORECASE)
+# VPCS prints "Saving startup configuration to startup.vpc" then ".  done".
+_SAVE_OK_RE = re.compile(r"saving startup configuration.*?done", re.IGNORECASE | re.DOTALL)
 # `>=N` / `>N` / `==N` / `=N` / `N`. Strict equality by default.
 _COMPARE_RE = re.compile(r"^\s*(>=|<=|==|=|>|<)?\s*(\d+)\s*$")
 
@@ -26,6 +29,7 @@ _READ_BACKOFF = 0.5
 _CONNECT_BACKOFF = 0.4
 _READ_TIMEOUT = 3.0
 _PING_READ_TIMEOUT = 8.0
+_SAVE_TIMEOUT = 15.0
 _PROMPT = b"> "
 
 
@@ -45,6 +49,37 @@ async def _open_console(host: str, port: int):
         except (TimeoutError, OSError) as exc:
             last = exc
     raise last if last else OSError("console connect failed")
+
+
+# GNS3 serialises telnet consoles per node: a second client is refused, not queued.
+# The progress observer and a student's validation run otherwise fight over the
+# same console and one of them reads nothing.
+_console_locks: dict[tuple[str, int], asyncio.Lock] = {}
+
+
+def _console_lock(host: str, port: int) -> asyncio.Lock:
+    """The lock guarding one node's console."""
+    key = (host, port)
+    lock = _console_locks.get(key)
+    if lock is None:
+        lock = asyncio.Lock()
+        _console_locks[key] = lock
+    return lock
+
+
+@asynccontextmanager
+async def console(host: str, port: int):
+    """Exclusive console session. Connects, yields (reader, writer), always closes."""
+    async with _console_lock(host, port):
+        reader, writer = await _open_console(host, port)
+        try:
+            yield reader, writer
+        finally:
+            try:
+                writer.close()
+                await writer.wait_closed()
+            except Exception:
+                pass
 
 
 async def _drain_idle(reader: asyncio.StreamReader, idle: float, total: float) -> bytes:
@@ -104,21 +139,31 @@ async def _read_show_ip(reader, writer) -> bytes:
     return raw
 
 
+async def save_startup_config(host: str, port: int) -> tuple[bool, str]:
+    """Persists a VPCS node's config to startup.vpc so a stop is recoverable."""
+    try:
+        async with console(host, port) as (reader, writer):
+            writer.write(b"\r\n")
+            await writer.drain()
+            await asyncio.sleep(0.3)
+            await _drain_idle(reader, idle=0.3, total=2.0)
+            writer.write(b"save\r\n")
+            await writer.drain()
+            raw = await _drain_until_prompt(reader, timeout=_SAVE_TIMEOUT)
+    except (TimeoutError, OSError) as exc:
+        return False, f"connect failed: {exc}"
+    text = raw.decode("utf-8", errors="replace")
+    return bool(_SAVE_OK_RE.search(text)), text
+
+
 async def _show_ip_once(host: str, port: int) -> tuple[dict, str]:
     """One connect-ask-parse cycle. Returns (parsed, log); parsed["ip"] is empty when unreadable."""
-    reader, writer = await _open_console(host, port)
-    try:
+    async with console(host, port) as (reader, writer):
         writer.write(b"\r\n")
         await writer.drain()
         await asyncio.sleep(0.3)
         await _drain_idle(reader, idle=0.3, total=2.0)
         raw = await _read_show_ip(reader, writer)
-    finally:
-        try:
-            writer.close()
-            await writer.wait_closed()
-        except Exception:
-            pass
     text = raw.decode("utf-8", errors="replace")
     return _parse_show_ip(text), text
 
@@ -270,7 +315,19 @@ async def vpcs_ping(ctx: CheckContext, params: dict, expect: dict) -> CheckResul
     host = ctx.node_console_host(src_name)
 
     try:
-        reader, writer = await _open_console(host, port)
+        async with console(host, port) as (reader, writer):
+            writer.write(b"\r\n")
+            await writer.drain()
+            await asyncio.sleep(0.3)
+            await _drain_idle(reader, idle=0.3, total=2.0)
+
+            writer.write(f"ping {target}\r\n".encode())
+            await writer.drain()
+            await _drain_until_prompt(reader, timeout=_PING_READ_TIMEOUT)
+
+            writer.write(f"ping {target}\r\n".encode())
+            await writer.drain()
+            raw = await _drain_until_prompt(reader, timeout=_PING_READ_TIMEOUT)
     except (TimeoutError, OSError) as exc:
         return CheckResult(
             ok=False,
@@ -278,26 +335,6 @@ async def vpcs_ping(ctx: CheckContext, params: dict, expect: dict) -> CheckResul
             actual={"error": f"connect failed: {exc}"},
             log="",
         )
-
-    try:
-        writer.write(b"\r\n")
-        await writer.drain()
-        await asyncio.sleep(0.3)
-        await _drain_idle(reader, idle=0.3, total=2.0)
-
-        writer.write(f"ping {target}\r\n".encode())
-        await writer.drain()
-        await _drain_until_prompt(reader, timeout=_PING_READ_TIMEOUT)
-
-        writer.write(f"ping {target}\r\n".encode())
-        await writer.drain()
-        raw = await _drain_until_prompt(reader, timeout=_PING_READ_TIMEOUT)
-    finally:
-        try:
-            writer.close()
-            await writer.wait_closed()
-        except Exception:
-            pass
 
     text = raw.decode("utf-8", errors="replace")
     parsed = _parse_ping(text)
@@ -366,3 +403,55 @@ async def vpcs_ip_in_subnet(ctx: CheckContext, params: dict, expect: dict) -> Ch
     subnet = expect.get("subnet", "")
     ok = _ip_in_subnet(parsed["ip"], subnet) and parsed["gateway"] == expect.get("gateway")
     return CheckResult(ok=ok, expected=expect, actual=actual, log=log)
+
+
+async def vpcs_ping_node(ctx: CheckContext, params: dict, expect: dict) -> CheckResult:
+    """Ping one VPCS node from another by reading the target's current address.
+
+    params: `{from: PC1, to_node: PC2}`
+    expect: `{received: ">=4"}`
+    Used where the target address is assigned at runtime, as under DHCP.
+    """
+    target_name = params.get("to_node")
+    if not target_name:
+        return CheckResult(
+            ok=False,
+            expected=expect,
+            actual={"error": "param 'to_node' missing"},
+            log="",
+        )
+
+    target_port = ctx.node_console_port(target_name)
+    if not target_port:
+        return CheckResult(
+            ok=False,
+            expected=expect,
+            actual={"error": f"node {target_name!r} not found or no console port"},
+            log="",
+        )
+
+    parsed, log = await read_show_ip(ctx.node_console_host(target_name), target_port)
+    if parsed is None:
+        return CheckResult(
+            ok=False,
+            expected=expect,
+            actual={},
+            log=log,
+            observed=False,
+            error_key="error.validation.console_unreadable",
+            error_params={"node": target_name, "attempts": _READ_ATTEMPTS},
+        )
+
+    address = parsed["ip"].split("/", 1)[0].strip()
+    if not address:
+        return CheckResult(
+            ok=False,
+            expected=expect,
+            actual={},
+            log=log,
+            observed=False,
+            error_key="error.validation.console_unreadable",
+            error_params={"node": target_name, "attempts": _READ_ATTEMPTS},
+        )
+
+    return await vpcs_ping(ctx, {"from": params.get("from"), "to": address}, expect)

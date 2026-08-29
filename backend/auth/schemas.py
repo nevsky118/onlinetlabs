@@ -53,3 +53,10 @@ class ActivateRequest(BaseModel):
     """Request body for activating an account by email."""
 
     email: str
+
+
+class ActivationResponse(BaseModel):
+    """Outcome of a server-to-server account activation."""
+
+    email: str
+    is_active: bool

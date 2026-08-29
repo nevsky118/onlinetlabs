@@ -9,7 +9,7 @@ import asyncio
 import random
 from dataclasses import dataclass, field
 
-from models.user import User
+from models.identity import User
 from simulation.policy import StudentState, next_step
 from simulation.profiles import sample_cohort
 

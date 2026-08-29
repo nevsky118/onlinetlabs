@@ -1,0 +1,284 @@
+"""FeatureExtractor computes behavioral features from session events."""
+
+import json
+import math
+from collections import Counter
+from datetime import UTC, datetime
+
+from agents.identifier.schemas import SessionFeatures
+from config.config_model import LearningAnalyticsConfig
+
+
+class FeatureExtractor:
+    """Computing SessionFeatures from a list of events. Stateless."""
+
+    # LabProgressObserver heartbeat. It fires every poll while a check stays failing,
+    # so counting it as student activity keeps every gap under idle_gap_seconds.
+    _OBSERVER_ACTIONS = frozenset(
+        {"check_passed", "check_regressed", "check_failing", "check_retry"}
+    )
+
+    @staticmethod
+    def _student_events(events: list) -> list:
+        """Events originated by the student, excluding the observer heartbeat."""
+        return [
+            e
+            for e in events
+            if getattr(e, "action", None) not in FeatureExtractor._OBSERVER_ACTIONS
+        ]
+
+    def __init__(self, learning_analytics_config: LearningAnalyticsConfig | None = None):
+        """Takes a LearningAnalyticsConfig for thresholds; defaults if omitted."""
+        self._config = learning_analytics_config or LearningAnalyticsConfig()
+
+    def compute(self, session_id: str, events: list) -> SessionFeatures:
+        """Main method: events → feature vector."""
+        now = datetime.now(tz=UTC)
+        if not events:
+            return self._empty_features(session_id, now)
+
+        sorted_events = sorted(events, key=lambda e: e.timestamp)
+        action_events = [e for e in sorted_events if e.event_type == "action"]
+        error_events = [e for e in sorted_events if e.event_type == "error"]
+
+        latencies = self._inter_action_latencies(self._student_events(sorted_events), now=now)
+        idle_gap = self._config.idle_gap_seconds
+        max_consec_errors = self._current_error_run(sorted_events)
+
+        return SessionFeatures(
+            avg_inter_action_latency=round(
+                sum(latencies) / len(latencies) if latencies else 0.0, 2
+            ),
+            action_rate_slope=round(self._action_rate_slope(sorted_events), 4),
+            idle_periods=sum(1 for delta in latencies if delta > idle_gap),
+            total_active_time=round(sum(delta for delta in latencies if delta <= idle_gap), 2),
+            time_on_current_step=round(self._time_on_current_step(sorted_events, now), 2),
+            error_repeat_count=max_consec_errors,
+            error_repeat_rate=round(
+                max_consec_errors / len(error_events) if error_events else 0.0,
+                4,
+            ),
+            action_sequence_entropy=round(self._action_entropy(sorted_events), 4),
+            undo_redo_ratio=round(self._undo_redo_ratio(action_events), 4),
+            error_frequency=round(self._error_frequency(error_events, sorted_events), 4),
+            error_frequency_slope=round(self._error_frequency_slope(error_events), 4),
+            unique_error_types=len({e.message for e in error_events if e.message}),
+            dominant_error=self._dominant_error(error_events),
+            components_touched=len({e.component_id for e in sorted_events if e.component_id}),
+            action_diversity=round(len({e.action for e in sorted_events}) / len(sorted_events), 4),
+            events_total=len(sorted_events),
+            distinct_failing_actuals=self._distinct_failing_actuals(sorted_events),
+            cycles_failing_unchanged=self._cycles_failing_unchanged(sorted_events),
+            session_id=session_id,
+            computed_at=now,
+        )
+
+    # Private methods
+
+    def _empty_features(self, session_id: str, now: datetime) -> SessionFeatures:
+        """Zero feature vector for an empty session."""
+        return SessionFeatures(
+            avg_inter_action_latency=0.0,
+            action_rate_slope=0.0,
+            idle_periods=0,
+            total_active_time=0.0,
+            time_on_current_step=0.0,
+            error_repeat_count=0,
+            error_repeat_rate=0.0,
+            action_sequence_entropy=0.0,
+            undo_redo_ratio=0.0,
+            error_frequency=0.0,
+            error_frequency_slope=0.0,
+            unique_error_types=0,
+            dominant_error=None,
+            components_touched=0,
+            action_diversity=0.0,
+            events_total=0,
+            distinct_failing_actuals=0,
+            cycles_failing_unchanged=0,
+            session_id=session_id,
+            computed_at=now,
+        )
+
+    @staticmethod
+    def _inter_action_latencies(events: list, now: datetime | None = None) -> list[float]:
+        """Intervals between adjacent events (sec), plus the gap up to `now`.
+
+        The trailing gap is what makes ongoing silence visible: without it a student
+        who stops acting produces no new interval and can never accumulate idle time.
+        """
+        gaps = FeatureExtractor._adjacent_gaps(events)
+        if now is not None and events:
+            gaps.append(abs((now - events[-1].timestamp).total_seconds()))
+        return gaps
+
+    @staticmethod
+    def _adjacent_gaps(events: list) -> list[float]:
+        """Intervals between adjacent events (sec)."""
+        return [
+            abs((events[i].timestamp - events[i - 1].timestamp).total_seconds())
+            for i in range(1, len(events))
+        ]
+
+    def _action_rate_slope(self, events: list) -> float:
+        """Slope of linear regression on actions-per-window. Rising = speeding up."""
+        if len(events) < 2:
+            return 0.0
+        total_span = (events[-1].timestamp - events[0].timestamp).total_seconds()
+        window_seconds = self._config.rate_window_seconds
+        min_windows = self._config.min_rate_windows
+        if total_span < window_seconds * min_windows:
+            return 0.0
+        start_time = events[0].timestamp
+        buckets: list[int] = []
+        for event in events:
+            bucket_index = int((event.timestamp - start_time).total_seconds() / window_seconds)
+            while len(buckets) <= bucket_index:
+                buckets.append(0)
+            buckets[bucket_index] += 1
+        if len(buckets) < min_windows:
+            return 0.0
+        bucket_count = len(buckets)
+        indices = list(range(bucket_count))
+        index_mean = sum(indices) / bucket_count
+        value_mean = sum(buckets) / bucket_count
+        numerator = sum((x - index_mean) * (y - value_mean) for x, y in zip(indices, buckets))
+        denominator = sum((x - index_mean) ** 2 for x in indices)
+        return numerator / denominator if denominator else 0.0
+
+    @staticmethod
+    def _time_on_current_step(events: list, now: datetime) -> float:
+        """Seconds since the last component_id cluster change."""
+        if not events:
+            return 0.0
+        last_component = events[-1].component_id
+        for i in range(len(events) - 2, -1, -1):
+            if events[i].component_id != last_component:
+                return (now - events[i + 1].timestamp).total_seconds()
+        return (now - events[0].timestamp).total_seconds()
+
+    @staticmethod
+    def _current_error_run(events: list) -> int:
+        """Length of the CURRENT run of identical errors at the end of the window.
+
+        We count the tail, not the historical max: an error the student already
+        fixed shouldn't keep triggering interventions on every analysis cycle.
+        A check_passed event (fail→ok transition) breaks the run.
+        """
+        run = 0
+        last_message = None
+        for event in reversed(events):
+            if event.action == "check_passed":
+                break
+            if event.event_type != "error":
+                continue
+            if last_message is None:
+                last_message = event.message
+                run = 1
+            elif event.message == last_message:
+                run += 1
+            else:
+                break
+        return run if run >= 2 else 0
+
+    @staticmethod
+    def _action_entropy(events: list) -> float:
+        """Normalized Shannon entropy over action types."""
+        action_names = [event.action for event in events]
+        if not action_names:
+            return 0.0
+        counts = Counter(action_names)
+        total = len(action_names)
+        entropy = -sum(
+            (count / total) * math.log2(count / total) for count in counts.values() if count > 0
+        )
+        max_entropy = math.log2(len(counts)) if len(counts) > 1 else 1.0
+        return entropy / max_entropy if max_entropy > 0 else 0.0
+
+    @staticmethod
+    def _undo_redo_ratio(action_events: list) -> float:
+        """Fraction of start/stop/start cycles on one component."""
+        if len(action_events) < 3:
+            return 0.0
+        cycle_count = sum(
+            1
+            for i in range(2, len(action_events))
+            if action_events[i].component_id == action_events[i - 2].component_id
+            and action_events[i].action == action_events[i - 2].action
+            and action_events[i].action != action_events[i - 1].action
+        )
+        return cycle_count / len(action_events)
+
+    def _error_frequency(self, error_events: list, all_events: list) -> float:
+        """Errors/min over the last N minutes (from config)."""
+        if not error_events or not all_events:
+            return 0.0
+        session_end = all_events[-1].timestamp
+        session_start = all_events[0].timestamp
+        duration_minutes = max((session_end - session_start).total_seconds() / 60.0, 0.1)
+        window_minutes = min(self._config.error_freq_window_minutes, duration_minutes)
+        window_cutoff = session_end.timestamp() - window_minutes * 60
+        recent_error_count = sum(
+            1 for event in error_events if event.timestamp.timestamp() >= window_cutoff
+        )
+        return recent_error_count / window_minutes
+
+    @staticmethod
+    def _error_frequency_slope(error_events: list) -> float:
+        """Error acceleration/deceleration: rate of 2nd half − rate of 1st."""
+        if len(error_events) < 4:
+            return 0.0
+        midpoint = len(error_events) // 2
+        first_half = error_events[:midpoint]
+        second_half = error_events[midpoint:]
+        first_span = max(
+            (first_half[-1].timestamp - first_half[0].timestamp).total_seconds(),
+            1.0,
+        )
+        second_span = max(
+            (second_half[-1].timestamp - second_half[0].timestamp).total_seconds(),
+            1.0,
+        )
+        return len(second_half) / second_span - len(first_half) / first_span
+
+    @staticmethod
+    def _distinct_failing_actuals(events: list) -> int:
+        """Count of unique actual values on the dominant failing component."""
+        failing = [
+            e for e in events if getattr(e, "action", None) in {"check_failing", "check_retry"}
+        ]
+        if not failing:
+            return 0
+        # dominant component_id among failing events
+        dominant_cid = Counter(e.component_id for e in failing if e.component_id).most_common(1)
+        if not dominant_cid:
+            return 0
+        cid = dominant_cid[0][0]
+        actuals = {
+            json.dumps((e.extra_data or {}).get("actual"), sort_keys=True)
+            for e in failing
+            if e.component_id == cid
+        }
+        return len(actuals)
+
+    @staticmethod
+    def _cycles_failing_unchanged(events: list) -> int:
+        """Length of the trailing check_failing run on one component_id."""
+        run = 0
+        ref_cid = None
+        for e in reversed(events):
+            action = getattr(e, "action", None)
+            if action != "check_failing":
+                break
+            if ref_cid is None:
+                ref_cid = e.component_id
+            elif e.component_id != ref_cid:
+                break
+            run += 1
+        return run
+
+    @staticmethod
+    def _dominant_error(error_events: list) -> str | None:
+        """Most frequent error."""
+        messages = [event.message for event in error_events if event.message]
+        return Counter(messages).most_common(1)[0][0] if messages else None

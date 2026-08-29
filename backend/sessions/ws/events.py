@@ -14,6 +14,8 @@ import logging
 import websockets
 from fastapi import WebSocket, WebSocketDisconnect
 
+from config import settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -24,7 +26,6 @@ async def forward_session_events(
 ) -> None:
     """Opens an upstream WS to gns3-service and relays events both ways until closed."""
     # Connect to the gns3-service WS with an internal token, otherwise the server closes with code 1008.
-    from config import settings
 
     upstream_url = (
         gns3_service_url.replace("http://", "ws://").replace("https://", "wss://")

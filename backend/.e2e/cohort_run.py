@@ -10,12 +10,11 @@ from uuid import uuid4
 
 from sqlalchemy import delete
 
-from cohort.service import compute_cohort_metrics
-from db.session import async_session
-from models.experiment import ExperimentMetrics
-from models.progress import LabProgress
-from models.session import LearningSession
-from models.user import User
+from analytics.cohort.service import compute_cohort_metrics
+from kit.db import async_session
+from models.identity import User
+from models.learning import LabProgress, LearningSession
+from models.research import ExperimentMetrics
 
 PREFIX = "coh-demo-"
 BASE = datetime(2026, 5, 1, 9, 0, tzinfo=UTC)

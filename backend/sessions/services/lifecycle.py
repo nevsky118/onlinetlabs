@@ -5,24 +5,27 @@ from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from analytics.runtime.mrt import censor_open_decisions
+from config import settings
+from experiment.assignment import effective_arm, is_l2_session
+from experiment.finalizer import compute_session_metrics
 from labs.service import template_project_id_for
-from models.lab import Lab
-from models.session import LearningSession
+from models.catalog import Lab, LabStep
+from models.identity import User
+from models.learning import LabProgress, LearningSession
+from models.research import BehavioralEvent, ExperimentMetrics
+from observability.metrics import active_sessions_gauge
 from sessions.context import build_session_context
+from sessions.queue import _get_or_create_singleton
+from sessions.services.persist import persist_volatile_configs
 from sessions.services.query import get_owned_session
+from validation.runner import load_lab_spec
 
 logger = logging.getLogger(__name__)
 
 
 async def _finalize_experiment_metrics(db: AsyncSession, session: LearningSession) -> None:
     """Computes and saves ExperimentMetrics for the session outcome (best-effort)."""
-    from config import settings
-    from experiment.assignment import effective_arm, is_l2_session
-    from experiment.finalizer import compute_session_metrics
-    from models.behavioral_event import BehavioralEvent
-    from models.experiment import ExperimentMetrics
-    from models.progress import LabProgress
-    from models.user import User
 
     session_id = session.id
     user_id = session.user_id
@@ -52,13 +55,10 @@ async def _finalize_experiment_metrics(db: AsyncSession, session: LearningSessio
     steps_completed = (lp.current_step or 0) if lp else 0
 
     # total_steps from the YAML spec (authoritative source); fallback → LabStep count or 1
-    from validation.runner import load_lab_spec
 
     spec = load_lab_spec(lab_slug)
     total_steps = len(spec.get("steps", [])) if spec else 0
     if total_steps == 0:
-        from models.lab import LabStep
-
         total_steps_result = await db.execute(select(LabStep).where(LabStep.lab_slug == lab_slug))
         total_steps = len(total_steps_result.scalars().all()) or 1
 
@@ -91,15 +91,12 @@ async def _finalize_experiment_metrics(db: AsyncSession, session: LearningSessio
 
 async def _release_slot(lab_slug: str) -> None:
     """Releases the queue slot and decrements the active-sessions gauge."""
-    from sessions.queue import _get_or_create_singleton
 
     try:
         await _get_or_create_singleton().release(lab_slug)
     except Exception:
         logger.exception("Queue slot release failed for lab %s", lab_slug)
     try:
-        from observability.metrics import active_sessions_gauge
-
         active_sessions_gauge.labels(lab_slug=lab_slug).dec()
     except Exception:
         pass  # metrics optional
@@ -131,8 +128,6 @@ async def _mark_ended_and_finalize(
 
     # best-effort, MRT points with an unclosed spell are right-censored by session end
     try:
-        from learning_analytics.mrt import censor_open_decisions
-
         await censor_open_decisions(db, session.id)
     except Exception:
         logger.exception("Censoring of MRT points failed for session %s", session.id)
@@ -157,25 +152,42 @@ async def end_session(
     return await _mark_ended_and_finalize(db, session, status)
 
 
-async def stop_lab(db, session_id: str, user_id: str, mcp_client) -> bool:
+async def stop_lab(db, session_id: str, user_id: str, mcp_client, gns3_client=None) -> bool:
     """Stops all lab nodes via MCP. False if the session isn't owned by the user."""
     session = await get_owned_session(db, session_id, user_id)
     if session is None:
         return False
+    await _save_before_stop(session, gns3_client)
     ctx = build_session_context(session)
     await mcp_client.execute_action(ctx, "stop_all_nodes", {})
     return True
 
 
-async def restart_lab(db, session_id: str, user_id: str, mcp_client) -> bool:
+async def restart_lab(db, session_id: str, user_id: str, mcp_client, gns3_client=None) -> bool:
     """Restarts lab nodes via MCP. False if the session isn't owned by the user."""
     session = await get_owned_session(db, session_id, user_id)
     if session is None:
         return False
+    await _save_before_stop(session, gns3_client)
     ctx = build_session_context(session)
     await mcp_client.execute_action(ctx, "stop_all_nodes", {})
     await mcp_client.execute_action(ctx, "start_all_nodes", {})
+    if session.paused_at is not None:
+        session.paused_at = None
+        await db.commit()
     return True
+
+
+async def _save_before_stop(session, gns3_client) -> None:
+    """Persists volatile node config so the stop stays recoverable."""
+    gns3_sid = (session.meta or {}).get("gns3_service_session_id")
+    if not gns3_client or not gns3_sid:
+        return
+
+    try:
+        await persist_volatile_configs(gns3_client, gns3_sid, settings)
+    except Exception:
+        logger.warning("save before stop failed for %s", session.id, exc_info=True)
 
 
 async def reset_lab(db, session_id: str, user_id: str, gns3_client) -> bool:
