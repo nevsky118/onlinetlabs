@@ -54,19 +54,6 @@ export function CredentialsDialog({
               <CopyIcon />
             </Button>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground text-sm">
-              {t("fields.password")}:
-            </span>
-            <code className="text-sm">{result.gns3Password}</code>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => copy(result.gns3Password, "password")}
-            >
-              <CopyIcon />
-            </Button>
-          </div>
           <Button
             nativeButton={false}
             variant="outline"

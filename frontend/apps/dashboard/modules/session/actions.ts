@@ -42,8 +42,11 @@ export async function launchLab(labSlug: string): Promise<LaunchResult> {
     }
   }
   if (!res.ok) {
-    const detail = await res.text()
-    throw new Error(`Launch failed: ${res.status} ${detail}`)
+    const body = await res.json().catch(() => null)
+    if (body?.code) {
+      return { kind: "denied", code: body.code, detail: body.detail ?? "" }
+    }
+    throw new Error(`Launch failed: ${res.status}`)
   }
   return mapLaunch(await res.json())
 }

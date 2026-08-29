@@ -2,41 +2,26 @@
 
 import { track } from "@repo/api/analytics"
 import { Button } from "@repo/design-system/ui/button"
-import { CopyIcon, ExternalLinkIcon, EyeIcon, EyeOffIcon } from "lucide-react"
+import { CopyIcon, ExternalLinkIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
-import { useState } from "react"
 import { toast } from "sonner"
 import type { Credentials } from "../types"
-import { fetchCredentials } from "../actions"
 
-type Field = "username" | "password" | "url"
+type Field = "username" | "url"
 
 const FIELD_TRACK: Record<Field, string> = {
   username: "username",
-  password: "password",
   url: "gns3_url",
 }
 
-export function CredentialsCard({
-  sessionId,
-  credentials,
-}: {
-  sessionId: string
-  credentials: Credentials
-}) {
+export function CredentialsCard({ credentials }: { credentials: Credentials }) {
   const t = useTranslations("dashboard.session.credentialsCard")
-  const [creds, setCreds] = useState(credentials)
-  const [reveal, setReveal] = useState(false)
+  const creds = credentials
 
   async function copy(value: string, field: Field) {
     await navigator.clipboard.writeText(value)
     track("credential_copied", { field: FIELD_TRACK[field] })
     toast.success(t("copiedToast", { label: t(`fields.${field}`) }))
-  }
-
-  async function toggleReveal() {
-    if (!reveal) setCreds(await fetchCredentials(sessionId))
-    setReveal((v) => !v)
   }
 
   return (
@@ -50,23 +35,6 @@ export function CredentialsCard({
           <IconBtn
             onClick={() => copy(creds.gns3Username, "username")}
             ariaLabel={t("copyUsername")}
-          >
-            <CopyIcon />
-          </IconBtn>
-        </Row>
-        <Row label={t("fields.password")}>
-          <code className="font-mono text-xs">
-            {reveal ? creds.gns3Password : "••••••••"}
-          </code>
-          <IconBtn
-            onClick={toggleReveal}
-            ariaLabel={reveal ? t("hidePassword") : t("showPassword")}
-          >
-            {reveal ? <EyeOffIcon /> : <EyeIcon />}
-          </IconBtn>
-          <IconBtn
-            onClick={() => copy(creds.gns3Password, "password")}
-            ariaLabel={t("copyPassword")}
           >
             <CopyIcon />
           </IconBtn>

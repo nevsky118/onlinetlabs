@@ -23,6 +23,17 @@ export async function hasInstructorAccess(): Promise<boolean> {
   return role === "instructor" || role === "admin"
 }
 
+export async function isBackendUserActive(): Promise<boolean> {
+  const token = await getBackendToken()
+  if (!token) return false
+  try {
+    const payload = decodeJwt(token) as { is_active?: boolean }
+    return payload.is_active === true
+  } catch {
+    return false
+  }
+}
+
 export async function canViewAgentLogs(): Promise<boolean> {
   const token = await getBackendToken()
   if (!token) return false

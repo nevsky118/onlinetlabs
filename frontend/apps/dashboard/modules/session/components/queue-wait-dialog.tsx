@@ -48,7 +48,7 @@ export function QueueWaitDialog({
         if (!aliveRef.current) return
         if (res.kind === "session") {
           onReady(res.session)
-        } else {
+        } else if (res.kind === "queued") {
           setQueued(res.queued)
         }
       } catch {

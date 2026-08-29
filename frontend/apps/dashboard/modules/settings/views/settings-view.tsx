@@ -25,8 +25,6 @@ import { useTheme } from "next-themes"
 import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
 
-const CONSENT_DISMISS_KEY = "study_consent_dismissed"
-
 interface SettingsAccount {
   name: string | null
   email: string | null
@@ -144,8 +142,10 @@ function ConsentControl() {
   useEffect(() => {
     fetch("/api/users/consent", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : []))
-      .then((items: { scope: string }[]) =>
-        setGranted(items.some((c) => c.scope === "study"))
+      .then((items: { scope: string; decision: string }[]) =>
+        setGranted(
+          items.some((c) => c.scope === "study" && c.decision === "granted")
+        )
       )
       .catch(() => setGranted(false))
   }, [])
@@ -162,13 +162,12 @@ function ConsentControl() {
                 scope: "study",
                 observe: true,
                 act: true,
+                decision: "granted",
               }),
             })
           : await fetch("/api/users/consent?scope=study", { method: "DELETE" })
         if (!r.ok) throw new Error(`${r.status}`)
         setGranted(next)
-        // The decision has been made deliberately, so the session banner is no longer needed.
-        localStorage.setItem(CONSENT_DISMISS_KEY, "1")
         toast.success(next ? t("toastEnabled") : t("toastRevoked"))
       } catch {
         toast.error(t("toastFailed"))

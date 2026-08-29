@@ -16,7 +16,9 @@ export function useLaunchLab(labSlug: string) {
       return { res, startedAt }
     },
     onSuccess: ({ res, startedAt }) => {
-      if (res.kind === "session") {
+      if (res.kind === "denied") {
+        track("session_launch_denied", { lab_slug: labSlug, code: res.code })
+      } else if (res.kind === "session") {
         track("session_launched", {
           lab_slug: labSlug,
           session_id: res.session.sessionId,

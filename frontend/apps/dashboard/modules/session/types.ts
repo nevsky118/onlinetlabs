@@ -4,7 +4,6 @@ export type SessionData = {
   sessionId: string
   status: SessionStatus
   gns3Username: string
-  gns3Password: string
   gns3Url: string
   gns3DeepUrl: string
 }
@@ -16,13 +15,15 @@ export type QueuedResult = {
   labSlug: string
 }
 
+export type LaunchDenial = { kind: "denied"; code: string; detail: string }
+
 export type LaunchResult =
   | { kind: "session"; session: SessionData }
   | { kind: "queued"; queued: QueuedResult }
+  | LaunchDenial
 
 export type Credentials = {
   gns3Username: string
-  gns3Password: string
   gns3Url: string
   gns3DeepUrl: string
 }
@@ -77,6 +78,7 @@ export type FullSessionState = {
   links: Link[]
   metrics: SessionMetrics
   noAssist: boolean
+  paused: boolean
 }
 
 export type ActivityEvent = {

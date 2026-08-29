@@ -10,6 +10,7 @@ export type EventMap = {
     provisioning_ms: number
   }
   session_launch_failed: { lab_slug: string; error: string }
+  session_launch_denied: { lab_slug: string; code: string }
   session_queued: { lab_slug: string; position: number; eta_sec?: number }
   session_ended: { lab_slug: string; session_id: string; reason: string }
   session_reset: { lab_slug: string; session_id: string }
