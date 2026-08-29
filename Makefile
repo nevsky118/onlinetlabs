@@ -27,7 +27,7 @@ help:
 	@printf "$(G)  onlinetlabs$(N)\n"
 	@printf "$(B)══════════════════════════════════════════$(N)\n"
 	@printf "\n  $(B)Development$(N)\n"
-	@printf "  $(Y)%-20s$(N) %s\n" "install"            "Install all dependencies (poetry + pnpm)"
+	@printf "  $(Y)%-20s$(N) %s\n" "install"            "Install all dependencies (uv + pnpm)"
 	@printf "  $(Y)%-20s$(N) %s\n" "serve"              "Backend API (ENV=local|dev|prod)"
 	@printf "  $(Y)%-20s$(N) %s\n" "dev"                "Frontend dev server (next dev)"
 	@printf "\n  $(B)Docker$(N)\n"
@@ -56,12 +56,12 @@ help:
 
 # ── Development ──────────────────────────────────────────────
 install:
-	cd $(BE) && poetry install
+	uv sync --package backend
 	cd $(FE) && pnpm install
-	cd $(SDK) && poetry install
+	uv sync --package mcp_sdk
 
 serve:
-	cd $(BE) && ENV_FILE=$(ENV_FILE) poetry run uvicorn main:app --reload --host 0.0.0.0 --port 8000
+	cd $(BE) && ENV_FILE=$(ENV_FILE) uv run --package backend uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 dev:
 	ln -sf ../../../deployment/$(ENV)/frontend.env $(FE)/apps/dashboard/.env
@@ -89,37 +89,40 @@ psql:
 
 # ── Migrations ───────────────────────────────────────────────
 migrate:
-	cd $(BE) && ENV_FILE=$(ENV_FILE) poetry run alembic upgrade head
+	cd $(BE) && ENV_FILE=$(ENV_FILE) uv run --package backend alembic upgrade head
 
 migrate-create:
-	cd $(BE) && ENV_FILE=$(ENV_FILE) poetry run alembic revision --autogenerate -m "$(msg)"
+	cd $(BE) && ENV_FILE=$(ENV_FILE) uv run --package backend alembic revision --autogenerate -m "$(msg)"
+
+migrate-check:
+	@cd $(BE) && ENV_FILE=$(ENV_FILE) uv run --package backend python -m scripts.check_migration_drift
 
 migrate-rollback:
-	cd $(BE) && ENV_FILE=$(ENV_FILE) poetry run alembic downgrade -1
+	cd $(BE) && ENV_FILE=$(ENV_FILE) uv run --package backend alembic downgrade -1
 
 # ── Testing ──────────────────────────────────────────────────
 test:
 	cd $(BE) && PYTHONPATH=. pytest -v tests/
-	cd $(SDK) && PYTHONPATH=src poetry run pytest -v tests/
+	cd $(SDK) && PYTHONPATH=src uv run --package mcp_sdk pytest -v tests/
 
 # ── Code Quality ─────────────────────────────────────────────
 lint:
-	cd $(BE) && poetry run ruff check . --fix
+	cd $(BE) && uv run --package backend ruff check . --fix
 	cd $(FE) && pnpm lint:fix
-	cd $(SDK) && poetry run ruff check src/ tests/ --fix
+	cd $(SDK) && uv run --package mcp_sdk ruff check src/ tests/ --fix
 
 format:
-	cd $(BE) && poetry run ruff format .
+	cd $(BE) && uv run --package backend ruff format .
 	cd $(FE) && pnpm format
-	cd $(SDK) && poetry run ruff format src/ tests/
+	cd $(SDK) && uv run --package mcp_sdk ruff format src/ tests/
 
 check:
-	cd $(BE) && poetry run ruff check .
-	cd $(BE) && poetry run ruff format --check .
+	cd $(BE) && uv run --package backend ruff check .
+	cd $(BE) && uv run --package backend ruff format --check .
 	cd $(FE) && pnpm lint
 	cd $(FE) && pnpm typecheck
-	cd $(SDK) && poetry run ruff check src/ tests/
-	cd $(SDK) && poetry run ruff format --check src/ tests/
+	cd $(SDK) && uv run --package mcp_sdk ruff check src/ tests/
+	cd $(SDK) && uv run --package mcp_sdk ruff format --check src/ tests/
 
 # ── Encryption ───────────────────────────────────────────────
 # All stack env files live in deployment/<tier>/ and are encrypted by two commands. The key is
@@ -140,22 +143,22 @@ decrypt:
 # ── Content Sync ─────────────────────────────────────────────
 # Runs as a file, not -m: backend/scripts/ shadows repo-root scripts/ as a package, so -m can't resolve it.
 sync-content:
-	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=..:. poetry run python ../scripts/sync_content.py
+	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=..:. uv run --package backend python ../scripts/sync_content.py
 
 seed-lab-templates:
-	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=.. poetry run python -m scripts.seed_lab_templates
+	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=.. uv run --package backend python -m scripts.seed_lab_templates
 
 export-cohort:
-	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=.. poetry run python -m scripts.export_cohort_metrics
+	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=.. uv run --package backend python -m scripts.export_cohort_metrics
 
 export-audit:
-	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=.. poetry run python -m scripts.export_mcp_audit
+	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=.. uv run --package backend python -m scripts.export_mcp_audit
 
 export-defense:
-	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=.. poetry run python -m scripts.export_defense_metrics
+	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=.. uv run --package backend python -m scripts.export_defense_metrics
 
 eval-identifier:
-	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=.. poetry run python -m scripts.eval_identifier
+	cd $(BE) && ENV_FILE=$(ENV_FILE) PYTHONPATH=.. uv run --package backend python -m scripts.eval_identifier
 
 # ── Cleanup ──────────────────────────────────────────────────
 clean:
