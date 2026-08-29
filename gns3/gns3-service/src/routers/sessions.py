@@ -13,7 +13,7 @@ from src.models import (
     SessionStateResponse,
 )
 
-from ._deps import get_db, get_service
+from ._deps import get_db, get_service, verify_internal_token
 
 router = APIRouter()
 
@@ -165,3 +165,40 @@ async def post_bulk_node_action(
     db=Depends(get_db),
 ):
     await service.bulk_node_action(db=db, session_id=session_id, action=action)
+
+
+class SessionTokenRequest(BaseModel):
+    """Body of POST /sessions/{id}/token."""
+
+    password: str = Field(description="The session account's GNS3 password")
+
+
+class SessionTokenResponse(BaseModel):
+    """A freshly minted GNS3 JWT for the session account."""
+
+    gns3_jwt: str
+
+
+@router.post(
+    "/sessions/{session_id}/token",
+    response_model=SessionTokenResponse,
+    tags=["sessions"],
+    summary="Mint a GNS3 JWT for the session account",
+    description=(
+        "Server-to-server only. Lets the platform hand the browser a token "
+        "instead of the session password."
+    ),
+    dependencies=[Depends(verify_internal_token)],
+    responses={
+        404: {"model": ErrorResponse, "description": "Session not found"},
+        502: {"model": ErrorResponse, "description": "GNS3 is unavailable"},
+    },
+)
+async def issue_session_token(
+    body: SessionTokenRequest,
+    session_id: str = Path(description="Session UUID"),
+    service=Depends(get_service),
+    db=Depends(get_db),
+):
+    jwt = await service.issue_user_token(db, session_id, body.password)
+    return SessionTokenResponse(gns3_jwt=jwt)

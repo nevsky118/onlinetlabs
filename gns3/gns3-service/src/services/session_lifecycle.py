@@ -69,7 +69,10 @@ class SessionService:
         user_id: str,
         template_project_id: str,
     ) -> SessionResponse:
-        username = gns3_username_for(user_id)
+        # The id is minted here, not by the DB: the GNS3 username is derived from it
+        # and the account is created before the row exists.
+        session_uuid = uuid_module.uuid4()
+        username = gns3_username_for(str(session_uuid))
         password = secrets.token_urlsafe(16)
         created_user_id: str | None = None
         created_project_id: str | None = None
@@ -84,12 +87,13 @@ class SessionService:
             async with self._rbac_gate():
                 # Remove a dangling student-<uid> user left over from a previous rebuild.
                 # Otherwise GNS3 returns 400 already registered.
+                # Per-session name: a match can only be this launch's own leftover.
                 orphan = await self._admin.find_user_by_name(username)
                 if orphan is not None:
                     logger.warning(
-                        "Removing orphan GNS3 user %s (user_id=%s) before re-creating",
+                        "Removing orphan GNS3 user %s (session=%s) before re-creating",
                         username,
-                        orphan["user_id"],
+                        session_uuid,
                     )
                     try:
                         await self._admin.delete_user(orphan["user_id"])
@@ -127,6 +131,7 @@ class SessionService:
             jwt = await self._admin.get_user_token(username, password)
 
             session = Session(
+                id=session_uuid,
                 gns3_user_id=created_user_id,
                 gns3_username=username,
                 gns3_project_id=created_project_id,
@@ -215,6 +220,15 @@ class SessionService:
             logger.exception("Failed to delete old project %s", old_project_id)
 
         return ProjectResetResponse(session_id=str(session.id), project_id=new_project_id)
+
+    async def issue_user_token(self, db: AsyncSession, session_id: str, password: str) -> str:
+        """Mints a fresh GNS3 JWT for the session's own account."""
+        session = await db.get(Session, uuid_module.UUID(session_id))
+        if session is None:
+            raise SessionNotFound(f"Session {session_id} not found")
+        if session.status == SessionStatus.CLOSED:
+            raise SessionClosed(f"Session {session_id} is closed")
+        return await self._admin.get_user_token(session.gns3_username, password)
 
     async def delete_session(self, db: AsyncSession, session_id: str) -> None:
         session = await db.get(Session, uuid_module.UUID(session_id))
