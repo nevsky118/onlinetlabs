@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 
 import httpx
 import redis.asyncio as aioredis
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
@@ -42,11 +42,15 @@ from mcp_client.client import MCPClient
 from observability.activity import AgentActivityLog
 from progress.router import router as progress_router
 from rate_limit import limiter
+from scripts.retention import retention_loop
+from sessions.activity import touch_path_session
 from sessions.idle_reclaim import idle_reclaim_loop
 from sessions.monitor_registry import SessionMonitorRegistry
 from sessions.queue import SessionQueueService
+from sessions.reaper import session_reaper_loop
 from sessions.router import router as sessions_router
 from sessions.routers.queries import agent_activity_router
+from sessions.routers.ticket import router as gns3_ticket_router
 from sessions.services.proxy import _BULK_GNS3_SEMAPHORE
 from sessions.state_cache import StateCache
 from sessions.ws import WebSocketGateway, close_all_connections
@@ -161,6 +165,8 @@ async def lifespan(app: FastAPI):
     app.state.session_queue = session_queue
     app.state.bulk_gns3_semaphore = _BULK_GNS3_SEMAPHORE
     reclaim_task = asyncio.create_task(idle_reclaim_loop(gns3_client))
+    reaper_task = asyncio.create_task(session_reaper_loop(gns3_client, monitor_registry))
+    retention_task = asyncio.create_task(retention_loop())
     readiness_task = asyncio.create_task(_audit_lab_readiness())
     restore_task = asyncio.create_task(_restore_session_monitors(monitor_registry))
     yield
@@ -174,16 +180,18 @@ async def lifespan(app: FastAPI):
         await restore_task
     except asyncio.CancelledError:
         pass
-    reclaim_task.cancel()
-    try:
-        await reclaim_task
-    except asyncio.CancelledError:
-        pass
+    for task in (reclaim_task, reaper_task, retention_task):
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
     await close_all_connections()
     await activity_log.stop()
     await redis_client.close()
     await monitor_registry.stop_all()
     await gns3_client.close()
+    await mcp_client.close()
 
 
 app = FastAPI(lifespan=lifespan)
@@ -225,11 +233,27 @@ app.include_router(labs_router, prefix="/labs", tags=["labs"])
 app.include_router(labs_internal_router, prefix="/internal", tags=["internal"])
 app.include_router(progress_router, prefix="/users/me/progress", tags=["progress"])
 app.include_router(instructor_router, prefix="/instructor", tags=["instructor"])
-app.include_router(sessions_router, prefix="/users/me/sessions", tags=["sessions"])
-app.include_router(escalation_router, prefix="/users/me/sessions", tags=["escalation"])
+app.include_router(
+    sessions_router,
+    prefix="/users/me/sessions",
+    tags=["sessions"],
+    dependencies=[Depends(touch_path_session)],
+)
+app.include_router(
+    escalation_router,
+    prefix="/users/me/sessions",
+    tags=["escalation"],
+    dependencies=[Depends(touch_path_session)],
+)
 app.include_router(experiment_router, prefix="/experiment", tags=["experiment"])
+app.include_router(gns3_ticket_router, prefix="/gns3", tags=["gns3"])
 app.include_router(validation_router, prefix="/labs", tags=["validation"])
-app.include_router(validation_runs_router, prefix="/sessions", tags=["validation"])
+app.include_router(
+    validation_runs_router,
+    prefix="/sessions",
+    tags=["validation"],
+    dependencies=[Depends(touch_path_session)],
+)
 app.include_router(agent_activity_router, prefix="/sessions", tags=["observability"])
 app.include_router(chat_router, tags=["chat"])
 

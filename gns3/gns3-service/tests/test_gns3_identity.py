@@ -62,3 +62,19 @@ class TestGns3UsernameFor:
 
         with autotest.step("Assert: all 500 names are distinct"):
             assert len(names) == 500
+
+    @autotest.num("3399")
+    @autotest.external_id("dba25fbf-0503-4a55-8731-a8305115565c")
+    @autotest.name("gns3_username_for: two sessions of one student get distinct names")
+    def test_dba25fbf_two_sessions_of_one_student_differ(self):
+        """A per-student name let the second launch delete the first session's GNS3 user."""
+        with autotest.step("Arrange: two session ids belonging to the same student"):
+            first = "0d1903e5-d38a-41ff-bcfb-03554cddba20"
+            second = "b7c4f210-9a3e-4d18-8f52-6ec1a70b4d99"
+
+        with autotest.step("Act: derive a name for each"):
+            first_name = gns3_username_for(first)
+            second_name = gns3_username_for(second)
+
+        with autotest.step("Assert: the two sessions never share one GNS3 account"):
+            assert first_name != second_name, "sessions must not share a GNS3 user"

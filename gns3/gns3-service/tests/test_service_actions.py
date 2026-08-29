@@ -129,11 +129,12 @@ class TestSessionServiceCreateSession:
             response = await service.create_session(db, student_id, "tmpl-1")
 
         with autotest.step("Assert: user, project, ACLs and session response are all correct"):
-            # The GNS3 user name is a hash of the FULL user_id (the id prefix is not
-            # unique and led to deleting someone else's GNS3 user during orphan cleanup).
+            # The name is derived from the session, not the student: two concurrent
+            # sessions must not share one GNS3 account.
             from src.gns3_identity import gns3_username_for
 
-            expected_username = gns3_username_for(student_id)
+            created_session = db.add.call_args.args[0]
+            expected_username = gns3_username_for(str(created_session.id))
 
             admin.create_user.assert_awaited_once()
             username_arg, _password_arg = admin.create_user.await_args.args

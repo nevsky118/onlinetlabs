@@ -46,6 +46,15 @@ class Gns3ServiceClient:
         resp.raise_for_status()
         return resp.json()
 
+    async def issue_session_token(self, gns3_service_session_id: str, password: str) -> str:
+        """Mints a fresh GNS3 JWT for the session account."""
+        resp = await self._client.post(
+            f"/sessions/{gns3_service_session_id}/token",
+            json={"password": password},
+        )
+        resp.raise_for_status()
+        return resp.json()["gns3_jwt"]
+
     async def delete_session(self, gns3_service_session_id: str) -> None:
         """Deletes the session and frees its resources."""
         resp = await self._client.delete(f"/sessions/{gns3_service_session_id}")

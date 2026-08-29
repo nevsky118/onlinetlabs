@@ -5,13 +5,16 @@
   <title>GNS3 — открываем лабораторию</title>
 </head>
 <body>
-  <p>Открываем лабораторию в GNS3…</p>
+  <p id="status">Открываем лабораторию в GNS3…</p>
   <script>
     (function () {
       var params = new URLSearchParams(window.location.search);
-      var username = params.get('username');
-      var password = params.get('password');
+      var ticket = params.get('ticket');
       var project = params.get('project');
+
+      function fail(message) {
+        document.getElementById('status').textContent = message;
+      }
 
       // The GNS3 Web UI stores the server connection as "controller-<id>" in
       // localStorage and crashes with "Cannot read properties of null (reading
@@ -20,9 +23,13 @@
       // We register it in the same format GNS3 itself uses (see controllers.component),
       // filling in host/port/protocol from the current origin, so the link stays
       // working regardless of the domain/port GNS3 is published on.
-      if (!localStorage.getItem('controller-1')) {
+      function controller() {
+        var raw = localStorage.getItem('controller-1');
+        if (raw) {
+          try { return JSON.parse(raw); } catch (e) { /* rewritten below */ }
+        }
         localStorage.setItem('controllerIds', 'controller-1');
-        localStorage.setItem('controller-1', JSON.stringify({
+        return {
           name: 'GNS3 server',
           location: 'remote',
           path: '',
@@ -31,40 +38,48 @@
           port: Number(window.location.port) || (window.location.protocol === 'https:' ? 443 : 80),
           protocol: window.location.protocol,
           id: 1
-        }));
+        };
       }
 
-      if (username && password) {
-        // The GNS3 Web UI login form fills in the login/password from this
-        // localStorage key by itself on load (see the login component, where
-        // ngOnInit reads isRememberMe and populates loginForm). The student is
-        // left with one click on "Log in" instead of typing the temporary
-        // credentials by hand.
-        localStorage.setItem('isRememberMe', JSON.stringify({
-          username: username,
-          password: password,
-          isRememberMe: true
-        }));
-      }
-
-      // Reset the JWT of the previous GNS3 session. If another user was already
-      // logged in in the browser (e.g. admin), the Angular SPA sees
-      // controller-1.authToken, skips the login form and goes to /projects,
-      // ignoring the returnUrl that points at the student's specific project.
-      // We delete authToken from the controller object, so the SPA shows the
-      // login form with the student's credentials prefilled from isRememberMe.
-      try {
-        var ctrl = JSON.parse(localStorage.getItem('controller-1') || '{}');
-        delete ctrl.authToken;
+      function open(token) {
+        var ctrl = controller();
+        // Presetting authToken skips the login form entirely, so no credential
+        // is ever typed, stored or left in localStorage.
+        ctrl.authToken = token;
         delete ctrl.username;
         delete ctrl.password;
         delete ctrl.tokenExpired;
         localStorage.setItem('controller-1', JSON.stringify(ctrl));
-      } catch (e) {}
+        // A password used to live here under isRememberMe. Clear any leftover.
+        localStorage.removeItem('isRememberMe');
+        window.location.replace(
+          project ? 'controller/1/project/' + project : 'controller/1/projects'
+        );
+      }
 
+      if (!ticket) {
+        fail('Ссылка на лабораторию недействительна. Откройте лабораторию заново.');
+        return;
+      }
 
-      var returnUrl = project ? '/controller/1/project/' + project : '/controller/1/projects';
-      window.location.replace('controller/1/login?returnUrl=' + encodeURIComponent(returnUrl));
+      fetch('/api/gns3/redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ ticket: ticket })
+      })
+        .then(function (response) {
+          if (!response.ok) {
+            return response.json().catch(function () { return {}; }).then(function (body) {
+              throw new Error(body.detail || 'redeem failed');
+            });
+          }
+          return response.json();
+        })
+        .then(function (body) { open(body.gns3_jwt); })
+        .catch(function (error) {
+          fail(error.message || 'Не удалось открыть лабораторию. Откройте её заново.');
+        });
     })();
   </script>
 </body>
