@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.dependencies import get_current_user, require_active_user
+from control_interface.consent import study_decision
 from db.session import get_db, get_db_factory
 from deps import get_gns3_client, get_locale, get_mcp_client, get_monitor_registry, get_state_cache
 from i18n import Locale, LocalizedError
@@ -17,7 +18,7 @@ from mcp_client.client import MCPToolError
 from rate_limit import limiter
 from sessions.context import build_session_context
 from sessions.monitor_registry import SessionMonitorRegistry
-from sessions.queue import QUEUE_AVG_PROVISION_SEC, SessionQueueService, get_queue_service
+from sessions.queue import SessionQueueService, get_queue_service
 from sessions.schemas import (
     LaunchResponse,
     LearningSessionCreate,
@@ -62,6 +63,9 @@ async def launch_endpoint(
     # Push user_id and lab_slug into structlog contextvars so all subsequent
     # logs within this request automatically carry these fields.
     structlog.contextvars.bind_contextvars(user_id=current_user["id"], lab_slug=body.lab_slug)
+    # asked before the session exists, so the observer cannot write first
+    if await study_decision(db, current_user["id"]) is None:
+        raise LocalizedError("error.consent.required", status_code=428)
     # Relaunching an already-active session must not take a queue slot or
     # double-count it; slot/monitoring/gauge are only touched for a new launch.
     existing = await get_active_session(db, current_user["id"], body.lab_slug)
@@ -72,7 +76,7 @@ async def launch_endpoint(
         if not acquired:
             pos = await queue.enqueue(current_user["id"], body.lab_slug)
             depth = await queue.queue_depth(body.lab_slug)
-            eta_sec = depth * QUEUE_AVG_PROVISION_SEC
+            eta_sec = round(depth * await queue.avg_provision_seconds())
             return JSONResponse(
                 status_code=status.HTTP_202_ACCEPTED,
                 content={
@@ -106,7 +110,6 @@ async def launch_endpoint(
         session_id=session.id,
         status=session.status,
         gns3_username=creds["gns3_username"],
-        gns3_password=creds["gns3_password"],
         gns3_url=creds["gns3_url"],
         gns3_deep_url=creds["gns3_deep_url"],
     )
@@ -118,10 +121,11 @@ async def stop_endpoint(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     mcp_client=Depends(get_mcp_client),
+    gns3_client=Depends(get_gns3_client),
 ):
     """Stops the lab within the session."""
     try:
-        ok = await stop_lab(db, session_id, current_user["id"], mcp_client)
+        ok = await stop_lab(db, session_id, current_user["id"], mcp_client, gns3_client)
     except MCPToolError as exc:
         raise LocalizedError("error.session.gns3_operation_failed", status_code=502, error=str(exc))
     if not ok:
@@ -135,10 +139,11 @@ async def restart_endpoint(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     mcp_client=Depends(get_mcp_client),
+    gns3_client=Depends(get_gns3_client),
 ):
     """Restarts the lab within the session."""
     try:
-        ok = await restart_lab(db, session_id, current_user["id"], mcp_client)
+        ok = await restart_lab(db, session_id, current_user["id"], mcp_client, gns3_client)
     except MCPToolError as exc:
         raise LocalizedError("error.session.gns3_operation_failed", status_code=502, error=str(exc))
     if not ok:

@@ -89,6 +89,7 @@ async def get_session_state(
         "links": raw.get("links", []),
         "metrics": raw.get("metrics", {}),
         "no_assist": no_assist,
+        "paused": session.paused_at is not None,
     }
     await state_cache.set(session_id, enriched)
     return enriched

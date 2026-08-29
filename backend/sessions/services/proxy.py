@@ -3,8 +3,11 @@ from urllib.parse import urlencode
 
 from fastapi import Request
 
+from config import settings
 from security.secrets import decrypt_secret
+from sessions.services.persist import persist_volatile_configs
 from sessions.services.query import get_owned_session
+from sessions.services.ticket import get_ticket_store
 
 # Throttle for bulk-node-start. gns3-server is single-process async and
 # saturates docker.sock above 12 parallel calls. On MSK-8 this peaks CPU at about 70 percent.
@@ -27,13 +30,12 @@ def existing_gns3_url(session) -> str:
     return settings.gns3.public_url
 
 
-def existing_gns3_deep_url(session) -> str:
+def existing_gns3_deep_url(session, ticket: str | None = None) -> str:
     """Returns a deep link to the session's project in the GNS3 web UI.
 
-    Goes through auth-relay.html (see gns3/gns3-server/auth-relay.html): a
-    direct jump to /controller/1/project/<id> hits the GNS3 login form;
-    the relay fills it with the temporary gns3_username/gns3_password and
-    gets the student to the project's returnUrl with a single "Log in" click.
+    Goes through auth-relay.html: a direct jump to /controller/1/project/<id>
+    hits the GNS3 login form. The relay exchanges a one-time ticket for a JWT
+    server-side, so no password reaches the browser.
     """
     from config import settings
 
@@ -42,32 +44,52 @@ def existing_gns3_deep_url(session) -> str:
     base = settings.gns3.public_url.rstrip("/")
     if not project_id:
         return settings.gns3.public_url
-    username = meta.get("gns3_username")
-    enc_password = meta.get("enc_password")
-    if username and enc_password:
-        query = urlencode(
-            {
-                "username": username,
-                "password": decrypt_secret(enc_password),
-                "project": project_id,
-            }
-        )
+    if ticket:
+        query = urlencode({"ticket": ticket, "project": project_id})
         return f"{base}/static/web-ui/auth-relay.html?{query}"
     return f"{base}/static/web-ui/controller/1/project/{project_id}"
 
 
 async def get_credentials(db, session_id: str, user_id: str) -> dict | None:
-    """Returns GNS3 credentials and links for the session. None if not owned or no metadata."""
+    """Returns the GNS3 links for the session. None if not owned or no metadata."""
     session = await get_owned_session(db, session_id, user_id)
     if session is None or not session.meta:
         return None
     meta = session.meta
+    ticket = await get_ticket_store().issue(str(session.id), user_id)
     return {
         "gns3_username": meta["gns3_username"],
-        "gns3_password": decrypt_secret(meta["enc_password"]),
         "gns3_url": existing_gns3_url(session),
-        "gns3_deep_url": existing_gns3_deep_url(session),
+        "gns3_deep_url": existing_gns3_deep_url(session, ticket),
     }
+
+
+async def redeem_gns3_ticket(db, ticket: str, gns3_client) -> dict | None:
+    """Exchanges a one-time ticket for a fresh GNS3 JWT and the project to open."""
+    payload = await get_ticket_store().redeem(ticket)
+    if payload is None:
+        return None
+    session = await get_owned_session(db, payload["session_id"], payload["user_id"])
+    if session is None or not session.meta:
+        return None
+    meta = session.meta
+    gns3_sid = meta.get("gns3_service_session_id")
+    if not gns3_sid:
+        return None
+    jwt = await gns3_client.issue_session_token(gns3_sid, decrypt_secret(meta["enc_password"]))
+    return {
+        "gns3_jwt": jwt,
+        "project_id": meta.get("gns3_project_id"),
+        "gns3_url": existing_gns3_url(session),
+    }
+
+
+async def _clear_paused(db, session) -> None:
+    """Resume: a started node means the session is no longer paused."""
+    if session.paused_at is None:
+        return
+    session.paused_at = None
+    await db.commit()
 
 
 async def proxy_node_action(
@@ -86,7 +108,11 @@ async def proxy_node_action(
     gns3_sid = (session.meta or {}).get("gns3_service_session_id")
     if not gns3_sid:
         return False
+    if action == "stop":
+        await persist_volatile_configs(gns3_client, gns3_sid, settings)
     await gns3_client.node_action(gns3_sid, node_id, action)
+    if action == "start":
+        await _clear_paused(db, session)
     await state_cache.invalidate(session_id)
     return True
 
@@ -107,9 +133,13 @@ async def proxy_bulk_node_action(
     gns3_sid = (session.meta or {}).get("gns3_service_session_id")
     if not gns3_sid:
         return False
+    if action == "stop":
+        await persist_volatile_configs(gns3_client, gns3_sid, settings)
     sem = semaphore if semaphore is not None else _BULK_GNS3_SEMAPHORE
     async with sem:
         await gns3_client.bulk_node_action(gns3_sid, action)
+    if action == "start":
+        await _clear_paused(db, session)
     await state_cache.invalidate(session_id)
     return True
 

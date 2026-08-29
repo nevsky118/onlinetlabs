@@ -92,3 +92,69 @@ class VpcsStalePromptConsoleData:
         self.answer = (
             f"show ip\r\nIP/MASK     : {ip}\r\nGATEWAY     : {gateway}\r\nVPCS> "
         ).encode()
+
+
+class VpcsSaveConsoleData:
+    """Generates the console reply to `save`, as captured from a real VPCS node."""
+
+    def __init__(self, node: str = "PC1", started: bool = True):
+        self.node = node
+        self.started = started
+        self.ok_text = (
+            "save\r\nSaving startup configuration to startup.vpc\r\n.  done\r\n\r\n\rVPCS> "
+        )
+        self.silent_text = "\r\nVPCS> "
+        self.truncated_text = "save\r\nSaving startup configuration to startup.vpc\r\n"
+
+    @property
+    def ok(self) -> bytes:
+        """A completed save."""
+        return self.ok_text.encode()
+
+    @property
+    def silent(self) -> bytes:
+        """A console that answered with nothing but a prompt."""
+        return self.silent_text.encode()
+
+    @property
+    def truncated(self) -> bytes:
+        """A save that started and never reported done."""
+        return self.truncated_text.encode()
+
+
+class Gns3NodeStateData:
+    """Generates the node dicts a CheckContext holds, in the camelCase gns3 shape."""
+
+    def __init__(self):
+        self.nodes = {
+            "SW1": self._node("ethernet_switch", 2010, "none", "started"),
+            "PC1": self._node("vpcs", 2011, "telnet", "started"),
+            "PC2": self._node("vpcs", 2013, "telnet", "started"),
+        }
+
+    @staticmethod
+    def _node(node_type: str, console: int, console_type: str, status: str) -> dict:
+        """One node entry as gns3-service serializes it."""
+        return {
+            "id": f"node-{console}",
+            "name": f"n{console}",
+            "nodeType": node_type,
+            "console": console,
+            "consoleHost": "0.0.0.0",
+            "consoleType": console_type,
+            "status": status,
+        }
+
+    def with_stopped(self, name: str) -> "Gns3NodeStateData":
+        """Marks one node stopped, so it must be skipped."""
+        self.nodes[name] = {**self.nodes[name], "status": "stopped"}
+        return self
+
+    @property
+    def vpcs_ports(self) -> list[int]:
+        """Console ports of started vpcs nodes, which are the save targets."""
+        return [
+            n["console"]
+            for n in self.nodes.values()
+            if n["nodeType"] == "vpcs" and n["status"] == "started"
+        ]

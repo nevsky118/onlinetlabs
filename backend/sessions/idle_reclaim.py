@@ -1,22 +1,20 @@
-"""Idle session reclaimer. Stops nodes after 30 minutes of inactivity.
-
-Frees RAM on gns3-server. The student can restart nodes upon return.
-"""
+"""Idle session reclaimer. Saves node config, stops nodes, marks the session paused."""
 
 import asyncio
 import logging
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 
+from config import settings
 from db.session import async_session
 from models.session import LearningSession
 from observability.metrics import idle_reclaimed_counter
+from sessions.services.persist import persist_volatile_configs
 
 logger = logging.getLogger(__name__)
 
 IDLE_THRESHOLD_MIN = 30
-# Every N seconds, the reclaimer closes sessions inactive for more than 30 minutes.
 RECLAIM_INTERVAL_SEC = 300
 
 
@@ -33,26 +31,36 @@ async def idle_reclaim_loop(gns3_client) -> None:
 
 
 async def _reclaim_idle_sessions(gns3_client) -> None:
-    """Stops nodes of active sessions inactive longer than the idle threshold."""
+    """Pauses active sessions with no student activity past the idle threshold."""
     cutoff = datetime.now(UTC) - timedelta(minutes=IDLE_THRESHOLD_MIN)
     async with async_session() as db:
-        result = await db.execute(select(LearningSession).where(LearningSession.status == "active"))
+        result = await db.execute(
+            select(LearningSession).where(
+                LearningSession.status == "active",
+                LearningSession.paused_at.is_(None),
+                LearningSession.last_seen_at < cutoff,
+            )
+        )
         sessions = result.scalars().all()
 
     reclaimed = 0
     for session in sessions:
-        last_activity = await _last_activity_at(gns3_client, session)
-        if last_activity is None or last_activity > cutoff:
+        # gns3 topology activity can only spare a session, never condemn one
+        gns3_activity = await _last_activity_at(gns3_client, session)
+        if gns3_activity is not None and gns3_activity > cutoff:
             continue
         gns3_sid = (session.meta or {}).get("gns3_service_session_id")
         if not gns3_sid:
             continue
         try:
+            saved = await persist_volatile_configs(gns3_client, gns3_sid, settings)
             await gns3_client.bulk_node_action(gns3_sid, "stop")
+            await _mark_paused(str(session.id))
             logger.info(
-                "idle_reclaim: stopped nodes session=%s last_activity=%s",
+                "idle_reclaim: paused session=%s last_seen=%s configs_saved=%d",
                 session.id,
-                last_activity.isoformat(),
+                session.last_seen_at.isoformat(),
+                saved,
             )
             try:
                 idle_reclaimed_counter.labels(lab_slug=session.lab_slug).inc()
@@ -60,9 +68,20 @@ async def _reclaim_idle_sessions(gns3_client) -> None:
                 pass
             reclaimed += 1
         except Exception:
-            logger.exception("idle_reclaim: stop failed session=%s", session.id)
+            logger.exception("idle_reclaim: pause failed session=%s", session.id)
     if reclaimed:
-        logger.info("idle_reclaim: %d sessions reclaimed", reclaimed)
+        logger.info("idle_reclaim: %d sessions paused", reclaimed)
+
+
+async def _mark_paused(session_id: str) -> None:
+    """Flags the session as paused so its state reads as resumable, not broken."""
+    async with async_session() as db:
+        await db.execute(
+            update(LearningSession)
+            .where(LearningSession.id == session_id)
+            .values(paused_at=datetime.now(UTC))
+        )
+        await db.commit()
 
 
 async def _last_activity_at(gns3_client, session) -> datetime | None:

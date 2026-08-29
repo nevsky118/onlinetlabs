@@ -205,6 +205,12 @@ class LabProgressObserver:
         # deltas → behavioral events
         events = diff_snapshots(self._prev_snapshot, snapshot)
         if events:
+            # console work signal
+            from sessions.activity import touch_observed_session
+
+            if self._session_id is not None:
+                await touch_observed_session(self._db_factory, self._session_id)
+
             from uuid import uuid4
 
             now = datetime.now(tz=UTC)
@@ -224,10 +230,25 @@ class LabProgressObserver:
             await self._persist(events)
         self._prev_snapshot = snapshot
 
+    async def _may_collect(self) -> bool:
+        """Whether this learner agreed to behavioural collection."""
+        from control_interface.consent import may_collect
+
+        if self._user_id is None:
+            return False
+        try:
+            async with self._db_factory() as db:
+                return await may_collect(db, self._user_id)
+        except Exception:
+            logger.warning("LabProgressObserver: consent lookup failed", exc_info=True)
+            return False
+
     async def _persist(self, events: list[dict]) -> None:
-        """Batch write of events to the DB."""
+        """Batch write of events to the DB, only for a consenting learner."""
         from models.behavioral_event import BehavioralEvent
 
+        if not await self._may_collect():
+            return
         try:
             async with self._db_factory() as session:
                 for evt in events:

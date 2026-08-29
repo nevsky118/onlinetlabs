@@ -157,25 +157,44 @@ async def end_session(
     return await _mark_ended_and_finalize(db, session, status)
 
 
-async def stop_lab(db, session_id: str, user_id: str, mcp_client) -> bool:
+async def stop_lab(db, session_id: str, user_id: str, mcp_client, gns3_client=None) -> bool:
     """Stops all lab nodes via MCP. False if the session isn't owned by the user."""
     session = await get_owned_session(db, session_id, user_id)
     if session is None:
         return False
+    await _save_before_stop(session, gns3_client)
     ctx = build_session_context(session)
     await mcp_client.execute_action(ctx, "stop_all_nodes", {})
     return True
 
 
-async def restart_lab(db, session_id: str, user_id: str, mcp_client) -> bool:
+async def restart_lab(db, session_id: str, user_id: str, mcp_client, gns3_client=None) -> bool:
     """Restarts lab nodes via MCP. False if the session isn't owned by the user."""
     session = await get_owned_session(db, session_id, user_id)
     if session is None:
         return False
+    await _save_before_stop(session, gns3_client)
     ctx = build_session_context(session)
     await mcp_client.execute_action(ctx, "stop_all_nodes", {})
     await mcp_client.execute_action(ctx, "start_all_nodes", {})
+    if session.paused_at is not None:
+        session.paused_at = None
+        await db.commit()
     return True
+
+
+async def _save_before_stop(session, gns3_client) -> None:
+    """Persists volatile node config so the stop stays recoverable."""
+    gns3_sid = (session.meta or {}).get("gns3_service_session_id")
+    if not gns3_client or not gns3_sid:
+        return
+    from config import settings
+    from sessions.services.persist import persist_volatile_configs
+
+    try:
+        await persist_volatile_configs(gns3_client, gns3_sid, settings)
+    except Exception:
+        logger.warning("save before stop failed for %s", session.id, exc_info=True)
 
 
 async def reset_lab(db, session_id: str, user_id: str, gns3_client) -> bool:
