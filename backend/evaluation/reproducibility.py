@@ -1,6 +1,4 @@
-"""Reproducibility bundle: anonymized export of real MRT data for re-analysis."""
-
-import hashlib
+"""Reproducibility bundle: pseudonymous export of real MRT data for re-analysis."""
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,18 +7,18 @@ from models.intervention_decision import InterventionDecision
 from models.regime_annotation import RegimeAnnotation
 from models.session import LearningSession
 from models.user import User
+from research.pseudonyms import pseudonym_map, research_id_map
 
-
-def _anon(value: str) -> str:
-    """Stable anonymous id (sha256, 12 hex) -- consistent across tables."""
-    return hashlib.sha256(value.encode()).hexdigest()[:12]
+# Every key this bundle may carry. A column outside it must not reach an export.
+BUNDLE_IDENTIFIER_KEYS = frozenset({"session", "user"})
 
 
 async def build_reproducibility_bundle(db: AsyncSession) -> dict:
     """Bundle of real MRT data for independent re-analysis.
 
     FIREWALL: data from is_simulated users is EXCLUDED -- simulation runs never
-    flow into "real results". Personal ids are replaced with hashes.
+    flow into "real results". Identities are replaced by study pseudonyms and
+    per-session research ids, both random and stored, never derived.
     """
     sim_users = select(User.id).where(User.is_simulated.is_(True)).scalar_subquery()
     sim_sessions = (
@@ -54,11 +52,15 @@ async def build_reproducibility_bundle(db: AsyncSession) -> dict:
             )
         )
     ).scalar_one()
+    pseudonyms = await pseudonym_map(db, [d.user_id for d in decisions])
+    research_ids = await research_id_map(
+        db, [d.session_id for d in decisions] + [a.session_id for a in annotations]
+    )
     return {
         "intervention_decisions": [
             {
-                "session": _anon(d.session_id),
-                "user": _anon(d.user_id),
+                "session": research_ids.get(d.session_id),
+                "user": pseudonyms.get(d.user_id),
                 "spell_id": d.spell_id,
                 "ts": d.ts.isoformat() if d.ts else None,
                 "regime": d.regime,
@@ -74,7 +76,7 @@ async def build_reproducibility_bundle(db: AsyncSession) -> dict:
         ],
         "regime_annotations": [
             {
-                "session": _anon(a.session_id),
+                "session": research_ids.get(a.session_id),
                 "coder_id": a.coder_id,
                 "window_index": a.window_index,
                 "regime_label": a.regime_label,

@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from models.intervention_decision import InterventionDecision
 from models.regime_annotation import RegimeAnnotation
 from models.session import LearningSession
+from models.study_participant import StudyParticipant
 from models.user import User
 
 pytestmark = [pytest.mark.unit]
@@ -22,6 +23,7 @@ async def _sqlite_factory():
         await conn.run_sync(LearningSession.__table__.create)
         await conn.run_sync(InterventionDecision.__table__.create)
         await conn.run_sync(RegimeAnnotation.__table__.create)
+        await conn.run_sync(StudyParticipant.__table__.create)
     return async_sessionmaker(engine, expire_on_commit=False)
 
 
@@ -38,6 +40,8 @@ class TestReproducibilityFirewall:
             async with sf() as db:
                 db.add(User(id="u-real", email="r@t.local", is_simulated=False))
                 db.add(User(id="u-sim", email="s@t.local", is_simulated=True))
+                db.add(StudyParticipant(user_id="u-real"))
+                db.add(StudyParticipant(user_id="u-sim"))
                 db.add(LearningSession(id="s-real", user_id="u-real", lab_slug="l", started_at=now))
                 db.add(LearningSession(id="s-sim", user_id="u-sim", lab_slug="l", started_at=now))
                 for sid, uid in [("s-real", "u-real"), ("s-sim", "u-sim")]:

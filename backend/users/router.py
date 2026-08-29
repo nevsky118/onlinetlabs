@@ -106,3 +106,20 @@ async def revoke_all_auth_sessions(current_user=Depends(get_current_user), db=De
     result = await db.execute(delete(Session).where(Session.user_id == current_user["id"]))
     await db.commit()
     return RevokeResponse(revoked=result.rowcount)
+
+
+@router.get("/data")
+async def export_my_data(current_user=Depends(get_current_user), db=Depends(get_db)):
+    """Everything the platform holds about the caller, table by table."""
+    from users.data_export import collect_subject_data
+
+    return await collect_subject_data(db, current_user["id"])
+
+
+@router.delete("/data")
+async def erase_my_data(current_user=Depends(get_current_user), db=Depends(get_db)):
+    """Erases the caller's data and their account."""
+    from users.data_export import erase_subject
+
+    removed = await erase_subject(db, current_user["id"])
+    return {"removed": removed}

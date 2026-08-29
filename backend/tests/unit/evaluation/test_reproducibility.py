@@ -10,21 +10,21 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from models.intervention_decision import InterventionDecision
 from models.regime_annotation import RegimeAnnotation
+from models.session import LearningSession
+from models.study_participant import StudyParticipant
+from models.user import User
 
 pytestmark = [pytest.mark.unit]
 
 
 async def _sqlite_factory():
-    # firewall bundle joins users/learning_sessions (excludes is_simulated)
-    from models.session import LearningSession
-    from models.user import User
-
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
     async with engine.begin() as conn:
         await conn.run_sync(User.__table__.create)
         await conn.run_sync(LearningSession.__table__.create)
         await conn.run_sync(InterventionDecision.__table__.create)
         await conn.run_sync(RegimeAnnotation.__table__.create)
+        await conn.run_sync(StudyParticipant.__table__.create)
     return async_sessionmaker(engine, expire_on_commit=False)
 
 
@@ -41,6 +41,9 @@ class TestReproducibility:
             sf = await _sqlite_factory()
             now = datetime(2026, 6, 21, 12, 0, tzinfo=UTC)
             async with sf() as db:
+                db.add(User(id="u1", email="u1@t.local", is_simulated=False))
+                db.add(LearningSession(id="s1", user_id="u1", lab_slug="lab", started_at=now))
+                db.add(StudyParticipant(user_id="u1"))
                 db.add(
                     InterventionDecision(
                         id="d1",
