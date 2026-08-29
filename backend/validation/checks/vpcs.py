@@ -3,6 +3,7 @@
 import asyncio
 import ipaddress
 import re
+from contextlib import asynccontextmanager
 
 from validation.checks.registry import CheckContext, CheckResult
 
@@ -48,6 +49,37 @@ async def _open_console(host: str, port: int):
         except (TimeoutError, OSError) as exc:
             last = exc
     raise last if last else OSError("console connect failed")
+
+
+# GNS3 serialises telnet consoles per node: a second client is refused, not queued.
+# The progress observer and a student's validation run otherwise fight over the
+# same console and one of them reads nothing.
+_console_locks: dict[tuple[str, int], asyncio.Lock] = {}
+
+
+def _console_lock(host: str, port: int) -> asyncio.Lock:
+    """The lock guarding one node's console."""
+    key = (host, port)
+    lock = _console_locks.get(key)
+    if lock is None:
+        lock = asyncio.Lock()
+        _console_locks[key] = lock
+    return lock
+
+
+@asynccontextmanager
+async def console(host: str, port: int):
+    """Exclusive console session. Connects, yields (reader, writer), always closes."""
+    async with _console_lock(host, port):
+        reader, writer = await _open_console(host, port)
+        try:
+            yield reader, writer
+        finally:
+            try:
+                writer.close()
+                await writer.wait_closed()
+            except Exception:
+                pass
 
 
 async def _drain_idle(reader: asyncio.StreamReader, idle: float, total: float) -> bytes:
@@ -110,42 +142,28 @@ async def _read_show_ip(reader, writer) -> bytes:
 async def save_startup_config(host: str, port: int) -> tuple[bool, str]:
     """Persists a VPCS node's config to startup.vpc so a stop is recoverable."""
     try:
-        reader, writer = await _open_console(host, port)
+        async with console(host, port) as (reader, writer):
+            writer.write(b"\r\n")
+            await writer.drain()
+            await asyncio.sleep(0.3)
+            await _drain_idle(reader, idle=0.3, total=2.0)
+            writer.write(b"save\r\n")
+            await writer.drain()
+            raw = await _drain_until_prompt(reader, timeout=_SAVE_TIMEOUT)
     except (TimeoutError, OSError) as exc:
         return False, f"connect failed: {exc}"
-    try:
-        writer.write(b"\r\n")
-        await writer.drain()
-        await asyncio.sleep(0.3)
-        await _drain_idle(reader, idle=0.3, total=2.0)
-        writer.write(b"save\r\n")
-        await writer.drain()
-        raw = await _drain_until_prompt(reader, timeout=_SAVE_TIMEOUT)
-    finally:
-        try:
-            writer.close()
-            await writer.wait_closed()
-        except Exception:
-            pass
     text = raw.decode("utf-8", errors="replace")
     return bool(_SAVE_OK_RE.search(text)), text
 
 
 async def _show_ip_once(host: str, port: int) -> tuple[dict, str]:
     """One connect-ask-parse cycle. Returns (parsed, log); parsed["ip"] is empty when unreadable."""
-    reader, writer = await _open_console(host, port)
-    try:
+    async with console(host, port) as (reader, writer):
         writer.write(b"\r\n")
         await writer.drain()
         await asyncio.sleep(0.3)
         await _drain_idle(reader, idle=0.3, total=2.0)
         raw = await _read_show_ip(reader, writer)
-    finally:
-        try:
-            writer.close()
-            await writer.wait_closed()
-        except Exception:
-            pass
     text = raw.decode("utf-8", errors="replace")
     return _parse_show_ip(text), text
 
@@ -297,7 +315,19 @@ async def vpcs_ping(ctx: CheckContext, params: dict, expect: dict) -> CheckResul
     host = ctx.node_console_host(src_name)
 
     try:
-        reader, writer = await _open_console(host, port)
+        async with console(host, port) as (reader, writer):
+            writer.write(b"\r\n")
+            await writer.drain()
+            await asyncio.sleep(0.3)
+            await _drain_idle(reader, idle=0.3, total=2.0)
+
+            writer.write(f"ping {target}\r\n".encode())
+            await writer.drain()
+            await _drain_until_prompt(reader, timeout=_PING_READ_TIMEOUT)
+
+            writer.write(f"ping {target}\r\n".encode())
+            await writer.drain()
+            raw = await _drain_until_prompt(reader, timeout=_PING_READ_TIMEOUT)
     except (TimeoutError, OSError) as exc:
         return CheckResult(
             ok=False,
@@ -305,26 +335,6 @@ async def vpcs_ping(ctx: CheckContext, params: dict, expect: dict) -> CheckResul
             actual={"error": f"connect failed: {exc}"},
             log="",
         )
-
-    try:
-        writer.write(b"\r\n")
-        await writer.drain()
-        await asyncio.sleep(0.3)
-        await _drain_idle(reader, idle=0.3, total=2.0)
-
-        writer.write(f"ping {target}\r\n".encode())
-        await writer.drain()
-        await _drain_until_prompt(reader, timeout=_PING_READ_TIMEOUT)
-
-        writer.write(f"ping {target}\r\n".encode())
-        await writer.drain()
-        raw = await _drain_until_prompt(reader, timeout=_PING_READ_TIMEOUT)
-    finally:
-        try:
-            writer.close()
-            await writer.wait_closed()
-        except Exception:
-            pass
 
     text = raw.decode("utf-8", errors="replace")
     parsed = _parse_ping(text)
