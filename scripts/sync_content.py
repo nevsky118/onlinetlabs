@@ -13,10 +13,9 @@ import yaml
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.session import async_session
+from kit.db import async_session
 from i18n import DEFAULT_LOCALE, LOCALES, as_locale_map
-from models.course import Course
-from models.lab import Lab
+from models.catalog import Course, Lab
 
 CONTENT_DIR = (
     Path(os.environ["CONTENT_DIR"])

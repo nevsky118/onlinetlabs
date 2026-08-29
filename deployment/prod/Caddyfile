@@ -21,7 +21,10 @@
 	# tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin-key.pem
 
 	import security_headers
-	reverse_proxy web:3001
+	reverse_proxy web:3001 {
+		lb_try_duration 30s
+		lb_try_interval 250ms
+	}
 	encode gzip zstd
 }
 
@@ -54,7 +57,10 @@ www.{$APP_DOMAIN} {
 	reverse_proxy @gns3 gns3-server:3080
 
 	# Everything else goes to the Next.js dashboard, which proxies /api/* to backend internally
-	reverse_proxy dashboard:3000
+	reverse_proxy dashboard:3000 {
+		lb_try_duration 30s
+		lb_try_interval 250ms
+	}
 
 	encode gzip zstd
 }

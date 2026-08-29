@@ -1,0 +1,8 @@
+[Unit]
+Description=onlinetlabs backup: databases, GNS3 volume, off-host copy
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/onlinetlabs-backup

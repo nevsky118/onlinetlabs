@@ -142,11 +142,12 @@ jobs:
             export DASHBOARD_DOMAIN='${{ vars.DASHBOARD_DOMAIN }}'
             dc='docker compose --env-file backend.env -f compose.yaml'
             \$dc pull
-            # Drop retired frontend orphan.
-            \$dc up -d --remove-orphans
+            # Migrate before the new containers take traffic, not after.
+            \$dc run --rm backend alembic upgrade head
+            # Drop retired frontend orphan. --wait holds until health checks pass.
+            \$dc up -d --remove-orphans --wait --wait-timeout 180
             # Caddyfile sits in a bind-mount and up -d does not recreate caddy → apply the config explicitly
             \$dc exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile 2>/dev/null || \$dc restart caddy
-            \$dc run --rm backend alembic upgrade head
             \$dc run --rm backend python -m scripts.sync_content
             \$dc ps
             docker image prune -af --filter 'until=168h'
