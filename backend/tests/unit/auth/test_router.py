@@ -12,6 +12,7 @@ from auth.router import router as auth_router
 from config import settings
 from db.session import get_db
 from i18n import LocalizedError, localized_error_handler
+from models.study_participant import StudyParticipant
 from models.user import Account, User
 from rate_limit import limiter
 
@@ -28,6 +29,7 @@ class TestAuthRouter:
         async with self.engine.begin() as conn:
             await conn.run_sync(User.__table__.create)
             await conn.run_sync(Account.__table__.create)
+            await conn.run_sync(StudyParticipant.__table__.create)
 
         # Minimal app with only the auth router.
         app = FastAPI()

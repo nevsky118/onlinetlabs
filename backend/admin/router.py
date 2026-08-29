@@ -250,10 +250,11 @@ async def list_users(
     order: Literal["asc", "desc"] = "asc",
     search: str | None = None,
     role: UserRole | None = None,
+    is_active: bool | None = None,
     db: AsyncSession = Depends(get_db),
     _: dict = Depends(require_admin),
 ) -> UserListResponse:
-    """List of users with pagination, sorting, search, and role filter."""
+    """List of users with pagination, sorting, search, role and activation filter."""
     col = getattr(User, sort)
     order_col = col.asc() if order == "asc" else col.desc()
 
@@ -263,6 +264,8 @@ async def list_users(
         base_q = base_q.where(or_(User.name.ilike(pattern), User.email.ilike(pattern)))
     if role is not None:
         base_q = base_q.where(User.role == role.value)
+    if is_active is not None:
+        base_q = base_q.where(User.is_active.is_(is_active))
 
     total = (await db.execute(select(func.count()).select_from(base_q.subquery()))).scalar() or 0
 

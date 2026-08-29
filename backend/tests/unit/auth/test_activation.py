@@ -22,6 +22,7 @@ from auth.service import create_user, upsert_github_user
 from config import settings
 from db.session import get_db
 from i18n import LocalizedError
+from models.study_participant import StudyParticipant
 from models.user import Account, User
 from rate_limit import limiter
 
@@ -100,13 +101,14 @@ class TestNewUserActivation:
         async with self.engine.begin() as conn:
             await conn.run_sync(User.__table__.create)
             await conn.run_sync(Account.__table__.create)
+            await conn.run_sync(StudyParticipant.__table__.create)
         yield
         await self.engine.dispose()
 
     @autotest.num("1960")
     @autotest.external_id("38cd1a38-0865-4086-b579-84272e64eded")
-    @autotest.name("create_user (credentials): user is active (is_active=True)")
-    async def test_38cd1a38_credential_user_is_active(self):
+    @autotest.name("create_user (credentials): new user is_active=False")
+    async def test_38cd1a38_credential_user_is_inactive(self):
         with autotest.step("Act: create a credential user"):
             async with self.session_factory() as db:
                 user = await create_user(
@@ -115,8 +117,47 @@ class TestNewUserActivation:
                     password_hash="hash",
                 )
 
-        with autotest.step("Assert: is_active is True (credential path is active)"):
-            assert_true(user.is_active is True, "credential user is active")
+        with autotest.step("Assert: is_active is False (same gate as the OAuth door)"):
+            assert_true(user.is_active is False, "credential user is inactive")
+
+    @autotest.num("3397")
+    @autotest.external_id("1e0ba55d-ac91-49e5-bc5e-7a0f2f31b913")
+    @autotest.name("create_user: an authorized caller can opt into an active account")
+    async def test_1e0ba55d_credential_user_active_on_explicit_opt_in(self):
+        with autotest.step("Act: create a credential user with is_active=True"):
+            async with self.session_factory() as db:
+                user = await create_user(
+                    db=db,
+                    email=f"cred-{uuid.uuid4()}@test.local",
+                    password_hash="hash",
+                    is_active=True,
+                )
+
+        with autotest.step("Assert: is_active is True"):
+            assert_true(user.is_active is True, "explicit opt-in is honoured")
+
+    @autotest.num("3398")
+    @autotest.external_id("8aa99b6f-9e05-4bb9-8647-6171157bb990")
+    @autotest.name("both sign-up doors produce the same activation state")
+    async def test_8aa99b6f_both_doors_agree(self):
+        with autotest.step("Act: create one user through each door"):
+            async with self.session_factory() as db:
+                credential = await create_user(
+                    db=db,
+                    email=f"cred-{uuid.uuid4()}@test.local",
+                    password_hash="hash",
+                )
+                oauth = await upsert_github_user(
+                    db=db,
+                    email=f"gh-{uuid.uuid4()}@test.local",
+                    name="GH User",
+                    image=None,
+                    provider_account_id=str(uuid.uuid4()),
+                )
+
+        with autotest.step("Assert: neither door hands out an active account"):
+            assert_equal(credential.is_active, oauth.is_active, "doors agree")
+            assert_true(credential.is_active is False, "both inactive")
 
     @autotest.num("1961")
     @autotest.external_id("a0f6bba4-e63d-48c5-adb5-dd910b3a3831")
@@ -145,6 +186,7 @@ class TestAdminPatchIsActive:
         self.session_factory = async_sessionmaker(self.engine, expire_on_commit=False)
         async with self.engine.begin() as conn:
             await conn.run_sync(User.__table__.create)
+            await conn.run_sync(StudyParticipant.__table__.create)
 
         app = FastAPI()
         app.include_router(admin_router, prefix="/admin")
@@ -214,6 +256,7 @@ class TestActivateEndpoint:
         async with self.engine.begin() as conn:
             await conn.run_sync(User.__table__.create)
             await conn.run_sync(Account.__table__.create)
+            await conn.run_sync(StudyParticipant.__table__.create)
 
         app = FastAPI()
         app.state.limiter = limiter

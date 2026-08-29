@@ -20,7 +20,6 @@ from auth.schemas import (
 )
 from auth.service import (
     create_user,
-    delete_user,
     get_user_by_email,
     hash_password_async,
     upsert_github_user,
@@ -139,10 +138,13 @@ async def delete_user_endpoint(
     db: AsyncSession = Depends(get_db),
     _: dict = Depends(require_admin),
 ):
-    """Deletes a user by id (admin only). Returns 404 if not found."""
-    deleted = await delete_user(db, user_id)
-    if not deleted:
+    """Deletes a user by id and all their data (admin only). 404 if not found."""
+    from models.user import User
+    from users.data_export import erase_subject
+
+    if await db.get(User, user_id) is None:
         raise LocalizedError("error.user.not_found", status_code=status.HTTP_404_NOT_FOUND)
+    await erase_subject(db, user_id)
 
 
 @router.post("/github-callback", response_model=UserResponse)

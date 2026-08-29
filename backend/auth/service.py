@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from auth.exceptions import UserAlreadyExistsError
+from models.study_participant import StudyParticipant
 from models.user import Account, User, UserRole
 
 _bcrypt_executor = ThreadPoolExecutor(max_workers=4)
@@ -47,16 +48,19 @@ async def create_user(
     password_hash: str,
     name: str | None = None,
     role: UserRole = UserRole.STUDENT,
+    is_active: bool = False,
 ) -> User:
-    """Creates a user in the DB. Raises UserAlreadyExistsError on duplicate email."""
-    # Credential registration (tests/internal path), active immediately. Real
-    # users sign in via GitHub OAuth (upsert_github_user) and are created
-    # inactive; an admin activates them in the admin panel.
+    """Creates a user in the DB. Raises UserAlreadyExistsError on duplicate email.
+
+    Inactive by default, like upsert_github_user: one activation gate.
+    """
     user = User(
-        email=email, password_hash=password_hash, name=name, role=role.value, is_active=True
+        email=email, password_hash=password_hash, name=name, role=role.value, is_active=is_active
     )
     db.add(user)
     try:
+        await db.flush()
+        db.add(StudyParticipant(user_id=user.id))
         await db.commit()
     except IntegrityError:
         await db.rollback()
@@ -94,6 +98,7 @@ async def upsert_github_user(
         user.accounts = []
         db.add(user)
         await db.flush()
+        db.add(StudyParticipant(user_id=user.id))
 
     # Link the github account, updating provider_account_id on change.
     existing_account = next(
