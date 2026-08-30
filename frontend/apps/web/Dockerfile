@@ -1,6 +1,6 @@
 # Multi-stage monorepo build. turbo prune emits a pruned lockfile so a sibling app's
 # dependency change does not invalidate the install layer.
-FROM node:22-alpine AS base
+FROM node:24-alpine AS base
 ENV NODE_OPTIONS=--dns-result-order=ipv4first
 RUN corepack enable
 WORKDIR /app
