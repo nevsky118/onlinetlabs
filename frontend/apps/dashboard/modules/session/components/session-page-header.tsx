@@ -45,7 +45,7 @@ export function SessionPageHeader({
       </Link>
       <Badge variant={STATUS_VARIANT[status]} className="shrink-0 rounded-none">
         {status === "active" && (
-          <span className="mr-1.5 inline-block size-2 rounded-full bg-emerald-500" />
+          <span className="mr-1.5 inline-block size-2 rounded-full bg-current" />
         )}
         {t(`status.${status}`)}
       </Badge>

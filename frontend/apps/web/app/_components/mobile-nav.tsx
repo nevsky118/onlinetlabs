@@ -132,10 +132,7 @@ export function MobileNav({
                               onOpenChange={setOpen}
                               className="flex items-center gap-2"
                             >
-                              {item.name}{" "}
-                              {/* {PAGES_NEW.includes(item.url) && (
-                                <span className="flex size-2 rounded-full bg-blue-500" />
-                              )} */}
+                              {item.name}
                             </MobileLink>
                           )
                         }

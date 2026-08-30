@@ -8,10 +8,12 @@ import { useTransition } from "react"
 import { toast } from "sonner"
 import type { Node } from "../types"
 
-const STATUS_COLOR: Record<Node["status"], string> = {
-  started: "bg-emerald-500",
-  stopped: "bg-muted-foreground",
-  suspended: "bg-amber-500",
+// Monochrome by house rule: the state reads from the fill, not from a hue.
+// Solid = running, half-tone = suspended, hollow = stopped.
+const STATUS_DOT: Record<Node["status"], string> = {
+  started: "bg-foreground",
+  suspended: "bg-muted-foreground",
+  stopped: "border border-muted-foreground",
 }
 
 export function NodesCard({
@@ -99,7 +101,7 @@ function NodeRow({
 
   return (
     <li className="flex items-center gap-3 py-2.5 text-sm">
-      <span className={`size-2 rounded-full ${STATUS_COLOR[node.status]}`} />
+      <span className={`size-2 rounded-full ${STATUS_DOT[node.status]}`} />
       <button
         type="button"
         onClick={() => onOpenDetails(node.id)}

@@ -68,7 +68,15 @@ export function ValidationSheet({ sessionId, labSlug }: Props) {
         <SheetTitle>{t("title")}</SheetTitle>
         <SheetDescription>{t("description")}</SheetDescription>
         {progress ? (
-          <LabProgressBadge progress={progress} className="mt-1" />
+          // Labelled, because it is the lifetime progress of the lab and not the
+          // outcome of this session: unlabelled it read as "already done" on a
+          // session where nothing had run yet.
+          <div className="mt-1 flex items-center gap-2">
+            <span className="text-xs tracking-wide text-muted-foreground uppercase">
+              {t("labProgress")}
+            </span>
+            <LabProgressBadge progress={progress} />
+          </div>
         ) : null}
       </SheetHeader>
 

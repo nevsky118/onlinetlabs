@@ -7,11 +7,11 @@ import type { Link, Node } from "../types"
 function statusColor(status: Node["status"]) {
   switch (status) {
     case "started":
-      return "stroke-emerald-500"
+      return "stroke-foreground"
     case "stopped":
-      return "stroke-muted-foreground"
+      return "stroke-border"
     case "suspended":
-      return "stroke-amber-500"
+      return "stroke-muted-foreground"
   }
 }
 

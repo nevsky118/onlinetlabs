@@ -595,7 +595,8 @@
         "history": "History",
         "noRuns": "No runs yet",
         "running": "Checking...",
-        "runAgain": "Run again"
+        "runAgain": "Run again",
+        "labProgress": "Lab progress"
       },
       "button": {
         "check": "Check"
