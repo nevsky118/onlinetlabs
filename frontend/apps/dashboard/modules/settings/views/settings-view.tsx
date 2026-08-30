@@ -9,6 +9,7 @@ import { Badge } from "@repo/design-system/ui/badge"
 import { useTranslations } from "next-intl"
 import type { SettingsAccount } from "../types"
 import { ConsentControl } from "../components/consent-control"
+import { DocumentsControl } from "../components/documents-control"
 import { ModelControl } from "../components/model-control"
 import { SecurityControl } from "../components/security-control"
 import { SettingsRow, SettingsSection } from "../components/settings-section"
@@ -66,6 +67,9 @@ export function SettingsView({ account }: { account: SettingsAccount }) {
       <SettingsSection title={t("research")}>
         <SettingsRow label={t("consent.label")} hint={t("consent.hint")}>
           <ConsentControl />
+        </SettingsRow>
+        <SettingsRow label={t("documents.label")}>
+          <DocumentsControl />
         </SettingsRow>
       </SettingsSection>
 

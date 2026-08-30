@@ -115,7 +115,7 @@ export default async function RootLayout({
                       navTree={coursesPageTree}
                     />
                     <main className="flex flex-1 flex-col">{children}</main>
-                    <SiteFooter locale={locale} />
+                    <SiteFooter />
                   </div>
                 </TooltipProvider>
                 <Toaster position="bottom-right" />

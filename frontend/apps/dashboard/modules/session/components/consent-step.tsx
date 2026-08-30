@@ -1,5 +1,6 @@
 "use client"
 
+import { webUrl } from "@/lib/config"
 import { useRecordConsentDecision } from "@/modules/consent"
 import {
   AlertDialogDescription,
@@ -10,11 +11,12 @@ import {
 import { Button } from "@repo/design-system/ui/button"
 import { Spinner } from "@repo/design-system/ui/spinner"
 import { Link } from "@repo/i18n/navigation"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 export function ConsentStep({ onAnswered }: { onAnswered: () => void }) {
   const t = useTranslations("dashboard.session.consentGate")
+  const locale = useLocale()
   const { record, pendingDecision } = useRecordConsentDecision({
     onRecorded: (decision) => {
       toast.success(
@@ -32,6 +34,17 @@ export function ConsentStep({ onAnswered }: { onAnswered: () => void }) {
         <AlertDialogDescription>
           {t.rich("description", {
             settingsLink: (chunks) => <Link href="/settings">{chunks}</Link>,
+            // The policy lives on the public site, a different origin from the dashboard.
+            policyLink: (chunks) => (
+              <a
+                href={`${webUrl}/${locale}/privacy`}
+                target="_blank"
+                rel="noreferrer"
+                className="underline underline-offset-4"
+              >
+                {chunks}
+              </a>
+            ),
           })}
         </AlertDialogDescription>
       </AlertDialogHeader>

@@ -10,6 +10,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     entries.push({ url: `${webUrl}/${locale}` })
     entries.push({ url: `${webUrl}/${locale}/courses` })
     entries.push({ url: `${webUrl}/${locale}/labs` })
+    // No footer link any more, so the sitemap is what keeps these reachable.
+    entries.push({ url: `${webUrl}/${locale}/privacy` })
+    entries.push({ url: `${webUrl}/${locale}/terms` })
 
     for (const page of course.getPages(locale)) {
       entries.push({

@@ -475,7 +475,7 @@
       },
       "consentGate": {
         "title": "Research participation",
-        "description": "Your actions in the lab environment are stored under a study identifier rather than your name, and the platform keeps one link back to you — that link is what makes export and deletion possible. Taking part is optional: a refusal changes nothing about your access to the labs. You can change the decision in <settingsLink>settings</settingsLink>, and ask for an export or deletion of your data at any time.",
+        "description": "Your actions in the lab environment are stored under a study identifier rather than your name, and the platform keeps one link back to you — that link is what makes export and deletion possible. Taking part is optional: a refusal changes nothing about your access to the labs. Details are in <policyLink>data processing</policyLink>. You can change the decision in <settingsLink>settings</settingsLink>, and ask for an export or deletion of your data at any time.",
         "accept": "Take part",
         "decline": "Not this time",
         "toastAccepted": "Consent recorded",
@@ -789,6 +789,11 @@
         "currentSessionHint": "Sign out of your account on this device.",
         "signOutButton": "Sign out",
         "toastSignOutFailed": "Failed to sign out"
+      },
+      "documents": {
+        "label": "Documents",
+        "privacy": "Data processing",
+        "terms": "Terms"
       }
     },
     "auth": {
