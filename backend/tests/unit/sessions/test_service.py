@@ -9,6 +9,8 @@ from models.catalog import Lab
 from models.identity import User
 from models.learning import LearningSession
 from sessions.services.launch import _create_provisioning_row, launch_session
+from sessions.services.ticket import TicketStore
+from tests.settings.data.queue_data import TicketRedisData
 
 pytestmark = [pytest.mark.unit]
 
@@ -127,6 +129,7 @@ class TestLaunchSessionRefreshesLocaleOnResume:
                     gns3_client=None,
                     db_factory=self.session_factory,
                     locale="ru",
+                    ticket_store=TicketStore(redis=TicketRedisData()),
                 )
                 await db.commit()
 

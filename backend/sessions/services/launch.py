@@ -12,7 +12,7 @@ from models.catalog import Lab
 from models.learning import LearningSession
 from sessions.services.proxy import existing_gns3_deep_url, existing_gns3_url
 from sessions.services.query import get_active_session
-from sessions.services.ticket import get_ticket_store
+from sessions.services.ticket import TicketStore, get_ticket_store
 
 logger = logging.getLogger(__name__)
 
@@ -68,14 +68,25 @@ async def _finalize_session_row(db_factory, session_id: str, status: str, meta: 
 
 
 async def launch_session(
-    db, user_id: str, lab_slug: str, gns3_client, db_factory, *, locale: Locale = DEFAULT_LOCALE
+    db,
+    user_id: str,
+    lab_slug: str,
+    gns3_client,
+    db_factory,
+    *,
+    locale: Locale = DEFAULT_LOCALE,
+    ticket_store: TicketStore | None = None,
 ) -> tuple[LearningSession, dict]:
     """Launches a lab session.
 
     Returns the existing active session, or creates a new one via GNS3
     provisioning, checking the concurrent session limit and the presence
     of a lab template.
+
+    ticket_store is injected like gns3_client and db_factory; it defaults to the
+    process-wide store backed by redis.
     """
+    tickets = ticket_store or get_ticket_store()
     existing = await get_active_session(db, user_id, lab_slug)
     if existing:
         # Resume on a different locale than the one the session was launched with:
@@ -83,7 +94,7 @@ async def launch_session(
         if existing.locale != locale:
             existing.locale = locale
         meta = existing.meta or {}
-        ticket = await get_ticket_store().issue(str(existing.id), user_id)
+        ticket = await tickets.issue(str(existing.id), user_id)
         return existing, {
             "gns3_username": meta["gns3_username"],
             "gns3_url": existing_gns3_url(existing),
@@ -123,7 +134,7 @@ async def launch_session(
     }
     session = await _finalize_session_row(db_factory, str(session.id), "active", meta)
 
-    ticket = await get_ticket_store().issue(str(session.id), user_id)
+    ticket = await tickets.issue(str(session.id), user_id)
     return session, {
         "gns3_username": result["gns3_username"],
         "gns3_url": existing_gns3_url(session),
