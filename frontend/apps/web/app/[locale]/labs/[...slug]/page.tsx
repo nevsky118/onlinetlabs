@@ -1,3 +1,8 @@
+import { absoluteUrl } from "@/lib/absolute-url"
+import { siteConfig } from "@/lib/config"
+import { ogImagePath, ogSize } from "@/lib/og-image"
+import { i18n, labs } from "@/lib/source"
+import { getMdxComponents } from "@/mdx-components"
 import { DocsTableOfContents } from "@repo/design-system/components/docs-toc"
 import { Badge } from "@repo/design-system/ui/badge"
 import { Button } from "@repo/design-system/ui/button"
@@ -5,15 +10,11 @@ import { routing } from "@repo/i18n/routing"
 import fm from "front-matter"
 import { findNeighbour } from "fumadocs-core/page-tree"
 import { ArrowLeftIcon, ArrowRightIcon, ArrowUpRightIcon } from "lucide-react"
+import { getTranslations, setRequestLocale } from "next-intl/server"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { getTranslations, setRequestLocale } from "next-intl/server"
-import z from "zod"
+import { z } from "zod"
 import { LaunchLink } from "./_components/launch-link"
-import { absoluteUrl } from "@/lib/absolute-url"
-import { siteConfig } from "@/lib/config"
-import { i18n, labs } from "@/lib/source"
-import { getMdxComponents } from "@/mdx-components"
 
 export const dynamic = "force-static"
 export const revalidate = false
@@ -52,15 +53,22 @@ export async function generateMetadata(props: {
     notFound()
   }
 
+  const ogImage = {
+    url: absoluteUrl(ogImagePath(params.locale, "labs", params.slug)),
+    width: ogSize.width,
+    height: ogSize.height,
+    alt: doc.title,
+  }
+
   return {
     title: doc.title,
     description: doc.description,
     alternates: {
       canonical: absoluteUrl(page.url),
       languages: Object.fromEntries(
-        routing.locales.map((l) => [
-          l,
-          absoluteUrl(labs.getPage(params.slug, l)?.url ?? page.url),
+        routing.locales.map((alternate) => [
+          alternate,
+          absoluteUrl(labs.getPage(params.slug, alternate)?.url ?? page.url),
         ])
       ),
     },
@@ -69,25 +77,13 @@ export async function generateMetadata(props: {
       description: doc.description,
       type: "article",
       url: absoluteUrl(page.url),
-      images: [
-        {
-          url: `/og?title=${encodeURIComponent(
-            doc.title
-          )}&description=${encodeURIComponent(doc.description)}`,
-        },
-      ],
+      images: [ogImage],
     },
     twitter: {
       card: "summary_large_image",
       title: doc.title,
       description: doc.description,
-      images: [
-        {
-          url: `/og?title=${encodeURIComponent(
-            doc.title
-          )}&description=${encodeURIComponent(doc.description)}`,
-        },
-      ],
+      images: [ogImage],
       creator: siteConfig.author,
     },
   }
@@ -147,7 +143,7 @@ export default async function Page(props: {
                 <h1 className="scroll-m-20 text-4xl font-semibold tracking-tight sm:text-3xl xl:text-4xl">
                   {doc.title}
                 </h1>
-                <div className="docs-nav bg-background/80 border-border/50 fixed inset-x-0 bottom-0 isolate z-50 flex items-center gap-2 border-t px-6 py-4 backdrop-blur-sm sm:static sm:z-0 sm:border-t-0 sm:bg-transparent sm:px-0 sm:pt-1.5 sm:backdrop-blur-none">
+                <div className="docs-nav fixed inset-x-0 bottom-0 isolate z-50 flex items-center gap-2 border-t border-border/50 bg-background/80 px-6 py-4 backdrop-blur-sm sm:static sm:z-0 sm:border-t-0 sm:bg-transparent sm:px-0 sm:pt-1.5 sm:backdrop-blur-none">
                   {neighbours.previous && (
                     <Button
                       nativeButton={false}
@@ -175,7 +171,7 @@ export default async function Page(props: {
                 </div>
               </div>
               {doc.description && (
-                <p className="text-muted-foreground text-[1.05rem] text-balance sm:text-base">
+                <p className="text-[1.05rem] text-balance text-muted-foreground sm:text-base">
                   {doc.description}
                 </p>
               )}
@@ -192,7 +188,7 @@ export default async function Page(props: {
                     variant="secondary"
                     className="rounded-none"
                     render={
-                      // biome-ignore lint/a11y/useAnchorContent: content comes from the Base UI render slot
+                      // oxlint-disable-next-line jsx-a11y/anchor-has-content -- link text comes from the Base UI render slot
                       <a href={links.doc} target="_blank" rel="noreferrer" />
                     }
                   >
@@ -204,7 +200,7 @@ export default async function Page(props: {
                     variant="secondary"
                     className="rounded-none"
                     render={
-                      // biome-ignore lint/a11y/useAnchorContent: content comes from the Base UI render slot
+                      // oxlint-disable-next-line jsx-a11y/anchor-has-content -- link text comes from the Base UI render slot
                       <a href={links.api} target="_blank" rel="noreferrer" />
                     }
                   >
@@ -217,6 +213,7 @@ export default async function Page(props: {
           <div className="w-full flex-1 *:data-[slot=alert]:first:mt-0">
             <MDX
               components={getMdxComponents({
+                locale: params.locale,
                 labelCopy: tMdx("copy"),
                 labelCopied: tMdx("copied"),
                 labelCollapse: tMdx("collapse"),

@@ -13,8 +13,8 @@ import { useTranslations } from "next-intl"
 
 type Props = {
   input: string
-  setInput: (v: string) => void
-  handleSubmit: (e: React.FormEvent) => void
+  setInput: (value: string) => void
+  handleSubmit: (event: React.FormEvent) => void
   status: string
   stop?: () => void
   // Large form for fullscreen mode, like on CF /sphere
@@ -39,26 +39,26 @@ export function ChatInput({
 
   return (
     <form className={cn("p-4 pt-2", className)} onSubmit={handleSubmit}>
-      <div className="bg-background focus-within:border-primary/50 focus-within:ring-primary/50 flex w-full flex-col gap-2 border transition-all focus-within:ring-1">
+      <div className="flex w-full flex-col gap-2 border bg-background transition-all focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50">
         <textarea
           rows={2}
           placeholder={large ? t("placeholderLarge") : t("placeholder")}
           name="promptInput"
           value={input}
           className={cn(
-            "text-foreground placeholder:text-muted-foreground max-h-64 w-full resize-none overflow-y-auto bg-transparent outline-none",
+            "max-h-64 w-full resize-none overflow-y-auto bg-transparent text-foreground outline-none placeholder:text-muted-foreground",
             large ? "p-5 pb-0 text-base" : "p-3 pb-0 text-sm"
           )}
-          onChange={(e) => {
-            setInput(e.target.value)
-            e.target.style.height = "auto"
-            e.target.style.height = `${e.target.scrollHeight}px`
+          onChange={(event) => {
+            setInput(event.target.value)
+            event.target.style.height = "auto"
+            event.target.style.height = `${event.target.scrollHeight}px`
           }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault()
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault()
               if (input.trim() && !isStreaming)
-                e.currentTarget.form?.requestSubmit()
+                event.currentTarget.form?.requestSubmit()
             }
           }}
         />

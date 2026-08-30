@@ -1,5 +1,6 @@
 "use client"
 
+import { formatRelativeTime } from "@/lib/format-duration"
 import { Badge } from "@repo/design-system/ui/badge"
 import { Button } from "@repo/design-system/ui/button"
 import { Link } from "@repo/i18n/navigation"
@@ -10,7 +11,6 @@ import { SessionDialogueSheet } from "../components/session-dialogue-sheet"
 import { StatCard } from "../components/stat-card"
 import { formatScore, statusLabel, statusVariant } from "../lib/format"
 import { studentDetailQuery } from "../query"
-import { formatRelativeTime } from "@/lib/format-duration"
 
 export function StudentDetailView({ userId }: { userId: string }) {
   const t = useTranslations("dashboard.instructor.studentDetailView")
@@ -20,7 +20,7 @@ export function StudentDetailView({ userId }: { userId: string }) {
 
   if (isPending) {
     return (
-      <p className="text-muted-foreground py-24 text-center text-sm">
+      <p className="py-24 text-center text-sm text-muted-foreground">
         {t("loading")}
       </p>
     )
@@ -29,7 +29,7 @@ export function StudentDetailView({ userId }: { userId: string }) {
   if (!data) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
-        <p className="text-muted-foreground text-sm">{t("notFound")}</p>
+        <p className="text-sm text-muted-foreground">{t("notFound")}</p>
         <Button
           nativeButton={false}
           variant="outline"
@@ -61,7 +61,7 @@ export function StudentDetailView({ userId }: { userId: string }) {
             {data.name ?? data.email ?? data.userId}
           </h2>
           {data.email ? (
-            <p className="text-muted-foreground text-sm">{data.email}</p>
+            <p className="text-sm text-muted-foreground">{data.email}</p>
           ) : null}
         </div>
       </div>
@@ -82,18 +82,18 @@ export function StudentDetailView({ userId }: { userId: string }) {
       </div>
 
       <section className="flex flex-col gap-3">
-        <h3 className="text-muted-foreground text-xs tracking-wide uppercase">
+        <h3 className="text-xs tracking-wide text-muted-foreground uppercase">
           {t("labsProgress")}
         </h3>
         {data.labs.length === 0 ? (
-          <p className="text-muted-foreground border py-8 text-center text-sm">
+          <p className="border py-8 text-center text-sm text-muted-foreground">
             {t("noLabsStarted")}
           </p>
         ) : (
           <div className="overflow-x-auto border">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="text-muted-foreground border-b text-left text-xs tracking-wide uppercase">
+                <tr className="border-b text-left text-xs tracking-wide text-muted-foreground uppercase">
                   <th className="px-4 py-3 font-medium">{t("headers.lab")}</th>
                   <th className="px-4 py-3 font-medium">
                     {t("headers.status")}
@@ -119,7 +119,7 @@ export function StudentDetailView({ userId }: { userId: string }) {
                 {data.labs.map((lab) => (
                   <tr
                     key={lab.labSlug}
-                    className="hover:bg-muted/50 transition-colors"
+                    className="transition-colors hover:bg-muted/50"
                   >
                     <td className="px-4 py-3">
                       <Link
@@ -146,7 +146,7 @@ export function StudentDetailView({ userId }: { userId: string }) {
                     <td className="px-4 py-3 text-right tabular-nums">
                       {lab.sessions}
                     </td>
-                    <td className="text-muted-foreground px-4 py-3 text-right text-xs">
+                    <td className="px-4 py-3 text-right text-xs text-muted-foreground">
                       {lab.lastActiveAt
                         ? formatRelativeTime(lab.lastActiveAt, format)
                         : "—"}
@@ -162,35 +162,37 @@ export function StudentDetailView({ userId }: { userId: string }) {
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">{t("sessionsHeading")}</h2>
         {data.sessions.length === 0 ? (
-          <p className="text-muted-foreground text-sm">{t("noSessions")}</p>
+          <p className="text-sm text-muted-foreground">{t("noSessions")}</p>
         ) : (
           <div className="flex flex-col gap-px border">
-            {data.sessions.map((s) => (
+            {data.sessions.map((session) => (
               <SessionDialogueSheet
-                key={s.sessionId}
+                key={session.sessionId}
                 userId={userId}
-                session={s}
+                session={session}
               >
                 <button
                   type="button"
-                  className="hover:bg-muted flex w-full items-center justify-between bg-background px-4 py-3 text-left"
+                  className="flex w-full items-center justify-between bg-background px-4 py-3 text-left hover:bg-muted"
                 >
                   <span className="flex flex-col gap-1">
-                    <span className="text-sm font-medium">{s.labTitle}</span>
-                    <span className="flex items-center gap-2 text-muted-foreground text-xs">
-                      <Badge variant={statusVariant(s.status)}>
-                        {statusLabel(s.status, statusT)}
+                    <span className="text-sm font-medium">
+                      {session.labTitle}
+                    </span>
+                    <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Badge variant={statusVariant(session.status)}>
+                        {statusLabel(session.status, statusT)}
                       </Badge>
-                      {format.dateTime(new Date(s.startedAt), {
+                      {format.dateTime(new Date(session.startedAt), {
                         dateStyle: "short",
                         timeStyle: "short",
                       })}
                     </span>
                   </span>
-                  <span className="text-muted-foreground text-xs">
+                  <span className="text-xs text-muted-foreground">
                     {t("messageCountLine", {
-                      messages: s.messageCount,
-                      hints: s.hintCount,
+                      messages: session.messageCount,
+                      hints: session.hintCount,
                     })}
                   </span>
                 </button>

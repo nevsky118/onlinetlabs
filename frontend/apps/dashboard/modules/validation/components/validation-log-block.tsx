@@ -2,7 +2,7 @@
 
 export function ValidationLogBlock({ text }: { text: string }) {
   return (
-    <pre className="font-mono text-xs bg-muted px-3 py-2 whitespace-pre-wrap break-all">
+    <pre className="bg-muted px-3 py-2 font-mono text-xs break-all whitespace-pre-wrap">
       {text}
     </pre>
   )

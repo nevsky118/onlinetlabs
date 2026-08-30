@@ -48,14 +48,14 @@ export async function GET(
   if (!upstream.ok) {
     return new Response(await upstream.text(), { status: upstream.status })
   }
-  const w = (await upstream.json()) as RunDetailWire
+  const wire = (await upstream.json()) as RunDetailWire
   const detail = {
-    id: w.id,
-    labSlug: w.lab_slug,
-    status: w.status,
-    steps: w.steps ?? [],
-    startedAt: w.started_at,
-    finishedAt: w.finished_at,
+    id: wire.id,
+    labSlug: wire.lab_slug,
+    status: wire.status,
+    steps: wire.steps ?? [],
+    startedAt: wire.started_at,
+    finishedAt: wire.finished_at,
   }
   return Response.json(detail)
 }

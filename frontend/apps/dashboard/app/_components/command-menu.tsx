@@ -1,5 +1,6 @@
 "use client"
 
+import { getDashboardDestinations } from "@/lib/config"
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
 import { copyToClipboardWithMeta } from "@repo/design-system/components/copy-button"
 import { useMutationObserver } from "@repo/design-system/hooks/use-mutation-observer"
@@ -23,10 +24,9 @@ import {
 } from "@repo/design-system/ui/dialog"
 import { Separator } from "@repo/design-system/ui/separator"
 import { ArrowRightIcon, CornerDownLeftIcon } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { useLocale, useTranslations } from "next-intl"
+import { useRouter } from "next/navigation"
 import * as React from "react"
-import { getDashboardDestinations } from "@/lib/config"
 
 export function CommandMenu({
   navItems,
@@ -121,22 +121,26 @@ export function CommandMenu({
   )
 
   React.useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if ((e.key === "k" && (e.metaKey || e.ctrlKey)) || e.key === "/") {
+    const down = (event: KeyboardEvent) => {
+      if (
+        (event.key === "k" && (event.metaKey || event.ctrlKey)) ||
+        event.key === "/"
+      ) {
         if (
-          (e.target instanceof HTMLElement && e.target.isContentEditable) ||
-          e.target instanceof HTMLInputElement ||
-          e.target instanceof HTMLTextAreaElement ||
-          e.target instanceof HTMLSelectElement
+          (event.target instanceof HTMLElement &&
+            event.target.isContentEditable) ||
+          event.target instanceof HTMLInputElement ||
+          event.target instanceof HTMLTextAreaElement ||
+          event.target instanceof HTMLSelectElement
         ) {
           return
         }
 
-        e.preventDefault()
-        setOpen((open) => !open)
+        event.preventDefault()
+        setOpen((isOpen) => !isOpen)
       }
 
-      if (e.key === "c" && (e.metaKey || e.ctrlKey)) {
+      if (event.key === "c" && (event.metaKey || event.ctrlKey)) {
         runCommand(() => {
           if (selectedType === "page" && copyPayload) {
             copyToClipboardWithMeta(copyPayload)

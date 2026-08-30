@@ -1,5 +1,4 @@
 import "server-only"
-
 import { type Locale, routing } from "@repo/i18n/routing"
 import { cookies, headers } from "next/headers"
 

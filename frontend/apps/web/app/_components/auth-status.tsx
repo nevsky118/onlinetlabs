@@ -1,12 +1,12 @@
 "use client"
 
+import { appUrl, webUrl } from "@/lib/urls"
 import { authClient } from "@repo/auth/client"
 import { SignInButton } from "@repo/auth/components/sign-in-button"
 import { UserMenu } from "@repo/auth/components/user-menu"
 import { Skeleton } from "@repo/design-system/ui/skeleton"
-import { usePathname } from "next/navigation"
 import { useLocale } from "next-intl"
-import { appUrl, webUrl } from "@/lib/urls"
+import { usePathname } from "next/navigation"
 
 /**
  * Session is read client-side because course and lab routes are force-static, where server getSession is empty.

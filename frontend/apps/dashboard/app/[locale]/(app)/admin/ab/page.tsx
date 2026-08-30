@@ -1,14 +1,14 @@
+import { fetchArmAnalysis } from "@/modules/admin/actions"
+import { AbView } from "@/modules/admin/views/ab-view"
 import { getBackendUserRole } from "@repo/auth/server"
 import {
   PageHeader,
   PageHeaderDescription,
   PageHeaderHeading,
 } from "@repo/design-system/components/page-header"
-import type { Metadata } from "next"
-import { forbidden, unauthorized } from "next/navigation"
 import { getTranslations, setRequestLocale } from "next-intl/server"
-import { fetchArmAnalysis } from "@/modules/admin/actions"
-import { AbView } from "@/modules/admin/views/ab-view"
+import { forbidden, unauthorized } from "next/navigation"
+import type { Metadata } from "next"
 
 export async function generateMetadata({
   params,
@@ -37,11 +37,11 @@ export default async function AbPage({
   if (role !== "admin") forbidden()
 
   let data = null
-  let error: string | null = null
+  let errorMessage: string | null = null
   try {
     data = await fetchArmAnalysis()
-  } catch (e) {
-    error = e instanceof Error ? e.message : t("unknownError")
+  } catch (error) {
+    errorMessage = error instanceof Error ? error.message : t("unknownError")
   }
 
   return (
@@ -50,9 +50,9 @@ export default async function AbPage({
         <PageHeaderHeading>{t("title")}</PageHeaderHeading>
         <PageHeaderDescription>{t("description")}</PageHeaderDescription>
       </PageHeader>
-      <div className="container-wrapper section-soft flex-1 pb-6">
+      <div className="container-wrapper flex-1 section-soft pb-6">
         <div className="container">
-          <AbView data={data} error={error} />
+          <AbView data={data} error={errorMessage} />
         </div>
       </div>
     </div>

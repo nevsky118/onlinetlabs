@@ -1,12 +1,12 @@
+import { absoluteUrl } from "@/lib/absolute-url"
 import { cn } from "@repo/design-system/lib/utils"
 import { Button } from "@repo/design-system/ui/button"
 import { Link } from "@repo/i18n/navigation"
 import { routing } from "@repo/i18n/routing"
 import { ArrowUpRightIcon } from "lucide-react"
-import type { Metadata } from "next"
 import { getTranslations, setRequestLocale } from "next-intl/server"
+import type { Metadata } from "next"
 import { version } from "../../package.json"
-import { absoluteUrl } from "@/lib/absolute-url"
 
 export async function generateMetadata({
   params,
@@ -23,7 +23,10 @@ export async function generateMetadata({
     alternates: {
       canonical: absoluteUrl(`/${locale}`),
       languages: Object.fromEntries(
-        routing.locales.map((l) => [l, absoluteUrl(`/${l}`)])
+        routing.locales.map((alternate) => [
+          alternate,
+          absoluteUrl(`/${alternate}`),
+        ])
       ),
     },
   }
@@ -44,8 +47,8 @@ export default async function Home({
   const t = await getTranslations("web.home")
 
   return (
-    <section className="container-wrapper 3xl:fixed:px-0 flex flex-1 flex-col px-6">
-      <div className="3xl:fixed:container relative flex flex-1 flex-col">
+    <section className="container-wrapper flex flex-1 flex-col px-6 3xl:fixed:px-0">
+      <div className="relative flex flex-1 flex-col 3xl:fixed:container">
         <section className="relative flex flex-1 flex-col overflow-hidden">
           <div
             aria-hidden
@@ -57,7 +60,7 @@ export default async function Home({
 
           <div className="relative flex flex-1 flex-col justify-between gap-10 px-6 py-8 sm:px-10">
             <div className="my-auto flex flex-col gap-8 pt-6">
-              <h1 className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-both text-[clamp(2.4rem,6vw,5.5rem)] leading-[0.98] font-semibold tracking-[-0.03em] uppercase delay-75 duration-700 motion-reduce:animate-none">
+              <h1 className="animate-in text-[clamp(2.4rem,6vw,5.5rem)] leading-[0.98] font-semibold tracking-[-0.03em] uppercase delay-75 duration-700 fade-in-0 fill-mode-both slide-in-from-bottom-2 motion-reduce:animate-none">
                 {t.rich("heroTitle", {
                   line: (chunks) => <span className="block">{chunks}</span>,
                   highlight: (chunks) => (
@@ -68,11 +71,11 @@ export default async function Home({
                 })}
               </h1>
 
-              <p className="text-muted-foreground animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-both max-w-md text-base leading-relaxed text-pretty delay-150 duration-700 motion-reduce:animate-none sm:text-lg">
+              <p className="max-w-md animate-in text-base leading-relaxed text-pretty text-muted-foreground delay-150 duration-700 fade-in-0 fill-mode-both slide-in-from-bottom-2 motion-reduce:animate-none sm:text-lg">
                 {t("heroDescription")}
               </p>
 
-              <div className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-both flex flex-wrap items-center gap-3 delay-200 duration-700 motion-reduce:animate-none">
+              <div className="flex animate-in flex-wrap items-center gap-3 delay-200 duration-700 fade-in-0 fill-mode-both slide-in-from-bottom-2 motion-reduce:animate-none">
                 <Button
                   nativeButton={false}
                   size="lg"
@@ -94,11 +97,11 @@ export default async function Home({
               </div>
             </div>
 
-            <div className="text-muted-foreground animate-in fade-in-0 fill-mode-both flex items-center justify-between gap-4 font-mono text-xs tracking-[0.2em] uppercase delay-300 duration-700 motion-reduce:animate-none">
+            <div className="flex animate-in items-center justify-between gap-4 font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase delay-300 duration-700 fade-in-0 fill-mode-both motion-reduce:animate-none">
               <span className="inline-flex items-center gap-2.5">
                 <span
                   aria-hidden
-                  className="bg-foreground inline-block size-1 motion-safe:animate-pulse"
+                  className="inline-block size-1 bg-foreground motion-safe:animate-pulse"
                 />
                 {t("techTags")}
               </span>

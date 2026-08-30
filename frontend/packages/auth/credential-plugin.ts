@@ -1,8 +1,8 @@
 import { AxiosError } from "axios"
-import type { BetterAuthPlugin } from "better-auth"
 import { APIError, createAuthEndpoint } from "better-auth/api"
 import { setSessionCookie } from "better-auth/cookies"
 import { z } from "zod"
+import type { BetterAuthPlugin } from "better-auth"
 import { type BackendUser, backendLogin, backendRegister } from "./api"
 
 function toAuthUser(backendUser: {

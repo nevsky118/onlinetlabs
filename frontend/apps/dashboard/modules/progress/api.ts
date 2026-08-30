@@ -1,5 +1,4 @@
 import "server-only"
-
 import { authedFetchOrThrow } from "@/lib/authed-fetch"
 
 export async function getLabProgressApi(labSlug: string): Promise<Response> {

@@ -7,19 +7,19 @@ import {
 } from "@repo/design-system/ui/alert"
 import { Button } from "@repo/design-system/ui/button"
 import { Skeleton } from "@repo/design-system/ui/skeleton"
-import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
+import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import type { Overview } from "../types"
 import { fetchOverview } from "../actions"
 import { KpiCard } from "../components/kpi-card"
 
-function fmtPct(v: number): string {
-  return `${(v * 100).toFixed(1)}%`
+function fmtPct(value: number): string {
+  return `${(value * 100).toFixed(1)}%`
 }
 
-function fmtNum(v: number, digits = 1): string {
-  return v.toFixed(digits)
+function fmtNum(value: number, digits = 1): string {
+  return value.toFixed(digits)
 }
 
 // Grid of KPI cards for the "Overview" section
@@ -30,21 +30,20 @@ export function OverviewView() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: t is stable per locale, fetch once on mount
   useEffect(() => {
     fetchOverview()
       .then(setData)
-      .catch((e: unknown) =>
-        setError(e instanceof Error ? e.message : t("errorFallback"))
+      .catch((reason: unknown) =>
+        setError(reason instanceof Error ? reason.message : t("errorFallback"))
       )
       .finally(() => setLoading(false))
-  }, [])
+  }, [t])
 
   if (loading) {
     return (
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <Skeleton key={i} className="h-24" />
+        {Array.from({ length: 8 }).map((_, index) => (
+          <Skeleton key={index} className="h-24" />
         ))}
       </div>
     )
@@ -62,14 +61,14 @@ export function OverviewView() {
   if (!data) return null
 
   const costsStr = Object.entries(data.identifier.costs)
-    .map(([k, v]) => `${k}=${fmtNum(v, 2)}`)
+    .map(([key, value]) => `${key}=${fmtNum(value, 2)}`)
     .join(", ")
 
   return (
     <div className="flex flex-col gap-6">
       {/* A/B */}
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           {t("sections.ab")}
         </p>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
@@ -89,7 +88,7 @@ export function OverviewView() {
 
       {/* Cohort */}
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           {t("sections.cohort")}
         </p>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-2">
@@ -104,7 +103,7 @@ export function OverviewView() {
 
       {/* Identifier */}
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           {t("sections.identifier")}
         </p>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
@@ -123,7 +122,7 @@ export function OverviewView() {
 
       {/* Ops */}
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           {t("sections.ops")}
         </p>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3">

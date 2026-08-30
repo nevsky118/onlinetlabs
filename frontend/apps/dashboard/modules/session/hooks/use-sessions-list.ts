@@ -6,9 +6,10 @@ import type { Session } from "../types"
 import { sessionsListQuery } from "../query"
 
 const ACTIVE_STATUSES = new Set(["active", "provisioning"])
+const UPTIME_TICK_MS = 1000
 
 function hasActive(sessions: Session[]): boolean {
-  return sessions.some((s) => ACTIVE_STATUSES.has(s.status))
+  return sessions.some((session) => ACTIVE_STATUSES.has(session.status))
 }
 
 export function useSessionsList() {
@@ -19,11 +20,13 @@ export function useSessionsList() {
   })
   const sessions = data ?? []
 
-  const [tick, setTick] = useState(0)
+  // A clock in state, not Date.now() during render, so uptime stays a pure
+  // function of the rendered value.
+  const [nowMs, setNowMs] = useState(() => Date.now())
   useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 1000)
-    return () => clearInterval(id)
+    const intervalId = setInterval(() => setNowMs(Date.now()), UPTIME_TICK_MS)
+    return () => clearInterval(intervalId)
   }, [])
 
-  return { sessions, tick, refresh: refetch }
+  return { sessions, nowMs, refresh: refetch }
 }

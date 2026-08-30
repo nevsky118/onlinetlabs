@@ -53,39 +53,41 @@ function applyEvent(
         expected: {},
         actual: {},
       }
-      const steps = state.steps.map((s) =>
-        s.id === ev.stepId ? { ...s, checks: [...s.checks, check] } : s
+      const steps = state.steps.map((step) =>
+        step.id === ev.stepId
+          ? { ...step, checks: [...step.checks, check] }
+          : step
       )
       return { ...state, steps }
     }
     case "check.log": {
-      const steps = state.steps.map((s) => {
-        if (s.id !== ev.stepId) return s
-        const checks = s.checks.slice()
+      const steps = state.steps.map((step) => {
+        if (step.id !== ev.stepId) return step
+        const checks = step.checks.slice()
         const last = checks.length - 1
-        if (last < 0) return s
-        const c = checks[last]
-        const prev = c.log ?? ""
-        checks[last] = { ...c, log: prev + ev.line + "\n" }
-        return { ...s, checks }
+        if (last < 0) return step
+        const check = checks[last]
+        const prev = check.log ?? ""
+        checks[last] = { ...check, log: prev + ev.line + "\n" }
+        return { ...step, checks }
       })
       return { ...state, steps }
     }
     case "check.result": {
-      const steps = state.steps.map((s) => {
-        if (s.id !== ev.stepId) return s
-        const checks = s.checks.map((c, i) =>
-          i === ev.checkIndex
-            ? { ...c, ok: ev.ok, expected: ev.expected, actual: ev.actual }
-            : c
+      const steps = state.steps.map((step) => {
+        if (step.id !== ev.stepId) return step
+        const checks = step.checks.map((check, index) =>
+          index === ev.checkIndex
+            ? { ...check, ok: ev.ok, expected: ev.expected, actual: ev.actual }
+            : check
         )
-        return { ...s, checks }
+        return { ...step, checks }
       })
       return { ...state, steps }
     }
     case "step.result": {
-      const steps = state.steps.map((s) =>
-        s.id === ev.stepId ? { ...s, ok: ev.ok } : s
+      const steps = state.steps.map((step) =>
+        step.id === ev.stepId ? { ...step, ok: ev.ok } : step
       )
       return { ...state, steps }
     }
@@ -125,7 +127,7 @@ function parseSSEBuffer(buffer: string): {
 export function useValidationStream(sessionId: string) {
   const [state, setState] = useState<ValidationStreamState>(INITIAL_STATE)
   const abortRef = useRef<AbortController | null>(null)
-  const qc = useQueryClient()
+  const queryClient = useQueryClient()
 
   const stop = useCallback(() => {
     abortRef.current?.abort()
@@ -144,13 +146,14 @@ export function useValidationStream(sessionId: string) {
         try {
           const res = await startValidationStream(sessionId, slug, ac.signal)
           if (!res.ok || !res.body) {
-            setState((s) => ({ ...s, status: "error" }))
+            setState((prev) => ({ ...prev, status: "error" }))
             return
           }
           const reader = res.body.getReader()
           const decoder = new TextDecoder()
           let buffer = ""
           while (true) {
+            // oxlint-disable-next-line eslint/no-await-in-loop -- an SSE reader is sequential by nature
             const { done, value } = await reader.read()
             if (done) break
             buffer += decoder.decode(value, { stream: true })
@@ -159,19 +162,19 @@ export function useValidationStream(sessionId: string) {
             if (events.length > 0) {
               setState((prev) => events.reduce(applyEvent, prev))
               if (events.some((ev) => ev.type === "run.finish")) {
-                qc.invalidateQueries({
+                queryClient.invalidateQueries({
                   queryKey: validationKeys.runs(sessionId),
                 })
               }
             }
           }
-        } catch (e) {
-          if ((e as Error).name === "AbortError") return
-          setState((s) => ({ ...s, status: "error" }))
+        } catch (error) {
+          if ((error as Error).name === "AbortError") return
+          setState((prev) => ({ ...prev, status: "error" }))
         }
       })()
     },
-    [sessionId, stop, qc]
+    [sessionId, stop, queryClient]
   )
 
   return { state, start, stop }

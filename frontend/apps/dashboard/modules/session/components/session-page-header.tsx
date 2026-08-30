@@ -29,13 +29,13 @@ export function SessionPageHeader({
       {/* Back to labs: icon-only on mobile, icon+label on desktop. */}
       <Link
         href="/labs"
-        className="text-muted-foreground hover:text-foreground inline-flex shrink-0 items-center gap-1"
+        className="inline-flex shrink-0 items-center gap-1 text-muted-foreground hover:text-foreground"
         aria-label={t("backToLabs")}
       >
         <ChevronLeftIcon className="size-4" />
         <span className="hidden sm:inline">{t("labs")}</span>
       </Link>
-      <span className="text-muted-foreground hidden sm:inline">/</span>
+      <span className="hidden text-muted-foreground sm:inline">/</span>
       {/* Title: truncate to one line, keep status badge inline. */}
       <Link
         href={`/labs/${lab.slug}`}
@@ -52,7 +52,7 @@ export function SessionPageHeader({
       {noAssist && (
         <Badge
           variant="default"
-          className="shrink-0 uppercase tracking-wide"
+          className="shrink-0 tracking-wide uppercase"
           title={t("noAssistTitle")}
         >
           <BanIcon data-icon="inline-start" />

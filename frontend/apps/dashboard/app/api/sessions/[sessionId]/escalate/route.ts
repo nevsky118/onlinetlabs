@@ -10,7 +10,7 @@ export async function POST(
   const token = await getBackendToken().catch(() => null)
   if (!token) return new Response("Unauthorized", { status: 401 })
 
-  const r = await fetch(
+  const response = await fetch(
     `${serverEnv.BACKEND_URL}/users/me/sessions/${sessionId}/escalate`,
     {
       method: "POST",
@@ -21,5 +21,5 @@ export async function POST(
     }
   )
 
-  return new Response(r.body, { status: r.status })
+  return new Response(response.body, { status: response.status })
 }

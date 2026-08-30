@@ -1,21 +1,33 @@
 import "server-only"
-
 import { decodeJwt } from "jose/jwt/decode"
 import { getBackendToken } from "./token"
 
-// The source of truth for the role is the backend (the users table), not the
-// better-auth session. better-auth runs on an in-memory adapter here, so the
-// role in the session is not reliable. The backend-JWT issued by /auth/exchange
-// carries the role claim from the database.
-export async function getBackendUserRole(): Promise<string | null> {
+/**
+ * Claims the backend puts on the exchange JWT. The source of truth for all of
+ * them is the users table, not the better-auth session: better-auth runs on an
+ * in-memory adapter here, so anything it reports about a user is unreliable.
+ */
+type BackendClaims = {
+  role?: string
+  is_active?: boolean
+  can_view_logs?: boolean
+}
+
+const NO_CLAIMS: BackendClaims = {}
+
+async function readBackendClaims(): Promise<BackendClaims> {
   const token = await getBackendToken()
-  if (!token) return null
+  if (!token) return NO_CLAIMS
   try {
-    const payload = decodeJwt(token) as { role?: string }
-    return payload.role ?? null
+    return decodeJwt(token) as BackendClaims
   } catch {
-    return null
+    return NO_CLAIMS
   }
+}
+
+export async function getBackendUserRole(): Promise<string | null> {
+  const { role } = await readBackendClaims()
+  return role ?? null
 }
 
 export async function hasInstructorAccess(): Promise<boolean> {
@@ -23,13 +35,12 @@ export async function hasInstructorAccess(): Promise<boolean> {
   return role === "instructor" || role === "admin"
 }
 
+export async function isBackendUserActive(): Promise<boolean> {
+  const { is_active } = await readBackendClaims()
+  return is_active === true
+}
+
 export async function canViewAgentLogs(): Promise<boolean> {
-  const token = await getBackendToken()
-  if (!token) return false
-  try {
-    const payload = decodeJwt(token) as { can_view_logs?: boolean }
-    return payload.can_view_logs === true
-  } catch {
-    return false
-  }
+  const { can_view_logs } = await readBackendClaims()
+  return can_view_logs === true
 }

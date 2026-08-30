@@ -1,9 +1,9 @@
 "use client"
 
-import type { UIMessage } from "@ai-sdk/react"
 import { cn } from "@repo/design-system/lib/utils"
-import type { CSSProperties, ReactNode } from "react"
 import type { AgentActivityEvent } from "../types"
+import type { UIMessage } from "@ai-sdk/react"
+import type { CSSProperties, ReactNode } from "react"
 import { ChatMessages } from "./chat-messages"
 
 // Dotted background, the shared conversation surface.
@@ -33,7 +33,7 @@ export function Conversation({
 }) {
   return (
     <div
-      className={cn("bg-background flex min-h-0 flex-1 flex-col", className)}
+      className={cn("flex min-h-0 flex-1 flex-col bg-background", className)}
     >
       {header ? (
         <header className="flex shrink-0 items-center justify-between gap-2 border-b p-3.5">

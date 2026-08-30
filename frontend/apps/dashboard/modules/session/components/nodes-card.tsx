@@ -30,7 +30,7 @@ export function NodesCard({
   const t = useTranslations("dashboard.session.nodesCard")
   if (loading) {
     return (
-      <div className="bg-card border p-4">
+      <div className="border bg-card p-4">
         <Skeleton className="h-3 w-20" />
         <div className="mt-3 flex flex-col gap-2">
           <Skeleton className="h-6" />
@@ -42,23 +42,23 @@ export function NodesCard({
   }
 
   return (
-    <div className="bg-card border p-4">
-      <div className="text-muted-foreground mb-3 text-xs tracking-wide uppercase">
+    <div className="border bg-card p-4">
+      <div className="mb-3 text-xs tracking-wide text-muted-foreground uppercase">
         {t("heading", {
-          started: nodes.filter((n) => n.status === "started").length,
+          started: nodes.filter((node) => node.status === "started").length,
           total: nodes.length,
         })}
       </div>
       {nodes.length === 0 ? (
-        <div className="text-muted-foreground py-6 text-center text-sm">
+        <div className="py-6 text-center text-sm text-muted-foreground">
           {t("empty")}
         </div>
       ) : (
         <ul className="divide-y">
-          {nodes.map((n) => (
+          {nodes.map((node) => (
             <NodeRow
-              key={n.id}
-              node={n}
+              key={node.id}
+              node={node}
               disabled={disabled}
               onAction={onAction}
               onOpenDetails={onOpenDetails}
@@ -107,9 +107,9 @@ function NodeRow({
       >
         {node.name}
       </button>
-      <span className="text-muted-foreground text-xs">{node.nodeType}</span>
+      <span className="text-xs text-muted-foreground">{node.nodeType}</span>
       {node.console !== null && (
-        <code className="text-muted-foreground ml-auto hidden font-mono text-xs md:inline">
+        <code className="ml-auto hidden font-mono text-xs text-muted-foreground md:inline">
           :{node.console}
         </code>
       )}

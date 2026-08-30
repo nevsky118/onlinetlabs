@@ -1,5 +1,6 @@
 "use client"
 
+import { LabProgressBadge, useLabProgress } from "@/modules/progress"
 import { Button } from "@repo/design-system/ui/button"
 import { Separator } from "@repo/design-system/ui/separator"
 import {
@@ -17,7 +18,6 @@ import { useValidationRuns } from "../hooks/use-validation-runs"
 import { useValidationStream } from "../hooks/use-validation-stream"
 import { ValidationPastRunRow } from "./validation-past-run-row"
 import { ValidationStepRow } from "./validation-step-row"
-import { LabProgressBadge, useLabProgress } from "@/modules/progress"
 
 type Props = {
   sessionId: string
@@ -31,21 +31,29 @@ export function ValidationSheet({ sessionId, labSlug }: Props) {
   const { progress, refresh: refreshProgress } = useLabProgress(labSlug)
   const [expandedStepId, setExpandedStepId] = useState<string | null>(null)
 
+  // Which step is open follows the run status, so it is adjusted during render.
+  const [lastStatus, setLastStatus] = useState(state.status)
+  if (state.status !== lastStatus) {
+    setLastStatus(state.status)
+    switch (state.status) {
+      case "failed":
+        setExpandedStepId(state.steps.find((step) => !step.ok)?.id ?? null)
+        break
+      case "passed":
+      case "running":
+        setExpandedStepId(null)
+        break
+      default:
+        break
+    }
+  }
+
   useEffect(() => {
     if (state.status === "passed" || state.status === "failed") {
       void mutate()
       void refreshProgress()
-      if (state.status === "failed") {
-        const firstFailed = state.steps.find((s) => !s.ok)
-        setExpandedStepId(firstFailed?.id ?? null)
-      } else {
-        setExpandedStepId(null)
-      }
     }
-    if (state.status === "running") {
-      setExpandedStepId(null)
-    }
-  }, [state.status, mutate, refreshProgress, state.steps])
+  }, [state.status, mutate, refreshProgress])
 
   const isRunning = state.status === "running"
   const hasActiveRun =
@@ -68,16 +76,16 @@ export function ValidationSheet({ sessionId, labSlug }: Props) {
         {hasActiveRun && state.steps.length > 0 && (
           <>
             <div className="px-4 py-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                 {t("currentRun")}
               </p>
             </div>
             <div className="flex flex-col">
-              {state.steps.map((step, i) => (
+              {state.steps.map((step, index) => (
                 <ValidationStepRow
                   key={step.id}
                   step={step}
-                  isActive={isRunning && i === state.steps.length - 1}
+                  isActive={isRunning && index === state.steps.length - 1}
                   forceOpen={expandedStepId === step.id ? true : undefined}
                 />
               ))}
@@ -87,7 +95,7 @@ export function ValidationSheet({ sessionId, labSlug }: Props) {
         )}
 
         <div className="px-4 py-2">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
             {t("history")}
           </p>
         </div>

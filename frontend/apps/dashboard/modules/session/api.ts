@@ -1,5 +1,4 @@
 import "server-only"
-
 import { authedFetch } from "@/lib/authed-fetch"
 
 export async function launchSessionApi(labSlug: string): Promise<Response> {

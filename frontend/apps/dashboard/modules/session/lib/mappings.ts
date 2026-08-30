@@ -1,6 +1,7 @@
 import type {
   Credentials,
   LaunchResult,
+  QueuedResult,
   Session,
   SessionStatus,
 } from "../types"
@@ -9,39 +10,21 @@ type LaunchWire = {
   session_id: string
   status: string
   gns3_username: string
-  gns3_password: string
   gns3_url: string
   gns3_deep_url: string
+}
+
+type QueuedWire = {
+  queue_position: number
+  queue_depth: number
+  eta_sec: number
+  lab_slug: string
 }
 
 type CredentialsWire = {
   gns3_username: string
-  gns3_password: string
   gns3_url: string
   gns3_deep_url: string
-}
-
-export function mapLaunch(w: LaunchWire): LaunchResult {
-  return {
-    kind: "session",
-    session: {
-      sessionId: w.session_id,
-      status: w.status as SessionStatus,
-      gns3Username: w.gns3_username,
-      gns3Password: w.gns3_password,
-      gns3Url: w.gns3_url,
-      gns3DeepUrl: w.gns3_deep_url,
-    },
-  }
-}
-
-export function mapCredentials(w: CredentialsWire): Credentials {
-  return {
-    gns3Username: w.gns3_username,
-    gns3Password: w.gns3_password,
-    gns3Url: w.gns3_url,
-    gns3DeepUrl: w.gns3_deep_url,
-  }
 }
 
 type SessionWire = {
@@ -53,17 +36,47 @@ type SessionWire = {
   ended_at: string | null
 }
 
-export function mapSession(w: SessionWire): Session {
+export function mapLaunch(wire: LaunchWire): LaunchResult {
   return {
-    id: w.id,
-    labSlug: w.lab_slug,
-    labTitle: w.lab_title ?? null,
-    status: w.status as SessionStatus,
-    startedAt: w.started_at,
-    endedAt: w.ended_at ?? null,
+    kind: "session",
+    session: {
+      sessionId: wire.session_id,
+      status: wire.status as SessionStatus,
+      gns3Username: wire.gns3_username,
+      gns3Url: wire.gns3_url,
+      gns3DeepUrl: wire.gns3_deep_url,
+    },
   }
 }
 
-export function mapSessionList(arr: SessionWire[]): Session[] {
-  return arr.map(mapSession)
+export function mapQueued(wire: QueuedWire): QueuedResult {
+  return {
+    position: wire.queue_position,
+    depth: wire.queue_depth,
+    etaSec: wire.eta_sec,
+    labSlug: wire.lab_slug,
+  }
+}
+
+export function mapCredentials(wire: CredentialsWire): Credentials {
+  return {
+    gns3Username: wire.gns3_username,
+    gns3Url: wire.gns3_url,
+    gns3DeepUrl: wire.gns3_deep_url,
+  }
+}
+
+export function mapSession(wire: SessionWire): Session {
+  return {
+    id: wire.id,
+    labSlug: wire.lab_slug,
+    labTitle: wire.lab_title ?? null,
+    status: wire.status as SessionStatus,
+    startedAt: wire.started_at,
+    endedAt: wire.ended_at ?? null,
+  }
+}
+
+export function mapSessionList(rows: SessionWire[]): Session[] {
+  return rows.map(mapSession)
 }

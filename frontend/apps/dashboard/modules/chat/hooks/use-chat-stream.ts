@@ -1,7 +1,7 @@
 "use client"
 
 import { type UIMessage, useChat } from "@ai-sdk/react"
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useState } from "react"
 
 export function useChatStream(
   sessionId: string,
@@ -15,22 +15,18 @@ export function useChatStream(
     messages: initialMessages,
   })
 
-  // ref so the handleSubmit/sendText closures see the current modelId
-  const modelRef = useRef(modelId)
-  modelRef.current = modelId
-
   const handleSubmit = useCallback(
-    (e?: React.FormEvent) => {
-      e?.preventDefault()
+    (event?: React.FormEvent) => {
+      event?.preventDefault()
       const text = input.trim()
       if (!text) return
       setInput("")
       chat.sendMessage(
         { text },
-        modelRef.current ? { body: { model_id: modelRef.current } } : undefined
+        modelId ? { body: { model_id: modelId } } : undefined
       )
     },
-    [input, chat]
+    [input, chat, modelId]
   )
 
   const sendText = useCallback(
@@ -39,10 +35,10 @@ export function useChatStream(
       if (!trimmed) return
       chat.sendMessage(
         { text: trimmed },
-        modelRef.current ? { body: { model_id: modelRef.current } } : undefined
+        modelId ? { body: { model_id: modelId } } : undefined
       )
     },
-    [chat]
+    [chat, modelId]
   )
 
   return {

@@ -1,5 +1,4 @@
 import "server-only"
-
 import { headers } from "next/headers"
 import { RedirectType, redirect } from "next/navigation"
 import { serverEnv } from "./env"
@@ -39,7 +38,7 @@ export function createAuthedFetch(
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
         "X-Locale": locale,
-        ...(init?.headers || {}),
+        ...init?.headers,
       },
       cache: "no-store",
     })

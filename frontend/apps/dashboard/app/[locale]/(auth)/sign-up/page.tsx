@@ -1,7 +1,7 @@
-import type { Metadata } from "next"
+import { RegisterForm } from "@/modules/auth"
 import { getTranslations, setRequestLocale } from "next-intl/server"
 import { Suspense } from "react"
-import { RegisterForm } from "@/modules/auth"
+import type { Metadata } from "next"
 
 export async function generateMetadata({
   params,

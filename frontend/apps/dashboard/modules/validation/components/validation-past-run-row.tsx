@@ -1,5 +1,6 @@
 "use client"
 
+import { formatRelativeTime } from "@/lib/format-duration"
 import { cn } from "@repo/design-system/lib/utils"
 import {
   Collapsible,
@@ -14,7 +15,6 @@ import type { ValidationRunListItem } from "../types"
 import { useValidationRunDetail } from "../hooks/use-validation-run-detail"
 import { formatDuration } from "../lib/validation-display"
 import { ValidationStepRow } from "./validation-step-row"
-import { formatRelativeTime } from "@/lib/format-duration"
 
 type Props = {
   sessionId: string

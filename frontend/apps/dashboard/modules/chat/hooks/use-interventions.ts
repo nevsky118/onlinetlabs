@@ -1,9 +1,9 @@
 "use client"
 
-import type { UIMessage } from "@ai-sdk/react"
 import { clientEnv } from "@repo/api/env.client"
 import { fetchWsToken } from "@repo/api/realtime-token"
-import { useEffect } from "react"
+import { useEffect, useEffectEvent } from "react"
+import type { UIMessage } from "@ai-sdk/react"
 
 type SetMessages = (updater: (prev: UIMessage[]) => UIMessage[]) => void
 
@@ -14,6 +14,10 @@ export function useInterventions(
   setMessages: SetMessages,
   onUnread?: () => void
 ) {
+  // An effect event, so a caller can pass a fresh closure without forcing the
+  // socket to reconnect.
+  const notifyUnread = useEffectEvent(() => onUnread?.())
+
   useEffect(() => {
     let ws: WebSocket | null = null
     let closed = false
@@ -46,7 +50,7 @@ export function useInterventions(
                 parts: [{ type: "text", text }],
               } as UIMessage,
             ])
-            onUnread?.()
+            notifyUnread()
           }
         } catch {
           // ignore malformed frames
@@ -67,5 +71,5 @@ export function useInterventions(
       closed = true
       ws?.close()
     }
-  }, [sessionId, setMessages, onUnread])
+  }, [sessionId, setMessages])
 }

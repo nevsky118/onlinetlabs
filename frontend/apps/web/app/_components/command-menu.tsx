@@ -24,12 +24,12 @@ import {
 } from "@repo/design-system/ui/dialog"
 import { Separator } from "@repo/design-system/ui/separator"
 import { Spinner } from "@repo/design-system/ui/spinner"
-import type { Root as FumaDocsPageTree } from "fumadocs-core/page-tree"
 import { useDocsSearch } from "fumadocs-core/search/client"
 import { ArrowRightIcon, CornerDownLeftIcon } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
+import { useRouter } from "next/navigation"
 import * as React from "react"
+import type { Root as FumaDocsPageTree } from "fumadocs-core/page-tree"
 
 type PageTreeNode = FumaDocsPageTree["children"][number]
 type PageTreeFolder = Extract<PageTreeNode, { type: "folder" }>
@@ -72,8 +72,8 @@ export function CommandMenu({
   const searchTimeoutRef = React.useRef<NodeJS.Timeout | undefined>(undefined)
   const lastTrackedQueryRef = React.useRef<string>("")
 
-  const trackSearchQuery = React.useCallback((query: string) => {
-    const trimmedQuery = query.trim()
+  const trackSearchQuery = React.useCallback((rawQuery: string) => {
+    const trimmedQuery = rawQuery.trim()
 
     // Only track if the query is different from the last tracked query and has content.
     if (trimmedQuery && trimmedQuery !== lastTrackedQueryRef.current) {
@@ -104,18 +104,15 @@ export function CommandMenu({
   )
 
   // Cleanup timeout on unmount.
+  // The heavy groups render one frame after the dialog opens, and are dropped
+  // again on close by the cleanup rather than by a second effect pass.
   React.useEffect(() => {
-    if (open) {
-      const frame = requestAnimationFrame(() => {
-        setRenderDelayedGroups(true)
-      })
-
-      return () => {
-        cancelAnimationFrame(frame)
-      }
+    if (!open) return
+    const frame = requestAnimationFrame(() => setRenderDelayedGroups(true))
+    return () => {
+      cancelAnimationFrame(frame)
+      setRenderDelayedGroups(false)
     }
-
-    setRenderDelayedGroups(false)
   }, [open])
 
   React.useEffect(() => {
@@ -219,22 +216,26 @@ export function CommandMenu({
   }, [tree, handlePageHighlight, runCommand, router])
 
   React.useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if ((e.key === "k" && (e.metaKey || e.ctrlKey)) || e.key === "/") {
+    const down = (event: KeyboardEvent) => {
+      if (
+        (event.key === "k" && (event.metaKey || event.ctrlKey)) ||
+        event.key === "/"
+      ) {
         if (
-          (e.target instanceof HTMLElement && e.target.isContentEditable) ||
-          e.target instanceof HTMLInputElement ||
-          e.target instanceof HTMLTextAreaElement ||
-          e.target instanceof HTMLSelectElement
+          (event.target instanceof HTMLElement &&
+            event.target.isContentEditable) ||
+          event.target instanceof HTMLInputElement ||
+          event.target instanceof HTMLTextAreaElement ||
+          event.target instanceof HTMLSelectElement
         ) {
           return
         }
 
-        e.preventDefault()
-        setOpen((open) => !open)
+        event.preventDefault()
+        setOpen((isOpen) => !isOpen)
       }
 
-      if (e.key === "c" && (e.metaKey || e.ctrlKey)) {
+      if (event.key === "c" && (event.metaKey || event.ctrlKey)) {
         runCommand(() => {
           if (selectedType === "page" && copyPayload) {
             copyToClipboardWithMeta(copyPayload)

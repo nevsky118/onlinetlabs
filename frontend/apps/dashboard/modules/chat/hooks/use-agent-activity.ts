@@ -9,6 +9,7 @@ import { mapAgentActivityEvent } from "../lib/mappings"
 
 const WS_BASE = clientEnv.NEXT_PUBLIC_WS_BASE_URL
 const MAX_EVENTS = 500
+const NO_EVENTS: AgentActivityEvent[] = []
 
 export function useAgentActivity(
   sessionId: string,
@@ -18,11 +19,7 @@ export function useAgentActivity(
   const loadedRef = useRef(false)
 
   useEffect(() => {
-    if (!enabled) {
-      setEvents([])
-      loadedRef.current = false
-      return
-    }
+    if (!enabled) return
 
     let ws: WebSocket | null = null
     let closed = false
@@ -86,8 +83,12 @@ export function useAgentActivity(
     return () => {
       closed = true
       ws?.close()
+      // Reload the history the next time the toggle comes back on.
+      loadedRef.current = false
     }
   }, [sessionId, enabled])
 
-  return { events }
+  // While the toggle is off the buffered events stay out of the render, so no
+  // state has to be cleared from inside the effect.
+  return { events: enabled ? events : NO_EVENTS }
 }

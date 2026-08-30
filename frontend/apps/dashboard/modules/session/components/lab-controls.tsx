@@ -13,8 +13,8 @@ import {
 } from "@repo/design-system/ui/alert-dialog"
 import { Badge } from "@repo/design-system/ui/badge"
 import { Button } from "@repo/design-system/ui/button"
-import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
+import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
 import type { SessionStatus } from "../types"
@@ -39,8 +39,8 @@ export function LabControls({
         await fn()
         toast.success(ok)
         router.refresh()
-      } catch (e) {
-        toast.error((e as Error).message)
+      } catch (error) {
+        toast.error((error as Error).message)
       }
     })
   }

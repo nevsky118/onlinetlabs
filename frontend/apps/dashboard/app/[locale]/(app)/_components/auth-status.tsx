@@ -15,13 +15,14 @@ export function AuthStatus() {
   // Role is only trustworthy on the backend, better-auth runs on an in-memory adapter here,
   // so instructor access comes from a server action
   const [isInstructor, setIsInstructor] = useState(false)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on the user id so a new session object does not refetch
+  // Keyed on the user id so a new session object does not refetch.
+  const userId = data?.user?.id
   useEffect(() => {
-    if (!data?.user) return
+    if (!userId) return
     fetchInstructorAccess()
       .then(setIsInstructor)
       .catch(() => setIsInstructor(false))
-  }, [data?.user?.id])
+  }, [userId])
 
   if (isPending) {
     return <Skeleton className="size-8 rounded-full" />

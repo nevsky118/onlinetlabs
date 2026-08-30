@@ -1,22 +1,22 @@
 "use client"
 
+import { ChatInset, ChatPanel, ChatProvider, ChatTrigger } from "@/modules/chat"
+import { ValidationButton } from "@/modules/validation"
 import { setAnalyticsContext } from "@repo/api/analytics"
 import { useEffect, useState } from "react"
 import type { Credentials } from "../types"
 import { ActivityCard } from "../components/activity-card"
-import { ConsentGate } from "../components/consent-gate"
 import { CredentialsCard } from "../components/credentials-card"
 import { EscalateButton } from "../components/escalate-button"
 import { NodeDetailDrawer } from "../components/node-detail-drawer"
 import { NodesCard } from "../components/nodes-card"
+import { PausedNotice } from "../components/paused-notice"
 import { SessionActions } from "../components/session-actions"
 import { SessionHero } from "../components/session-hero"
 import { SessionPageHeader } from "../components/session-page-header"
 import { StickyMobileActionBar } from "../components/sticky-mobile-action-bar"
 import { StreamStatusBanner } from "../components/stream-status-banner"
 import { useSessionState } from "../hooks/use-session-state"
-import { ChatInset, ChatPanel, ChatProvider, ChatTrigger } from "@/modules/chat"
-import { ValidationButton } from "@/modules/validation"
 
 export function SessionView({
   sessionId,
@@ -34,11 +34,12 @@ export function SessionView({
 
   // Tag every background event (page_view, idle, tab) of this session with its
   // session_id and lab_slug so that the student path comes together as one
+  const labSlug = state?.lab.slug ?? null
   useEffect(() => {
-    if (!state) return
-    setAnalyticsContext(sessionId, state.lab.slug)
+    if (!labSlug) return
+    setAnalyticsContext(sessionId, labSlug)
     return () => setAnalyticsContext(null, null)
-  }, [sessionId, state])
+  }, [sessionId, labSlug])
 
   if (!state) return null
 
@@ -53,7 +54,6 @@ export function SessionView({
     >
       <ChatInset>
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-6 pb-24 md:pb-6">
-          <ConsentGate />
           <div className="flex items-center justify-between gap-3">
             <SessionPageHeader
               lab={state.lab}
@@ -75,6 +75,7 @@ export function SessionView({
             </div>
           </div>
           <StreamStatusBanner status={streamStatus} />
+          {state.paused && <PausedNotice sessionId={sessionId} />}
           <SessionHero
             state={state}
             credentials={credentials}
@@ -93,7 +94,7 @@ export function SessionView({
               onOpenDetails={setOpenNodeId}
             />
             <ActivityCard sessionId={sessionId} />
-            <CredentialsCard sessionId={sessionId} credentials={credentials} />
+            <CredentialsCard credentials={credentials} />
           </div>
           <StickyMobileActionBar
             status={state.status}

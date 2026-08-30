@@ -6,18 +6,18 @@
     ".": "./index.ts",
     "./keys": "./keys.ts"
   },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
   "dependencies": {
     "zod": "^4.3.6"
-  },
-  "peerDependencies": {
-    "next": "^16.2.12"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "@types/node": "^20",
     "typescript": "^5"
   },
-  "scripts": {
-    "typecheck": "tsc --noEmit"
+  "peerDependencies": {
+    "next": "^16.2.12"
   }
 }

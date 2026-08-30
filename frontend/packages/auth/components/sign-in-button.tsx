@@ -1,9 +1,9 @@
 "use client"
 
 import { Button } from "@repo/design-system/ui/button"
+import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useTranslations } from "next-intl"
 
 export function SignInButton({
   appUrl = "",

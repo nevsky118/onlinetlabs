@@ -1,5 +1,6 @@
 "use client"
 
+import { formatEtaApprox } from "@/lib/format-duration"
 import { Button } from "@repo/design-system/ui/button"
 import {
   Dialog,
@@ -11,10 +12,8 @@ import {
 } from "@repo/design-system/ui/dialog"
 import { Spinner } from "@repo/design-system/ui/spinner"
 import { useTranslations } from "next-intl"
-import { useEffect, useRef, useState } from "react"
 import type { QueuedResult, SessionData } from "../types"
-import { launchLab } from "../actions"
-import { formatEtaApprox } from "@/lib/format-duration"
+import { QUEUE_POLL_INTERVAL_MS, useQueuePoll } from "../hooks/use-queue-poll"
 
 export function QueueWaitDialog({
   labSlug,
@@ -31,43 +30,13 @@ export function QueueWaitDialog({
 }) {
   const t = useTranslations("dashboard.session.queueWaitDialog")
   const durationT = useTranslations("dashboard.session.duration")
-  const [queued, setQueued] = useState<QueuedResult>(initial)
-  const aliveRef = useRef(true)
-
-  useEffect(() => {
-    setQueued(initial)
-  }, [initial])
-
-  useEffect(() => {
-    if (!open) return
-    aliveRef.current = true
-
-    const tick = async () => {
-      try {
-        const res = await launchLab(labSlug)
-        if (!aliveRef.current) return
-        if (res.kind === "session") {
-          onReady(res.session)
-        } else {
-          setQueued(res.queued)
-        }
-      } catch {
-        // swallow — keep polling
-      }
-    }
-
-    const id = setInterval(tick, 5000)
-    return () => {
-      aliveRef.current = false
-      clearInterval(id)
-    }
-  }, [open, labSlug, onReady])
+  const queued = useQueuePoll({ labSlug, initial, enabled: open, onReady })
 
   return (
     <Dialog
       open={open}
-      onOpenChange={(v) => {
-        if (!v) onCancel()
+      onOpenChange={(next) => {
+        if (!next) onCancel()
       }}
     >
       <DialogContent>
@@ -88,15 +57,15 @@ export function QueueWaitDialog({
               ),
             })}
           </div>
-          <div className="text-muted-foreground text-sm">
+          <div className="text-sm text-muted-foreground">
             {t("waiting", { eta: formatEtaApprox(queued.etaSec, durationT) })}
           </div>
-          <div className="bg-muted relative h-2 overflow-hidden rounded-none">
-            <div className="bg-primary/70 absolute inset-y-0 left-0 w-1/3 animate-[queue-shimmer_1.5s_ease-in-out_infinite]" />
+          <div className="relative h-2 overflow-hidden rounded-none bg-muted">
+            <div className="absolute inset-y-0 left-0 w-1/3 animate-[queue-shimmer_1.5s_ease-in-out_infinite] bg-primary/70" />
           </div>
-          <div className="text-muted-foreground flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Spinner />
-            {t("checkingEvery", { seconds: 5 })}
+            {t("checkingEvery", { seconds: QUEUE_POLL_INTERVAL_MS / 1000 })}
           </div>
         </div>
         <DialogFooter>
@@ -105,19 +74,6 @@ export function QueueWaitDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
-      <style jsx global>{`
-        @keyframes queue-shimmer {
-          0% {
-            transform: translateX(-100%);
-          }
-          50% {
-            transform: translateX(150%);
-          }
-          100% {
-            transform: translateX(350%);
-          }
-        }
-      `}</style>
     </Dialog>
   )
 }

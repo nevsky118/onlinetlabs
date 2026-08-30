@@ -1,5 +1,6 @@
 "use client"
 
+import { type AdminNavItem, getAdminNav } from "@/modules/admin/lib/admin-nav"
 import { cn } from "@repo/design-system/lib/utils"
 import {
   DropdownMenu,
@@ -9,11 +10,10 @@ import {
   DropdownMenuTrigger,
 } from "@repo/design-system/ui/dropdown-menu"
 import { ChevronDown } from "lucide-react"
+import { useLocale, useTranslations } from "next-intl"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useLocale, useTranslations } from "next-intl"
 import { useLayoutEffect, useRef, useState } from "react"
-import { type AdminNavItem, getAdminNav } from "@/modules/admin/lib/admin-nav"
 
 function isActive(pathname: string, href: string, home: string): boolean {
   return href === home ? pathname === home : pathname.startsWith(href)
@@ -110,7 +110,6 @@ export function AdminNavBar(): React.JSX.Element {
     animate: false,
   })
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: re-measure active tab on route change
   useLayoutEffect(() => {
     const row = rowRef.current
     if (!row) return
@@ -119,7 +118,7 @@ export function AdminNavBar(): React.JSX.Element {
       if (!row) return
       const el = row.querySelector<HTMLElement>('[data-active="true"]')
       if (!el) {
-        setInd((s) => ({ ...s, ready: false }))
+        setInd((prev) => ({ ...prev, ready: false }))
         return
       }
       setInd((prev) => ({
@@ -138,22 +137,23 @@ export function AdminNavBar(): React.JSX.Element {
       ro.disconnect()
       window.removeEventListener("resize", measure)
     }
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies -- pathname is the trigger: re-measure the active tab on navigation
   }, [pathname])
 
-  const allItems = adminNav.flatMap((g) => g.items)
-  const home = allItems.find((i) => i.href === homeHref)
+  const allItems = adminNav.flatMap((group) => group.items)
+  const home = allItems.find((item) => item.href === homeHref)
 
   return (
-    <div className="border-grid sticky top-(--header-height) z-30 border-b bg-background/70 backdrop-blur-md">
+    <div className="sticky top-(--header-height) z-30 border-b border-grid bg-background/70 backdrop-blur-md">
       <div className="container-wrapper">
         <div className="container flex h-12 items-center gap-2">
-          <span className="hidden shrink-0 select-none bg-foreground px-1.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-background sm:inline-block">
+          <span className="hidden shrink-0 bg-foreground px-1.5 py-1 font-mono text-[10px] font-semibold tracking-[0.2em] text-background uppercase select-none sm:inline-block">
             {t("badge")}
           </span>
           <div className="hidden h-5 w-px shrink-0 bg-border sm:block" />
           <div
             ref={rowRef}
-            className="no-scrollbar relative flex h-12 flex-1 items-center gap-0.5 overflow-x-auto"
+            className="relative no-scrollbar flex h-12 flex-1 items-center gap-0.5 overflow-x-auto"
           >
             {home && (
               <NavTab
@@ -162,7 +162,7 @@ export function AdminNavBar(): React.JSX.Element {
               />
             )}
             {adminNav.map((group) => {
-              const items = group.items.filter((i) => i.href !== homeHref)
+              const items = group.items.filter((item) => item.href !== homeHref)
               const single = items[0]
               if (!single) return null
               if (items.length === 1) {
@@ -174,8 +174,8 @@ export function AdminNavBar(): React.JSX.Element {
                   />
                 )
               }
-              const groupActive = items.some((i) =>
-                isActive(pathname, i.href, homeHref)
+              const groupActive = items.some((item) =>
+                isActive(pathname, item.href, homeHref)
               )
               return (
                 <NavGroup

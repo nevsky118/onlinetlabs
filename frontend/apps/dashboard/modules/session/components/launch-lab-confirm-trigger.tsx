@@ -14,11 +14,18 @@ import {
 } from "@repo/design-system/ui/alert-dialog"
 import { Spinner } from "@repo/design-system/ui/spinner"
 import { useTranslations } from "next-intl"
-import { useCallback, useEffect, useState } from "react"
-import type { QueuedResult, SessionData } from "../types"
+import { useCallback, useState } from "react"
+import { toast } from "sonner"
+import type { LaunchResult, QueuedResult, SessionData } from "../types"
 import { useLaunchLab } from "../hooks/use-launch-lab"
+import { ConsentStep } from "./consent-step"
 import { CredentialsDialog } from "./credentials-dialog"
 import { QueueWaitDialog } from "./queue-wait-dialog"
+
+const CONSENT_REQUIRED = "error.consent.required"
+const INACTIVE_ACCOUNT = "error.auth.inactive_account"
+
+type Phase = "confirm" | "consent" | "accountPending"
 
 export function LaunchLabConfirmTrigger({
   labSlug,
@@ -27,88 +34,193 @@ export function LaunchLabConfirmTrigger({
   labSlug: string
   children: React.ReactElement
 }) {
-  const t = useTranslations("dashboard.session.launchLabConfirmTrigger")
-  const { status, result, launch, reset } = useLaunchLab(labSlug)
   const [confirmOpen, setConfirmOpen] = useState(false)
-  const [credsOpen, setCredsOpen] = useState(false)
-  const [queueState, setQueueState] = useState<QueuedResult | null>(null)
+  const [phase, setPhase] = useState<Phase>("confirm")
+  const [queued, setQueued] = useState<QueuedResult | null>(null)
   const [readySession, setReadySession] = useState<SessionData | null>(null)
 
-  useEffect(() => {
-    if (!result) return
-    setConfirmOpen(false)
-    if (result.kind === "session") {
-      setReadySession(result.session)
-      setCredsOpen(true)
-    } else {
-      setQueueState(result.queued)
+  // The launch outcome is an event, handled here rather than in an effect
+  // watching the last result.
+  const handleResult = useCallback((result: LaunchResult) => {
+    switch (result.kind) {
+      case "denied":
+        switch (result.code) {
+          case CONSENT_REQUIRED:
+            setPhase("consent")
+            break
+          case INACTIVE_ACCOUNT:
+            setPhase("accountPending")
+            break
+          default:
+            setConfirmOpen(false)
+            toast.error(result.detail)
+        }
+        break
+      case "session":
+        setConfirmOpen(false)
+        setReadySession(result.session)
+        break
+      case "queued":
+        setConfirmOpen(false)
+        setQueued(result.queued)
+        break
     }
-  }, [result])
+  }, [])
+
+  const { status, launch, reset } = useLaunchLab(labSlug, handleResult)
+
+  const handleConsentAnswered = useCallback(() => {
+    setPhase("confirm")
+    launch()
+  }, [launch])
 
   const handleQueueReady = useCallback((session: SessionData) => {
-    setQueueState(null)
+    setQueued(null)
     setReadySession(session)
-    setCredsOpen(true)
   }, [])
 
   const handleQueueCancel = useCallback(() => {
-    setQueueState(null)
+    setQueued(null)
     reset()
   }, [reset])
 
+  const handleConfirmOpenChange = useCallback(
+    (open: boolean) => {
+      setConfirmOpen(open)
+      if (!open) {
+        setPhase("confirm")
+        reset()
+      }
+    },
+    [reset]
+  )
+
+  const handleCredentialsOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open) {
+        setReadySession(null)
+        reset()
+      }
+    },
+    [reset]
+  )
+
   return (
     <>
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <AlertDialog open={confirmOpen} onOpenChange={handleConfirmOpenChange}>
         <AlertDialogTrigger render={children} />
         <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("title")}</AlertDialogTitle>
-            <AlertDialogDescription>{t("description")}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={status === "launching"}>
-              {t("cancel")}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault()
-                track("session_launch_clicked", { lab_slug: labSlug })
-                launch()
-              }}
-              disabled={status === "launching"}
-            >
-              {status === "launching" ? (
-                <>
-                  <Spinner data-icon="inline-start" />
-                  {t("preparing")}
-                </>
-              ) : (
-                t("launch")
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
+          <LaunchPhaseStep
+            phase={phase}
+            labSlug={labSlug}
+            launching={status === "launching"}
+            onLaunch={launch}
+            onConsentAnswered={handleConsentAnswered}
+          />
         </AlertDialogContent>
       </AlertDialog>
-      {queueState && (
+      {queued && (
         <QueueWaitDialog
           labSlug={labSlug}
-          initial={queueState}
-          open={queueState !== null}
+          initial={queued}
+          open
           onReady={handleQueueReady}
           onCancel={handleQueueCancel}
         />
       )}
       <CredentialsDialog
-        result={readySession}
-        open={credsOpen}
-        onOpenChange={(v) => {
-          setCredsOpen(v)
-          if (!v) {
-            setReadySession(null)
-            reset()
-          }
-        }}
+        session={readySession}
+        open={readySession !== null}
+        onOpenChange={handleCredentialsOpenChange}
       />
+    </>
+  )
+}
+
+function LaunchPhaseStep({
+  phase,
+  labSlug,
+  launching,
+  onLaunch,
+  onConsentAnswered,
+}: {
+  phase: Phase
+  labSlug: string
+  launching: boolean
+  onLaunch: () => void
+  onConsentAnswered: () => void
+}) {
+  switch (phase) {
+    case "consent":
+      return <ConsentStep onAnswered={onConsentAnswered} />
+    case "accountPending":
+      return <AccountPendingStep />
+    case "confirm":
+      return (
+        <ConfirmStep
+          labSlug={labSlug}
+          launching={launching}
+          onLaunch={onLaunch}
+        />
+      )
+  }
+}
+
+function AccountPendingStep() {
+  const t = useTranslations("dashboard.session.accountPending")
+
+  return (
+    <>
+      <AlertDialogHeader>
+        <AlertDialogTitle>{t("title")}</AlertDialogTitle>
+        <AlertDialogDescription>{t("description")}</AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>{t("close")}</AlertDialogCancel>
+      </AlertDialogFooter>
+    </>
+  )
+}
+
+function ConfirmStep({
+  labSlug,
+  launching,
+  onLaunch,
+}: {
+  labSlug: string
+  launching: boolean
+  onLaunch: () => void
+}) {
+  const t = useTranslations("dashboard.session.launchLabConfirmTrigger")
+
+  return (
+    <>
+      <AlertDialogHeader>
+        <AlertDialogTitle>{t("title")}</AlertDialogTitle>
+        <AlertDialogDescription>{t("description")}</AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel disabled={launching}>
+          {t("cancel")}
+        </AlertDialogCancel>
+        <AlertDialogAction
+          disabled={launching}
+          onClick={(event) => {
+            event.preventDefault()
+            track("session_launch_clicked", { lab_slug: labSlug })
+            onLaunch()
+          }}
+        >
+          {launching ? (
+            <>
+              <Spinner data-icon="inline-start" />
+              {t("preparing")}
+            </>
+          ) : (
+            t("launch")
+          )}
+        </AlertDialogAction>
+      </AlertDialogFooter>
     </>
   )
 }

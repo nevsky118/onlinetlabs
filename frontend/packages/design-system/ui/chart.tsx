@@ -114,7 +114,7 @@ export function ChartTooltipContent({
                 }}
               />
               <dt className="text-muted-foreground">{displayName}</dt>
-              <dd className="ml-auto tabular-nums font-medium">{val}</dd>
+              <dd className="ml-auto font-medium tabular-nums">{val}</dd>
             </div>
           )
         })}

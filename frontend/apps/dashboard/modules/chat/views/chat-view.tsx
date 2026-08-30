@@ -1,6 +1,6 @@
 "use client"
 
-import type { UIMessage } from "@ai-sdk/react"
+import { sessionStateQuery } from "@/modules/session"
 import { track } from "@repo/api/analytics"
 import { cn } from "@repo/design-system/lib/utils"
 import { Button } from "@repo/design-system/ui/button"
@@ -17,6 +17,7 @@ import {
 import { useFormatter, useTranslations } from "next-intl"
 import { useCallback, useEffect, useRef, useState } from "react"
 import type { SessionSummary } from "../types"
+import type { UIMessage } from "@ai-sdk/react"
 import { fetchChatHistory, fetchChatSessions } from "../api"
 import { ChatSuggestions } from "../components/chat-empty-state"
 import { ChatInput } from "../components/chat-input"
@@ -27,7 +28,6 @@ import { useChatStream } from "../hooks/use-chat-stream"
 import { useInterventions } from "../hooks/use-interventions"
 import { getDomainLabel, mapToUIMessage } from "../lib/utils"
 import { chatHistoryQuery, chatModelsQuery } from "../query"
-import { sessionStateQuery } from "@/modules/session"
 
 type Archive = {
   sessionId: string
@@ -120,26 +120,26 @@ export function ChatView({
     historyFetchAbort.current?.abort()
     historyFetchAbort.current = new AbortController()
     fetchChatSessions(historyFetchAbort.current.signal)
-      .then((data) => setPastSessions(data.filter((s) => s.id !== sessionId)))
+      .then((data) =>
+        setPastSessions(data.filter((session) => session.id !== sessionId))
+      )
       .catch(() => {})
     return () => historyFetchAbort.current?.abort()
   }, [sessionId])
 
-  const inputRef = useRef(input)
-  inputRef.current = input
-
   const trackedHandleSubmit = useCallback(
-    (e?: React.FormEvent) => {
-      if (inputRef.current.trim()) {
+    (event?: React.FormEvent) => {
+      const trimmed = input.trim()
+      if (trimmed) {
         track("chat_message_sent", {
           session_id: sessionId,
           lab_slug: labSlug,
-          message_length: inputRef.current.trim().length,
+          message_length: trimmed.length,
         })
       }
-      handleSubmit(e)
+      handleSubmit(event)
     },
-    [sessionId, labSlug, handleSubmit]
+    [input, sessionId, labSlug, handleSubmit]
   )
 
   const onSuggestion = useCallback(
@@ -154,17 +154,19 @@ export function ChatView({
     [sessionId, labSlug, sendText]
   )
 
-  const openArchive = (s: SessionSummary) => {
-    track("chat_history_viewed", { past_session_id: s.id })
+  const openArchive = (session: SessionSummary) => {
+    track("chat_history_viewed", { past_session_id: session.id })
     setArchive({
-      sessionId: s.id,
-      labSlug: s.labSlug,
-      date: format.dateTime(new Date(s.startedAt), { dateStyle: "short" }),
+      sessionId: session.id,
+      labSlug: session.labSlug,
+      date: format.dateTime(new Date(session.startedAt), {
+        dateStyle: "short",
+      }),
     })
     setPastMessages([])
     historyFetchAbort.current?.abort()
     historyFetchAbort.current = new AbortController()
-    fetchChatHistory(s.id, historyFetchAbort.current.signal)
+    fetchChatHistory(session.id, historyFetchAbort.current.signal)
       .then((data) => setPastMessages(data.map(mapToUIMessage)))
       .catch(() => {})
   }
@@ -175,8 +177,8 @@ export function ChatView({
     : `${domain} / ${name}`
 
   return (
-    <div className="bg-muted fixed inset-0 z-50 flex p-2">
-      <div className="bg-background animate-in fade-in-0 zoom-in-95 flex h-full w-full overflow-hidden border duration-300">
+    <div className="fixed inset-0 z-50 flex bg-muted p-2">
+      <div className="flex h-full w-full animate-in overflow-hidden border bg-background duration-300 fade-in-0 zoom-in-95">
         <div
           className={cn(
             "relative hidden shrink-0 overflow-hidden border-r transition-[width,border-color] duration-300 ease-in-out md:block",
@@ -185,7 +187,7 @@ export function ChatView({
         >
           <div className="flex h-full w-[280px] flex-col">
             <div className="flex h-14 shrink-0 items-center gap-2 border-b pr-2 pl-4">
-              <SparklesIcon className="text-muted-foreground size-4" />
+              <SparklesIcon className="size-4 text-muted-foreground" />
               <p className="text-sm font-medium whitespace-nowrap">
                 {t("chat")}
               </p>
@@ -193,7 +195,7 @@ export function ChatView({
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                className="text-muted-foreground hover:text-foreground ml-auto"
+                className="ml-auto text-muted-foreground hover:text-foreground"
                 aria-label={t("hideSidebar")}
                 onClick={() => setSidebarOpen(false)}
               >
@@ -205,7 +207,7 @@ export function ChatView({
                 type="button"
                 onClick={() => setArchive(null)}
                 className={cn(
-                  "hover:bg-muted flex w-full cursor-pointer items-center gap-2 px-2 py-2 text-left text-sm",
+                  "flex w-full cursor-pointer items-center gap-2 px-2 py-2 text-left text-sm hover:bg-muted",
                   !archive
                     ? "bg-muted text-foreground"
                     : "text-muted-foreground hover:text-foreground"
@@ -217,31 +219,33 @@ export function ChatView({
               </button>
             </nav>
             <div className="min-h-0 flex-1 overflow-y-auto p-2 pt-0">
-              <p className="text-muted-foreground px-2 py-1.5 text-xs">
+              <p className="px-2 py-1.5 text-xs text-muted-foreground">
                 {t("history")}
               </p>
               {pastSessions.length === 0 ? (
-                <p className="text-muted-foreground px-2 py-1 text-xs">
+                <p className="px-2 py-1 text-xs text-muted-foreground">
                   {t("noPastSessions")}
                 </p>
               ) : (
-                pastSessions.map((s) => {
-                  const { domain: d, name: n } = getDomainLabel(s.labSlug)
+                pastSessions.map((pastSession) => {
+                  const { domain: pastDomain, name: pastName } = getDomainLabel(
+                    pastSession.labSlug
+                  )
                   return (
                     <button
-                      key={s.id}
+                      key={pastSession.id}
                       type="button"
-                      onClick={() => openArchive(s)}
+                      onClick={() => openArchive(pastSession)}
                       className={cn(
-                        "hover:bg-muted flex w-full cursor-pointer flex-col gap-0.5 px-2 py-2 text-left",
-                        archive?.sessionId === s.id && "bg-muted"
+                        "flex w-full cursor-pointer flex-col gap-0.5 px-2 py-2 text-left hover:bg-muted",
+                        archive?.sessionId === pastSession.id && "bg-muted"
                       )}
                     >
-                      <span className="text-foreground truncate text-sm">
-                        {d} / {n}
+                      <span className="truncate text-sm text-foreground">
+                        {pastDomain} / {pastName}
                       </span>
-                      <span className="text-muted-foreground text-xs">
-                        {format.dateTime(new Date(s.startedAt), {
+                      <span className="text-xs text-muted-foreground">
+                        {format.dateTime(new Date(pastSession.startedAt), {
                           dateStyle: "short",
                         })}
                       </span>
@@ -269,7 +273,7 @@ export function ChatView({
                 </Button>
               )}
             </div>
-            <p className="text-muted-foreground max-w-sm truncate text-center text-sm">
+            <p className="max-w-sm truncate text-center text-sm text-muted-foreground">
               {headerLabel}
             </p>
             <div className="flex items-center justify-end gap-2">
@@ -281,7 +285,7 @@ export function ChatView({
                     onCheckedChange={onLogsToggle}
                     aria-label={t("aiLogs")}
                   />
-                  <span className="text-muted-foreground text-xs">
+                  <span className="text-xs text-muted-foreground">
                     {t("aiLogs")}
                   </span>
                 </div>
@@ -309,8 +313,8 @@ export function ChatView({
 
           {archive ? (
             <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col">
-              <div className="bg-card flex items-center justify-between gap-2 border-b px-4 py-2">
-                <span className="text-muted-foreground truncate text-xs">
+              <div className="flex items-center justify-between gap-2 border-b bg-card px-4 py-2">
+                <span className="truncate text-xs text-muted-foreground">
                   {t("archiveDetail", {
                     domain: getDomainLabel(archive.labSlug).domain,
                     name: getDomainLabel(archive.labSlug).name,

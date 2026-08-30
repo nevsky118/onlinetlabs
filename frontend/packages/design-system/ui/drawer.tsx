@@ -1,8 +1,8 @@
 "use client"
 
 import { cn } from "@repo/design-system/lib/utils"
-import type * as React from "react"
 import { Drawer as DrawerPrimitive } from "vaul"
+import type * as React from "react"
 
 function Drawer({
   ...props

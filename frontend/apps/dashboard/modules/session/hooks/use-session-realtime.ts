@@ -15,7 +15,7 @@ function backoffMs(attempt: number): number {
 }
 
 export function useSessionRealtime(sessionId: string) {
-  const qc = useQueryClient()
+  const queryClient = useQueryClient()
   const [streamStatus, setStreamStatus] = useState<StreamStatus>("connecting")
   const [wsHealthy, setWsHealthy] = useState(false)
   const wsRef = useRef<WebSocket | null>(null)
@@ -27,33 +27,35 @@ export function useSessionRealtime(sessionId: string) {
     attemptRef.current = 0
     const key = sessionKeys.state(sessionId)
 
-    const patch = (fn: (s: FullSessionState) => FullSessionState) => {
-      qc.setQueryData<FullSessionState>(key, (prev) => (prev ? fn(prev) : prev))
+    const patch = (fn: (current: FullSessionState) => FullSessionState) => {
+      queryClient.setQueryData<FullSessionState>(key, (prev) =>
+        prev ? fn(prev) : prev
+      )
     }
     const invalidate = () => {
-      qc.invalidateQueries({ queryKey: key })
+      queryClient.invalidateQueries({ queryKey: key })
     }
 
-    const applyEvent = (ev: WSEvent) => {
-      switch (ev.type) {
+    const applyEvent = (event: WSEvent) => {
+      switch (event.type) {
         case "snapshot":
           invalidate()
           break
         case "node.status_changed":
-          patch((s) => ({
-            ...s,
-            nodes: s.nodes.map((n) =>
-              n.id === ev.payload.nodeId
-                ? { ...n, status: ev.payload.status }
-                : n
+          patch((current) => ({
+            ...current,
+            nodes: current.nodes.map((node) =>
+              node.id === event.payload.nodeId
+                ? { ...node, status: event.payload.status }
+                : node
             ),
           }))
           break
         case "session.status_changed":
-          patch((s) => ({ ...s, status: ev.payload.status }))
+          patch((current) => ({ ...current, status: event.payload.status }))
           break
         case "metrics.tick":
-          patch((s) => ({ ...s, metrics: ev.payload }))
+          patch((current) => ({ ...current, metrics: event.payload }))
           break
         case "state.invalidated":
           invalidate()
@@ -84,9 +86,9 @@ export function useSessionRealtime(sessionId: string) {
           setWsHealthy(true)
           setStreamStatus("live")
         }
-        ws.onmessage = (e) => {
+        ws.onmessage = (message) => {
           try {
-            applyEvent(JSON.parse(e.data) as WSEvent)
+            applyEvent(JSON.parse(message.data) as WSEvent)
           } catch {
             /* ignore bad payload */
           }
@@ -125,7 +127,7 @@ export function useSessionRealtime(sessionId: string) {
         /* ignore */
       }
     }
-  }, [sessionId, qc])
+  }, [sessionId, queryClient])
 
   return { streamStatus, wsHealthy }
 }

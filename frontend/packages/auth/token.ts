@@ -1,6 +1,6 @@
-import axios from "axios"
+import { isAxiosError } from "axios"
 import { headers } from "next/headers"
-import { backendExchangeToken } from "./api"
+import { backendExchangeToken, backendUpsertGithubUser } from "./api"
 import { auth } from "./betterauth"
 
 /**
@@ -65,10 +65,27 @@ export async function getBackendToken(): Promise<string | null> {
       tokenCache.set(userId, { token, expiresAtMs: decodeExpiryMs(token) })
       return token
     } catch (error) {
-      // 401 = orphaned cookie / no such user on the backend → null → sign-in.
-      // Everything else (429 / 5xx / network) = transient → do not log out.
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        return null
+      // 401 = no such user on the backend. That happens when the sign-up hook
+      // failed to sync, leaving a signed-in visitor with no account. Re-sync
+      // once and retry rather than looping them through sign-in forever.
+      if (isAxiosError(error) && error.response?.status === 401) {
+        try {
+          await backendUpsertGithubUser({
+            email: session.user.email,
+            name: session.user.name,
+            image: session.user.image,
+            provider_account_id: session.user.id,
+          })
+          const token = await backendExchangeToken(
+            session.user.id,
+            session.user.email
+          )
+          tokenCache.set(userId, { token, expiresAtMs: decodeExpiryMs(token) })
+          return token
+        } catch (resyncError) {
+          console.error("[auth] backend user re-sync failed", resyncError)
+          return null
+        }
       }
       throw new BackendUnavailableError(error)
     } finally {

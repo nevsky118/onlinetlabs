@@ -20,7 +20,7 @@ export async function GET(
   if (since) upstream.searchParams.set("since", since)
   if (limit) upstream.searchParams.set("limit", limit)
 
-  const r = await fetch(upstream.toString(), {
+  const response = await fetch(upstream.toString(), {
     headers: {
       Authorization: `Bearer ${token}`,
       "X-Locale": await getRequestLocale(),
@@ -28,10 +28,11 @@ export async function GET(
     cache: "no-store",
   })
 
-  return new Response(r.body, {
-    status: r.status,
+  return new Response(response.body, {
+    status: response.status,
     headers: {
-      "Content-Type": r.headers.get("Content-Type") ?? "application/json",
+      "Content-Type":
+        response.headers.get("Content-Type") ?? "application/json",
     },
   })
 }

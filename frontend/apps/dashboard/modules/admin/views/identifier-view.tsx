@@ -31,14 +31,14 @@ type Props = {
   error?: string | null
 }
 
-function fmtPct(v: number | null): string {
-  if (v == null) return "—"
-  return `${(v * 100).toFixed(1)}%`
+function fmtPct(value: number | null): string {
+  if (value == null) return "—"
+  return `${(value * 100).toFixed(1)}%`
 }
 
-function fmtNum(v: number | null, digits = 3): string {
-  if (v == null) return "—"
-  return v.toFixed(digits)
+function fmtNum(value: number | null, digits = 3): string {
+  if (value == null) return "—"
+  return value.toFixed(digits)
 }
 
 // Series config, monochrome. recall is a solid dark line, falsePerHour a lighter dashed one
@@ -92,7 +92,7 @@ export function IdentifierView({ data, error }: Props) {
       <div className="flex flex-col gap-1">
         <p className="text-xs text-muted-foreground">{t("subtitle")}</p>
         {data.preliminary && (
-          <span className="inline-block border border-foreground px-2 py-0.5 text-xs font-medium uppercase tracking-wide">
+          <span className="inline-block border border-foreground px-2 py-0.5 text-xs font-medium tracking-wide uppercase">
             {t("preliminaryBadge")}
           </span>
         )}
@@ -101,7 +101,7 @@ export function IdentifierView({ data, error }: Props) {
       {/* Operating curve CHART */}
       {chartData.length > 0 && (
         <section>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide">
+          <h2 className="mb-2 text-sm font-semibold tracking-wide uppercase">
             {t("sections.operatingChart")}
           </h2>
           <ChartContainer config={getCurveConfig(t)} height={280}>
@@ -125,9 +125,9 @@ export function IdentifierView({ data, error }: Props) {
               <ChartTooltip
                 content={
                   <ChartTooltipContent
-                    labelFormatter={(v) => `T_k = ${v}`}
-                    valueFormatter={(v, name) =>
-                      name === "recall" ? fmtPct(v) : fmtNum(v, 2)
+                    labelFormatter={(value) => `T_k = ${value}`}
+                    valueFormatter={(value, name) =>
+                      name === "recall" ? fmtPct(value) : fmtNum(value, 2)
                     }
                   />
                 }
@@ -176,13 +176,13 @@ export function IdentifierView({ data, error }: Props) {
         <p className="text-sm text-muted-foreground">{t("emptyCurve")}</p>
       ) : (
         <section>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide">
+          <h2 className="mb-2 text-sm font-semibold tracking-wide uppercase">
             {t("sections.operatingTable")}
           </h2>
           <div className="overflow-x-auto border">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <tr className="border-b text-left text-xs tracking-wide text-muted-foreground uppercase">
                   <th className="px-4 py-3 font-medium">{t("headers.tk")}</th>
                   <th className="px-4 py-3 text-right font-medium">
                     {t("headers.latencyMedian")}
@@ -199,18 +199,18 @@ export function IdentifierView({ data, error }: Props) {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {data.curve.map((row, i) => {
+                {data.curve.map((row, index) => {
                   const isOpt = row.tK === data.jOptimalTk
                   return (
                     <tr
-                      key={i}
+                      key={index}
                       className={
                         isOpt
-                          ? "bg-foreground text-background font-bold"
-                          : "hover:bg-muted/50 transition-colors"
+                          ? "bg-foreground font-bold text-background"
+                          : "transition-colors hover:bg-muted/50"
                       }
                     >
-                      <td className="px-4 py-3 tabular-nums font-mono">
+                      <td className="px-4 py-3 font-mono tabular-nums">
                         {fmtNum(row.tK, 0)}
                       </td>
                       <td className="px-4 py-3 text-right tabular-nums">
@@ -239,7 +239,7 @@ export function IdentifierView({ data, error }: Props) {
 
       {/* Confusion matrix */}
       <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide">
+        <h2 className="mb-2 text-sm font-semibold tracking-wide uppercase">
           {t("sections.confusionMatrix")}
         </h2>
         <ConfusionGrid confusion={data.confusion} />
@@ -247,7 +247,7 @@ export function IdentifierView({ data, error }: Props) {
 
       {/* First-match numbers */}
       <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide">
+        <h2 className="mb-2 text-sm font-semibold tracking-wide uppercase">
           {t("sections.firstMatch")}
         </h2>
         <p className="mb-2 text-xs text-muted-foreground">
@@ -258,7 +258,7 @@ export function IdentifierView({ data, error }: Props) {
             <span className="text-muted-foreground">
               {t("rows.multiMatchRate")}
             </span>
-            <span className="tabular-nums font-medium">
+            <span className="font-medium tabular-nums">
               {fmtPct(data.firstMatch.multiMatchRate)}
             </span>
           </div>
@@ -266,7 +266,7 @@ export function IdentifierView({ data, error }: Props) {
             <span className="text-muted-foreground">
               {t("rows.orderSensitiveRate")}
             </span>
-            <span className="tabular-nums font-medium">
+            <span className="font-medium tabular-nums">
               {fmtPct(data.firstMatch.orderSensitiveRate)}
             </span>
           </div>
@@ -274,7 +274,7 @@ export function IdentifierView({ data, error }: Props) {
             <span className="text-muted-foreground">
               {t("rows.totalFiringSnapshots")}
             </span>
-            <span className="tabular-nums font-medium">
+            <span className="font-medium tabular-nums">
               {data.firstMatch.totalFiringSnapshots}
             </span>
           </div>
@@ -284,16 +284,16 @@ export function IdentifierView({ data, error }: Props) {
       {/* Costs */}
       {Object.keys(data.costs).length > 0 && (
         <section>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide">
+          <h2 className="mb-2 text-sm font-semibold tracking-wide uppercase">
             {t("sections.costs")}
           </h2>
           <div className="flex flex-col gap-1 border p-4 text-sm">
-            {Object.entries(data.costs).map(([k, v]) => (
-              <div key={k} className="flex justify-between">
-                <span className="text-muted-foreground font-mono text-xs">
-                  {k}
+            {Object.entries(data.costs).map(([key, value]) => (
+              <div key={key} className="flex justify-between">
+                <span className="font-mono text-xs text-muted-foreground">
+                  {key}
                 </span>
-                <span className="tabular-nums">{fmtNum(v, 2)}</span>
+                <span className="tabular-nums">{fmtNum(value, 2)}</span>
               </div>
             ))}
           </div>

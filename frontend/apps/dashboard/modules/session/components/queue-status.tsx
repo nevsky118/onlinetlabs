@@ -10,8 +10,8 @@ export function QueueStatus({ labSlug }: { labSlug: string }) {
   if (!status?.inQueue) return null
   const mins = Math.max(1, Math.ceil(status.etaSec / 60))
   return (
-    <div className="bg-card text-card-foreground border p-4">
-      <div className="text-muted-foreground mb-2 text-xs tracking-wide uppercase">
+    <div className="border bg-card p-4 text-card-foreground">
+      <div className="mb-2 text-xs tracking-wide text-muted-foreground uppercase">
         {t("heading")}
       </div>
       <div className="text-sm">
@@ -24,7 +24,7 @@ export function QueueStatus({ labSlug }: { labSlug: string }) {
           ),
         })}
       </div>
-      <div className="text-muted-foreground mt-1 text-xs">
+      <div className="mt-1 text-xs text-muted-foreground">
         {t("waiting", { eta: durationT("aboutMinutes", { count: mins }) })}
       </div>
     </div>

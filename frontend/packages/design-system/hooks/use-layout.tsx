@@ -68,17 +68,17 @@ const Layout = ({
       if (!layout) return
 
       const name = value ? value[layout] : `layout-${layout}`
-      const d = document.documentElement
+      const root = document.documentElement
 
       const handleAttribute = (attr: string) => {
         if (attr === "class") {
-          d.classList.remove(...attrs)
-          if (name) d.classList.add(name)
+          root.classList.remove(...attrs)
+          if (name) root.classList.add(name)
         } else if (attr.startsWith("data-")) {
           if (name) {
-            d.setAttribute(attr, name)
+            root.setAttribute(attr, name)
           } else {
-            d.removeAttribute(attr)
+            root.removeAttribute(attr)
           }
         }
       }
@@ -107,13 +107,13 @@ const Layout = ({
 
   // localStorage event handling
   React.useEffect(() => {
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key !== storageKey) return
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== storageKey) return
 
-      if (!e.newValue) {
+      if (!event.newValue) {
         setLayout(defaultLayout)
-      } else if (e.newValue === "fixed" || e.newValue === "full") {
-        setLayoutState(e.newValue)
+      } else if (event.newValue === "fixed" || event.newValue === "full") {
+        setLayoutState(event.newValue)
       }
     }
 

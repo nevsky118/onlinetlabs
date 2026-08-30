@@ -1,32 +1,36 @@
 "use client"
 
-import type { UIMessage } from "@ai-sdk/react"
 import { Button } from "@repo/design-system/ui/button"
 import { CheckIcon, CopyIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useEffect, useRef, useState } from "react"
 import type { AgentActivityEvent } from "../types"
+import type { UIMessage } from "@ai-sdk/react"
 import { AgentActivityLine } from "./agent-activity-console"
 import { ChatResponse } from "./chat-response"
 
-function messageText(m: UIMessage): string {
-  return m.parts
-    .filter((p): p is { type: "text"; text: string } => p.type === "text")
-    .map((p) => p.text)
+function messageText(message: UIMessage): string {
+  return message.parts
+    .filter(
+      (part): part is { type: "text"; text: string } => part.type === "text"
+    )
+    .map((part) => part.text)
     .join("")
 }
 
 // Message time. History carries createdAt in metadata; live messages have none,
 // so we stamp them with the moment they first appeared (needed to embed logs by time).
-function messageTs(m: UIMessage, seen: Map<string, number>): number {
-  const meta = m.metadata as { createdAt?: string } | undefined
+const firstSeenAt = new Map<string, number>()
+
+function messageTs(message: UIMessage): number {
+  const meta = message.metadata as { createdAt?: string } | undefined
   if (meta?.createdAt) return Date.parse(meta.createdAt)
-  let t = seen.get(m.id)
-  if (t === undefined) {
-    t = Date.now()
-    seen.set(m.id, t)
+  let seenAt = firstSeenAt.get(message.id)
+  if (seenAt === undefined) {
+    seenAt = Date.now()
+    firstSeenAt.set(message.id, seenAt)
   }
-  return t
+  return seenAt
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -40,11 +44,10 @@ function CopyButton({ text }: { text: string }) {
       size="icon-xs"
       aria-label={t("copyResponse")}
       className="text-muted-foreground hover:text-foreground"
-      onClick={() => {
-        navigator.clipboard.writeText(text).then(() => {
-          setCopied(true)
-          setTimeout(() => setCopied(false), 1500)
-        })
+      onClick={async () => {
+        await navigator.clipboard.writeText(text)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 1500)
       }}
     >
       {copied ? <CheckIcon /> : <CopyIcon />}
@@ -52,15 +55,21 @@ function CopyButton({ text }: { text: string }) {
   )
 }
 
-function MessageBubble({ m, isLast }: { m: UIMessage; isLast: boolean }) {
-  const text = messageText(m)
-  if (m.role === "user") {
+function MessageBubble({
+  message,
+  isLast,
+}: {
+  message: UIMessage
+  isLast: boolean
+}) {
+  const text = messageText(message)
+  if (message.role === "user") {
     return (
       <article
         data-sender="user"
-        className="animate-in fade-in-0 flex flex-col items-end duration-300"
+        className="flex animate-in flex-col items-end duration-300 fade-in-0"
       >
-        <div className="bg-muted text-foreground ml-auto w-fit max-w-[85%] px-4 py-3 text-sm leading-relaxed break-words whitespace-pre-wrap">
+        <div className="ml-auto w-fit max-w-[85%] bg-muted px-4 py-3 text-sm leading-relaxed break-words whitespace-pre-wrap text-foreground">
           {text}
         </div>
       </article>
@@ -69,7 +78,7 @@ function MessageBubble({ m, isLast }: { m: UIMessage; isLast: boolean }) {
   return (
     <article
       data-sender="ai"
-      className="group/message animate-in fade-in-0 flex flex-col items-start gap-1 duration-300"
+      className="group/message flex animate-in flex-col items-start gap-1 duration-300 fade-in-0"
     >
       <div className="w-full max-w-full text-sm leading-relaxed">
         <ChatResponse>{text}</ChatResponse>
@@ -84,20 +93,23 @@ function MessageBubble({ m, isLast }: { m: UIMessage; isLast: boolean }) {
   )
 }
 
+const NO_EVENTS: AgentActivityEvent[] = []
+
 export function ChatMessages({
   messages,
-  events = [],
+  events = NO_EVENTS,
 }: {
   messages: UIMessage[]
   events?: AgentActivityEvent[]
 }) {
   const endRef = useRef<HTMLDivElement>(null)
-  const seenRef = useRef<Map<string, number>>(new Map())
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: autoscroll on new messages/events
+  // Autoscroll on a new row, not on every re-render of the same ones. The
+  // counts are the trigger; the body itself only reads the ref.
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, events])
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies
+  }, [messages.length, events.length])
 
   const lastMessageId = messages.length
     ? messages[messages.length - 1].id
@@ -106,29 +118,44 @@ export function ChatMessages({
   // A single timeline of chat turns plus log events, sorted by time.
   // Logs are embedded concisely into the flow instead of a separate block.
   type Row =
-    | { kind: "msg"; t: number; key: string; m: UIMessage }
-    | { kind: "evt"; t: number; key: string; e: AgentActivityEvent }
+    | { kind: "message"; at: number; key: string; message: UIMessage }
+    | {
+        kind: "activity"
+        at: number
+        key: string
+        activity: AgentActivityEvent
+      }
   const rows: Row[] = []
-  for (const m of messages) {
-    rows.push({ kind: "msg", t: messageTs(m, seenRef.current), key: m.id, m })
+  for (const message of messages) {
+    rows.push({
+      kind: "message",
+      at: messageTs(message),
+      key: message.id,
+      message,
+    })
   }
-  for (const e of events) {
-    rows.push({ kind: "evt", t: Date.parse(e.ts), key: `evt-${e.id}`, e })
+  for (const activity of events) {
+    rows.push({
+      kind: "activity",
+      at: Date.parse(activity.ts),
+      key: `activity-${activity.id}`,
+      activity,
+    })
   }
-  rows.sort((a, b) => a.t - b.t)
+  rows.sort((left, right) => left.at - right.at)
 
   return (
     <div className="flex flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-4">
       {rows.map((row) =>
-        row.kind === "msg" ? (
+        row.kind === "message" ? (
           <MessageBubble
             key={row.key}
-            m={row.m}
-            isLast={row.m.id === lastMessageId}
+            message={row.message}
+            isLast={row.message.id === lastMessageId}
           />
         ) : (
-          <div key={row.key} className="border-border border-l-2">
-            <AgentActivityLine event={row.e} />
+          <div key={row.key} className="border-l-2 border-border">
+            <AgentActivityLine event={row.activity} />
           </div>
         )
       )}

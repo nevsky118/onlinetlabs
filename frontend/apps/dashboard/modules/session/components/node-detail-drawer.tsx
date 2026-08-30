@@ -33,7 +33,7 @@ export function NodeDetailDrawer({
   onAction: (nodeId: string, action: string) => Promise<void>
 }) {
   const t = useTranslations("dashboard.session.nodeDetailDrawer")
-  const node = nodes.find((n) => n.id === nodeId)
+  const node = nodes.find((candidate) => candidate.id === nodeId)
   const [pending, startTransition] = useTransition()
 
   const run = (action: string, ok: string) =>
@@ -43,13 +43,16 @@ export function NodeDetailDrawer({
         await onAction(node.id, action)
         toast.success(ok)
         onClose()
-      } catch (e) {
-        toast.error((e as Error).message)
+      } catch (error) {
+        toast.error((error as Error).message)
       }
     })
 
   return (
-    <Drawer open={node !== undefined} onOpenChange={(o) => !o && onClose()}>
+    <Drawer
+      open={node !== undefined}
+      onOpenChange={(isOpen) => !isOpen && onClose()}
+    >
       <DrawerContent>
         {node && (
           <>
@@ -67,7 +70,7 @@ export function NodeDetailDrawer({
                   nativeButton={false}
                   className="w-full"
                   render={
-                    // biome-ignore lint/a11y/useAnchorContent: content comes from the Base UI render slot
+                    // oxlint-disable-next-line jsx-a11y/anchor-has-content -- link text comes from the Base UI render slot
                     <a href={`telnet://${node.consoleHost}:${node.console}`} />
                   }
                 >
@@ -104,7 +107,7 @@ export function NodeDetailDrawer({
               </Button>
             </div>
             <DrawerFooter>
-              <div className="text-muted-foreground space-y-1 text-xs">
+              <div className="space-y-1 text-xs text-muted-foreground">
                 <div>
                   <span className="font-mono">id</span> · {node.id}
                 </div>

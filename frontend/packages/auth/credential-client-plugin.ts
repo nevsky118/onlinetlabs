@@ -1,5 +1,5 @@
-import type { BetterAuthClientPlugin } from "better-auth/client"
 import type { credentialAuthPlugin } from "./credential-plugin"
+import type { BetterAuthClientPlugin } from "better-auth/client"
 
 export const credentialAuthClientPlugin = {
   id: "credential-auth",

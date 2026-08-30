@@ -43,8 +43,8 @@ function kindIcon(kind: string) {
 
 function formatTime(ts: string): string {
   try {
-    const d = new Date(ts)
-    return d.toTimeString().slice(0, 8)
+    const date = new Date(ts)
+    return date.toTimeString().slice(0, 8)
   } catch {
     return "--:--:--"
   }
@@ -57,13 +57,13 @@ export function AgentActivityLine({ event }: { event: AgentActivityEvent }) {
   if (!hasDetail) {
     return (
       <div className="flex items-start gap-1.5 px-3 py-0.5">
-        <span className="text-muted-foreground font-mono text-xs shrink-0">
+        <span className="shrink-0 font-mono text-xs text-muted-foreground">
           [{formatTime(event.ts)}]
         </span>
-        <span className="text-muted-foreground shrink-0 mt-px">
+        <span className="mt-px shrink-0 text-muted-foreground">
           {kindIcon(event.kind)}
         </span>
-        <span className="text-foreground font-mono text-xs leading-relaxed">
+        <span className="font-mono text-xs leading-relaxed text-foreground">
           {event.summary}
         </span>
       </div>
@@ -76,20 +76,20 @@ export function AgentActivityLine({ event }: { event: AgentActivityEvent }) {
         render={
           <button
             type="button"
-            className="flex w-full items-start gap-1.5 px-3 py-0.5 text-left hover:bg-muted/50 transition-colors"
+            className="flex w-full items-start gap-1.5 px-3 py-0.5 text-left transition-colors hover:bg-muted/50"
           />
         }
       >
-        <span className="text-muted-foreground font-mono text-xs shrink-0">
+        <span className="shrink-0 font-mono text-xs text-muted-foreground">
           [{formatTime(event.ts)}]
         </span>
-        <span className="text-muted-foreground shrink-0 mt-px">
+        <span className="mt-px shrink-0 text-muted-foreground">
           {kindIcon(event.kind)}
         </span>
-        <span className="text-foreground font-mono text-xs leading-relaxed flex-1">
+        <span className="flex-1 font-mono text-xs leading-relaxed text-foreground">
           {event.summary}
         </span>
-        <span className="text-muted-foreground shrink-0 mt-px">
+        <span className="mt-px shrink-0 text-muted-foreground">
           {open ? (
             <ChevronDownIcon className="size-3" />
           ) : (
@@ -98,11 +98,11 @@ export function AgentActivityLine({ event }: { event: AgentActivityEvent }) {
         </span>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <pre className="text-xs text-muted-foreground font-mono px-3 pb-1 overflow-x-auto whitespace-pre-wrap break-all bg-muted/30">
+        <pre className="overflow-x-auto bg-muted/30 px-3 pb-1 font-mono text-xs break-all whitespace-pre-wrap text-muted-foreground">
           {Object.entries(event.detail ?? {})
             .map(
-              ([k, v]) =>
-                `${k}: ${typeof v === "object" ? JSON.stringify(v) : String(v)}`
+              ([key, value]) =>
+                `${key}: ${typeof value === "object" ? JSON.stringify(value) : String(value)}`
             )
             .join("\n")}
         </pre>
@@ -126,10 +126,10 @@ export function AgentActivityConsole({
   if (!enabled) return null
 
   return (
-    <div className="border-t bg-background flex flex-col">
+    <div className="flex flex-col border-t bg-background">
       {/* Heading */}
       <div className="flex items-center gap-2 border-b px-3 py-2">
-        <BotIcon className="size-3.5 text-muted-foreground shrink-0" />
+        <BotIcon className="size-3.5 shrink-0 text-muted-foreground" />
         <span className="text-xs font-medium">{t("heading")}</span>
         {events.length > 0 && (
           <span className="ml-auto text-xs text-muted-foreground tabular-nums">
@@ -138,14 +138,14 @@ export function AgentActivityConsole({
         )}
       </div>
       {/* Event list */}
-      <div className="overflow-y-auto max-h-64 flex flex-col">
+      <div className="flex max-h-64 flex-col overflow-y-auto">
         {events.length === 0 ? (
-          <p className="text-muted-foreground text-xs px-3 py-2">
+          <p className="px-3 py-2 text-xs text-muted-foreground">
             {t("empty")}
           </p>
         ) : (
-          [...events]
-            .reverse()
+          events
+            .toReversed()
             .map((event) => <AgentActivityLine key={event.id} event={event} />)
         )}
       </div>

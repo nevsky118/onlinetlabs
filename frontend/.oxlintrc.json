@@ -1,0 +1,86 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "react",
+    "nextjs",
+    "typescript",
+    "oxc",
+    "unicorn",
+    "import",
+    "jsx-a11y",
+    "promise"
+  ],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "error"
+  },
+  "env": {
+    "browser": true,
+    "node": true,
+    "es2024": true
+  },
+  "ignorePatterns": [
+    "**/node_modules",
+    "**/.next",
+    "**/.turbo",
+    "**/.source",
+    "**/dist",
+    "**/build",
+    "**/next-env.d.ts"
+  ],
+  "rules": {
+    "react/react-in-jsx-scope": "off",
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "error",
+    "react/no-array-index-key": "off",
+    "typescript/consistent-type-imports": "error",
+    "import/no-cycle": "error",
+    "import/no-duplicates": "error",
+    "import/no-unassigned-import": "off",
+    "eslint/no-underscore-dangle": "off",
+    "eslint/no-console": ["error", { "allow": ["warn", "error"] }],
+    "eslint/id-length": [
+      "error",
+      {
+        "min": 2,
+        "properties": "never",
+        "checkGeneric": false,
+        "exceptions": ["t", "_"]
+      }
+    ],
+    "unicorn/prefer-add-event-listener": "off",
+    "jsx-a11y/click-events-have-key-events": "off",
+    "jsx-a11y/heading-has-content": "off",
+    "jsx-a11y/prefer-tag-over-role": "off",
+    "jsx-a11y/control-has-associated-label": "off",
+    "react/no-unstable-nested-components": "off"
+  },
+  "overrides": [
+    {
+      "files": ["apps/*/shared/ui/**", "packages/design-system/**"],
+      "rules": {
+        "react/exhaustive-deps": "off",
+        "react/jsx-no-constructed-context-values": "off",
+        "react/set-state-in-effect": "off",
+        "react/no-unstable-nested-components": "off",
+        "eslint/eqeqeq": "off",
+        "eslint/no-shadow": "off",
+        "jsx-a11y/anchor-has-content": "off",
+        "jsx-a11y/control-has-associated-label": "off",
+        "jsx-a11y/label-has-associated-control": "off",
+        "jsx-a11y/no-noninteractive-element-interactions": "off",
+        "jsx-a11y/no-noninteractive-tabindex": "off"
+      }
+    },
+    {
+      "files": ["scripts/**"],
+      "rules": {
+        "eslint/no-console": "off"
+      }
+    }
+  ],
+  "options": {
+    "reportUnusedDisableDirectives": "error"
+  }
+}

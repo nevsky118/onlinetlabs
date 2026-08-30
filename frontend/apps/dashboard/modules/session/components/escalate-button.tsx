@@ -13,10 +13,10 @@ export function EscalateButton({ sessionId }: { sessionId: string }) {
   async function handleClick() {
     setPending(true)
     try {
-      const r = await fetch(`/api/sessions/${sessionId}/escalate`, {
+      const response = await fetch(`/api/sessions/${sessionId}/escalate`, {
         method: "POST",
       })
-      if (!r.ok) throw new Error(`${r.status}`)
+      if (!response.ok) throw new Error(`${response.status}`)
       toast.success(t("toastSent"))
     } catch {
       toast.error(t("toastFailed"))

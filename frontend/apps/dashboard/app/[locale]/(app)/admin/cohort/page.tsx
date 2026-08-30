@@ -1,14 +1,14 @@
+import { CohortView } from "@/modules/admin/views/cohort-view"
+import { fetchCohortMetrics } from "@/modules/instructor/actions"
 import { getBackendUserRole } from "@repo/auth/server"
 import {
   PageHeader,
   PageHeaderDescription,
   PageHeaderHeading,
 } from "@repo/design-system/components/page-header"
-import type { Metadata } from "next"
-import { forbidden, unauthorized } from "next/navigation"
 import { getTranslations, setRequestLocale } from "next-intl/server"
-import { CohortView } from "@/modules/admin/views/cohort-view"
-import { fetchCohortMetrics } from "@/modules/instructor/actions"
+import { forbidden, unauthorized } from "next/navigation"
+import type { Metadata } from "next"
 
 export async function generateMetadata({
   params,
@@ -50,7 +50,7 @@ export default async function AdminCohortPage({
         <PageHeaderHeading>{t("title")}</PageHeaderHeading>
         <PageHeaderDescription>{t("description")}</PageHeaderDescription>
       </PageHeader>
-      <div className="container-wrapper section-soft flex-1 pb-6">
+      <div className="container-wrapper flex-1 section-soft pb-6">
         <div className="container">
           <CohortView metrics={metrics} error={error} />
         </div>

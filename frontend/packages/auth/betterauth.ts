@@ -55,8 +55,9 @@ export const auth = betterAuth({
               image: user.image,
               provider_account_id: user.id,
             })
-          } catch {
-            console.error("[auth] Failed to sync GitHub user to backend")
+          } catch (error) {
+            // Not fatal: getBackendToken re-syncs on the first 401.
+            console.error("[auth] backend user sync failed on create", error)
           }
         },
       },

@@ -1,9 +1,14 @@
 pre-commit:
   commands:
-    biome:
+    oxfmt:
       root: "frontend/"
-      glob: "*.{ts,tsx,js,jsx,json}"
-      run: npx biome check --write --no-errors-on-unmatched {staged_files}
+      glob: "*.{ts,tsx,js,jsx,mjs,cjs,json,css,md,mdx}"
+      run: pnpm exec oxfmt {staged_files}
+      stage_fixed: true
+    oxlint:
+      root: "frontend/"
+      glob: "*.{ts,tsx,js,jsx,mjs,cjs}"
+      run: pnpm exec oxlint --max-warnings=0 --fix {staged_files}
       stage_fixed: true
     ruff-backend:
       root: "backend/"

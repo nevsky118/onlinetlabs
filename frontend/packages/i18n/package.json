@@ -6,26 +6,27 @@
     "./routing": "./routing.ts",
     "./request": "./request.ts",
     "./navigation": "./navigation.ts",
+    "./messages": "./messages.ts",
     "./messages/ru.json": "./messages/ru.json",
     "./messages/en.json": "./messages/en.json",
     "./components/locale-switcher": "./components/locale-switcher.tsx"
   },
-  "dependencies": {
-    "next-intl": "^4.13.4",
-    "@repo/design-system": "workspace:*",
-    "lucide-react": "^0.548.0"
+  "scripts": {
+    "typecheck": "tsc --noEmit"
   },
-  "peerDependencies": {
-    "next": "^16.2.12",
-    "react": "^19.2.0"
+  "dependencies": {
+    "@repo/design-system": "workspace:*",
+    "lucide-react": "^0.548.0",
+    "next-intl": "^4.13.4"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "@types/node": "^20",
-    "typescript": "^5",
-    "@types/react": "^19"
+    "@types/react": "^19",
+    "typescript": "^5"
   },
-  "scripts": {
-    "typecheck": "tsc --noEmit"
+  "peerDependencies": {
+    "next": "^16.2.12",
+    "react": "^19.2.0"
   }
 }

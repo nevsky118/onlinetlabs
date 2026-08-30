@@ -1,7 +1,7 @@
-import { routing } from "@repo/i18n/routing"
-import type { MetadataRoute } from "next"
 import { course, labs } from "@/lib/source"
 import { webUrl } from "@/lib/urls"
+import { routing } from "@repo/i18n/routing"
+import type { MetadataRoute } from "next"
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const entries: MetadataRoute.Sitemap = []

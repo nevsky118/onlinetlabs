@@ -33,7 +33,7 @@ export function KpiCard({
       <CardHeader className="pb-0">
         <CardTitle
           className={cn(
-            "text-xs font-normal uppercase tracking-widest",
+            "text-xs font-normal tracking-widest uppercase",
             invert ? "text-background/60" : "text-muted-foreground"
           )}
         >
@@ -41,7 +41,7 @@ export function KpiCard({
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-1">
-        <span className="font-mono text-2xl font-semibold tabular-nums leading-none">
+        <span className="font-mono text-2xl leading-none font-semibold tabular-nums">
           {value}
         </span>
         {sub && (

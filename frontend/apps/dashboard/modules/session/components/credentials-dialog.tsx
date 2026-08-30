@@ -16,21 +16,22 @@ import { toast } from "sonner"
 import type { SessionData } from "../types"
 
 export function CredentialsDialog({
-  result,
+  session,
   open,
   onOpenChange,
 }: {
-  result: SessionData | null
+  session: SessionData | null
   open: boolean
-  onOpenChange: (v: boolean) => void
+  onOpenChange: (open: boolean) => void
 }) {
   const t = useTranslations("dashboard.session.credentialsDialog")
   const router = useRouter()
-  if (!result) return null
 
-  async function copy(value: string, field: "username" | "password") {
-    await navigator.clipboard.writeText(value)
-    toast.success(t("copiedToast", { label: t(`fields.${field}`) }))
+  if (!session) return null
+
+  async function copyUsername(username: string) {
+    await navigator.clipboard.writeText(username)
+    toast.success(t("copiedToast", { label: t("fields.username") }))
   }
 
   return (
@@ -42,27 +43,14 @@ export function CredentialsDialog({
         </DialogHeader>
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-muted-foreground text-sm">
+            <span className="text-sm text-muted-foreground">
               {t("fields.username")}:
             </span>
-            <code className="text-sm">{result.gns3Username}</code>
+            <code className="text-sm">{session.gns3Username}</code>
             <Button
               variant="ghost"
               size="icon-sm"
-              onClick={() => copy(result.gns3Username, "username")}
-            >
-              <CopyIcon />
-            </Button>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground text-sm">
-              {t("fields.password")}:
-            </span>
-            <code className="text-sm">{result.gns3Password}</code>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => copy(result.gns3Password, "password")}
+              onClick={() => copyUsername(session.gns3Username)}
             >
               <CopyIcon />
             </Button>
@@ -72,15 +60,15 @@ export function CredentialsDialog({
             variant="outline"
             className="w-fit rounded-none"
             render={
-              // biome-ignore lint/a11y/useAnchorContent: content comes from the Base UI render slot
-              <a href={result.gns3DeepUrl} target="_blank" rel="noreferrer" />
+              // oxlint-disable-next-line jsx-a11y/anchor-has-content -- link text comes from the Base UI render slot
+              <a href={session.gns3DeepUrl} target="_blank" rel="noreferrer" />
             }
           >
             {t("openGns3")} <ExternalLinkIcon data-icon="inline-end" />
           </Button>
         </div>
         <DialogFooter>
-          <Button onClick={() => router.push(`/session/${result.sessionId}`)}>
+          <Button onClick={() => router.push(`/session/${session.sessionId}`)}>
             {t("goToLab")}
           </Button>
         </DialogFooter>

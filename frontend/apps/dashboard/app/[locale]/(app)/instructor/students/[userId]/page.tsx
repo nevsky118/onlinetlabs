@@ -1,12 +1,12 @@
-import { getBackendUserRole } from "@repo/auth/server"
-import type { Metadata } from "next"
-import { forbidden, unauthorized } from "next/navigation"
-import { getTranslations, setRequestLocale } from "next-intl/server"
 import { HydrateClient, prefetchQuery } from "@/lib/query-hydration"
 import {
   StudentDetailView,
   studentDetailQuery,
 } from "@/modules/instructor/server"
+import { getBackendUserRole } from "@repo/auth/server"
+import { getTranslations, setRequestLocale } from "next-intl/server"
+import { forbidden, unauthorized } from "next/navigation"
+import type { Metadata } from "next"
 
 export async function generateMetadata({
   params,
@@ -35,7 +35,7 @@ export default async function StudentDetailPage({
   await prefetchQuery(studentDetailQuery(userId))
 
   return (
-    <div className="container-wrapper section-soft flex flex-1 flex-col pb-6">
+    <div className="container-wrapper flex flex-1 flex-col section-soft pb-6">
       <div className="container py-8">
         <HydrateClient>
           <StudentDetailView userId={userId} />

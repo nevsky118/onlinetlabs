@@ -23,29 +23,30 @@ import { SessionFetchError } from "./lib/errors"
 import {
   mapCredentials,
   mapLaunch,
+  mapQueued,
   mapSession,
   mapSessionList,
 } from "./lib/mappings"
 
+const QUEUED_STATUS = 202
+
 export async function launchLab(labSlug: string): Promise<LaunchResult> {
   const res = await launchSessionApi(labSlug)
-  if (res.status === 202) {
-    const d = await res.json()
-    return {
-      kind: "queued",
-      queued: {
-        position: d.queue_position,
-        depth: d.queue_depth,
-        etaSec: d.eta_sec,
-        labSlug: d.lab_slug,
-      },
-    }
+
+  if (res.status === QUEUED_STATUS) {
+    return { kind: "queued", queued: mapQueued(await res.json()) }
   }
-  if (!res.ok) {
-    const detail = await res.text()
-    throw new Error(`Launch failed: ${res.status} ${detail}`)
+  if (res.ok) {
+    return mapLaunch(await res.json())
   }
-  return mapLaunch(await res.json())
+
+  // A denial carries a machine-readable code the caller branches on; anything
+  // else is a genuine failure.
+  const body = await res.json().catch(() => null)
+  if (body?.code) {
+    return { kind: "denied", code: body.code, detail: body.detail ?? "" }
+  }
+  throw new Error(`Launch failed: ${res.status}`)
 }
 
 export async function fetchQueueStatus(labSlug: string): Promise<{

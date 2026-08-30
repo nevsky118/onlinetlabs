@@ -8,8 +8,8 @@ type Props = {
 function maxValue(confusion: Record<string, Record<string, number>>): number {
   let max = 0
   for (const row of Object.values(confusion)) {
-    for (const v of Object.values(row)) {
-      if (v > max) max = v
+    for (const value of Object.values(row)) {
+      if (value > max) max = value
     }
   }
   return max
@@ -19,7 +19,7 @@ export function ConfusionGrid({ confusion }: Props) {
   const t = useTranslations("dashboard.admin.confusionGrid")
   const regimes = Object.keys(confusion)
   const detected = Array.from(
-    new Set(regimes.flatMap((r) => Object.keys(confusion[r] ?? {})))
+    new Set(regimes.flatMap((regime) => Object.keys(confusion[regime] ?? {})))
   )
   const top = maxValue(confusion)
 
@@ -30,14 +30,14 @@ export function ConfusionGrid({ confusion }: Props) {
   return (
     <div className="overflow-x-auto">
       <table
-        className="border-collapse text-xs tabular-nums w-full"
+        className="w-full border-collapse text-xs tabular-nums"
         aria-label={t("ariaLabel")}
       >
         <thead>
           <tr>
             <th
               scope="col"
-              className="border px-2 py-1 font-medium text-muted-foreground text-left"
+              className="border px-2 py-1 text-left font-medium text-muted-foreground"
             >
               {t("axisLabel")}
             </th>
@@ -57,7 +57,7 @@ export function ConfusionGrid({ confusion }: Props) {
             <tr key={truth}>
               <th
                 scope="row"
-                className="border px-2 py-1 font-medium text-muted-foreground text-left"
+                className="border px-2 py-1 text-left font-medium text-muted-foreground"
               >
                 {truth}
               </th>

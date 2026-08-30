@@ -7,12 +7,12 @@ type SessionSummaryWire = {
   status: string
 }
 
-export function mapSessionSummary(w: SessionSummaryWire): SessionSummary {
+export function mapSessionSummary(wire: SessionSummaryWire): SessionSummary {
   return {
-    id: w.id,
-    labSlug: w.lab_slug,
-    startedAt: w.started_at,
-    status: w.status,
+    id: wire.id,
+    labSlug: wire.lab_slug,
+    startedAt: wire.started_at,
+    status: wire.status,
   }
 }
 
@@ -29,19 +29,19 @@ type AgentActivityEventWire = {
   detail: Record<string, unknown> | null
 }
 
-export function mapAgentActivityEvent(w: unknown): AgentActivityEvent {
-  const e = w as AgentActivityEventWire
+export function mapAgentActivityEvent(raw: unknown): AgentActivityEvent {
+  const wire = raw as AgentActivityEventWire
   return {
-    id: e.id,
-    sessionId: e.session_id,
-    userId: e.user_id,
-    ts: e.ts,
-    source: e.source,
-    kind: e.kind,
-    agent: e.agent ?? null,
-    severity: e.severity,
-    summary: e.summary,
-    detail: e.detail ?? null,
+    id: wire.id,
+    sessionId: wire.session_id,
+    userId: wire.user_id,
+    ts: wire.ts,
+    source: wire.source,
+    kind: wire.kind,
+    agent: wire.agent ?? null,
+    severity: wire.severity,
+    summary: wire.summary,
+    detail: wire.detail ?? null,
   }
 }
 

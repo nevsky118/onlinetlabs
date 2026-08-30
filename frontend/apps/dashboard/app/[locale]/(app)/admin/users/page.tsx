@@ -1,15 +1,15 @@
+import { fetchAdminUsers } from "@/modules/admin/actions"
+import { searchParamsCache } from "@/modules/admin/lib/users-search-params"
+import { UsersView } from "@/modules/admin/views/users-view"
 import { getBackendUserRole, getSession } from "@repo/auth/server"
 import {
   PageHeader,
   PageHeaderDescription,
   PageHeaderHeading,
 } from "@repo/design-system/components/page-header"
-import type { Metadata } from "next"
-import { forbidden, unauthorized } from "next/navigation"
 import { getTranslations, setRequestLocale } from "next-intl/server"
-import { fetchAdminUsers } from "@/modules/admin/actions"
-import { searchParamsCache } from "@/modules/admin/lib/users-search-params"
-import { UsersView } from "@/modules/admin/views/users-view"
+import { forbidden, unauthorized } from "next/navigation"
+import type { Metadata } from "next"
 
 export async function generateMetadata({
   params,
@@ -64,7 +64,7 @@ export default async function AdminUsersPage({
         <PageHeaderHeading>{t("title")}</PageHeaderHeading>
         <PageHeaderDescription>{t("description")}</PageHeaderDescription>
       </PageHeader>
-      <div className="container-wrapper section-soft flex-1 pb-6">
+      <div className="container-wrapper flex-1 section-soft pb-6">
         <div className="container">
           <UsersView data={data} error={error} currentUserId={currentUserId} />
         </div>

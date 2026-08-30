@@ -1,5 +1,7 @@
 "use client"
 
+import { formatDurationCoarse, formatRelativeTime } from "@/lib/format-duration"
+import { LabProgressBadge, useLabProgress } from "@/modules/progress"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,8 +23,6 @@ import { toast } from "sonner"
 import type { Session } from "../types"
 import { endLab } from "../actions"
 import { SessionStatusBadge } from "./session-status-badge"
-import { formatDurationCoarse, formatRelativeTime } from "@/lib/format-duration"
-import { LabProgressBadge, useLabProgress } from "@/modules/progress"
 
 type Props = {
   session: Session
@@ -55,14 +55,14 @@ export function SessionCard({ session, uptimeSeconds, onEnded }: Props) {
   }
 
   return (
-    <article className="border bg-card p-4 flex flex-col gap-3">
+    <article className="flex flex-col gap-3 border bg-card p-4">
       <div className="flex items-start justify-between gap-2">
-        <div className="flex flex-col gap-1 min-w-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <h3 className="font-medium truncate">{title}</h3>
+        <div className="flex min-w-0 flex-col gap-1">
+          <div className="flex min-w-0 items-center gap-2">
+            <h3 className="truncate font-medium">{title}</h3>
             <LabProgressBadge progress={progress} className="shrink-0" />
           </div>
-          <p className="text-muted-foreground text-xs">
+          <p className="text-xs text-muted-foreground">
             {isRunning ? (
               <>
                 {t("startedAt", {
@@ -99,7 +99,7 @@ export function SessionCard({ session, uptimeSeconds, onEnded }: Props) {
         )}
 
         {isProvisioning && (
-          <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Spinner className="size-3" />
             {t("provisioning")}
           </span>

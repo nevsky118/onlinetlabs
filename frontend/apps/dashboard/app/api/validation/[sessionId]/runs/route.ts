@@ -35,15 +35,15 @@ export async function GET(
     return new Response(await upstream.text(), { status: upstream.status })
   }
   const wire = (await upstream.json()) as RunListItemWire[]
-  const runs = wire.map((w) => ({
-    id: w.id,
-    labSlug: w.lab_slug,
-    status: w.status,
-    startedAt: w.started_at,
-    finishedAt: w.finished_at,
-    durationMs: w.duration_ms,
-    passedChecks: w.passed_checks,
-    totalChecks: w.total_checks,
+  const runs = wire.map((run) => ({
+    id: run.id,
+    labSlug: run.lab_slug,
+    status: run.status,
+    startedAt: run.started_at,
+    finishedAt: run.finished_at,
+    durationMs: run.duration_ms,
+    passedChecks: run.passed_checks,
+    totalChecks: run.total_checks,
   }))
   return Response.json(runs)
 }

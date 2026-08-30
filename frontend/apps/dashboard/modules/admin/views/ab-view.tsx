@@ -3,12 +3,12 @@
 import { useTranslations } from "next-intl"
 import type { ArmAnalysis } from "../types"
 
-function fmtPct(v: number): string {
-  return `${(v * 100).toFixed(1)}%`
+function fmtPct(value: number): string {
+  return `${(value * 100).toFixed(1)}%`
 }
 
-function fmtNum(v: number, digits = 3): string {
-  return v.toFixed(digits)
+function fmtNum(value: number, digits = 3): string {
+  return value.toFixed(digits)
 }
 
 function AbSkeleton({ t }: { t: (key: string) => string }) {
@@ -19,16 +19,16 @@ function AbSkeleton({ t }: { t: (key: string) => string }) {
       aria-busy="true"
       aria-label={t("loadingAriaLabel")}
     >
-      <div className="h-6 w-48 bg-muted animate-pulse" />
-      <div className="h-32 w-full bg-muted animate-pulse" />
-      <div className="h-20 w-full bg-muted animate-pulse" />
+      <div className="h-6 w-48 animate-pulse bg-muted" />
+      <div className="h-32 w-full animate-pulse bg-muted" />
+      <div className="h-20 w-full animate-pulse bg-muted" />
     </div>
   )
 }
 
 function AbEmpty({ t }: { t: (key: string) => string }) {
   return (
-    <p className="text-sm text-muted-foreground py-6">{t("emptyMessage")}</p>
+    <p className="py-6 text-sm text-muted-foreground">{t("emptyMessage")}</p>
   )
 }
 
@@ -53,7 +53,7 @@ export function AbView({ data, loading, error }: AbViewProps) {
 
   if (!data) return <AbEmpty t={t} />
 
-  const delta = (a: number, b: number) => fmtPct(a - b)
+  const delta = (left: number, right: number) => fmtPct(left - right)
 
   return (
     <div className="flex flex-col gap-8">
@@ -64,7 +64,7 @@ export function AbView({ data, loading, error }: AbViewProps) {
           aria-label={t("tableAriaLabel")}
         >
           <thead>
-            <tr className="text-muted-foreground border-b text-left text-xs tracking-wide uppercase">
+            <tr className="border-b text-left text-xs tracking-wide text-muted-foreground uppercase">
               <th className="px-4 py-3 font-medium">{t("headers.metric")}</th>
               <th className="px-4 py-3 text-right font-medium">Closed</th>
               <th className="px-4 py-3 text-right font-medium">Open</th>
@@ -74,19 +74,19 @@ export function AbView({ data, loading, error }: AbViewProps) {
             </tr>
           </thead>
           <tbody className="divide-y">
-            <tr className="hover:bg-muted/50 transition-colors">
+            <tr className="transition-colors hover:bg-muted/50">
               <td className="px-4 py-3">{t("rows.l2PassRate")}</td>
-              <td className="px-4 py-3 text-right tabular-nums font-medium">
+              <td className="px-4 py-3 text-right font-medium tabular-nums">
                 {fmtPct(data.l2PassRateClosed)}
               </td>
               <td className="px-4 py-3 text-right tabular-nums">
                 {fmtPct(data.l2PassRateOpen)}
               </td>
-              <td className="px-4 py-3 text-right tabular-nums font-medium">
+              <td className="px-4 py-3 text-right font-medium tabular-nums">
                 {delta(data.l2PassRateClosed, data.l2PassRateOpen)}
               </td>
             </tr>
-            <tr className="hover:bg-muted/50 transition-colors">
+            <tr className="transition-colors hover:bg-muted/50">
               <td className="px-4 py-3">{t("rows.escalationsMean")}</td>
               <td className="px-4 py-3 text-right tabular-nums">
                 {fmtNum(data.escalationsMeanClosed)}
@@ -110,7 +110,7 @@ export function AbView({ data, loading, error }: AbViewProps) {
             aria-label={t("repeatedErrorsAriaLabel")}
           >
             <thead>
-              <tr className="text-muted-foreground border-b text-left text-xs tracking-wide uppercase">
+              <tr className="border-b text-left text-xs tracking-wide text-muted-foreground uppercase">
                 <th className="px-4 py-3 font-medium">{t("headers.key")}</th>
                 <th className="px-4 py-3 text-right font-medium">
                   {t("headers.value")}
@@ -118,32 +118,36 @@ export function AbView({ data, loading, error }: AbViewProps) {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {Object.entries(data.repeatedErrorsComparison).map(([k, v]) => (
-                <tr key={k} className="hover:bg-muted/50 transition-colors">
-                  <td className="px-4 py-3 font-mono text-xs">{k}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">
-                    {typeof v === "number" ? fmtNum(v) : String(v)}
-                  </td>
-                </tr>
-              ))}
+              {Object.entries(data.repeatedErrorsComparison).map(
+                ([key, value]) => (
+                  <tr key={key} className="transition-colors hover:bg-muted/50">
+                    <td className="px-4 py-3 font-mono text-xs">{key}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">
+                      {typeof value === "number"
+                        ? fmtNum(value)
+                        : String(value)}
+                    </td>
+                  </tr>
+                )
+              )}
             </tbody>
           </table>
         </div>
       )}
 
       {/* Counterfactual, mentor hours */}
-      <div className="border p-4 flex flex-col gap-2">
-        <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+      <div className="flex flex-col gap-2 border p-4">
+        <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
           {t("mentorHours.label")}
         </p>
-        <p className="tabular-nums font-mono text-2xl font-semibold">
+        <p className="font-mono text-2xl font-semibold tabular-nums">
           {fmtNum(data.mentorHoursSaved, 1)} {t("mentorHours.unit")}
         </p>
         <p className="text-xs text-muted-foreground">{t("mentorHours.note")}</p>
       </div>
 
       {/* Honesty note */}
-      <p className="text-xs text-muted-foreground border-t pt-4">
+      <p className="border-t pt-4 text-xs text-muted-foreground">
         {t.rich("honesty", { strong: (chunks) => <strong>{chunks}</strong> })}
       </p>
     </div>

@@ -16,9 +16,9 @@ import {
   DropdownMenuTrigger,
 } from "@repo/design-system/ui/dropdown-menu"
 import { GraduationCap, LogOut, Settings } from "lucide-react"
+import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useTranslations } from "next-intl"
 import { authClient } from "../client"
 
 function getInitials(name?: string | null): string {
@@ -69,7 +69,7 @@ export function UserMenu({
           <Button
             variant="ghost"
             size="icon-sm"
-            className="rounded-full data-popup-open:border-ring data-popup-open:ring-ring/50 data-popup-open:ring-[3px]"
+            className="rounded-full data-popup-open:border-ring data-popup-open:ring-[3px] data-popup-open:ring-ring/50"
           />
         }
       >

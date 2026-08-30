@@ -67,6 +67,7 @@ export interface IdentifierEval {
     latencyMedian: number | null
     falsePerHour: number
     recall: number
+    // oxlint-disable-next-line eslint/id-length -- backend field: Youden J
     j: number
   }[]
   jOptimalTk: number
@@ -84,6 +85,7 @@ export interface TkSensitivity {
   points: {
     ratio: number
     tK: number
+    // oxlint-disable-next-line eslint/id-length -- backend field: Youden J
     j: number
   }[]
   costs: Record<string, number>
@@ -120,6 +122,7 @@ export interface AdminDataParams {
 export interface CohortMetricsRow {
   arm: string | null
   skill: string | null
+  // oxlint-disable-next-line eslint/id-length -- backend field: sample size
   n: number
   reachRate: number | null
   medianCalendarSeconds: number | null

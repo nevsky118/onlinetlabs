@@ -1,14 +1,14 @@
+import { ContentCard } from "@/app-components/content-card"
+import { absoluteUrl } from "@/lib/absolute-url"
+import { course } from "@/lib/source"
 import {
   PageHeader,
   PageHeaderDescription,
   PageHeaderHeading,
 } from "@repo/design-system/components/page-header"
 import { routing } from "@repo/i18n/routing"
-import type { Metadata } from "next"
 import { getTranslations, setRequestLocale } from "next-intl/server"
-import { ContentCard } from "@/app-components/content-card"
-import { absoluteUrl } from "@/lib/absolute-url"
-import { course } from "@/lib/source"
+import type { Metadata } from "next"
 
 export const dynamic = "force-static"
 export const revalidate = false
@@ -28,7 +28,10 @@ export async function generateMetadata({
     alternates: {
       canonical: absoluteUrl(`/${locale}/courses`),
       languages: Object.fromEntries(
-        routing.locales.map((l) => [l, absoluteUrl(`/${l}/courses`)])
+        routing.locales.map((alternate) => [
+          alternate,
+          absoluteUrl(`/${alternate}/courses`),
+        ])
       ),
     },
   }
@@ -51,7 +54,7 @@ export default async function CoursesPage({
         <PageHeaderHeading>{t("title")}</PageHeaderHeading>
         <PageHeaderDescription>{t("description")}</PageHeaderDescription>
       </PageHeader>
-      <div className="container-wrapper section-soft flex-1 pb-6">
+      <div className="container-wrapper flex-1 section-soft pb-6">
         <div className="container">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {pages.map((page) => (
@@ -59,7 +62,6 @@ export default async function CoursesPage({
                 key={page.url}
                 href={page.url}
                 title={page.data.title}
-                description={page.data.description}
                 tasks={page.data.tasks}
                 difficulty={page.data.difficulty}
                 tags={page.data.tags}

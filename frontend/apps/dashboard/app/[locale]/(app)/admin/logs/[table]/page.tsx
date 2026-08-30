@@ -1,11 +1,11 @@
-import { getBackendUserRole } from "@repo/auth/server"
-import type { Metadata } from "next"
-import { forbidden, notFound, unauthorized } from "next/navigation"
-import { getTranslations, setRequestLocale } from "next-intl/server"
 import { fetchAdminData } from "@/modules/admin/actions"
 import { AdminDataTable } from "@/modules/admin/components/admin-data-table"
 import { searchParamsCache } from "@/modules/admin/lib/data-table-params"
 import { getLogTable, getLogTableLabel } from "@/modules/admin/lib/log-tables"
+import { getBackendUserRole } from "@repo/auth/server"
+import { getTranslations, setRequestLocale } from "next-intl/server"
+import { forbidden, notFound, unauthorized } from "next/navigation"
+import type { Metadata } from "next"
 
 export async function generateMetadata({
   params,
@@ -68,7 +68,7 @@ export default async function AdminLogTablePage({
   return (
     <div className="flex h-[calc(100svh-var(--header-height)-var(--footer-height)-3rem)] flex-col">
       {/* Compact header — keeps the data table in the viewport instead of a full-page hero */}
-      <div className="border-grid shrink-0 border-b">
+      <div className="shrink-0 border-b border-grid">
         <div className="container-wrapper">
           <div className="container flex flex-wrap items-baseline gap-x-3 gap-y-1 py-4">
             <h1 className="text-xl font-semibold tracking-tight">{label}</h1>

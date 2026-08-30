@@ -24,9 +24,9 @@ type ChatPanelContextValue = {
   openPanel: () => void
   closePanel: () => void
   width: number
-  setWidth: (w: number) => void
+  setWidth: (width: number) => void
   resizing: boolean
-  setResizing: (v: boolean) => void
+  setResizing: (resizing: boolean) => void
   unread: number
   bumpUnread: () => void
 }
@@ -62,7 +62,7 @@ export function ChatProvider({
     setUnread(0)
   }, [])
   const closePanel = useCallback(() => setOpen(false), [])
-  const bumpUnread = useCallback(() => setUnread((n) => n + 1), [])
+  const bumpUnread = useCallback(() => setUnread((count) => count + 1), [])
 
   const config = useMemo<ChatConfig>(
     () => ({ sessionId, labSlug, canViewLogs }),
@@ -130,7 +130,7 @@ export function ChatTrigger({ onOpen }: { onOpen?: () => void }) {
       />
       <span className="hidden md:inline">{t("askAi")}</span>
       {unread > 0 && (
-        <span className="bg-destructive text-destructive-foreground absolute -top-1 -right-1 flex size-4 items-center justify-center text-[10px] font-semibold">
+        <span className="text-destructive-foreground absolute -top-1 -right-1 flex size-4 items-center justify-center bg-destructive text-[10px] font-semibold">
           {unread}
         </span>
       )}

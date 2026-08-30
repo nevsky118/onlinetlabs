@@ -38,18 +38,19 @@ function formatCell(
     return <span className="tabular-nums">{value}</span>
   }
   if (typeof value === "object") {
-    const s = JSON.stringify(value)
-    const truncated = s.length > 80 ? `${s.slice(0, 80)}…` : s
+    const serialized = JSON.stringify(value)
+    const truncated =
+      serialized.length > 80 ? `${serialized.slice(0, 80)}…` : serialized
     return (
-      <span title={s} className="font-mono text-xs">
+      <span title={serialized} className="font-mono text-xs">
         {truncated}
       </span>
     )
   }
-  const s = String(value)
+  const text = String(value)
   return (
-    <span title={s} className="block max-w-[260px] truncate">
-      {s}
+    <span title={text} className="block max-w-[260px] truncate">
+      {text}
     </span>
   )
 }
@@ -94,7 +95,7 @@ export function AdminDataTable({ data, error }: AdminDataTableProps) {
           type="search"
           placeholder={t("searchPlaceholder")}
           value={localSearch}
-          onChange={(e) => handleSearchChange(e.target.value)}
+          onChange={(event) => handleSearchChange(event.target.value)}
           className="max-w-xs"
         />
       </div>
@@ -108,8 +109,8 @@ export function AdminDataTable({ data, error }: AdminDataTableProps) {
 
       {!data && !error && (
         <div className="flex flex-col gap-2">
-          {Array.from({ length: 8 }, (_, i) => (
-            <Skeleton key={`skel-${i}`} className="h-12 w-full" />
+          {Array.from({ length: 8 }, (_, index) => (
+            <Skeleton key={`skel-${index}`} className="h-12 w-full" />
           ))}
         </div>
       )}
@@ -119,7 +120,7 @@ export function AdminDataTable({ data, error }: AdminDataTableProps) {
           {/* Scroll region: table body scrolls, header sticks, max height = remaining viewport */}
           <div className="min-h-0 flex-1 overflow-auto border-y border-border">
             {data.items.length === 0 ? (
-              <p className="py-8 text-center text-muted-foreground text-sm">
+              <p className="py-8 text-center text-sm text-muted-foreground">
                 {t("empty")}
               </p>
             ) : (
@@ -129,7 +130,7 @@ export function AdminDataTable({ data, error }: AdminDataTableProps) {
                     {data.columns.map((col) => (
                       <th
                         key={col}
-                        className="whitespace-nowrap bg-background px-3 py-2 text-left font-medium"
+                        className="bg-background px-3 py-2 text-left font-medium whitespace-nowrap"
                       >
                         {data.sortable.includes(col) ? (
                           <button

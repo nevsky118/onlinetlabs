@@ -8,48 +8,75 @@ import { launchLab } from "../actions"
 
 export type LaunchStatus = "idle" | "launching" | "error"
 
-export function useLaunchLab(labSlug: string) {
-  const m = useMutation({
+function trackLaunchResult(
+  labSlug: string,
+  result: LaunchResult,
+  provisioningMs: number
+): void {
+  switch (result.kind) {
+    case "denied":
+      track("session_launch_denied", { lab_slug: labSlug, code: result.code })
+      break
+    case "session":
+      track("session_launched", {
+        lab_slug: labSlug,
+        session_id: result.session.sessionId,
+        provisioning_ms: provisioningMs,
+      })
+      break
+    case "queued":
+      track("session_queued", {
+        lab_slug: labSlug,
+        position: result.queued.position,
+        eta_sec: result.queued.etaSec,
+      })
+      break
+  }
+}
+
+function toLaunchStatus(mutationStatus: string): LaunchStatus {
+  switch (mutationStatus) {
+    case "pending":
+      return "launching"
+    case "error":
+      return "error"
+    default:
+      return "idle"
+  }
+}
+
+/**
+ * Launches a lab and reports the outcome through `onResult`. The outcome is an
+ * event, not derived state, so the caller reacts to it in a callback rather
+ * than in an effect watching the last result.
+ */
+export function useLaunchLab(
+  labSlug: string,
+  onResult: (result: LaunchResult) => void
+) {
+  const launchMutation = useMutation({
     mutationFn: async () => {
       const startedAt = Date.now()
-      const res = await launchLab(labSlug)
-      return { res, startedAt }
+      const result = await launchLab(labSlug)
+      return { result, provisioningMs: Date.now() - startedAt }
     },
-    onSuccess: ({ res, startedAt }) => {
-      if (res.kind === "session") {
-        track("session_launched", {
-          lab_slug: labSlug,
-          session_id: res.session.sessionId,
-          provisioning_ms: Date.now() - startedAt,
-        })
-      } else {
-        track("session_queued", {
-          lab_slug: labSlug,
-          position: res.queued.position,
-          eta_sec: res.queued.etaSec,
-        })
-      }
+    onSuccess: ({ result, provisioningMs }) => {
+      trackLaunchResult(labSlug, result, provisioningMs)
+      onResult(result)
     },
-    onError: (e) => {
-      const msg = (e as Error).message
-      toast.error(msg)
-      track("session_launch_failed", { lab_slug: labSlug, error: msg })
+    onError: (error) => {
+      toast.error(error.message)
+      track("session_launch_failed", {
+        lab_slug: labSlug,
+        error: error.message,
+      })
     },
   })
 
-  const status: LaunchStatus = m.isPending
-    ? "launching"
-    : m.isError
-      ? "error"
-      : "idle"
-
-  const result: LaunchResult | null = m.data?.res ?? null
-
   return {
-    status,
-    result,
-    error: m.error ? (m.error as Error).message : null,
-    launch: () => m.mutate(),
-    reset: m.reset,
+    status: toLaunchStatus(launchMutation.status),
+    error: launchMutation.error?.message ?? null,
+    launch: launchMutation.mutate,
+    reset: launchMutation.reset,
   }
 }

@@ -1,6 +1,5 @@
 "use client"
 
-import type { UIMessage } from "@ai-sdk/react"
 import { track } from "@repo/api/analytics"
 import { useIsMobile } from "@repo/design-system/hooks/use-mobile"
 import { cn } from "@repo/design-system/lib/utils"
@@ -21,6 +20,7 @@ import { CheckIcon, ChevronDownIcon, Maximize2Icon, XIcon } from "lucide-react"
 import { useFormatter, useTranslations } from "next-intl"
 import { useCallback, useEffect, useRef, useState } from "react"
 import type { SessionSummary } from "../types"
+import type { UIMessage } from "@ai-sdk/react"
 import { fetchChatHistory, fetchChatSessions } from "../api"
 import { useAgentActivity } from "../hooks/use-agent-activity"
 import { useChatStream } from "../hooks/use-chat-stream"
@@ -103,13 +103,9 @@ export function ChatPanel() {
     sendText,
   } = useChatStream(sessionId, modelId)
 
-  const openRef = useRef(open)
-  openRef.current = open
-  const onUnread = useCallback(() => {
-    if (!openRef.current) bumpUnread()
-  }, [bumpUnread])
-
-  useInterventions(sessionId, setMessages, onUnread)
+  useInterventions(sessionId, setMessages, () => {
+    if (!open) bumpUnread()
+  })
 
   // AI logs. Events stream only while the toggle is on; they are embedded into the chat flow.
   const { events: activityEvents } = useAgentActivity(
@@ -133,21 +129,19 @@ export function ChatPanel() {
     if (open) track("chat_opened", { session_id: sessionId, lab_slug: labSlug })
   }, [open, sessionId, labSlug])
 
-  const inputRef = useRef(input)
-  inputRef.current = input
-
   const trackedHandleSubmit = useCallback(
-    (e?: React.FormEvent) => {
-      if (inputRef.current.trim()) {
+    (event?: React.FormEvent) => {
+      const trimmed = input.trim()
+      if (trimmed) {
         track("chat_message_sent", {
           session_id: sessionId,
           lab_slug: labSlug,
-          message_length: inputRef.current.trim().length,
+          message_length: trimmed.length,
         })
       }
-      handleSubmit(e)
+      handleSubmit(event)
     },
-    [sessionId, labSlug, handleSubmit]
+    [input, sessionId, labSlug, handleSubmit]
   )
 
   const onSuggestion = useCallback(
@@ -182,29 +176,33 @@ export function ChatPanel() {
     historyFetchAbort.current?.abort()
     historyFetchAbort.current = new AbortController()
     fetchChatSessions(historyFetchAbort.current.signal)
-      .then((data) => setPastSessions(data.filter((s) => s.id !== sessionId)))
+      .then((data) =>
+        setPastSessions(data.filter((session) => session.id !== sessionId))
+      )
       .catch(() => {})
   }
 
-  const openArchive = (s: SessionSummary) => {
-    track("chat_history_viewed", { past_session_id: s.id })
+  const openArchive = (session: SessionSummary) => {
+    track("chat_history_viewed", { past_session_id: session.id })
     setArchive({
-      sessionId: s.id,
-      labSlug: s.labSlug,
-      date: format.dateTime(new Date(s.startedAt), { dateStyle: "short" }),
+      sessionId: session.id,
+      labSlug: session.labSlug,
+      date: format.dateTime(new Date(session.startedAt), {
+        dateStyle: "short",
+      }),
     })
     setPastMessages([])
     historyFetchAbort.current?.abort()
     historyFetchAbort.current = new AbortController()
-    fetchChatHistory(s.id, historyFetchAbort.current.signal)
+    fetchChatHistory(session.id, historyFetchAbort.current.signal)
       .then((data) => setPastMessages(data.map(mapToUIMessage)))
       .catch(() => {})
   }
 
   // Resize by the left edge, like in Cloudflare. Transition is disabled while dragging
-  const onResizeStart = (e: React.PointerEvent<HTMLDivElement>) => {
+  const onResizeStart = (event: React.PointerEvent<HTMLDivElement>) => {
     if (isMobile) return
-    e.preventDefault()
+    event.preventDefault()
     setResizing(true)
     const onMove = (ev: PointerEvent) => {
       const max = Math.max(CHAT_PANEL_MIN_WIDTH, window.innerWidth - 160)
@@ -225,12 +223,12 @@ export function ChatPanel() {
   }
 
   // Dot grid with a highlight under the cursor (CF spotlight)
-  const onSpotlightMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  const onSpotlightMove = (event: React.MouseEvent<HTMLDivElement>) => {
     const el = spotlightRef.current
     if (!el) return
-    const r = e.currentTarget.getBoundingClientRect()
-    el.style.setProperty("--spot-x", `${e.clientX - r.x}px`)
-    el.style.setProperty("--spot-y", `${e.clientY - r.y}px`)
+    const bounds = event.currentTarget.getBoundingClientRect()
+    el.style.setProperty("--spot-x", `${event.clientX - bounds.x}px`)
+    el.style.setProperty("--spot-y", `${event.clientY - bounds.y}px`)
     el.style.opacity = "1"
   }
 
@@ -244,7 +242,7 @@ export function ChatPanel() {
       inert={!open}
       aria-label={t("ariaLabel")}
       className={cn(
-        "bg-background fixed inset-y-0 right-0 z-50 flex flex-col border-l",
+        "fixed inset-y-0 right-0 z-50 flex flex-col border-l bg-background",
         !resizing && "transition-[transform,width] duration-300 ease-in-out",
         isMobile && "w-full"
       )}
@@ -262,12 +260,12 @@ export function ChatPanel() {
           aria-valuenow={width}
           aria-valuemin={CHAT_PANEL_MIN_WIDTH}
           onPointerDown={onResizeStart}
-          onKeyDown={(e) => {
-            if (e.key === "ArrowLeft") setWidth(width + 24)
-            if (e.key === "ArrowRight")
+          onKeyDown={(event) => {
+            if (event.key === "ArrowLeft") setWidth(width + 24)
+            if (event.key === "ArrowRight")
               setWidth(Math.max(CHAT_PANEL_MIN_WIDTH, width - 24))
           }}
-          className="hover:bg-border focus-visible:bg-border absolute inset-y-0 left-0 z-20 w-1 cursor-col-resize outline-none transition-colors"
+          className="absolute inset-y-0 left-0 z-20 w-1 cursor-col-resize transition-colors outline-none hover:bg-border focus-visible:bg-border"
         />
       )}
 
@@ -280,8 +278,8 @@ export function ChatPanel() {
         {/* Header */}
         <header className="flex h-14 shrink-0 items-center justify-between border-b px-4">
           <DropdownMenu
-            onOpenChange={(o) => {
-              if (o) loadSessions()
+            onOpenChange={(isOpen) => {
+              if (isOpen) loadSessions()
             }}
           >
             <DropdownMenuTrigger
@@ -294,7 +292,7 @@ export function ChatPanel() {
               }
             >
               <span className="truncate">{headerLabel}</span>
-              <ChevronDownIcon className="text-muted-foreground size-3 shrink-0" />
+              <ChevronDownIcon className="size-3 shrink-0 text-muted-foreground" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-64">
               {/* base-ui throws when a label has no group ancestor. */}
@@ -306,15 +304,20 @@ export function ChatPanel() {
                   </span>
                   {!archive && <CheckIcon className="ml-auto" />}
                 </DropdownMenuItem>
-                {pastSessions.map((s) => {
-                  const { domain: d, name: n } = getDomainLabel(s.labSlug)
+                {pastSessions.map((pastSession) => {
+                  const { domain: pastDomain, name: pastName } = getDomainLabel(
+                    pastSession.labSlug
+                  )
                   return (
-                    <DropdownMenuItem key={s.id} onClick={() => openArchive(s)}>
+                    <DropdownMenuItem
+                      key={pastSession.id}
+                      onClick={() => openArchive(pastSession)}
+                    >
                       <span className="truncate">
-                        {d} / {n}
+                        {pastDomain} / {pastName}
                       </span>
-                      <span className="text-muted-foreground ml-auto text-xs">
-                        {format.dateTime(new Date(s.startedAt), {
+                      <span className="ml-auto text-xs text-muted-foreground">
+                        {format.dateTime(new Date(pastSession.startedAt), {
                           dateStyle: "short",
                         })}
                       </span>
@@ -325,7 +328,7 @@ export function ChatPanel() {
               {pastSessions.length === 0 && (
                 <>
                   <DropdownMenuSeparator />
-                  <p className="text-muted-foreground p-2 text-xs">
+                  <p className="p-2 text-xs text-muted-foreground">
                     {t("noPastSessions")}
                   </p>
                 </>
@@ -342,7 +345,7 @@ export function ChatPanel() {
                   onCheckedChange={onLogsToggle}
                   aria-label={t("aiLogs")}
                 />
-                <span className="text-muted-foreground text-xs">
+                <span className="text-xs text-muted-foreground">
                   {t("aiLogs")}
                 </span>
               </div>
@@ -371,7 +374,6 @@ export function ChatPanel() {
         </header>
 
         {/* Body. Dot grid + spotlight like in CF */}
-        {/* biome-ignore lint/a11y/noStaticElementInteractions: mousemove is purely decorative (dot highlight) */}
         <div
           className="relative flex min-h-0 flex-1 flex-col"
           onMouseMove={onSpotlightMove}
@@ -403,8 +405,8 @@ export function ChatPanel() {
 
           {archive ? (
             <>
-              <div className="bg-card flex items-center justify-between gap-2 border-b px-4 py-2">
-                <span className="text-muted-foreground truncate text-xs">
+              <div className="flex items-center justify-between gap-2 border-b bg-card px-4 py-2">
+                <span className="truncate text-xs text-muted-foreground">
                   {t("archiveDetail", {
                     domain: getDomainLabel(archive.labSlug).domain,
                     name: getDomainLabel(archive.labSlug).name,

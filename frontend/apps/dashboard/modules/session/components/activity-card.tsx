@@ -13,8 +13,8 @@ export function ActivityCard({ sessionId }: { sessionId: string }) {
   const { events, hasMore, loading, loadMore } = useActivityFeed(sessionId)
 
   return (
-    <div className="bg-card border p-4">
-      <div className="text-muted-foreground mb-3 text-xs tracking-wide uppercase">
+    <div className="border bg-card p-4">
+      <div className="mb-3 text-xs tracking-wide text-muted-foreground uppercase">
         {t("heading")}
       </div>
       {events.length === 0 && loading && (
@@ -25,21 +25,21 @@ export function ActivityCard({ sessionId }: { sessionId: string }) {
         </div>
       )}
       {events.length === 0 && !loading && (
-        <div className="text-muted-foreground py-4 text-center text-sm">
+        <div className="py-4 text-center text-sm text-muted-foreground">
           {t("empty")}
         </div>
       )}
       <ul className="flex flex-col gap-2 text-sm">
-        {events.map((e, i) => (
-          <li key={`${e.timestamp}-${i}`} className="flex gap-3">
-            <span className="text-muted-foreground w-16 shrink-0 font-mono text-xs">
-              {format.dateTime(new Date(e.timestamp), {
+        {events.map((event, index) => (
+          <li key={`${event.timestamp}-${index}`} className="flex gap-3">
+            <span className="w-16 shrink-0 font-mono text-xs text-muted-foreground">
+              {format.dateTime(new Date(event.timestamp), {
                 hour: "2-digit",
                 minute: "2-digit",
                 second: "2-digit",
               })}
             </span>
-            <span>{labelForEvent(e.eventType, eventT)}</span>
+            <span>{labelForEvent(event.eventType, eventT)}</span>
           </li>
         ))}
       </ul>

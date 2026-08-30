@@ -1,6 +1,5 @@
 "use client"
 
-import { track } from "@repo/api/analytics"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +20,6 @@ import {
   DropdownMenuTrigger,
 } from "@repo/design-system/ui/dropdown-menu"
 import { Link } from "@repo/i18n/navigation"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
 import {
   BookOpenIcon,
   MoreVerticalIcon,
@@ -29,10 +27,8 @@ import {
   XIcon,
 } from "lucide-react"
 import { useTranslations } from "next-intl"
-import { toast } from "sonner"
 import type { SessionStatus } from "../types"
-import { endLab, resetLab } from "../actions"
-import { sessionKeys } from "../query"
+import { useSessionControls } from "../hooks/use-session-controls"
 
 export function SessionActions({
   sessionId,
@@ -44,36 +40,9 @@ export function SessionActions({
   labSlug: string
 }) {
   const t = useTranslations("dashboard.session.sessionActions")
-  const qc = useQueryClient()
+  const { reset, end, isBusy } = useSessionControls(sessionId, labSlug)
 
-  const resetM = useMutation({
-    mutationFn: () => resetLab(sessionId),
-    onSuccess: () => {
-      track("session_reset", { lab_slug: labSlug, session_id: sessionId })
-      qc.invalidateQueries({ queryKey: sessionKeys.state(sessionId) })
-      toast.success(t("toastReset"))
-    },
-    onError: (e) => toast.error((e as Error).message),
-  })
-
-  const endM = useMutation({
-    mutationFn: () => endLab(sessionId),
-    onSuccess: () => {
-      track("session_ended", {
-        lab_slug: labSlug,
-        session_id: sessionId,
-        reason: "user",
-      })
-      qc.invalidateQueries({ queryKey: sessionKeys.state(sessionId) })
-      qc.invalidateQueries({ queryKey: sessionKeys.list() })
-      toast.success(t("toastEnded"))
-    },
-    onError: (e) => toast.error((e as Error).message),
-  })
-
-  const disabled = resetM.isPending || endM.isPending || status === "ended"
-  const runReset = () => resetM.mutate()
-  const runEnd = () => endM.mutate()
+  const disabled = isBusy || status === "ended"
 
   return (
     <div className="flex shrink-0 items-center gap-2">
@@ -89,8 +58,8 @@ export function SessionActions({
         {t("instructions")}
       </Button>
       <div className="hidden gap-2 md:flex">
-        <ResetButton disabled={disabled} onConfirm={runReset} />
-        <EndButton disabled={disabled} onConfirm={runEnd} />
+        <ResetButton disabled={disabled} onConfirm={() => reset()} />
+        <EndButton disabled={disabled} onConfirm={() => end()} />
       </div>
       {/* Mobile: all 3 actions consolidated into a kebab menu. */}
       <div className="md:hidden">
@@ -112,12 +81,12 @@ export function SessionActions({
               <DropdownMenuItem render={<Link href={`/labs/${labSlug}`} />}>
                 <BookOpenIcon /> {t("instructions")}
               </DropdownMenuItem>
-              <DropdownMenuItem disabled={disabled} onClick={runReset}>
+              <DropdownMenuItem disabled={disabled} onClick={() => reset()}>
                 <RefreshCcwIcon /> {t("reset")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={disabled}
-                onClick={runEnd}
+                onClick={() => end()}
                 className="text-destructive"
               >
                 <XIcon /> {t("end")}

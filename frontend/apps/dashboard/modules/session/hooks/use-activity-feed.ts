@@ -5,7 +5,7 @@ import { activityFeedQuery } from "../query"
 
 export function useActivityFeed(sessionId: string) {
   const query = useInfiniteQuery(activityFeedQuery(sessionId))
-  const events = query.data?.pages.flatMap((p) => p.events) ?? []
+  const events = query.data?.pages.flatMap((page) => page.events) ?? []
   return {
     events,
     hasMore: query.hasNextPage,

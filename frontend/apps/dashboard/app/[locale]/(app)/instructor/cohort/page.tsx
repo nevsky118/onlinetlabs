@@ -1,3 +1,4 @@
+import { fetchCohortMetrics } from "@/modules/instructor/actions"
 import { getBackendUserRole } from "@repo/auth/server"
 import {
   PageHeader,
@@ -5,11 +6,10 @@ import {
   PageHeaderHeading,
 } from "@repo/design-system/components/page-header"
 import { Separator } from "@repo/design-system/ui/separator"
-import type { Metadata } from "next"
-import { forbidden, unauthorized } from "next/navigation"
 import { getTranslations, setRequestLocale } from "next-intl/server"
+import { forbidden, unauthorized } from "next/navigation"
 import type { CohortCell } from "@/modules/instructor/types"
-import { fetchCohortMetrics } from "@/modules/instructor/actions"
+import type { Metadata } from "next"
 
 export async function generateMetadata({
   params,
@@ -34,9 +34,9 @@ function fmtPct(rate: number | null): string {
   return `${(rate * 100).toFixed(1)}%`
 }
 
-function fmtNum(v: number | null): string {
-  if (v === null) return "—"
-  return v.toFixed(2)
+function fmtNum(value: number | null): string {
+  if (value === null) return "—"
+  return value.toFixed(2)
 }
 
 function CohortRow({
@@ -47,7 +47,7 @@ function CohortRow({
   allSkillsLabel: string
 }) {
   return (
-    <tr className="hover:bg-muted/50 transition-colors">
+    <tr className="transition-colors hover:bg-muted/50">
       <td className="px-4 py-3 font-medium">{row.skill ?? allSkillsLabel}</td>
       <td className="px-4 py-3 text-right tabular-nums">{row.n}</td>
       <td className="px-4 py-3 text-right tabular-nums">
@@ -62,7 +62,7 @@ function CohortRow({
       <td className="px-4 py-3 text-right tabular-nums">
         {fmtNum(row.autonomy.meanL1Interventions)}
       </td>
-      <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+      <td className="px-4 py-3 text-right text-muted-foreground tabular-nums">
         {row.timeToCompetence.censored}
       </td>
     </tr>
@@ -90,7 +90,7 @@ export default async function CohortPage({
         <PageHeaderHeading>{t("title")}</PageHeaderHeading>
         <PageHeaderDescription>{t("description")}</PageHeaderDescription>
       </PageHeader>
-      <div className="container-wrapper section-soft flex-1 pb-6">
+      <div className="container-wrapper flex-1 section-soft pb-6">
         <div className="container">
           <div className="flex flex-col gap-6">
             {metrics.headlineArm ? (
@@ -103,7 +103,7 @@ export default async function CohortPage({
             <div className="overflow-x-auto border">
               <table className="w-full border-collapse text-sm">
                 <thead>
-                  <tr className="text-muted-foreground border-b text-left text-xs tracking-wide uppercase">
+                  <tr className="border-b text-left text-xs tracking-wide text-muted-foreground uppercase">
                     <th className="px-4 py-3 font-medium">
                       {t("headers.skill")}
                     </th>

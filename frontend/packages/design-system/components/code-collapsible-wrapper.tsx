@@ -38,7 +38,7 @@ export function CodeCollapsibleWrapper({
         <Button
           variant="ghost"
           size="sm"
-          className="text-muted-foreground h-7 rounded-none px-2"
+          className="h-7 rounded-none px-2 text-muted-foreground"
         >
           {isOpened ? labelCollapse : labelExpand}
         </Button>
@@ -56,7 +56,7 @@ export function CodeCollapsibleWrapper({
       </CollapsibleContent>
       <CollapsibleTrigger
         className={cn(
-          "from-code/70 to-code text-muted-foreground absolute inset-x-0 -bottom-2 flex h-20 items-center justify-center rounded-none bg-gradient-to-b text-sm",
+          "absolute inset-x-0 -bottom-2 flex h-20 items-center justify-center rounded-none bg-gradient-to-b from-code/70 to-code text-sm text-muted-foreground",
           isOpened && "hidden"
         )}
       >

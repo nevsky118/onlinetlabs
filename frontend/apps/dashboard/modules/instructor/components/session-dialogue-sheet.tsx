@@ -1,6 +1,6 @@
 "use client"
 
-import type { UIMessage } from "@ai-sdk/react"
+import { type AgentActivityEvent, Conversation } from "@/modules/chat"
 import {
   Sheet,
   SheetContent,
@@ -11,8 +11,8 @@ import { Skeleton } from "@repo/design-system/ui/skeleton"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslations } from "next-intl"
 import type { TimelineItem } from "../types"
+import type { UIMessage } from "@ai-sdk/react"
 import { sessionTimelineQuery } from "../query"
-import { type AgentActivityEvent, Conversation } from "@/modules/chat"
 
 // Backend timeline → chat format. Student/tutor turns become messages,
 // proactive interventions become inline events (the same feed as in the chat).
@@ -22,10 +22,10 @@ function toChatTimeline(items: TimelineItem[]): {
 } {
   const messages: UIMessage[] = []
   const events: AgentActivityEvent[] = []
-  items.forEach((it, i) => {
+  items.forEach((it, index) => {
     if (it.kind === "intervention") {
       events.push({
-        id: `i-${i}`,
+        id: `i-${index}`,
         sessionId: "",
         userId: "",
         ts: it.ts,
@@ -42,7 +42,7 @@ function toChatTimeline(items: TimelineItem[]): {
       })
     } else {
       messages.push({
-        id: `m-${i}`,
+        id: `m-${index}`,
         role: it.kind === "student" ? "user" : "assistant",
         parts: (it.parts ?? []) as UIMessage["parts"],
         metadata: { createdAt: it.ts },
@@ -73,7 +73,7 @@ function SessionDialogueBody({
       <div className="truncate text-sm font-medium">
         {t("dialogueTitle", { labTitle })}
       </div>
-      <div className="text-muted-foreground truncate text-xs">
+      <div className="truncate text-xs text-muted-foreground">
         {t("dialogueSubtitle")}
       </div>
     </div>
@@ -85,7 +85,7 @@ function SessionDialogueBody({
       <Skeleton className="h-12 w-2/3 self-end" />
     </div>
   ) : (
-    <p className="text-muted-foreground p-4 text-sm">{t("noDialogue")}</p>
+    <p className="p-4 text-sm text-muted-foreground">{t("noDialogue")}</p>
   )
 
   return (

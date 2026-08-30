@@ -15,6 +15,27 @@ function statusColor(status: Node["status"]) {
   }
 }
 
+const RADIUS = 60
+const CENTER_X = 100
+const CENTER_Y = 80
+
+// oxlint-disable-next-line eslint/id-length -- x/y are the SVG coordinate names
+type Point = { x: number; y: number }
+
+/** Lays the nodes out on a circle, in the order they arrive. */
+function layoutOnCircle(nodeIds: string[]): Record<string, Point> {
+  const count = Math.max(1, nodeIds.length)
+  const positions: Record<string, Point> = {}
+  nodeIds.forEach((nodeId, index) => {
+    const angle = (2 * Math.PI * index) / count
+    positions[nodeId] = {
+      x: CENTER_X + RADIUS * Math.cos(angle),
+      y: CENTER_Y + RADIUS * Math.sin(angle),
+    }
+  })
+  return positions
+}
+
 export function TopologyPreview({
   nodes,
   links,
@@ -23,66 +44,56 @@ export function TopologyPreview({
   links: Link[]
 }) {
   const t = useTranslations("dashboard.session.topologyPreview")
-  const positions = useMemo(() => {
-    const radius = 60
-    const cx = 100
-    const cy = 80
-    const map: Record<string, { x: number; y: number }> = {}
-    const count = Math.max(1, nodes.length)
-    nodes.forEach((n, i) => {
-      const angle = (2 * Math.PI * i) / count
-      map[n.id] = {
-        x: cx + radius * Math.cos(angle),
-        y: cy + radius * Math.sin(angle),
-      }
-    })
-    return map
-    // recompute only when set of node ids changes
-  }, [nodes.map((n) => n.id).join("|")])
+  // Keyed on the id list so a status-only update keeps the same layout.
+  const nodeIdKey = nodes.map((node) => node.id).join("|")
+  const positions = useMemo(
+    () => layoutOnCircle(nodeIdKey ? nodeIdKey.split("|") : []),
+    [nodeIdKey]
+  )
 
   if (nodes.length === 0) {
-    return <div className="text-muted-foreground text-xs">{t("empty")}</div>
+    return <div className="text-xs text-muted-foreground">{t("empty")}</div>
   }
 
   return (
     <svg viewBox="0 0 200 160" className="w-full" aria-label={t("ariaLabel")}>
-      {links.map((l) => {
-        const a = l.nodes[0] ? positions[l.nodes[0].nodeId] : undefined
-        const b = l.nodes[1] ? positions[l.nodes[1].nodeId] : undefined
-        if (!a || !b) return null
+      {links.map((link) => {
+        const from = link.nodes[0] ? positions[link.nodes[0].nodeId] : undefined
+        const to = link.nodes[1] ? positions[link.nodes[1].nodeId] : undefined
+        if (!from || !to) return null
         return (
           <line
-            key={l.id}
-            x1={a.x}
-            y1={a.y}
-            x2={b.x}
-            y2={b.y}
+            key={link.id}
+            x1={from.x}
+            y1={from.y}
+            x2={to.x}
+            y2={to.y}
             className="stroke-muted-foreground"
             strokeDasharray="3 2"
           />
         )
       })}
-      {nodes.map((n) => {
-        const p = positions[n.id]
-        if (!p) return null
+      {nodes.map((node) => {
+        const position = positions[node.id]
+        if (!position) return null
         return (
-          <g key={n.id} className="transition-all">
+          <g key={node.id} className="transition-all">
             <circle
-              cx={p.x}
-              cy={p.y}
+              cx={position.x}
+              cy={position.y}
               r="14"
-              className={`fill-card ${statusColor(n.status)}`}
+              className={`fill-card ${statusColor(node.status)}`}
               strokeWidth="1.5"
             />
             <text
-              x={p.x}
-              y={p.y + 3}
+              x={position.x}
+              y={position.y + 3}
               textAnchor="middle"
               fontFamily="monospace"
               fontSize="9"
               className="fill-foreground"
             >
-              {n.name}
+              {node.name}
             </text>
           </g>
         )

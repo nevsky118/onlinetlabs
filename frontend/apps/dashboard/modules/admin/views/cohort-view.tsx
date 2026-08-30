@@ -30,9 +30,9 @@ function fmtPct(rate: number | null): string {
 }
 
 // average number of interventions
-function fmtNum(v: number | null): string {
-  if (v === null) return "—"
-  return v.toFixed(2)
+function fmtNum(value: number | null): string {
+  if (value === null) return "—"
+  return value.toFixed(2)
 }
 
 // median (days) or reach@T as a fallback when fewer than 50% reached
@@ -40,12 +40,12 @@ function fmtMedianOrReachAtT(
   medianSec: number | null,
   reachRateAtHorizon: number | null,
   censored: number,
-  n: number
+  sampleSize: number
 ): string {
   if (medianSec !== null) return fmtDays(medianSec)
   if (reachRateAtHorizon !== null)
     return `reach@T ${fmtPct(reachRateAtHorizon)}`
-  if (n > 0 && censored / n > 0.5) return "reach@T —"
+  if (sampleSize > 0 && censored / sampleSize > 0.5) return "reach@T —"
   return "—"
 }
 
@@ -120,12 +120,12 @@ export function CohortView({ metrics, error }: CohortViewProps) {
 
   // BarChart data, only bySkill entries with a known name + reach rate
   const barData = metrics.bySkill
-    .filter((r) => r.skill != null)
-    .map((r) => ({
-      skill: r.skill as string,
+    .filter((row) => row.skill != null)
+    .map((row) => ({
+      skill: row.skill as string,
       reachRate:
-        r.timeToCompetence.reachRate != null
-          ? parseFloat((r.timeToCompetence.reachRate * 100).toFixed(1))
+        row.timeToCompetence.reachRate != null
+          ? parseFloat((row.timeToCompetence.reachRate * 100).toFixed(1))
           : 0,
     }))
 
@@ -142,7 +142,7 @@ export function CohortView({ metrics, error }: CohortViewProps) {
       {/* BarChart reach-rate by skill */}
       {barData.length > 0 && (
         <section>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide">
+          <h2 className="mb-2 text-sm font-semibold tracking-wide uppercase">
             {t("chartHeading")}
           </h2>
           <ChartContainer config={getBarConfig(t)} height={220}>
@@ -172,8 +172,8 @@ export function CohortView({ metrics, error }: CohortViewProps) {
               <ChartTooltip
                 content={
                   <ChartTooltipContent
-                    labelFormatter={(v) => String(v)}
-                    valueFormatter={(v) => `${v}%`}
+                    labelFormatter={(value) => String(value)}
+                    valueFormatter={(value) => `${value}%`}
                   />
                 }
               />
@@ -201,7 +201,7 @@ export function CohortView({ metrics, error }: CohortViewProps) {
           aria-label={t("tableAriaLabel")}
         >
           <thead>
-            <tr className="text-muted-foreground border-b text-left text-xs tracking-wide uppercase">
+            <tr className="border-b text-left text-xs tracking-wide text-muted-foreground uppercase">
               <th className="px-4 py-3 font-medium">{t("headers.skill")}</th>
               <th className="px-4 py-3 text-right font-medium">N</th>
               <th className="px-4 py-3 text-right font-medium">
@@ -229,8 +229,11 @@ export function CohortView({ metrics, error }: CohortViewProps) {
                 </td>
               </tr>
             ) : (
-              allRows.map((row, i) => (
-                <CohortRow key={`${row.skill}__${row.arm}__${i}`} row={row} />
+              allRows.map((row, index) => (
+                <CohortRow
+                  key={`${row.skill}__${row.arm}__${index}`}
+                  row={row}
+                />
               ))
             )}
           </tbody>

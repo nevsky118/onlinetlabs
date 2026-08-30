@@ -2,78 +2,43 @@
 
 import { track } from "@repo/api/analytics"
 import { Button } from "@repo/design-system/ui/button"
-import { CopyIcon, ExternalLinkIcon, EyeIcon, EyeOffIcon } from "lucide-react"
+import { CopyIcon, ExternalLinkIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
-import { useState } from "react"
 import { toast } from "sonner"
 import type { Credentials } from "../types"
-import { fetchCredentials } from "../actions"
 
-type Field = "username" | "password" | "url"
+type CredentialField = "username" | "url"
 
-const FIELD_TRACK: Record<Field, string> = {
+const ANALYTICS_FIELD: Record<CredentialField, string> = {
   username: "username",
-  password: "password",
   url: "gns3_url",
 }
 
-export function CredentialsCard({
-  sessionId,
-  credentials,
-}: {
-  sessionId: string
-  credentials: Credentials
-}) {
+export function CredentialsCard({ credentials }: { credentials: Credentials }) {
   const t = useTranslations("dashboard.session.credentialsCard")
-  const [creds, setCreds] = useState(credentials)
-  const [reveal, setReveal] = useState(false)
 
-  async function copy(value: string, field: Field) {
+  async function copyField(value: string, field: CredentialField) {
     await navigator.clipboard.writeText(value)
-    track("credential_copied", { field: FIELD_TRACK[field] })
+    track("credential_copied", { field: ANALYTICS_FIELD[field] })
     toast.success(t("copiedToast", { label: t(`fields.${field}`) }))
   }
 
-  async function toggleReveal() {
-    if (!reveal) setCreds(await fetchCredentials(sessionId))
-    setReveal((v) => !v)
-  }
-
   return (
-    <div className="bg-card border p-4">
-      <div className="text-muted-foreground mb-3 text-xs tracking-wide uppercase">
+    <div className="border bg-card p-4">
+      <div className="mb-3 text-xs tracking-wide text-muted-foreground uppercase">
         {t("heading")}
       </div>
-      <div className="space-y-2 text-sm">
-        <Row label={t("fields.username")}>
-          <code className="font-mono text-xs">{creds.gns3Username}</code>
-          <IconBtn
-            onClick={() => copy(creds.gns3Username, "username")}
+      <div className="flex flex-col gap-2 text-sm">
+        <CredentialRow label={t("fields.username")}>
+          <code className="font-mono text-xs">{credentials.gns3Username}</code>
+          <CopyButton
+            onClick={() => copyField(credentials.gns3Username, "username")}
             ariaLabel={t("copyUsername")}
-          >
-            <CopyIcon />
-          </IconBtn>
-        </Row>
-        <Row label={t("fields.password")}>
-          <code className="font-mono text-xs">
-            {reveal ? creds.gns3Password : "••••••••"}
-          </code>
-          <IconBtn
-            onClick={toggleReveal}
-            ariaLabel={reveal ? t("hidePassword") : t("showPassword")}
-          >
-            {reveal ? <EyeOffIcon /> : <EyeIcon />}
-          </IconBtn>
-          <IconBtn
-            onClick={() => copy(creds.gns3Password, "password")}
-            ariaLabel={t("copyPassword")}
-          >
-            <CopyIcon />
-          </IconBtn>
-        </Row>
-        <Row label="URL">
-          <code className="font-mono text-xs">{creds.gns3Url}</code>
-        </Row>
+          />
+        </CredentialRow>
+        <CredentialRow label="URL">
+          <code className="font-mono text-xs">{credentials.gns3Url}</code>
+        </CredentialRow>
       </div>
       <Button
         nativeButton={false}
@@ -81,8 +46,8 @@ export function CredentialsCard({
         size="sm"
         className="mt-3 w-full rounded-none"
         render={
-          // biome-ignore lint/a11y/useAnchorContent: content comes from the Base UI render slot
-          <a href={creds.gns3DeepUrl} target="_blank" rel="noreferrer" />
+          // oxlint-disable-next-line jsx-a11y/anchor-has-content -- link text comes from the Base UI render slot
+          <a href={credentials.gns3DeepUrl} target="_blank" rel="noreferrer" />
         }
       >
         {t("openGns3")}
@@ -92,7 +57,7 @@ export function CredentialsCard({
   )
 }
 
-function Row({
+function CredentialRow({
   label,
   children,
 }: {
@@ -107,14 +72,12 @@ function Row({
   )
 }
 
-function IconBtn({
+function CopyButton({
   onClick,
   ariaLabel,
-  children,
 }: {
   onClick: () => void
   ariaLabel: string
-  children: React.ReactNode
 }) {
   return (
     <Button
@@ -124,7 +87,7 @@ function IconBtn({
       onClick={onClick}
       aria-label={ariaLabel}
     >
-      {children}
+      <CopyIcon />
     </Button>
   )
 }

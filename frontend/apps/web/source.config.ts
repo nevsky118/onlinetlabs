@@ -1,11 +1,12 @@
+import { transformers } from "@/lib/highlight-code"
 import {
   defineConfig,
   defineDocs,
   frontmatterSchema,
 } from "fumadocs-mdx/config"
+// oxlint-disable-next-line import/no-named-as-default -- the plugin factory is the default export
 import rehypePrettyCode from "rehype-pretty-code"
 import { z } from "zod"
-import { transformers } from "@/lib/highlight-code"
 
 // This file may only export collections and a default. The loader() i18n config lives in shared/lib/source.ts
 
@@ -15,7 +16,6 @@ export default defineConfig({
       plugins.shift()
       plugins.push([
         // TODO: fix the type.
-        // biome-ignore lint: @typescript-eslint/no-explicit-any
         rehypePrettyCode as any,
         {
           theme: {

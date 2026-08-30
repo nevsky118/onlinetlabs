@@ -6,10 +6,14 @@
     "./env": "./env.ts",
     "./env.client": "./env.client.ts",
     "./authed-fetch": "./authed-fetch.ts",
+    "./rethrow-control-flow": "./rethrow-control-flow.ts",
     "./analytics": "./analytics.ts",
     "./realtime-token": "./realtime-token.ts",
     "./http": "./http.ts",
     "./request-locale": "./request-locale.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@repo/i18n": "workspace:*",
@@ -17,15 +21,12 @@
     "server-only": "^0.0.1",
     "zod": "^4.3.6"
   },
-  "peerDependencies": {
-    "next": "^16.2.12"
-  },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "@types/node": "^20",
     "typescript": "^5"
   },
-  "scripts": {
-    "typecheck": "tsc --noEmit"
+  "peerDependencies": {
+    "next": "^16.2.12"
   }
 }

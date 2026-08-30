@@ -9,14 +9,14 @@ if (!appDir) {
   process.exit(2)
 }
 
-const read = (p) => JSON.parse(readFileSync(p, "utf8"))
+const read = (file) => JSON.parse(readFileSync(file, "utf8"))
 const next = join(appDir, ".next")
 const appPaths = join(next, "app-path-routes-manifest.json")
 const prerender = join(next, "prerender-manifest.json")
 
-for (const f of [appPaths, prerender]) {
-  if (!existsSync(f)) {
-    console.error(`missing ${f} — run \`next build\` first`)
+for (const file of [appPaths, prerender]) {
+  if (!existsSync(file)) {
+    console.error(`missing ${file} — run \`next build\` first`)
     process.exit(2)
   }
 }
@@ -27,18 +27,18 @@ const staticRoutes = new Set(Object.keys(pre.routes ?? {}))
 const isrRoutes = new Set(Object.keys(pre.dynamicRoutes ?? {}))
 
 const manifest = {}
-for (const r of routes.sort()) {
-  manifest[r] = r.startsWith("/api/")
+for (const route of routes.toSorted()) {
+  manifest[route] = route.startsWith("/api/")
     ? "handler"
-    : staticRoutes.has(r)
+    : staticRoutes.has(route)
       ? "static"
-      : isrRoutes.has(r)
+      : isrRoutes.has(route)
         ? "prerender-params"
         : "dynamic"
 }
 // Concrete prerendered paths (/labs/dhcp-basics) never show up in the route list.
-for (const r of [...staticRoutes].sort()) {
-  if (!(r in manifest)) manifest[r] = "static"
+for (const route of staticRoutes.values().toArray().toSorted()) {
+  if (!(route in manifest)) manifest[route] = "static"
 }
 
 const checkIdx = process.argv.indexOf("--check")
@@ -49,14 +49,19 @@ if (checkIdx === -1) {
 
 const baseline = read(process.argv[checkIdx + 1])
 const diffs = []
-for (const k of new Set([...Object.keys(baseline), ...Object.keys(manifest)])) {
-  if (baseline[k] !== manifest[k]) {
-    diffs.push(`${k}: ${baseline[k] ?? "(absent)"} -> ${manifest[k] ?? "(gone)"}`)
+for (const route of new Set([
+  ...Object.keys(baseline),
+  ...Object.keys(manifest),
+])) {
+  if (baseline[route] !== manifest[route]) {
+    diffs.push(
+      `${route}: ${baseline[route] ?? "(absent)"} -> ${manifest[route] ?? "(gone)"}`
+    )
   }
 }
 if (diffs.length) {
   console.error(`ROUTE PARITY BROKEN (${diffs.length}):`)
-  for (const d of diffs.sort()) console.error(`  ${d}`)
+  for (const diff of diffs.toSorted()) console.error(`  ${diff}`)
   process.exit(1)
 }
 console.log(`route parity ok (${Object.keys(manifest).length} entries)`)

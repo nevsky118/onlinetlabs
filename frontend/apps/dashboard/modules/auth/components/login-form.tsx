@@ -1,5 +1,6 @@
 "use client"
 
+import { defaultRedirect, validateRedirect } from "@/lib/redirect"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { authClient } from "@repo/auth/client"
 import { Icons } from "@repo/design-system/components/icons"
@@ -22,14 +23,13 @@ import {
 import { Input } from "@repo/design-system/ui/input"
 import { Spinner } from "@repo/design-system/ui/spinner"
 import { Link } from "@repo/i18n/navigation"
-import { useRouter } from "next/navigation"
 import { useLocale, useTranslations } from "next-intl"
+import { useRouter } from "next/navigation"
 import { useQueryState } from "nuqs"
 import { useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import { getLoginSchema, type LoginFormValues } from "../lib/schemas"
 import { redirectParser } from "../search-params"
-import { defaultRedirect, validateRedirect } from "@/lib/redirect"
 
 export function LoginForm({
   className,
@@ -125,8 +125,8 @@ export function LoginForm({
             </FieldGroup>
           </form>
           <div className="mt-6 flex flex-col gap-4">
-            <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-              <span className="bg-card text-muted-foreground relative z-10 px-2">
+            <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
+              <span className="relative z-10 bg-card px-2 text-muted-foreground">
                 {t("orDivider")}
               </span>
             </div>

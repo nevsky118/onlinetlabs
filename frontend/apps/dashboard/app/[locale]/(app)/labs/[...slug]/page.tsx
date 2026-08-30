@@ -1,11 +1,16 @@
-import { getSession } from "@repo/auth/server"
+import { LaunchLabConfirmTrigger } from "@/modules/session"
+import { getSession, isBackendUserActive } from "@repo/auth/server"
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@repo/design-system/ui/alert"
 import { Button } from "@repo/design-system/ui/button"
 import { redirect } from "@repo/i18n/navigation"
 import { RocketIcon } from "lucide-react"
-import type { Metadata } from "next"
-import { notFound } from "next/navigation"
 import { getTranslations, setRequestLocale } from "next-intl/server"
-import { LaunchLabConfirmTrigger } from "@/modules/session"
+import { notFound } from "next/navigation"
+import type { Metadata } from "next"
 
 export async function generateMetadata({
   params,
@@ -30,6 +35,7 @@ export default async function LaunchLabPage(props: {
   const { locale, slug } = await props.params
   setRequestLocale(locale)
   const t = await getTranslations("dashboard.app.launchLab")
+  const tPending = await getTranslations("dashboard.session.accountPending")
   if (slug.at(-1) !== "launch") {
     notFound()
   }
@@ -47,18 +53,34 @@ export default async function LaunchLabPage(props: {
     })
   }
 
+  // Backend unreachable: let the launch attempt report the failure instead.
+  const accountActive = await isBackendUserActive().catch(() => true)
+
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
       <div className="flex flex-col gap-1">
         <h1 className="text-lg font-semibold tracking-tight">{t("heading")}</h1>
-        <p className="text-muted-foreground text-sm">{labSlug}</p>
+        <p className="text-sm text-muted-foreground">{labSlug}</p>
       </div>
-      <LaunchLabConfirmTrigger labSlug={labSlug}>
-        <Button>
-          <RocketIcon data-icon="inline-start" />
-          {t("launchButton")}
-        </Button>
-      </LaunchLabConfirmTrigger>
+      {accountActive ? (
+        <LaunchLabConfirmTrigger labSlug={labSlug}>
+          <Button>
+            <RocketIcon data-icon="inline-start" />
+            {t("launchButton")}
+          </Button>
+        </LaunchLabConfirmTrigger>
+      ) : (
+        <>
+          <Button disabled>
+            <RocketIcon data-icon="inline-start" />
+            {t("launchButton")}
+          </Button>
+          <Alert className="max-w-sm">
+            <AlertTitle>{tPending("title")}</AlertTitle>
+            <AlertDescription>{tPending("description")}</AlertDescription>
+          </Alert>
+        </>
+      )}
     </div>
   )
 }

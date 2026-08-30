@@ -1,5 +1,6 @@
 "use client"
 
+import { formatDurationFine } from "@/lib/format-duration"
 import { Button } from "@repo/design-system/ui/button"
 import { ExternalLinkIcon, RotateCwIcon, SquareIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
@@ -7,7 +8,6 @@ import { useTransition } from "react"
 import { toast } from "sonner"
 import type { Credentials, FullSessionState } from "../types"
 import { TopologyPreview } from "./topology-preview"
-import { formatDurationFine } from "@/lib/format-duration"
 
 export function SessionHero({
   state,
@@ -30,17 +30,17 @@ export function SessionHero({
       try {
         await fn()
         toast.success(ok)
-      } catch (e) {
-        toast.error((e as Error).message)
+      } catch (error) {
+        toast.error((error as Error).message)
       }
     })
 
   return (
-    <div className="bg-card border">
+    <div className="border bg-card">
       {/* Desktop control bar — hidden on mobile because StickyMobileActionBar
           covers Stop/Open GNS3 and per-action mobile UX is uncluttered. */}
       <div className="hidden items-center justify-between border-b px-4 py-3 md:flex">
-        <span className="text-muted-foreground text-xs tracking-wide uppercase">
+        <span className="text-xs tracking-wide text-muted-foreground uppercase">
           {t("currentSession")}
         </span>
         <div className="flex gap-2">
@@ -50,7 +50,7 @@ export function SessionHero({
             size="sm"
             className="rounded-none"
             render={
-              // biome-ignore lint/a11y/useAnchorContent: content comes from the Base UI render slot
+              // oxlint-disable-next-line jsx-a11y/anchor-has-content -- link text comes from the Base UI render slot
               <a
                 href={credentials.gns3DeepUrl}
                 target="_blank"
@@ -85,7 +85,7 @@ export function SessionHero({
       </div>
       {/* Mobile: single "Restart" button. Open GNS3 + Stop are in StickyMobileActionBar. */}
       <div className="flex items-center justify-between gap-3 border-b px-4 py-3 md:hidden">
-        <span className="text-muted-foreground truncate text-xs tracking-wide uppercase">
+        <span className="truncate text-xs tracking-wide text-muted-foreground uppercase">
           {t("currentSession")}
         </span>
         <Button
@@ -129,7 +129,7 @@ export function SessionHero({
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <div className="text-muted-foreground text-xs tracking-wide uppercase">
+      <div className="text-xs tracking-wide text-muted-foreground uppercase">
         {label}
       </div>
       <div className="mt-0.5">{value}</div>

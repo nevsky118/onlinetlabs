@@ -39,11 +39,11 @@ export function queueStatusQuery(labSlug: string) {
   return queryOptions({
     queryKey: sessionKeys.queue(labSlug),
     queryFn: () => fetchQueueStatus(labSlug),
-    select: (d): QueueStatusShape => ({
-      inQueue: d.in_queue,
-      position: d.queue_position ?? 0,
-      depth: d.queue_depth ?? 0,
-      etaSec: d.eta_sec ?? 0,
+    select: (wire): QueueStatusShape => ({
+      inQueue: wire.in_queue,
+      position: wire.queue_position ?? 0,
+      depth: wire.queue_depth ?? 0,
+      etaSec: wire.eta_sec ?? 0,
     }),
     refetchInterval: (query) => (query.state.data?.in_queue ? 5000 : false),
   })

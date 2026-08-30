@@ -25,18 +25,18 @@ export function StickyMobileActionBar({
       try {
         await onStopAll()
         toast.success(t("toastStopped"))
-      } catch (e) {
-        toast.error((e as Error).message)
+      } catch (error) {
+        toast.error((error as Error).message)
       }
     })
 
   return (
-    <div className="bg-background fixed inset-x-0 bottom-0 z-40 flex gap-2 border-t px-4 py-3 md:hidden">
+    <div className="fixed inset-x-0 bottom-0 z-40 flex gap-2 border-t bg-background px-4 py-3 md:hidden">
       <Button
         nativeButton={false}
         className="flex-1 rounded-none"
         render={
-          // biome-ignore lint/a11y/useAnchorContent: content comes from the Base UI render slot
+          // oxlint-disable-next-line jsx-a11y/anchor-has-content -- link text comes from the Base UI render slot
           <a href={credentials.gns3DeepUrl} target="_blank" rel="noreferrer" />
         }
       >

@@ -32,8 +32,8 @@ export function ModelSelector({
   return (
     <Select
       value={value}
-      onValueChange={(v) => {
-        if (v !== null) onValueChange(v)
+      onValueChange={(nextValue) => {
+        if (nextValue !== null) onValueChange(nextValue)
       }}
     >
       <SelectTrigger
@@ -45,9 +45,9 @@ export function ModelSelector({
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>
-          {models.map((m) => (
-            <SelectItem key={m.id} value={m.id}>
-              {m.label}
+          {models.map((model) => (
+            <SelectItem key={model.id} value={model.id}>
+              {model.label}
             </SelectItem>
           ))}
         </SelectGroup>

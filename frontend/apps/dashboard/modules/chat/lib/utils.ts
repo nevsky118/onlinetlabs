@@ -13,7 +13,7 @@ export function getDomainLabel(labSlug: string): {
   return { domain: "GNS3", name: labSlug }
 }
 
-export function mapToUIMessage(m: {
+export function mapToUIMessage(message: {
   id: string
   role: string
   parts: unknown[]
@@ -21,9 +21,11 @@ export function mapToUIMessage(m: {
 }): UIMessage {
   // created_at goes into metadata, needed to embed logs into the flow by time.
   return {
-    id: m.id,
-    role: m.role as "user" | "assistant",
-    parts: m.parts as UIMessage["parts"],
-    ...(m.created_at ? { metadata: { createdAt: m.created_at } } : {}),
+    id: message.id,
+    role: message.role as "user" | "assistant",
+    parts: message.parts as UIMessage["parts"],
+    ...(message.created_at
+      ? { metadata: { createdAt: message.created_at } }
+      : {}),
   } as UIMessage
 }

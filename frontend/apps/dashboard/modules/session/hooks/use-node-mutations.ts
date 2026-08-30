@@ -5,27 +5,30 @@ import { toast } from "sonner"
 import { bulkNodeAction, nodeAction } from "../actions"
 import { sessionKeys } from "../query"
 
-export function useNodeMutations(sessionId: string) {
-  const qc = useQueryClient()
-  const invalidate = () =>
-    qc.invalidateQueries({ queryKey: sessionKeys.state(sessionId) })
-  const onError = (e: unknown) => toast.error((e as Error).message)
+function reportFailure(error: Error) {
+  toast.error(error.message)
+}
 
-  const node = useMutation({
+export function useNodeMutations(sessionId: string) {
+  const queryClient = useQueryClient()
+  const invalidateState = () =>
+    queryClient.invalidateQueries({ queryKey: sessionKeys.state(sessionId) })
+
+  const singleNodeMutation = useMutation({
     mutationFn: ({ nodeId, action }: { nodeId: string; action: string }) =>
       nodeAction(sessionId, nodeId, action),
-    onSuccess: invalidate,
-    onError,
+    onSuccess: invalidateState,
+    onError: reportFailure,
   })
-  const bulk = useMutation({
+  const bulkMutation = useMutation({
     mutationFn: (action: string) => bulkNodeAction(sessionId, action),
-    onSuccess: invalidate,
-    onError,
+    onSuccess: invalidateState,
+    onError: reportFailure,
   })
 
   return {
     nodeAction: (nodeId: string, action: string) =>
-      node.mutateAsync({ nodeId, action }),
-    bulkNodeAction: (action: string) => bulk.mutateAsync(action),
+      singleNodeMutation.mutateAsync({ nodeId, action }),
+    bulkNodeAction: (action: string) => bulkMutation.mutateAsync(action),
   }
 }

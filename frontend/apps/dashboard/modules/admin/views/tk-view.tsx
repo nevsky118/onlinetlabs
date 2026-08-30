@@ -18,8 +18,8 @@ import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
 import type { TkSensitivity } from "../types"
 import { fetchTkSensitivity } from "../actions"
 
-function fmtNum(v: number, digits = 2): string {
-  return v.toFixed(digits)
+function fmtNum(value: number, digits = 2): string {
+  return value.toFixed(digits)
 }
 
 // Monochrome single T_k line over ratio, built per call since the label comes from translations
@@ -38,15 +38,14 @@ export function TkView() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: t is stable per locale, fetch once on mount
   useEffect(() => {
     fetchTkSensitivity()
       .then(setData)
-      .catch((e: unknown) =>
-        setError(e instanceof Error ? e.message : t("errorFallback"))
+      .catch((reason: unknown) =>
+        setError(reason instanceof Error ? reason.message : t("errorFallback"))
       )
       .finally(() => setLoading(false))
-  }, [])
+  }, [t])
 
   if (loading) {
     return (
@@ -88,7 +87,7 @@ export function TkView() {
 
       {/* T_k(ratio) chart, stepped */}
       <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide">
+        <h2 className="mb-2 text-sm font-semibold tracking-wide uppercase">
           {t("chartHeading")}
         </h2>
         <ChartContainer config={getTkConfig(t)} height={240}>
@@ -121,8 +120,8 @@ export function TkView() {
             <ChartTooltip
               content={
                 <ChartTooltipContent
-                  labelFormatter={(v) => `ratio = ${v}`}
-                  valueFormatter={(v) => fmtNum(v, 0)}
+                  labelFormatter={(value) => `ratio = ${value}`}
+                  valueFormatter={(value) => fmtNum(value, 0)}
                 />
               }
             />
@@ -142,12 +141,12 @@ export function TkView() {
 
       {/* points table (a11y alternative) */}
       <div className="overflow-x-auto border">
-        <table className="w-full border-collapse text-sm text-left">
-          <caption className="mb-2 text-left text-xs text-muted-foreground px-4 pt-3">
+        <table className="w-full border-collapse text-left text-sm">
+          <caption className="mb-2 px-4 pt-3 text-left text-xs text-muted-foreground">
             {t("tableCaption")}
           </caption>
           <thead>
-            <tr className="border-b text-xs uppercase tracking-wide text-muted-foreground">
+            <tr className="border-b text-xs tracking-wide text-muted-foreground uppercase">
               <th className="px-4 py-3 font-medium tabular-nums">
                 {t("ratioAxisLabel")}
               </th>
@@ -160,12 +159,12 @@ export function TkView() {
             </tr>
           </thead>
           <tbody className="divide-y">
-            {data.points.map((pt, i) => (
-              <tr key={i} className="hover:bg-muted/50 transition-colors">
-                <td className="px-4 py-3 tabular-nums font-mono">
+            {data.points.map((pt, index) => (
+              <tr key={index} className="transition-colors hover:bg-muted/50">
+                <td className="px-4 py-3 font-mono tabular-nums">
                   {fmtNum(pt.ratio)}
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums font-mono">
+                <td className="px-4 py-3 text-right font-mono tabular-nums">
                   {fmtNum(pt.tK, 0)}
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums">
@@ -193,21 +192,21 @@ function CostsBlock({
   const entries = Object.entries(costs)
   return (
     <div className="border p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+      <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
         {t("costsTitle")}
       </p>
       {entries.length > 0 ? (
         <dl className="grid grid-cols-2 gap-x-8 gap-y-1 text-sm tabular-nums">
-          {entries.map(([k, v]) => (
+          {entries.map(([key, value]) => (
             <>
               <dt
-                key={`dt-${k}`}
-                className="text-muted-foreground font-mono text-xs"
+                key={`dt-${key}`}
+                className="font-mono text-xs text-muted-foreground"
               >
-                {k}
+                {key}
               </dt>
-              <dd key={`dd-${k}`} className="font-mono">
-                {fmtNum(v, 3)}
+              <dd key={`dd-${key}`} className="font-mono">
+                {fmtNum(value, 3)}
               </dd>
             </>
           ))}

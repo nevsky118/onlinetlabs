@@ -21,7 +21,7 @@ export function LaunchLabCard({
 
   if (isPending) {
     return (
-      <div className="bg-surface flex flex-col gap-2 rounded-lg p-6">
+      <div className="flex flex-col gap-2 rounded-lg bg-surface p-6">
         <Skeleton className="h-4 w-32" />
         <Skeleton className="h-3 w-full" />
         <Skeleton className="mt-2 h-7 w-24" />
@@ -30,11 +30,11 @@ export function LaunchLabCard({
   }
 
   return (
-    <div className="bg-surface text-surface-foreground flex flex-col gap-2 rounded-lg p-6">
+    <div className="flex flex-col gap-2 rounded-lg bg-surface p-6 text-surface-foreground">
       <div className="text-base leading-tight font-semibold text-balance">
         {isAuthed ? t("title") : t("signInTitle")}
       </div>
-      <div className="text-muted-foreground text-sm">
+      <div className="text-sm text-muted-foreground">
         {isAuthed ? t("description") : t("signInDescription")}
       </div>
       {isAuthed ? (

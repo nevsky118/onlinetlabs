@@ -10,7 +10,7 @@ export async function DELETE(
   if (!token) return new Response("Unauthorized", { status: 401 })
 
   const { id } = await params
-  const r = await fetch(
+  const response = await fetch(
     `${serverEnv.BACKEND_URL}/users/me/auth-sessions/${encodeURIComponent(id)}`,
     {
       method: "DELETE",
@@ -20,8 +20,8 @@ export async function DELETE(
       },
     }
   )
-  return new Response(r.body, {
-    status: r.status,
+  return new Response(response.body, {
+    status: response.status,
     headers: { "Content-Type": "application/json" },
   })
 }

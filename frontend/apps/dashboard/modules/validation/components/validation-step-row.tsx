@@ -31,10 +31,10 @@ export function ValidationStepRow({
   const [open, setOpen] = useState(false)
   const effectiveOpen = forceOpen ?? open
 
-  const passedCount = step.checks.filter((c) => c.ok).length
+  const passedCount = step.checks.filter((check) => check.ok).length
   const total = step.checks.length
   const firstFailedCheckIdx =
-    forceOpen !== undefined ? step.checks.findIndex((c) => !c.ok) : -1
+    forceOpen !== undefined ? step.checks.findIndex((check) => !check.ok) : -1
 
   const isDone = !isActive
   const stepFinished = isDone && step.checks.length > 0
@@ -76,15 +76,15 @@ export function ValidationStepRow({
           )}
         />
       </CollapsibleTrigger>
-      {isActive && <div className="h-0.5 bg-primary animate-pulse" />}
+      {isActive && <div className="h-0.5 animate-pulse bg-primary" />}
       <CollapsibleContent>
-        <div className="flex flex-col border-l border-border ml-6">
-          {step.checks.map((check, i) => (
+        <div className="ml-6 flex flex-col border-l border-border">
+          {step.checks.map((check, index) => (
             <ValidationCheckRow
-              key={i}
+              key={index}
               check={check}
-              isRunning={isActive && i === step.checks.length - 1}
-              forceOpen={i === firstFailedCheckIdx ? true : undefined}
+              isRunning={isActive && index === step.checks.length - 1}
+              forceOpen={index === firstFailedCheckIdx ? true : undefined}
             />
           ))}
         </div>

@@ -10,7 +10,7 @@ export async function GET(
   const token = await getBackendToken().catch(() => null)
   if (!token) return Response.json([], { status: 401 })
 
-  const r = await fetch(
+  const response = await fetch(
     `${serverEnv.BACKEND_URL}/users/me/sessions/${sessionId}/chat`,
     {
       headers: {
@@ -20,5 +20,5 @@ export async function GET(
       cache: "no-store",
     }
   )
-  return Response.json(await r.json(), { status: r.status })
+  return Response.json(await response.json(), { status: response.status })
 }

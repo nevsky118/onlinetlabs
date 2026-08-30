@@ -10,7 +10,6 @@ import {
 import {
   CheckIcon,
   ChevronDownIcon,
-  CircleDashed,
   CopyIcon,
   Loader2,
   XIcon,
@@ -23,13 +22,13 @@ import { ValidationLogBlock } from "./validation-log-block"
 
 function formatParams(params: Record<string, unknown>): string {
   return Object.entries(params)
-    .map(([k, v]) => `${k}=${String(v)}`)
+    .map(([key, value]) => `${key}=${String(value)}`)
     .join(", ")
 }
 
 function formatKV(obj: Record<string, unknown>): string {
   return Object.entries(obj)
-    .map(([k, v]) => `${k}=${String(v)}`)
+    .map(([key, value]) => `${key}=${String(value)}`)
     .join(", ")
 }
 
@@ -63,8 +62,8 @@ export function ValidationCheckRow({
 
   const cmd = commandFor(check)
 
-  function handleCopy(e: React.MouseEvent) {
-    e.stopPropagation()
+  function handleCopy(event: React.MouseEvent) {
+    event.stopPropagation()
     void navigator.clipboard.writeText(cmd)
   }
 

@@ -1,16 +1,16 @@
-import { Icons } from "@repo/design-system/components/icons"
-import { ThemeSwitcher } from "@repo/design-system/components/theme-switcher"
-import { Button } from "@repo/design-system/ui/button"
-import { Separator } from "@repo/design-system/ui/separator"
-import { LocaleSwitcher } from "@repo/i18n/components/locale-switcher"
-import Link from "next/link"
-import { getLocale, getTranslations } from "next-intl/server"
-import { AuthStatus } from "./auth-status"
 import { CommandMenu } from "@/app-components/command-menu"
 import { MainNav } from "@/app-components/main-nav"
 import { MobileNav } from "@/app-components/mobile-nav"
 import { SiteConfig } from "@/app-components/site-config"
 import { getNavItems } from "@/lib/config"
+import { Icons } from "@repo/design-system/components/icons"
+import { ThemeSwitcher } from "@repo/design-system/components/theme-switcher"
+import { Button } from "@repo/design-system/ui/button"
+import { Separator } from "@repo/design-system/ui/separator"
+import { LocaleSwitcher } from "@repo/i18n/components/locale-switcher"
+import { getLocale, getTranslations } from "next-intl/server"
+import Link from "next/link"
+import { AuthStatus } from "./auth-status"
 
 export async function SiteHeader() {
   const [navT, siteT, themeT, locale] = await Promise.all([
@@ -22,9 +22,9 @@ export async function SiteHeader() {
   const navItems = getNavItems(navT, locale)
 
   return (
-    <header className="bg-background sticky top-0 z-50 w-full">
-      <div className="container-wrapper 3xl:fixed:px-0 px-6">
-        <div className="3xl:fixed:container flex h-(--header-height) items-center gap-2 **:data-[slot=separator]:h-4! **:data-[slot=separator]:self-center">
+    <header className="sticky top-0 z-50 w-full bg-background">
+      <div className="container-wrapper px-6 3xl:fixed:px-0">
+        <div className="flex h-(--header-height) items-center gap-2 **:data-[slot=separator]:h-4! **:data-[slot=separator]:self-center 3xl:fixed:container">
           <MobileNav items={navItems} className="flex lg:hidden" />
           <Button
             nativeButton={false}
@@ -41,8 +41,8 @@ export async function SiteHeader() {
             <div className="hidden w-full flex-1 md:flex md:w-auto md:flex-none">
               <CommandMenu navItems={navItems} />
             </div>
-            <Separator orientation="vertical" className="3xl:flex hidden" />
-            <SiteConfig className="3xl:flex hidden" />
+            <Separator orientation="vertical" className="hidden 3xl:flex" />
+            <SiteConfig className="hidden 3xl:flex" />
             <Separator orientation="vertical" />
             <ThemeSwitcher labelToggleTheme={themeT("toggle")} />
             <LocaleSwitcher />

@@ -1,11 +1,11 @@
+import { TkView } from "@/modules/admin/views/tk-view"
 import {
   PageHeader,
   PageHeaderDescription,
   PageHeaderHeading,
 } from "@repo/design-system/components/page-header"
-import type { Metadata } from "next"
 import { getTranslations, setRequestLocale } from "next-intl/server"
-import { TkView } from "@/modules/admin/views/tk-view"
+import type { Metadata } from "next"
 
 export async function generateMetadata({
   params,
@@ -35,7 +35,7 @@ export default async function AdminTkPage({
         <PageHeaderHeading>{t("title")}</PageHeaderHeading>
         <PageHeaderDescription>{t("description")}</PageHeaderDescription>
       </PageHeader>
-      <div className="container-wrapper section-soft flex-1 pb-6">
+      <div className="container-wrapper flex-1 section-soft pb-6">
         <div className="container">
           <TkView />
         </div>

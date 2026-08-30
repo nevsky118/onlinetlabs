@@ -16,13 +16,16 @@ const ACTIVITY = [
 export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const prevPath = useRef<string | null>(null)
-  const pageEntry = useRef(Date.now())
+  const pageEntry = useRef(0)
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isIdle = useRef(false)
   const idleStartedAt = useRef<number | null>(null)
   const hiddenAt = useRef<number | null>(null)
 
-  useEffect(() => initAnalytics(), [])
+  useEffect(() => {
+    pageEntry.current = Date.now()
+    return initAnalytics()
+  }, [])
 
   useEffect(() => {
     if (prevPath.current && prevPath.current !== pathname) {
@@ -62,13 +65,13 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
         })
       }, IDLE_MS)
     }
-    ACTIVITY.forEach((e) => {
-      window.addEventListener(e, resetIdle, { passive: true })
+    ACTIVITY.forEach((eventName) => {
+      window.addEventListener(eventName, resetIdle, { passive: true })
     })
     resetIdle()
     return () => {
-      ACTIVITY.forEach((e) => {
-        window.removeEventListener(e, resetIdle)
+      ACTIVITY.forEach((eventName) => {
+        window.removeEventListener(eventName, resetIdle)
       })
       if (idleTimer.current) clearTimeout(idleTimer.current)
     }

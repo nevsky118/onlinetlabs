@@ -1,5 +1,5 @@
-import type { ValidationCheck } from "../types"
 import { formatPreciseDuration } from "@/lib/format-duration"
+import type { ValidationCheck } from "../types"
 
 export function formatDuration(
   ms: number | null,
@@ -21,7 +21,7 @@ export function commandFor(check: ValidationCheck): string {
   if (kind === "frr.interfaces") return "show interface brief"
   // generic fallback: kind(params)
   const paramStr = Object.entries(params)
-    .map(([k, v]) => `${k}=${String(v)}`)
+    .map(([key, value]) => `${key}=${String(value)}`)
     .join(", ")
   return `${kind}(${paramStr})`
 }

@@ -49,6 +49,7 @@ export interface TimeToCompetence {
   reachRate: number | null
   reachRateAtHorizon: number | null
   restrictedMeanCalendarSeconds: number | null
+  // oxlint-disable-next-line eslint/id-length -- backend field: sample size
   n: number
   censored: number
 }
@@ -70,6 +71,7 @@ export interface OrgEffect {
 export interface CohortCell {
   skill: string | null
   arm: string | null
+  // oxlint-disable-next-line eslint/id-length -- backend field: sample size
   n: number
   timeToCompetence: TimeToCompetence
   autonomy: Autonomy

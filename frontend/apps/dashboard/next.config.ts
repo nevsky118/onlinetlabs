@@ -1,6 +1,6 @@
 import { baseConfig } from "@repo/next-config"
-import type { NextConfig } from "next"
 import createNextIntlPlugin from "next-intl/plugin"
+import type { NextConfig } from "next"
 
 const withNextIntl = createNextIntlPlugin("../../packages/i18n/request.ts")
 

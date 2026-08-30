@@ -1,20 +1,19 @@
-import { ThemeProvider } from "@repo/design-system/components/theme-provider"
-import { fontVariables } from "@repo/design-system/lib/fonts"
-import { cn } from "@repo/design-system/lib/utils"
-import { routing } from "@repo/i18n/routing"
-import type { Metadata } from "next"
-import { notFound } from "next/navigation"
-import { hasLocale, NextIntlClientProvider } from "next-intl"
-import { getTranslations, setRequestLocale } from "next-intl/server"
-
-import "@repo/design-system/styles/globals.css"
-
-import { LayoutProvider } from "@repo/design-system/hooks/use-layout"
-import { Toaster } from "@repo/design-system/ui/sonner"
-import { TooltipProvider } from "@repo/design-system/ui/tooltip"
-import { NuqsAdapter } from "nuqs/adapters/next/app"
 import { AnalyticsProvider } from "@/app-components/analytics-provider"
 import { QueryProvider } from "@/app-components/query-provider"
+import { rootMessages } from "@/lib/messages"
+import { ThemeProvider } from "@repo/design-system/components/theme-provider"
+import { LayoutProvider } from "@repo/design-system/hooks/use-layout"
+import { fontVariables } from "@repo/design-system/lib/fonts"
+import { cn } from "@repo/design-system/lib/utils"
+import { Toaster } from "@repo/design-system/ui/sonner"
+import "@repo/design-system/styles/globals.css"
+import { TooltipProvider } from "@repo/design-system/ui/tooltip"
+import { routing } from "@repo/i18n/routing"
+import { hasLocale, NextIntlClientProvider } from "next-intl"
+import { getTranslations, setRequestLocale } from "next-intl/server"
+import { notFound } from "next/navigation"
+import { NuqsAdapter } from "nuqs/adapters/next/app"
+import type { Metadata } from "next"
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }))
@@ -78,7 +77,6 @@ export default async function RootLayout({
     <html lang={locale} suppressHydrationWarning className="font-sans">
       <head>
         <script
-          // biome-ignore lint: security/no-dangerously-set-inner-html
           dangerouslySetInnerHTML={{
             __html: `
               try {
@@ -92,11 +90,11 @@ export default async function RootLayout({
       </head>
       <body
         className={cn(
-          "text-foreground group/body overscroll-none font-sans antialiased [--footer-height:calc(var(--spacing)*14)] [--header-height:calc(var(--spacing)*14)] xl:[--footer-height:calc(var(--spacing)*24)]",
+          "group/body overscroll-none font-sans text-foreground antialiased [--footer-height:calc(var(--spacing)*14)] [--header-height:calc(var(--spacing)*14)] xl:[--footer-height:calc(var(--spacing)*24)]",
           fontVariables
         )}
       >
-        <NextIntlClientProvider>
+        <NextIntlClientProvider messages={await rootMessages(locale)}>
           <QueryProvider>
             <AnalyticsProvider>
               <ThemeProvider>

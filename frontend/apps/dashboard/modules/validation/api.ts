@@ -3,22 +3,22 @@ import type { ValidationRunDetail, ValidationRunListItem } from "./types"
 export async function fetchValidationRuns(
   sessionId: string
 ): Promise<ValidationRunListItem[]> {
-  const r = await fetch(`/api/validation/${sessionId}/runs`, {
+  const response = await fetch(`/api/validation/${sessionId}/runs`, {
     cache: "no-store",
   })
-  if (!r.ok) throw new Error("runs fetch failed")
-  return r.json()
+  if (!response.ok) throw new Error("runs fetch failed")
+  return response.json()
 }
 
 export async function fetchValidationRunDetail(
   sessionId: string,
   runId: string
 ): Promise<ValidationRunDetail> {
-  const r = await fetch(`/api/validation/${sessionId}/runs/${runId}`, {
+  const response = await fetch(`/api/validation/${sessionId}/runs/${runId}`, {
     cache: "no-store",
   })
-  if (!r.ok) throw new Error("run detail fetch failed")
-  return r.json()
+  if (!response.ok) throw new Error("run detail fetch failed")
+  return response.json()
 }
 
 export async function startValidationStream(

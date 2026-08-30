@@ -1,5 +1,6 @@
 "use client"
 
+import { showMcpDocs } from "@/lib/flags"
 import { cn } from "@repo/design-system/lib/utils"
 import { Button } from "@repo/design-system/ui/button"
 import {
@@ -7,12 +8,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@repo/design-system/ui/popover"
-import type { Root as FumaDocsPageTree } from "fumadocs-core/page-tree"
+import { useLocale, useTranslations } from "next-intl"
 import Link, { type LinkProps } from "next/link"
 import { useRouter } from "next/navigation"
-import { useLocale, useTranslations } from "next-intl"
 import * as React from "react"
-import { showMcpDocs } from "@/lib/flags"
+import type { Root as FumaDocsPageTree } from "fumadocs-core/page-tree"
 
 export function MobileNav({
   tree,
@@ -50,13 +50,13 @@ export function MobileNav({
           <div className="relative size-4">
             <span
               className={cn(
-                "bg-foreground absolute left-0 block h-0.5 w-4 transition-all duration-100",
+                "absolute left-0 block h-0.5 w-4 bg-foreground transition-all duration-100",
                 open ? "top-[0.4rem] -rotate-45" : "top-1"
               )}
             />
             <span
               className={cn(
-                "bg-foreground absolute left-0 block h-0.5 w-4 transition-all duration-100",
+                "absolute left-0 block h-0.5 w-4 bg-foreground transition-all duration-100",
                 open ? "top-[0.4rem] rotate-45" : "top-2.5"
               )}
             />
@@ -68,7 +68,7 @@ export function MobileNav({
         </span>
       </PopoverTrigger>
       <PopoverContent
-        className="bg-background/90 no-scrollbar h-(--available-height) w-(--available-width) overflow-y-auto rounded-none border-none p-0 shadow-none backdrop-blur duration-100"
+        className="no-scrollbar h-(--available-height) w-(--available-width) overflow-y-auto rounded-none border-none bg-background/90 p-0 shadow-none backdrop-blur duration-100"
         align="start"
         side="bottom"
         alignOffset={-16}
@@ -76,7 +76,7 @@ export function MobileNav({
       >
         <div className="flex flex-col gap-12 overflow-auto px-6 py-6">
           <div className="flex flex-col gap-4">
-            <div className="text-muted-foreground text-sm font-medium">
+            <div className="text-sm font-medium text-muted-foreground">
               {t("menuLabel")}
             </div>
             <div className="flex flex-col gap-3">
@@ -95,7 +95,7 @@ export function MobileNav({
             </div>
           </div>
           <div className="flex flex-col gap-4">
-            <div className="text-muted-foreground text-sm font-medium">
+            <div className="text-sm font-medium text-muted-foreground">
               {t("sectionsHeading")}
             </div>
             <div className="flex flex-col gap-3">
@@ -116,7 +116,7 @@ export function MobileNav({
               if (group.type === "folder") {
                 return (
                   <div key={index} className="flex flex-col gap-4">
-                    <div className="text-muted-foreground text-sm font-medium">
+                    <div className="text-sm font-medium text-muted-foreground">
                       {group.name}
                     </div>
                     <div className="flex flex-col gap-3">

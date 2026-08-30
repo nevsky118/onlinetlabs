@@ -11,8 +11,8 @@ import { Button } from "@repo/design-system/ui/button"
 import { Skeleton } from "@repo/design-system/ui/skeleton"
 import { Spinner } from "@repo/design-system/ui/spinner"
 import { Switch } from "@repo/design-system/ui/switch"
-import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
+import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import type { AdminLab } from "../types"
@@ -77,8 +77,8 @@ function LabRow({
   return (
     <tr className={cn("border-b border-border", toggling && "opacity-60")}>
       <td className="py-3 pr-4">
-        <div className="font-medium text-sm">{lab.title}</div>
-        <div className="text-muted-foreground text-xs tabular-nums">
+        <div className="text-sm font-medium">{lab.title}</div>
+        <div className="text-xs text-muted-foreground tabular-nums">
           {lab.slug}
         </div>
       </td>
@@ -93,13 +93,13 @@ function LabRow({
       <td className="py-3 pr-4">
         {lab.gns3TemplateProjectId ? (
           <span
-            className="max-w-[160px] truncate block text-sm tabular-nums"
+            className="block max-w-[160px] truncate text-sm tabular-nums"
             title={lab.gns3TemplateProjectId}
           >
             {lab.gns3TemplateProjectId}
           </span>
         ) : (
-          <span className="text-muted-foreground text-sm">—</span>
+          <span className="text-sm text-muted-foreground">—</span>
         )}
       </td>
       <td className="py-3 pr-4">
@@ -139,14 +139,17 @@ export function LabsView({ data, error }: LabsViewProps) {
   const t = useTranslations("dashboard.admin.labs")
   const router = useRouter()
   const [labs, setLabs] = useState<AdminLab[]>(data ?? [])
-
-  useEffect(() => {
+  // Adjust during render rather than in an effect: a fresh server payload
+  // replaces the optimistic copy without an extra commit.
+  const [syncedData, setSyncedData] = useState(data)
+  if (data !== syncedData) {
+    setSyncedData(data)
     setLabs(data ?? [])
-  }, [data])
+  }
 
   // polling — refresh every 5s while any lab is building
   useEffect(() => {
-    const anyBuilding = labs.some((l) => l.templateStatus === "building")
+    const anyBuilding = labs.some((lab) => lab.templateStatus === "building")
     if (!anyBuilding) return
     const id = setInterval(() => router.refresh(), 5000)
     return () => clearInterval(id)
@@ -155,7 +158,9 @@ export function LabsView({ data, error }: LabsViewProps) {
   const handleToggle = async (slug: string, enabled: boolean) => {
     const result = await updateAdminLab(slug, { enabled })
     if (result.ok) {
-      setLabs((prev) => prev.map((l) => (l.slug === slug ? result.lab : l)))
+      setLabs((prev) =>
+        prev.map((lab) => (lab.slug === slug ? result.lab : lab))
+      )
       toast.success(enabled ? t("toastEnabled") : t("toastDisabled"))
       router.refresh()
     } else {
@@ -166,8 +171,8 @@ export function LabsView({ data, error }: LabsViewProps) {
   const handleRebuild = async (slug: string) => {
     // optimistic
     setLabs((prev) =>
-      prev.map((l) =>
-        l.slug === slug ? { ...l, templateStatus: "building" } : l
+      prev.map((lab) =>
+        lab.slug === slug ? { ...lab, templateStatus: "building" } : lab
       )
     )
     const result = await rebuildLabTemplate(slug)
@@ -177,8 +182,8 @@ export function LabsView({ data, error }: LabsViewProps) {
       toast.error(result.error)
       // revert
       setLabs((prev) =>
-        prev.map((l) =>
-          l.slug === slug ? { ...l, templateStatus: "unknown" } : l
+        prev.map((lab) =>
+          lab.slug === slug ? { ...lab, templateStatus: "unknown" } : lab
         )
       )
     }
@@ -196,8 +201,8 @@ export function LabsView({ data, error }: LabsViewProps) {
   if (!data && !error) {
     return (
       <div className="flex flex-col gap-2">
-        {Array.from({ length: 5 }, (_, i) => (
-          <Skeleton key={`skel-${i}`} className="h-12 w-full" />
+        {Array.from({ length: 5 }, (_, index) => (
+          <Skeleton key={`skel-${index}`} className="h-12 w-full" />
         ))}
       </div>
     )
@@ -205,7 +210,7 @@ export function LabsView({ data, error }: LabsViewProps) {
 
   if (labs.length === 0) {
     return (
-      <p className="py-8 text-center text-muted-foreground text-sm">
+      <p className="py-8 text-center text-sm text-muted-foreground">
         {t("empty")}
       </p>
     )

@@ -14,19 +14,20 @@ if (!appDir) {
 
 const walk = (dir, out = []) => {
   if (!existsSync(dir)) return out
-  for (const e of readdirSync(dir)) {
+  for (const entry of readdirSync(dir)) {
     // dev/ holds dev-server artifacts, which turbo also excludes from outputs.
     // node_modules is a copied tree under output:"standalone" with broken symlinks.
-    if (e === "cache" || e === "dev" || e === "node_modules") continue
-    const p = join(dir, e)
-    let st
+    if (entry === "cache" || entry === "dev" || entry === "node_modules")
+      continue
+    const entryPath = join(dir, entry)
+    let stats
     try {
-      st = statSync(p)
+      stats = statSync(entryPath)
     } catch {
       continue // dangling symlink
     }
-    if (st.isDirectory()) walk(p, out)
-    else if (e.endsWith(".css")) out.push(p)
+    if (stats.isDirectory()) walk(entryPath, out)
+    else if (entry.endsWith(".css")) out.push(entryPath)
   }
   return out
 }
@@ -39,31 +40,36 @@ if (files.length === 0) {
 
 // Comments are stripped because sourceMappingURL yields fake .css/.map classes from file names.
 const css = files
-  .map((f) => readFileSync(f, "utf8").replace(/\/\*[\s\S]*?\*\//g, ""))
+  .map((file) => readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, ""))
   .join("\n")
 // Class selectors, including escaped ones (.md\:flex, .bg-primary/50 and so on).
 const classes = new Set()
-for (const m of css.matchAll(/\.((?:\\.|[-\w])+)/g)) {
-  const name = m[1].replace(/\\/g, "")
+for (const match of css.matchAll(/\.((?:\\.|[-\w])+)/g)) {
+  const name = match[1].replace(/\\/g, "")
   if (name.length > 1) classes.add(name)
 }
 
-const sorted = [...classes].sort()
+const sorted = classes.values().toArray().toSorted()
 const checkIdx = process.argv.indexOf("--check")
 if (checkIdx === -1) {
-  console.log(JSON.stringify({ count: sorted.length, classes: sorted }, null, 2))
+  console.log(
+    JSON.stringify({ count: sorted.length, classes: sorted }, null, 2)
+  )
   process.exit(0)
 }
 
 const base = JSON.parse(readFileSync(process.argv[checkIdx + 1], "utf8"))
 const before = new Set(base.classes)
-const missing = base.classes.filter((c) => !classes.has(c))
-const added = sorted.filter((c) => !before.has(c))
+const missing = base.classes.filter((name) => !classes.has(name))
+const added = sorted.filter((name) => !before.has(name))
 
 if (missing.length) {
   console.error(`CSS CLASSES LOST: ${missing.length} of ${base.count}`)
-  for (const c of missing.slice(0, 40)) console.error(`  -${c}`)
-  if (missing.length > 40) console.error(`  ... and ${missing.length - 40} more`)
+  for (const name of missing.slice(0, 40)) console.error(`  -${name}`)
+  if (missing.length > 40)
+    console.error(`  ... and ${missing.length - 40} more`)
   process.exit(1)
 }
-console.log(`css ok: ${sorted.length} classes, none lost (+${added.length} new)`)
+console.log(
+  `css ok: ${sorted.length} classes, none lost (+${added.length} new)`
+)

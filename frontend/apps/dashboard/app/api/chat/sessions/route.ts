@@ -6,12 +6,12 @@ export async function GET() {
   const token = await getBackendToken().catch(() => null)
   if (!token) return Response.json([], { status: 401 })
 
-  const r = await fetch(`${serverEnv.BACKEND_URL}/users/me/sessions`, {
+  const response = await fetch(`${serverEnv.BACKEND_URL}/users/me/sessions`, {
     headers: {
       Authorization: `Bearer ${token}`,
       "X-Locale": await getRequestLocale(),
     },
     cache: "no-store",
   })
-  return Response.json(await r.json(), { status: r.status })
+  return Response.json(await response.json(), { status: response.status })
 }

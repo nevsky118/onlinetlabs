@@ -1,11 +1,10 @@
 import { cn } from "@repo/design-system/lib/utils"
 import { Badge } from "@repo/design-system/ui/badge"
-import Link from "next/link"
 import { getTranslations } from "next-intl/server"
+import Link from "next/link"
 
 type ContentCardProps = React.ComponentProps<typeof Link> & {
   title: string
-  description: string
   tasks?: number
   difficulty?: "easy" | "medium" | "hard"
   tags?: string[]
@@ -13,7 +12,6 @@ type ContentCardProps = React.ComponentProps<typeof Link> & {
 
 export const ContentCard = async ({
   title,
-  description,
   tasks,
   difficulty,
   tags,
@@ -25,7 +23,7 @@ export const ContentCard = async ({
   return (
     <Link
       className={cn(
-        "group relative flex h-full flex-col p-4 border bg-background shadow-xs hover:bg-accent dark:border-input dark:hover:bg-accent/50 transition-all",
+        "group relative flex h-full flex-col border bg-background p-4 shadow-xs transition-all hover:bg-accent dark:border-input dark:hover:bg-accent/50",
         className
       )}
       {...props}
@@ -33,12 +31,12 @@ export const ContentCard = async ({
       {(tasks || difficulty) && (
         <div className="mb-1">
           {tasks && (
-            <p className="text-muted-foreground m-0 inline-block text-xs after:px-[0.33em] after:content-['•']">
+            <p className="m-0 inline-block text-xs text-muted-foreground after:px-[0.33em] after:content-['•']">
               {t("tasksCount", { count: tasks })}
             </p>
           )}
           {difficulty && (
-            <p className="text-muted-foreground m-0 inline-block text-xs">
+            <p className="m-0 inline-block text-xs text-muted-foreground">
               {t(`difficulty.${difficulty}`)}
             </p>
           )}

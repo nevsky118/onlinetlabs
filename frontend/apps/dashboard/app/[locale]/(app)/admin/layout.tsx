@@ -1,6 +1,8 @@
+import { adminMessages } from "@/lib/messages"
 import { getBackendUserRole } from "@repo/auth/server"
-import { forbidden, unauthorized } from "next/navigation"
+import { NextIntlClientProvider } from "next-intl"
 import { setRequestLocale } from "next-intl/server"
+import { forbidden, unauthorized } from "next/navigation"
 import { AdminNavBar } from "./_components/admin-nav-bar"
 
 export default async function AdminLayout({
@@ -18,9 +20,11 @@ export default async function AdminLayout({
   if (role !== "admin") forbidden()
 
   return (
-    <div className="flex flex-1 flex-col">
-      <AdminNavBar />
-      {children}
-    </div>
+    <NextIntlClientProvider messages={await adminMessages(locale)}>
+      <div className="flex flex-1 flex-col">
+        <AdminNavBar />
+        {children}
+      </div>
+    </NextIntlClientProvider>
   )
 }

@@ -17,10 +17,10 @@ import {
 } from "@repo/design-system/ui/select"
 import { Skeleton } from "@repo/design-system/ui/skeleton"
 import { Switch } from "@repo/design-system/ui/switch"
-import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
+import { useRouter } from "next/navigation"
 import { useQueryStates } from "nuqs"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import { toast } from "sonner"
 import type { AdminUser, AdminUsersPage, UserRole } from "../types"
 import { updateAdminUser } from "../actions"
@@ -88,7 +88,7 @@ function UserRow({
       <td className="py-3 pr-4">
         <div className="flex items-center gap-3">
           {user.image ? (
-            // biome-ignore lint/performance/noImgElement: avatar from trusted backend, no Next/Image needed
+            // oxlint-disable-next-line nextjs/no-img-element -- avatar URL comes from the backend, no next/image loader needed
             <img
               src={user.image}
               alt=""
@@ -98,16 +98,16 @@ function UserRow({
           ) : (
             <div className="size-8 shrink-0 bg-muted" />
           )}
-          <span className="truncate font-medium text-sm">{user.name}</span>
+          <span className="truncate text-sm font-medium">{user.name}</span>
         </div>
       </td>
-      <td className="py-3 pr-4 text-muted-foreground text-sm truncate max-w-[200px]">
+      <td className="max-w-[200px] truncate py-3 pr-4 text-sm text-muted-foreground">
         {user.email}
       </td>
       <td className="py-3 pr-4">
         <Select
           value={user.role}
-          onValueChange={(v) => handle({ role: v as UserRole })}
+          onValueChange={(role) => handle({ role: role as UserRole })}
           disabled={isSelf || pending}
         >
           <SelectTrigger
@@ -119,9 +119,9 @@ function UserRow({
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              {getRoleOptions(t).map((o) => (
-                <SelectItem key={o.value} value={o.value}>
-                  {o.label}
+              {getRoleOptions(t).map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
                 </SelectItem>
               ))}
             </SelectGroup>
@@ -132,7 +132,7 @@ function UserRow({
         <Switch
           size="sm"
           checked={user.isActive}
-          onCheckedChange={(v) => handle({ isActive: v })}
+          onCheckedChange={(checked) => handle({ isActive: checked })}
           disabled={pending}
           aria-label={t("ariaActive")}
         />
@@ -141,7 +141,7 @@ function UserRow({
         <Switch
           size="sm"
           checked={user.canSelectModel}
-          onCheckedChange={(v) => handle({ canSelectModel: v })}
+          onCheckedChange={(checked) => handle({ canSelectModel: checked })}
           disabled={pending}
           aria-label={t("ariaModelSelect")}
         />
@@ -150,7 +150,7 @@ function UserRow({
         <Switch
           size="sm"
           checked={user.canViewAgentLogs}
-          onCheckedChange={(v) => handle({ canViewAgentLogs: v })}
+          onCheckedChange={(checked) => handle({ canViewAgentLogs: checked })}
           disabled={pending}
           aria-label={t("ariaAgentLogs")}
         />
@@ -166,11 +166,12 @@ export function UsersView({ data, error, currentUserId }: UsersViewProps) {
   const [localSearch, setLocalSearch] = useState(params.search)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [users, setUsers] = useState<AdminUser[]>(data?.items ?? [])
-
-  // sync server-rendered items into local state
-  useEffect(() => {
+  // Sync the server-rendered items during render, not in an effect.
+  const [syncedData, setSyncedData] = useState(data)
+  if (data !== syncedData) {
+    setSyncedData(data)
     setUsers(data?.items ?? [])
-  }, [data])
+  }
 
   const handleSearchChange = useCallback(
     (val: string) => {
@@ -206,7 +207,9 @@ export function UsersView({ data, error, currentUserId }: UsersViewProps) {
     ) => {
       const result = await updateAdminUser(id, patch)
       if (result.ok) {
-        setUsers((prev) => prev.map((u) => (u.id === id ? result.user : u)))
+        setUsers((prev) =>
+          prev.map((user) => (user.id === id ? result.user : user))
+        )
         toast.success(t("toastSaved"))
         router.refresh()
       } else {
@@ -228,13 +231,16 @@ export function UsersView({ data, error, currentUserId }: UsersViewProps) {
           type="search"
           placeholder={t("searchPlaceholder")}
           value={localSearch}
-          onChange={(e) => handleSearchChange(e.target.value)}
+          onChange={(event) => handleSearchChange(event.target.value)}
           className="max-w-xs"
         />
         <Select
           value={params.role ?? "all"}
-          onValueChange={(v) =>
-            setParams({ role: v === "all" ? null : (v as UserRole), page: 1 })
+          onValueChange={(value) =>
+            setParams({
+              role: value === "all" ? null : (value as UserRole),
+              page: 1,
+            })
           }
         >
           <SelectTrigger size="sm" className="w-44">
@@ -243,9 +249,9 @@ export function UsersView({ data, error, currentUserId }: UsersViewProps) {
           <SelectContent>
             <SelectGroup>
               <SelectItem value="all">{t("allRoles")}</SelectItem>
-              {getRoleOptions(t).map((o) => (
-                <SelectItem key={o.value} value={o.value}>
-                  {o.label}
+              {getRoleOptions(t).map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
                 </SelectItem>
               ))}
             </SelectGroup>
@@ -264,8 +270,8 @@ export function UsersView({ data, error, currentUserId }: UsersViewProps) {
       {/* Skeleton */}
       {!data && !error && (
         <div className="flex flex-col gap-2">
-          {Array.from({ length: 6 }, (_, i) => (
-            <Skeleton key={`skel-${i}`} className="h-12 w-full" />
+          {Array.from({ length: 6 }, (_, index) => (
+            <Skeleton key={`skel-${index}`} className="h-12 w-full" />
           ))}
         </div>
       )}
@@ -274,7 +280,7 @@ export function UsersView({ data, error, currentUserId }: UsersViewProps) {
       {data && (
         <>
           {users.length === 0 ? (
-            <p className="py-8 text-center text-muted-foreground text-sm">
+            <p className="py-8 text-center text-sm text-muted-foreground">
               {t("empty")}
             </p>
           ) : (
@@ -354,7 +360,7 @@ export function UsersView({ data, error, currentUserId }: UsersViewProps) {
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                className="px-2 py-1 border border-border disabled:opacity-40"
+                className="border border-border px-2 py-1 disabled:opacity-40"
                 disabled={params.page <= 1}
                 onClick={() => setParams({ page: params.page - 1 })}
               >
@@ -365,7 +371,7 @@ export function UsersView({ data, error, currentUserId }: UsersViewProps) {
               </span>
               <button
                 type="button"
-                className="px-2 py-1 border border-border disabled:opacity-40"
+                className="border border-border px-2 py-1 disabled:opacity-40"
                 disabled={params.page >= totalPages}
                 onClick={() => setParams({ page: params.page + 1 })}
               >

@@ -1,25 +1,28 @@
 {
   "name": "onlinetlabs-frontend",
   "private": true,
-  "packageManager": "pnpm@11.5.1",
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
     "typecheck": "turbo typecheck",
-    "lint": "biome check",
-    "lint:fix": "biome check --write",
-    "format": "biome format --write",
+    "lint": "oxlint --max-warnings=0",
+    "lint:fix": "oxlint --max-warnings=0 --fix",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "check": "pnpm run format:check && pnpm run lint && pnpm run typecheck",
     "clean": "turbo clean",
     "ui:add": "pnpm --filter @repo/design-system exec shadcn@latest add"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.3.13",
     "lefthook": "^2.1.1",
+    "oxfmt": "^0.65.0",
+    "oxlint": "^1.80.0",
     "turbo": "^2.10.7",
     "typescript": "^5"
   },
   "overrides": {
     "react": "19.2.0",
     "react-dom": "19.2.0"
-  }
+  },
+  "packageManager": "pnpm@11.5.1"
 }

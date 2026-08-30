@@ -8,6 +8,7 @@
 //   };
 // }
 
+import { appUrl } from "@/lib/urls"
 import { trackCustom } from "@repo/api/analytics"
 import { Callout } from "@repo/design-system/components/callout"
 import { CodeBlockCommand } from "@repo/design-system/components/code-block-command"
@@ -39,7 +40,8 @@ import Image from "next/image"
 import Link from "next/link"
 import type * as React from "react"
 
-export type MdxLabels = {
+export type MdxOptions = {
+  locale?: string
   labelCopy?: string
   labelCopied?: string
   labelCollapse?: string
@@ -47,12 +49,14 @@ export type MdxLabels = {
 }
 
 /** Built per call, not as a static object, because CopyButton, CodeBlockCommand and CodeCollapsibleWrapper labels are locale-dependent. */
-export function getMdxComponents(labels: MdxLabels = {}) {
+export function getMdxComponents(options: MdxOptions = {}) {
+  const localePrefix = options.locale ? `/${options.locale}` : ""
+
   return {
     h1: ({ className, ...props }: React.ComponentProps<"h1">) => (
       <h1
         className={cn(
-          "font-heading mt-2 scroll-m-28 text-3xl font-bold tracking-tight",
+          "mt-2 scroll-m-28 font-heading text-3xl font-bold tracking-tight",
           className
         )}
         {...props}
@@ -68,7 +72,7 @@ export function getMdxComponents(labels: MdxLabels = {}) {
             .replace(/\?/g, "")
             .toLowerCase()}
           className={cn(
-            "font-heading [&+]*:[code]:text-xl mt-10 scroll-m-28 text-xl font-medium tracking-tight first:mt-0 lg:mt-16 [&+.steps]:!mt-0 [&+.steps>h3]:!mt-4 [&+h3]:!mt-6 [&+p]:!mt-4",
+            "[&+]*:[code]:text-xl mt-10 scroll-m-28 font-heading text-xl font-medium tracking-tight first:mt-0 lg:mt-16 [&+.steps]:!mt-0 [&+.steps>h3]:!mt-4 [&+h3]:!mt-6 [&+p]:!mt-4",
             className
           )}
           {...props}
@@ -78,7 +82,7 @@ export function getMdxComponents(labels: MdxLabels = {}) {
     h3: ({ className, ...props }: React.ComponentProps<"h3">) => (
       <h3
         className={cn(
-          "font-heading mt-12 scroll-m-28 text-lg font-medium tracking-tight [&+p]:!mt-4 *:[code]:text-xl",
+          "mt-12 scroll-m-28 font-heading text-lg font-medium tracking-tight [&+p]:!mt-4 *:[code]:text-xl",
           className
         )}
         {...props}
@@ -87,7 +91,7 @@ export function getMdxComponents(labels: MdxLabels = {}) {
     h4: ({ className, ...props }: React.ComponentProps<"h4">) => (
       <h4
         className={cn(
-          "font-heading mt-8 scroll-m-28 text-base font-medium tracking-tight",
+          "mt-8 scroll-m-28 font-heading text-base font-medium tracking-tight",
           className
         )}
         {...props}
@@ -112,6 +116,7 @@ export function getMdxComponents(labels: MdxLabels = {}) {
       />
     ),
     a: ({ className, ...props }: React.ComponentProps<"a">) => (
+      // oxlint-disable-next-line jsx-a11y/anchor-has-content -- content arrives through the spread props
       <a
         className={cn("font-medium underline underline-offset-4", className)}
         {...props}
@@ -153,7 +158,7 @@ export function getMdxComponents(labels: MdxLabels = {}) {
       const resolvedSrc =
         typeof src === "object" && src !== null && "src" in src ? src.src : src
       return (
-        // biome-ignore lint: @next/next/no-img-element
+        // oxlint-disable-next-line nextjs/no-img-element -- MDX authors supply plain URLs; next/image needs known dimensions
         <img
           className={cn("rounded-md", className)}
           alt={alt}
@@ -168,7 +173,7 @@ export function getMdxComponents(labels: MdxLabels = {}) {
       <hr className="my-4 md:my-8" {...props} />
     ),
     table: ({ className, ...props }: React.ComponentProps<"table">) => (
-      <div className="no-scrollbar my-6 w-full overflow-y-auto rounded-lg border">
+      <div className="my-6 no-scrollbar w-full overflow-y-auto rounded-lg border">
         <table
           className={cn(
             "relative w-full overflow-hidden border-none text-sm [&_tbody_tr:last-child]:border-b-0",
@@ -228,7 +233,7 @@ export function getMdxComponents(labels: MdxLabels = {}) {
       return (
         <figcaption
           className={cn(
-            "text-code-foreground [&_svg]:text-code-foreground flex items-center gap-2 [&_svg]:size-4 [&_svg]:opacity-70",
+            "flex items-center gap-2 text-code-foreground [&_svg]:size-4 [&_svg]:text-code-foreground [&_svg]:opacity-70",
             className
           )}
           {...props}
@@ -260,7 +265,7 @@ export function getMdxComponents(labels: MdxLabels = {}) {
         return (
           <code
             className={cn(
-              "bg-muted relative rounded-md px-[0.3rem] py-[0.2rem] font-mono text-[0.8rem] break-words outline-none",
+              "relative rounded-md bg-muted px-[0.3rem] py-[0.2rem] font-mono text-[0.8rem] break-words outline-none",
               className
             )}
             {...props}
@@ -277,9 +282,11 @@ export function getMdxComponents(labels: MdxLabels = {}) {
             __yarn__={__yarn__}
             __pnpm__={__pnpm__}
             __bun__={__bun__}
-            labelCopy={labels.labelCopy}
-            labelCopied={labels.labelCopied}
-            onCopied={(e) => trackCustom(e.name, e.properties ?? {})}
+            labelCopy={options.labelCopy}
+            labelCopied={options.labelCopied}
+            onCopied={(event) =>
+              trackCustom(event.name, event.properties ?? {})
+            }
           />
         )
       }
@@ -291,8 +298,8 @@ export function getMdxComponents(labels: MdxLabels = {}) {
             <CopyButton
               value={__raw__}
               src={__src__}
-              labelCopy={labels.labelCopy}
-              labelCopied={labels.labelCopied}
+              labelCopy={options.labelCopy}
+              labelCopied={options.labelCopied}
             />
           )}
           <code {...props} />
@@ -302,7 +309,7 @@ export function getMdxComponents(labels: MdxLabels = {}) {
     Step: ({ className, ...props }: React.ComponentProps<"h3">) => (
       <h3
         className={cn(
-          "font-heading mt-8 scroll-m-32 text-xl font-medium tracking-tight",
+          "mt-8 scroll-m-32 font-heading text-xl font-medium tracking-tight",
           className
         )}
         {...props}
@@ -310,7 +317,7 @@ export function getMdxComponents(labels: MdxLabels = {}) {
     ),
     Steps: ({ ...props }) => (
       <div
-        className="[&>h3]:step steps mb-12 [counter-reset:step] *:[h3]:first:!mt-0"
+        className="steps mb-12 [counter-reset:step] *:[h3]:first:!mt-0 [&>h3]:step"
         {...props}
       />
     ),
@@ -354,7 +361,7 @@ export function getMdxComponents(labels: MdxLabels = {}) {
     }: React.ComponentProps<typeof TabsTrigger>) => (
       <TabsTrigger
         className={cn(
-          "text-muted-foreground data-[state=active]:text-foreground data-[state=active]:border-primary dark:data-[state=active]:border-primary hover:text-primary rounded-none border-0 border-b-2 border-transparent bg-transparent px-0 pb-3 text-base data-[state=active]:bg-transparent data-[state=active]:shadow-none dark:data-[state=active]:bg-transparent",
+          "rounded-none border-0 border-b-2 border-transparent bg-transparent px-0 pb-3 text-base text-muted-foreground hover:text-primary data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:border-primary dark:data-[state=active]:bg-transparent",
           className
         )}
         {...props}
@@ -389,8 +396,8 @@ export function getMdxComponents(labels: MdxLabels = {}) {
       props: React.ComponentProps<typeof CodeCollapsibleWrapperBase>
     ) => (
       <CodeCollapsibleWrapperBase
-        labelCollapse={labels.labelCollapse}
-        labelExpand={labels.labelExpand}
+        labelCollapse={options.labelCollapse}
+        labelExpand={options.labelExpand}
         {...props}
       />
     ),
@@ -400,13 +407,34 @@ export function getMdxComponents(labels: MdxLabels = {}) {
         {...props}
       />
     ),
+    /** Same origin, locale prefixed. */
+    SiteLink: ({
+      className,
+      href,
+      ...props
+    }: React.ComponentProps<typeof Link>) => (
+      <Link
+        className={cn("font-medium underline underline-offset-4", className)}
+        href={`${localePrefix}${href}`}
+        {...props}
+      />
+    ),
+    /** Dashboard origin, locale prefixed. */
+    AppLink: ({ className, href, ...props }: React.ComponentProps<"a">) => (
+      // oxlint-disable-next-line jsx-a11y/anchor-has-content -- content arrives through the spread props
+      <a
+        className={cn("font-medium underline underline-offset-4", className)}
+        href={`${appUrl}${localePrefix}${href}`}
+        {...props}
+      />
+    ),
     LinkedCard: ({
       className,
       ...props
     }: React.ComponentProps<typeof Link>) => (
       <Link
         className={cn(
-          "bg-surface text-surface-foreground hover:bg-surface/80 flex w-full flex-col items-center rounded-xl p-6 transition-colors sm:p-10",
+          "flex w-full flex-col items-center rounded-xl bg-surface p-6 text-surface-foreground transition-colors hover:bg-surface/80 sm:p-10",
           className
         )}
         {...props}
