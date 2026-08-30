@@ -1,3 +1,4 @@
+# check=skip=SecretsUsedInArgOrEnv
 # Multi-stage monorepo build. turbo prune emits a pruned lockfile so a sibling app's
 # dependency change does not invalidate the install layer.
 FROM node:24-alpine AS base
@@ -26,7 +27,10 @@ ENV NEXT_PUBLIC_WEB_URL=$NEXT_PUBLIC_WEB_URL \
     NEXT_TELEMETRY_DISABLED=1 \
     NODE_ENV=production
 
-# Build-time prerender placeholders, overridden at runtime by env_file
+# Literal placeholders, not secrets: serverEnv validates at module load and next
+# prerenders server modules during the build. They live in this discarded builder
+# stage only, the published runner stage starts FROM base. The real values arrive
+# at runtime from env_file. Hence the check=skip at the top of this file.
 ENV BETTER_AUTH_SECRET=build-time-placeholder \
     BETTER_AUTH_URL=http://localhost:3000 \
     BACKEND_URL=http://build-time-placeholder.invalid \
