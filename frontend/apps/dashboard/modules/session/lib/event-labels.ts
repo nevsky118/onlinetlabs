@@ -1,6 +1,11 @@
 // t is useTranslations("dashboard.session.eventLabels"), resolved in the component, not at module level
 const EVENT_LABEL_KEYS: Record<string, string> = {
   "node.started": "nodeStarted",
+  "node.updated": "nodeUpdated",
+  "node.status_changed": "nodeStatusChanged",
+  "node.created": "nodeCreated",
+  "node.deleted": "nodeDeleted",
+  "node.console": "nodeConsole",
   "node.stopped": "nodeStopped",
   "node.suspended": "nodeSuspended",
   "node.reloaded": "nodeReloaded",

@@ -50,6 +50,7 @@ export function CredentialsDialog({
             <Button
               variant="ghost"
               size="icon-sm"
+              aria-label={t("copyUsername")}
               onClick={() => copyUsername(session.gns3Username)}
             >
               <CopyIcon />

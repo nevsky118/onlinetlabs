@@ -369,7 +369,12 @@
         "linkCreated": "Создан линк",
         "linkDeleted": "Удалён линк",
         "sessionStarted": "Сессия запущена",
-        "sessionEnded": "Сессия завершена"
+        "sessionEnded": "Сессия завершена",
+        "nodeUpdated": "Узел изменён",
+        "nodeStatusChanged": "Статус узла изменён",
+        "nodeCreated": "Узел создан",
+        "nodeDeleted": "Узел удалён",
+        "nodeConsole": "Открыта консоль"
       },
       "sessionsView": {
         "emptyTitle": "Нет запущенных лаб",
@@ -378,7 +383,8 @@
         "activeCount": "{count} / {max} {count, plural, one {активная} few {активные} many {активных} other {активных}}",
         "activeHeading": "Активные",
         "recentHeading": "Недавние",
-        "launchAgain": "Запустить снова"
+        "launchAgain": "Запустить снова",
+        "launchAgainAria": "Запустить снова: {title}"
       },
       "sessionCard": {
         "startedAt": "запущена {when}",
@@ -403,7 +409,8 @@
         "lab": "Лаба",
         "gns3Access": "Доступ к GNS3",
         "nodesStarted": "Узлов запущено",
-        "uptime": "Время в работе"
+        "uptime": "Время в работе",
+        "links": "Связи"
       },
       "queueStatus": {
         "heading": "В очереди",
@@ -426,7 +433,7 @@
       "launchLabCard": {
         "title": "Запустить лабу",
         "signInTitle": "Войдите, чтобы запустить",
-        "description": "Выделенная среда GNS3. Запускается за несколько секунд.",
+        "description": "Отдельный стенд в GNS3. Запускается за несколько секунд.",
         "signInDescription": "Нужен аккаунт — после входа сразу сможешь запустить.",
         "launch": "Запустить",
         "signIn": "Войти"
@@ -509,7 +516,8 @@
         },
         "copiedToast": "{label} скопирован",
         "openGns3": "Открыть GNS3",
-        "goToLab": "Перейти к лабе"
+        "goToLab": "Перейти к лабе",
+        "copyUsername": "Скопировать логин"
       },
       "pageHeader": {
         "backToLabs": "Назад к лабам",
@@ -533,7 +541,7 @@
       },
       "launchLabConfirmTrigger": {
         "title": "Запустить лабу?",
-        "description": "Создаём выделенную среду GNS3. После завершения сессии прогресс не сохраняется — можно запустить заново.",
+        "description": "Создаём отдельный стенд в GNS3. После завершения сессии прогресс не сохраняется — можно запустить заново.",
         "cancel": "Отмена",
         "preparing": "Готовим окружение...",
         "launch": "Запустить"
@@ -582,7 +590,7 @@
       },
       "sheet": {
         "title": "Проверка лабы",
-        "description": "Запускает проверки в живой среде GNS3",
+        "description": "Запускает проверки на живом стенде",
         "currentRun": "Текущий прогон",
         "history": "История",
         "noRuns": "Прогонов пока нет",

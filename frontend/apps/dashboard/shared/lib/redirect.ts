@@ -7,7 +7,8 @@ export function defaultRedirect(locale: string): string {
 }
 
 export function validateRedirect(url: string | null, fallback: string): string {
-  if (!url) return fallback
+  // "/" carries no destination: treat it as absent so the locale-aware fallback wins.
+  if (!url || url === "/") return fallback
   if (url.startsWith("/") && !url.startsWith("//")) return url
   // Absolute URLs pass only on an exact web origin match, anything else is an open redirect
   try {

@@ -369,7 +369,12 @@
         "linkCreated": "Link created",
         "linkDeleted": "Link deleted",
         "sessionStarted": "Session started",
-        "sessionEnded": "Session ended"
+        "sessionEnded": "Session ended",
+        "nodeUpdated": "Node updated",
+        "nodeStatusChanged": "Node status changed",
+        "nodeCreated": "Node created",
+        "nodeDeleted": "Node deleted",
+        "nodeConsole": "Console opened"
       },
       "sessionsView": {
         "emptyTitle": "No running labs",
@@ -378,7 +383,8 @@
         "activeCount": "{count} / {max} active",
         "activeHeading": "Active",
         "recentHeading": "Recent",
-        "launchAgain": "Launch again"
+        "launchAgain": "Launch again",
+        "launchAgainAria": "Run again: {title}"
       },
       "sessionCard": {
         "startedAt": "started {when}",
@@ -403,7 +409,8 @@
         "lab": "Lab",
         "gns3Access": "GNS3 access",
         "nodesStarted": "Nodes started",
-        "uptime": "Uptime"
+        "uptime": "Uptime",
+        "links": "Links"
       },
       "queueStatus": {
         "heading": "In queue",
@@ -509,7 +516,8 @@
         },
         "copiedToast": "{label} copied",
         "openGns3": "Open GNS3",
-        "goToLab": "Go to lab"
+        "goToLab": "Go to lab",
+        "copyUsername": "Copy the username"
       },
       "pageHeader": {
         "backToLabs": "Back to labs",

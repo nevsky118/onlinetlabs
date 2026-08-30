@@ -115,7 +115,7 @@ export function SessionHero({
             label={t("nodesStarted")}
             value={`${state.metrics.nodesStarted} / ${state.metrics.nodesTotal}`}
           />
-          <Field label="Links" value={state.metrics.linksCount} />
+          <Field label={t("links")} value={state.metrics.linksCount} />
           <Field
             label={t("uptime")}
             value={formatDurationFine(state.metrics.uptimeSeconds, durationT)}

@@ -116,6 +116,9 @@ export function SessionsView() {
                   variant="ghost"
                   size="sm"
                   className="rounded-none text-xs"
+                  aria-label={t("launchAgainAria", {
+                    title: session.labTitle ?? session.labSlug,
+                  })}
                   render={<Link href={`/labs/${session.labSlug}`} />}
                 >
                   {t("launchAgain")}
