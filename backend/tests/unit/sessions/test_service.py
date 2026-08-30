@@ -11,6 +11,7 @@ from models.learning import LearningSession
 from sessions.services.launch import _create_provisioning_row, launch_session
 from sessions.services.ticket import TicketStore
 from tests.settings.data.queue_data import TicketRedisData
+from tests.settings.data.sessions_data import ProvisioningGns3Data
 
 pytestmark = [pytest.mark.unit]
 
@@ -137,3 +138,64 @@ class TestLaunchSessionRefreshesLocaleOnResume:
             async with self.session_factory() as db:
                 refetched = await db.get(LearningSession, "s1")
                 assert_equal(refetched.locale, "ru", "stored locale refreshed on resume")
+
+
+class TestLaunchSessionStartsNodes:
+    @pytest.fixture(autouse=True)
+    async def setup(self):
+        self.engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+        self.session_factory = async_sessionmaker(self.engine, expire_on_commit=False)
+        async with self.engine.begin() as conn:
+            await conn.run_sync(User.__table__.create)
+            await conn.run_sync(Lab.__table__.create)
+            await conn.run_sync(LearningSession.__table__.create)
+        async with self.session_factory() as db:
+            db.add(
+                Lab(
+                    slug="test-lab",
+                    title_i18n={"en": "Test Lab"},
+                    enabled=True,
+                    gns3_template_project_id="tpl-1",
+                )
+            )
+            await db.commit()
+        yield
+        await self.engine.dispose()
+
+    async def _launch(self, gns3):
+        async with self.session_factory() as db:
+            return await launch_session(
+                db=db,
+                user_id="user-1",
+                lab_slug="test-lab",
+                gns3_client=gns3,
+                db_factory=self.session_factory,
+                ticket_store=TicketStore(redis=TicketRedisData()),
+            )
+
+    @autotest.num("3500")
+    @autotest.external_id("4045540c-854b-467f-b66b-3cb4d829dcf4")
+    @autotest.name("launch: a freshly provisioned session starts its nodes")
+    async def test_4045540c_provisioning_starts_the_nodes(self):
+        with autotest.step("Arrange: a gns3 client that records bulk actions"):
+            gns3 = ProvisioningGns3Data()
+
+        with autotest.step("Act: launch the lab"):
+            await self._launch(gns3)
+
+        with autotest.step("Assert: the nodes were asked to start"):
+            assert_equal(gns3.bulk_actions, [("gns3-sid-1", "start")], "start requested once")
+
+    @autotest.num("3501")
+    @autotest.external_id("6da72e8d-b65d-4c21-9315-a2dd9af97955")
+    @autotest.name("launch: a refused start does not fail the launch")
+    async def test_6da72e8d_failed_start_keeps_the_session(self):
+        with autotest.step("Arrange: a gns3 client whose bulk action fails"):
+            gns3 = ProvisioningGns3Data(fail_bulk=True)
+
+        with autotest.step("Act: launch the lab"):
+            session, creds = await self._launch(gns3)
+
+        with autotest.step("Assert: the session is still handed to the student"):
+            assert_equal(session.status, "active", "session active")
+            assert_equal(creds["gns3_username"], "student-1", "credentials returned")

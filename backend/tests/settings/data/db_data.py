@@ -98,3 +98,16 @@ class MutableRowDbSessionData:
     async def get(self, model, key):
         """The row the holder points at right now."""
         return self.row_holder[self.key]
+
+
+class RowLookupData:
+    """A db session whose get() answers with one prepared row, or nothing."""
+
+    def __init__(self, row=None):
+        self.row = row
+        self.requested: list = []
+
+    async def get(self, model, primary_key):
+        """Records the lookup and returns the prepared row."""
+        self.requested.append((model, primary_key))
+        return self.row

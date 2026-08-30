@@ -134,6 +134,14 @@ async def launch_session(
     }
     session = await _finalize_session_row(db_factory, str(session.id), "active", meta)
 
+    # Only the built-in switch comes up on its own; the hosts a student is asked to
+    # configure would otherwise land stopped. Not fatal: the session is usable and
+    # the start control stays in the UI.
+    try:
+        await gns3_client.bulk_node_action(result["session_id"], "start")
+    except Exception:
+        logger.exception("could not start nodes for session %s", session.id)
+
     ticket = await tickets.issue(str(session.id), user_id)
     return session, {
         "gns3_username": result["gns3_username"],

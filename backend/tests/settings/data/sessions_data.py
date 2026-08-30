@@ -94,3 +94,29 @@ class WebSocketData:
         # ownership check cannot hang in `while True`.
         self.receive_text = AsyncMock(side_effect=WebSocketDisconnect())
         self.app = SimpleNamespace(state=SimpleNamespace(gateway=gateway))
+
+
+class ProvisioningGns3Data:
+    """A GNS3 client that provisions one session and records the node actions asked of it."""
+
+    def __init__(self, session_id: str = "gns3-sid-1", fail_bulk: bool = False):
+        self.session_id = session_id
+        self.fail_bulk = fail_bulk
+        self.bulk_actions: list[tuple[str, str]] = []
+
+    async def create_session(self, user_id: str, template_project_id: str) -> dict:
+        """Returns the shape launch_session stores in session meta."""
+        return {
+            "session_id": self.session_id,
+            "gns3_user_id": "gns3-user-1",
+            "gns3_username": "student-1",
+            "project_id": "project-1",
+            "gns3_password": "pw",
+            "gns3_jwt": "jwt",
+        }
+
+    async def bulk_node_action(self, session_id: str, action: str) -> None:
+        """Records the action, or fails when the double is set up to."""
+        self.bulk_actions.append((session_id, action))
+        if self.fail_bulk:
+            raise RuntimeError("gns3 refused the bulk action")

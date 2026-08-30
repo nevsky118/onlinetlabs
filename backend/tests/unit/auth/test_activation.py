@@ -24,6 +24,7 @@ from i18n import LocalizedError, localized_error_handler
 from kit.db import get_db
 from kit.rate_limit import limiter
 from models.identity import Account, StudyParticipant, User
+from tests.settings.data.db_data import RowLookupData
 
 pytestmark = [pytest.mark.unit]
 
@@ -34,30 +35,65 @@ class TestRequireActiveUser:
     @autotest.num("1956")
     @autotest.external_id("ed94fd09-5b5f-4345-b41f-5364f08d945c")
     @autotest.name("require_active_user: active user passes")
-    def test_ed94fd09_active_passes(self):
-        with autotest.step("Arrange: dict with is_active=True"):
+    async def test_ed94fd09_active_passes(self):
+        with autotest.step("Arrange: dict with is_active=True and a db that must stay untouched"):
             user = {"id": "u1", "role": "student", "is_active": True}
+            db = RowLookupData()
 
         with autotest.step("Act: call the dependency directly"):
-            result = require_active_user(current_user=user)
+            result = await require_active_user(current_user=user, db=db)
 
-        with autotest.step("Assert: returns the same object"):
+        with autotest.step("Assert: returns the same object without reading the row"):
             assert_true(result is user, "same dict")
+            assert_equal(len(db.requested), 0, "no db lookup on the trusted claim")
 
     @autotest.num("1957")
     @autotest.external_id("fd2b3b80-0116-4ef5-92b3-b23626fc27c1")
     @autotest.name("require_active_user: inactive user → 403")
-    def test_fd2b3b80_inactive_raises_403(self):
-        with autotest.step("Arrange: dict with is_active=False"):
+    async def test_fd2b3b80_inactive_raises_403(self):
+        with autotest.step("Arrange: claim and row both say inactive"):
             user = {"id": "u2", "role": "student", "is_active": False}
+            db = RowLookupData(row=User(id="u2", email="u2@example.com", is_active=False))
 
         with autotest.step("Act + Assert: expect 403"):
             raised = False
             try:
-                require_active_user(current_user=user)
+                await require_active_user(current_user=user, db=db)
             except LocalizedError as exc:
                 raised = True
                 assert_equal(exc.status_code, 403, "status 403")
+                assert_equal(exc.key, "error.auth.inactive_account", "code")
+            assert_true(raised, "LocalizedError was raised")
+
+    @autotest.num("3498")
+    @autotest.external_id("e463eca5-3459-4d2f-9a81-50bb77a34b79")
+    @autotest.name("require_active_user: a stale inactive claim loses to the activated row")
+    async def test_e463eca5_stale_claim_rereads_the_row(self):
+        with autotest.step("Arrange: token issued before activation, row already active"):
+            user = {"id": "u3", "role": "student", "is_active": False}
+            db = RowLookupData(row=User(id="u3", email="u3@example.com", is_active=True))
+
+        with autotest.step("Act: call the dependency"):
+            result = await require_active_user(current_user=user, db=db)
+
+        with autotest.step("Assert: passes on the row and reports the user as active"):
+            assert_true(result["is_active"], "is_active corrected to True")
+            assert_equal(len(db.requested), 1, "row was reread once")
+
+    @autotest.num("3499")
+    @autotest.external_id("c1a41439-290d-475b-babc-14aae2e910b4")
+    @autotest.name("require_active_user: a vanished user is refused, not let through")
+    async def test_c1a41439_missing_row_raises_403(self):
+        with autotest.step("Arrange: inactive claim and no such row"):
+            user = {"id": "gone", "role": "student", "is_active": False}
+            db = RowLookupData(row=None)
+
+        with autotest.step("Act + Assert: expect 403"):
+            raised = False
+            try:
+                await require_active_user(current_user=user, db=db)
+            except LocalizedError as exc:
+                raised = True
                 assert_equal(exc.key, "error.auth.inactive_account", "code")
             assert_true(raised, "LocalizedError was raised")
 

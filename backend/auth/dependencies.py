@@ -5,9 +5,12 @@ from datetime import UTC, datetime, timedelta
 import jwt
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import settings
 from i18n import LocalizedError
+from kit.db import get_db
+from models.identity import User
 
 logger = logging.getLogger(__name__)
 
@@ -143,11 +146,22 @@ def require_instructor(current_user: dict = Depends(get_current_user)) -> dict:
     return current_user
 
 
-def require_active_user(current_user: dict = Depends(get_current_user)) -> dict:
-    """Allows only activated users. Otherwise 403."""
-    if not current_user.get("is_active"):
+async def require_active_user(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Allows only activated users. Otherwise 403.
+
+    The claim is trusted while it says active. When it says inactive the row is
+    reread, because the token outlives activation by its whole lifetime and a
+    student the instructor just let in would otherwise keep being turned away.
+    """
+    if current_user.get("is_active"):
+        return current_user
+    user = await db.get(User, current_user["id"])
+    if user is None or not user.is_active:
         raise LocalizedError("error.auth.inactive_account", status_code=403)
-    return current_user
+    return {**current_user, "is_active": True}
 
 
 def require_internal_caller(

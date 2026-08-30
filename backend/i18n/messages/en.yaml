@@ -33,7 +33,7 @@ error:
     node_not_started: |-
       Node {node} is not running. Start it and check again.
     console_unreadable: |-
-      Could not read node {node} after {attempts} attempts. This is an environment problem, not your configuration. Try again.
+      Could not read node {node} after {attempts} attempts. Its console is usually still open somewhere else — close the {node} console in GNS3 and run the check again.
     gns3_not_active: GNS3 session is not active
     run_not_found: Validation run not found
   instructor:
