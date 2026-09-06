@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth.dependencies import get_current_user
 from config import settings
 from i18n import LocalizedError
-from kit.db import get_db
+from kit.db import get_db, get_db_factory
 from kit.deps import get_gns3_client
 from kit.rate_limit import limiter
 from validation.service import (
@@ -29,6 +29,7 @@ async def validate_lab(
     sid: str,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    db_factory=Depends(get_db_factory),
     gns3_client=Depends(get_gns3_client),
 ):
     """Start lab validation and stream check progress as SSE."""
@@ -46,7 +47,7 @@ async def validate_lab(
     async def stream():
         """Convert validation events into SSE frames."""
         async for event in stream_validation(
-            db=db,
+            db_factory=db_factory,
             session_id=sid,
             lab_slug=slug,
             user_id=current_user["id"],

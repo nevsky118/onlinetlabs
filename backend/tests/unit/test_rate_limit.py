@@ -3,12 +3,16 @@ from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 from starlette.requests import Request
 
-from kit.rate_limit import exchange_rate_limit_key
+from kit.rate_limit import (
+    credentials_rate_limit_key,
+    exchange_rate_limit_key,
+    ticket_rate_limit_key,
+)
 
 pytestmark = [pytest.mark.unit]
 
 
-def _request(subject: str | None, client_ip: str = "10.0.0.1") -> Request:
+def _request(subject: str | None, client_ip: str = "10.0.0.1", attr: str = "exchange_subject"):
     """Minimal ASGI Request with state and client, for testing key_func."""
     scope = {
         "type": "http",
@@ -18,7 +22,7 @@ def _request(subject: str | None, client_ip: str = "10.0.0.1") -> Request:
     }
     request = Request(scope)
     if subject is not None:
-        request.state.exchange_subject = subject
+        setattr(request.state, attr, subject)
     return request
 
 
@@ -71,3 +75,57 @@ class TestExchangeRateLimitKey:
         ):
             assert_true("10.0.0.1" in ip_key, "fallback uses IP")
             assert_true(ip_key != subject_key, "IP key and email key live in separate namespaces")
+
+
+class TestCredentialsRateLimitKey:
+    """/login and /register arrive from the Next BFF, so every caller shares one address."""
+
+    @autotest.num("724")
+    @autotest.external_id("5c1f0a92-7b3e-4d81-90a2-6f4c1de83b17")
+    @autotest.name("credentials_rate_limit_key: two learners on one address get separate buckets")
+    def test_5c1f0a92_distinct_learners_distinct_keys(self):
+        with autotest.step("Arrange: two sign-ins relayed from the same BFF address"):
+            first = _request("alice@example.com", attr="auth_subject")
+            second = _request("bob@example.com", attr="auth_subject")
+
+        with autotest.step("Act: derive a key for each"):
+            key_a = credentials_rate_limit_key(first)
+            key_b = credentials_rate_limit_key(second)
+
+        with autotest.step("Assert: keyed by learner, so a class does not share one allowance"):
+            assert_true(key_a != key_b, "one bucket per learner")
+            assert_true("10.0.0.1" not in key_a, "not tied to the relaying address")
+
+    @autotest.num("725")
+    @autotest.external_id("9d20b5ac-1e64-42f7-8b0d-2ac7e5f19a34")
+    @autotest.name("credentials_rate_limit_key: no email falls back to the address")
+    def test_9d20b5ac_fallback_is_the_address(self):
+        with autotest.step("Arrange: a request whose body carried no email"):
+            request = _request(None)
+
+        with autotest.step("Act: derive the key"):
+            key = credentials_rate_limit_key(request)
+
+        with autotest.step("Assert: falls back to the address, in its own namespace"):
+            assert_true("10.0.0.1" in key, "fallback uses the address")
+            assert_true(key.startswith("credentials:ip:"), "namespaced apart from subject keys")
+
+
+class TestTicketRateLimitKey:
+    """Redeem is bucketed per ticket: every student opening a lab redeems one."""
+
+    @autotest.num("726")
+    @autotest.external_id("b7e4318f-05ca-4a6d-9c31-8e2f0d5ab946")
+    @autotest.name("ticket_rate_limit_key: two redemptions do not share an allowance")
+    def test_b7e4318f_distinct_tickets_distinct_keys(self):
+        with autotest.step("Arrange: two students redeeming their own tickets"):
+            first = _request("ticket-one", attr="redeem_ticket")
+            second = _request("ticket-two", attr="redeem_ticket")
+
+        with autotest.step("Act: derive a key for each"):
+            key_a = ticket_rate_limit_key(first)
+            key_b = ticket_rate_limit_key(second)
+
+        with autotest.step("Assert: one bucket per ticket, so a cohort opens labs in parallel"):
+            assert_true(key_a != key_b, "one bucket per ticket")
+            assert_equal(key_a, "ticket:ticket-one", "keyed by the ticket itself")

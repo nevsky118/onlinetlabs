@@ -10,7 +10,7 @@ from kit.secrets import encrypt_secret
 from labs.service import template_project_id_for
 from models.catalog import Lab
 from models.learning import LearningSession
-from sessions.services.proxy import existing_gns3_deep_url, existing_gns3_url
+from sessions.services.proxy import session_credentials as _credentials
 from sessions.services.query import get_active_session
 from sessions.services.ticket import TicketStore, get_ticket_store
 
@@ -31,6 +31,28 @@ async def count_active_sessions(db, user_id: str) -> int:
     return int(result.scalar_one() or 0)
 
 
+async def _enforce_user_cap(db, user_id: str) -> None:
+    """Serialises this learner's launches, then rechecks the per-user limit.
+
+    The caller's own check is a count followed by an insert, and two launches on
+    different labs would both pass it: the partial unique index only stops twins of
+    the same lab. The advisory lock is held to the end of this transaction, so the
+    recount below sees every row a concurrent launch has committed.
+
+    Postgres only. Bound to anything else, or to one of the doubles the unit suite
+    passes in, this is skipped: the caller's check still applies, and the databases
+    that skip it serialise writers anyway.
+    """
+    bind = getattr(db, "bind", None)
+    if bind is None or bind.dialect.name != "postgresql":
+        return
+
+    await db.execute(select(func.pg_advisory_xact_lock(func.hashtext(user_id))))
+    max_per_user = settings.capacity.max_sessions_per_user
+    if await count_active_sessions(db, user_id) >= max_per_user:
+        raise LocalizedError("error.session.limit_reached", status_code=400, max=max_per_user)
+
+
 async def _create_provisioning_row(db_factory, user_id: str, lab_slug: str, locale: Locale):
     """Creates a session row with status provisioning in a separate transaction.
 
@@ -38,6 +60,7 @@ async def _create_provisioning_row(db_factory, user_id: str, lab_slug: str, loca
     second concurrent launch loses the race here rather than creating a twin.
     """
     async with db_factory() as db:
+        await _enforce_user_cap(db, user_id)
         session = LearningSession(
             user_id=user_id,
             lab_slug=lab_slug,
@@ -56,9 +79,18 @@ async def _create_provisioning_row(db_factory, user_id: str, lab_slug: str, loca
 
 
 async def _finalize_session_row(db_factory, session_id: str, status: str, meta: dict | None):
-    """Updates the session's status and metadata after provisioning."""
+    """Updates the session's status and metadata after provisioning.
+
+    Returns None if the row is already gone: the reaper and an admin erasure can both
+    delete it while GNS3 is still provisioning. The caller is finishing a session that
+    no longer exists either way, and on the failure path an AttributeError here would
+    replace the provisioning error the caller is about to re-raise.
+    """
     async with db_factory() as db:
         session = await db.get(LearningSession, session_id)
+        if session is None:
+            logger.warning("session row %s disappeared before finalization", session_id)
+            return None
         session.status = status
         if meta is not None:
             session.meta = meta
@@ -76,12 +108,17 @@ async def launch_session(
     *,
     locale: Locale = DEFAULT_LOCALE,
     ticket_store: TicketStore | None = None,
-) -> tuple[LearningSession, dict]:
+) -> tuple[LearningSession, dict, bool]:
     """Launches a lab session.
 
     Returns the existing active session, or creates a new one via GNS3
     provisioning, checking the concurrent session limit and the presence
     of a lab template.
+
+    The third element says whether this call created the session. The caller decides
+    on it whether to keep the queue slot it took, start a monitor and count the
+    session, and it cannot infer that from its own earlier lookup: a launch that
+    raced ours may have made the session active in between.
 
     ticket_store is injected like gns3_client and db_factory; it defaults to the
     process-wide store backed by redis.
@@ -93,13 +130,8 @@ async def launch_session(
         # refresh it so background paths reading learning_sessions.locale stay current.
         if existing.locale != locale:
             existing.locale = locale
-        meta = existing.meta or {}
         ticket = await tickets.issue(str(existing.id), user_id)
-        return existing, {
-            "gns3_username": meta["gns3_username"],
-            "gns3_url": existing_gns3_url(existing),
-            "gns3_deep_url": existing_gns3_deep_url(existing, ticket),
-        }
+        return existing, _credentials(existing, ticket), False
 
     max_per_user = settings.capacity.max_sessions_per_user
     active_count = await count_active_sessions(db, user_id)
@@ -116,12 +148,12 @@ async def launch_session(
     template_pid = template_project_id_for(lab)
 
     # Production split-tx scenario. Release the DB transaction during the gns3 call.
-    session = await _create_provisioning_row(db_factory, user_id, lab_slug, locale)
+    provisioning = await _create_provisioning_row(db_factory, user_id, lab_slug, locale)
     try:
         result = await gns3_client.create_session(user_id, template_pid)
     except Exception:
-        await _finalize_session_row(db_factory, str(session.id), "error", None)
-        logger.exception("GNS3 provisioning failed for session %s", session.id)
+        await _finalize_session_row(db_factory, str(provisioning.id), "error", None)
+        logger.exception("GNS3 provisioning failed for session %s", provisioning.id)
         raise
 
     meta = {
@@ -132,7 +164,9 @@ async def launch_session(
         "enc_password": encrypt_secret(result["gns3_password"]),
         "enc_jwt": encrypt_secret(result["gns3_jwt"]),
     }
-    session = await _finalize_session_row(db_factory, str(session.id), "active", meta)
+    session = await _finalize_session_row(db_factory, str(provisioning.id), "active", meta)
+    if session is None:
+        raise LocalizedError("error.session.not_found", status_code=409)
 
     # Only the built-in switch comes up on its own; the hosts a student is asked to
     # configure would otherwise land stopped. Not fatal: the session is usable and
@@ -143,8 +177,4 @@ async def launch_session(
         logger.exception("could not start nodes for session %s", session.id)
 
     ticket = await tickets.issue(str(session.id), user_id)
-    return session, {
-        "gns3_username": result["gns3_username"],
-        "gns3_url": existing_gns3_url(session),
-        "gns3_deep_url": existing_gns3_deep_url(session, ticket),
-    }
+    return session, _credentials(session, ticket), True

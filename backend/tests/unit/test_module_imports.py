@@ -62,7 +62,9 @@ class TestModuleImports:
                 rel = path.relative_to(_BACKEND)
                 if any(part in _EXCLUDED for part in rel.parts):
                     continue
-                tree = ast.parse(path.read_text())
+                # Sources are utf-8. Without saying so, read_text() picks the platform
+                # locale encoding and this test fails on any non-utf-8 machine.
+                tree = ast.parse(path.read_text(encoding="utf-8"))
                 for fn in ast.walk(tree):
                     if not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
                         continue

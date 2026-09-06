@@ -6,7 +6,7 @@ import logging
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
-from auth.dependencies import can_view_session_activity, decode_backend_token, verify_jwt_for_ws
+from auth.dependencies import can_view_session_activity, verify_jwt_for_ws
 from config import settings
 from kit.db import async_session
 from models.learning import LearningSession
@@ -26,15 +26,11 @@ router = APIRouter(prefix="/users/me/sessions", tags=["sessions"])
 @router.websocket("/ws/sessions/{session_id}")
 async def session_interventions_ws(websocket: WebSocket, session_id: str, token: str = Query(...)):
     """Intervention stream (TutorAgent, HintAgent) for an active session."""
-    try:
-        payload = decode_backend_token(token, settings.api.jwt_secret)
-        user_id = payload.get("sub")
-    except Exception:
+    user = await verify_jwt_for_ws(token)
+    if user is None:
         await websocket.close(code=4401)
         return
-    if not user_id:
-        await websocket.close(code=4401)
-        return
+    user_id = user["id"]
 
     async with async_session() as db:
         session = await get_session(db, session_id, user_id)

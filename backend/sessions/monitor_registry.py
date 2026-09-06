@@ -74,27 +74,46 @@ class SessionMonitorRegistry:
                 )
                 observer = None
 
-        async with self._db_factory() as db:
-            arm = await effective_arm(db, user_id, lab_slug)
+        # Anything from here on can fail, and the observer above is already polling.
+        # Leaving it running would keep hitting GNS3 for a session nobody monitors,
+        # and registering the monitor before it starts would make the retry a no-op.
+        try:
+            async with self._db_factory() as db:
+                arm = await effective_arm(db, user_id, lab_slug)
 
-        # control-loop seam; one instance per session, reusing the same dependencies
-        control_interface = ControlInterface(
-            self._mcp_client, self._db_factory, self._config.learning_analytics
-        )
-        monitor = SessionMonitor(
-            mcp_client=self._mcp_client,
-            db_factory=self._db_factory,
-            orchestrator=self._orchestrator,
-            learning_analytics_config=self._config.learning_analytics,
-            gateway=self._gateway,
-            activity_log=self._activity_log,
-            observer=observer,
-            control_arm=arm,
-            control_interface=control_interface,
-        )
+            # control-loop seam; one instance per session, reusing the same dependencies
+            control_interface = ControlInterface(
+                self._mcp_client, self._db_factory, self._config.learning_analytics
+            )
+            monitor = SessionMonitor(
+                mcp_client=self._mcp_client,
+                db_factory=self._db_factory,
+                orchestrator=self._orchestrator,
+                learning_analytics_config=self._config.learning_analytics,
+                gateway=self._gateway,
+                activity_log=self._activity_log,
+                observer=observer,
+                control_arm=arm,
+                control_interface=control_interface,
+            )
+            await monitor.start_session(session_id, user_id, lab_slug, ctx)
+        except Exception:
+            await self._stop_observer(session_id)
+            raise
         self._monitors[session_id] = monitor
-        await monitor.start_session(session_id, user_id, lab_slug, ctx)
         logger.info("SessionMonitor started for %s", session_id)
+
+    async def _stop_observer(self, session_id: str) -> None:
+        """Stops and forgets the session's progress observer, if one is running."""
+        observer = self._observers.pop(session_id, None)
+        if observer is None:
+            return
+        try:
+            await observer.stop()
+        except Exception:
+            logger.warning(
+                "Error while stopping LabProgressObserver for %s", session_id, exc_info=True
+            )
 
     async def stop(self, session_id: str) -> None:
         """Stops the session monitor and removes it from the registry."""
@@ -103,16 +122,11 @@ class SessionMonitorRegistry:
             await monitor.stop_session()
             logger.info("SessionMonitor stopped for %s", session_id)
         # Stop the observer after the monitor
-        observer = self._observers.pop(session_id, None)
-        if observer:
-            try:
-                await observer.stop()
-            except Exception:
-                logger.warning(
-                    "Error while stopping LabProgressObserver for %s", session_id, exc_info=True
-                )
+        await self._stop_observer(session_id)
 
     async def stop_all(self) -> None:
-        """Stops all running session monitors."""
+        """Stops every running monitor, and every observer still polling without one."""
         for sid in list(self._monitors):
             await self.stop(sid)
+        for sid in list(self._observers):
+            await self._stop_observer(sid)

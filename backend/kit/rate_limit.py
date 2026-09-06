@@ -43,3 +43,34 @@ def exchange_rate_limit_key(request: Request) -> str:
     if subject:
         return f"exchange:user:{subject}"
     return f"exchange:ip:{client_ip(request)}"
+
+
+def credentials_rate_limit_key(request: Request) -> str:
+    """The rate limit key for /auth/login and /auth/register, keyed by email.
+
+    These reach the backend the same way /auth/exchange does: server-side from the
+    Next BFF, every request carrying the dashboard container's address. Keyed by IP
+    they would share one bucket, so a class signing in together would spend the whole
+    per-minute allowance on the first few students and the rest would see 429.
+    The email is stashed on request.state by _stash_credentials_subject before the
+    limit is evaluated.
+    """
+    subject = getattr(request.state, "auth_subject", None)
+    if subject:
+        return f"credentials:user:{subject}"
+    return f"credentials:ip:{client_ip(request)}"
+
+
+def ticket_rate_limit_key(request: Request) -> str:
+    """The rate limit key for /gns3/redeem, keyed by the ticket being redeemed.
+
+    Same BFF path, same collapse into one bucket if keyed by IP, and here the ceiling
+    is reached by ordinary use: every student opening a lab redeems a ticket.
+    Guessing is not what the limit defends against anyway, a ticket is 256 bits and
+    single-use, so the bucket is per ticket: one ticket cannot be hammered, and
+    students no longer queue behind each other.
+    """
+    ticket = getattr(request.state, "redeem_ticket", None)
+    if ticket:
+        return f"ticket:{ticket}"
+    return f"ticket:ip:{client_ip(request)}"

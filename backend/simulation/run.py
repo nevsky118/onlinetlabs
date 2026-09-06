@@ -122,7 +122,7 @@ def _make_provision(settings, gns3_client, monitor_registry, lab_slug, tutor_rep
 
         try:
             async with async_session() as db:
-                session, _creds = await launch_session(
+                session, _creds, created = await launch_session(
                     db, user_id, lab_slug, gns3_client, db_factory=async_session
                 )
         except Exception:
@@ -131,6 +131,9 @@ def _make_provision(settings, gns3_client, monitor_registry, lab_slug, tutor_rep
         if session.status != "active":
             await queue.release(lab_slug)
             raise RuntimeError(f"session is not active: {session.status}")
+        if not created:
+            # resumed a live session, so this slot belongs to the launch that made it
+            await queue.release(lab_slug)
         ctx = build_session_context(session)
         await monitor_registry.start(session.id, session.user_id, session.lab_slug, ctx)
 

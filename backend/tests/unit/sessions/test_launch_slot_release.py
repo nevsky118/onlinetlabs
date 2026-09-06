@@ -65,7 +65,7 @@ class TestLaunchSlotRelease:
                 patch.object(launch_mod, "study_decision", AsyncMock(return_value="granted")),
                 patch.object(launch_mod, "get_active_session", AsyncMock(return_value=existing)),
                 patch.object(
-                    launch_mod, "launch_session", AsyncMock(return_value=(existing, _CREDS))
+                    launch_mod, "launch_session", AsyncMock(return_value=(existing, _CREDS, False))
                 ),
                 patch.object(launch_mod, "build_session_context", MagicMock(return_value=object())),
                 patch("sessions.routers.commands.active_sessions_gauge") as gauge,
@@ -94,7 +94,7 @@ class TestLaunchSlotRelease:
                 patch.object(launch_mod, "study_decision", AsyncMock(return_value="granted")),
                 patch.object(launch_mod, "get_active_session", AsyncMock(return_value=None)),
                 patch.object(
-                    launch_mod, "launch_session", AsyncMock(return_value=(new_sess, _CREDS))
+                    launch_mod, "launch_session", AsyncMock(return_value=(new_sess, _CREDS, True))
                 ),
                 patch.object(launch_mod, "build_session_context", MagicMock(return_value=object())),
                 patch("sessions.routers.commands.active_sessions_gauge") as gauge,

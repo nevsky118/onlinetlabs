@@ -128,11 +128,21 @@ class MCPClient:
 
     # StateProvider (topology state)
 
+    @staticmethod
+    def _items(data: Any) -> list:
+        """The list inside a tool result, unwrapping the {"result": [...]} envelope.
+
+        A tool that answers with neither structured content nor text leaves data as
+        None, and iterating that would raise a TypeError from inside the model layer
+        rather than reading as the empty answer it is.
+        """
+        unwrapped = data.get("result", data) if isinstance(data, dict) else data
+        return unwrapped if isinstance(unwrapped, list) else []
+
     async def list_components(self, ctx: SessionContext) -> list[Component]:
         """Get the list of topology components from the MCP server."""
         data = await self._call_tool("list_components", {"ctx": self._ctx_dict(ctx)})
-        items = data.get("result", data) if isinstance(data, dict) else data
-        return [Component.model_validate(item) for item in items]
+        return [Component.model_validate(item) for item in self._items(data)]
 
     async def get_component(self, ctx: SessionContext, component_id: str) -> ComponentDetail:
         """Get a component's detailed state by its id."""
@@ -163,8 +173,7 @@ class MCPClient:
         if since is not None:
             args["since"] = since.isoformat()
         data = await self._call_tool("list_errors", args)
-        items = data.get("result", data) if isinstance(data, dict) else data
-        return [ErrorEntry.model_validate(item) for item in items]
+        return [ErrorEntry.model_validate(item) for item in self._items(data)]
 
     async def get_logs(
         self, ctx: SessionContext, level: LogLevel = LogLevel.ALL, limit: int = 100
@@ -174,8 +183,7 @@ class MCPClient:
             "get_logs",
             {"ctx": self._ctx_dict(ctx), "level": level.value, "limit": limit},
         )
-        items = data.get("result", data) if isinstance(data, dict) else data
-        return [LogEntry.model_validate(item) for item in items]
+        return [LogEntry.model_validate(item) for item in self._items(data)]
 
     # HistoryProvider (user actions)
 
@@ -184,8 +192,7 @@ class MCPClient:
         data = await self._call_tool(
             "list_user_actions", {"ctx": self._ctx_dict(ctx), "limit": limit}
         )
-        items = data.get("result", data) if isinstance(data, dict) else data
-        return [UserAction.model_validate(item) for item in items]
+        return [UserAction.model_validate(item) for item in self._items(data)]
 
     # Domain tools (direct pass-through)
 

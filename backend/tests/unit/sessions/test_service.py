@@ -1,6 +1,6 @@
 import pytest
 from mcp_sdk.testing import autotest
-from mcp_sdk.testing.custom_assertions import assert_equal
+from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from i18n import LocalizedError
@@ -194,8 +194,9 @@ class TestLaunchSessionStartsNodes:
             gns3 = ProvisioningGns3Data(fail_bulk=True)
 
         with autotest.step("Act: launch the lab"):
-            session, creds = await self._launch(gns3)
+            session, creds, created = await self._launch(gns3)
 
         with autotest.step("Assert: the session is still handed to the student"):
             assert_equal(session.status, "active", "session active")
             assert_equal(creds["gns3_username"], "student-1", "credentials returned")
+            assert_true(created, "reported as a session this call created")

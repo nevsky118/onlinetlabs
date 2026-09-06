@@ -22,7 +22,7 @@ def main() -> int:
     finally:
         generated = sorted(set(versions.glob("*.py")) - before)
 
-    body = "\n".join(path.read_text() for path in generated)
+    body = "\n".join(path.read_text(encoding="utf-8") for path in generated)
     for path in generated:
         path.unlink()
 
