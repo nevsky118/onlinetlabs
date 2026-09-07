@@ -55,8 +55,7 @@ router = APIRouter(
 BackendNodeAction = Literal["start", "stop", "suspend", "reload"]
 
 
-# Provisioning a lab spins up containers, so this is the most expensive call the API
-# serves. The key is per user, and nobody legitimately starts labs faster than this.
+# Per-user cap on launch attempts. Waiters watch /queue-status.
 @router.post("", status_code=status.HTTP_201_CREATED)
 @limiter.limit("10/minute")
 async def launch_endpoint(

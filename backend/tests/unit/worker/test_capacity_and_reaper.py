@@ -122,6 +122,40 @@ class TestQueueBookkeeping:
         with autotest.step("Assert: the documented fallback"):
             assert_equal(average, 30.0, "fallback")
 
+    @autotest.num("3510")
+    @autotest.external_id("d7906d40-8cee-4a6d-bb5a-21ec2a01158a")
+    @autotest.name("queue: a free slot is reported only while capacity remains")
+    async def test_d7906d40_free_slot_tracks_capacity(self):
+        with autotest.step("Arrange: a queue filled to the cap"):
+            queue = _service()
+            per_lab_cap, _ = queue._caps(_LAB)
+            for index in range(per_lab_cap):
+                await queue.try_acquire(f"{_OWNER}-{index}", _LAB)
+
+        with autotest.step("Act: check before and after one session ends"):
+            while_full = await queue.has_free_slot(_LAB)
+            await queue.release(_LAB)
+            after_release = await queue.has_free_slot(_LAB)
+
+        with autotest.step("Assert: waiters are told to claim only once a slot frees"):
+            assert_true(not while_full, "no slot while full")
+            assert_true(after_release, "a slot after one ends")
+
+    @autotest.num("3511")
+    @autotest.external_id("e820a165-2129-46f5-b9ab-c6e53742f844")
+    @autotest.name("queue: checking for a free slot does not take one")
+    async def test_e820a165_free_slot_check_is_a_read(self):
+        with autotest.step("Arrange: an empty queue"):
+            queue = _service()
+
+        with autotest.step("Act: check for a slot as often as a waiting client would"):
+            for _ in range(10):
+                await queue.has_free_slot(_LAB)
+
+        with autotest.step("Assert: the counters never moved, so the check cannot starve a lab"):
+            assert_equal(queue._redis.strings.get(f"active_sessions:{_LAB}"), None, "lab counter")
+            assert_equal(queue._redis.strings.get("active_sessions_total"), None, "global counter")
+
 
 class TestSessionReaper:
     """Nothing but the deadline should be able to end a session on its own."""

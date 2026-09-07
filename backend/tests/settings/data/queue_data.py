@@ -66,6 +66,10 @@ class FakeRedisData:
         """Length of the list."""
         return len(self.lists.get(key, []))
 
+    async def mget(self, *keys: str) -> list[str | None]:
+        """Reads several counters at once."""
+        return [self.strings.get(key) for key in keys]
+
     def pipeline(self) -> "FakeRedisPipelineData":
         """A pipeline that applies its queued commands on execute."""
         return FakeRedisPipelineData(self)
@@ -128,10 +132,21 @@ class ForwardedHeaderData:
 class FixedPositionQueueData:
     """A queue service that always reports the same place in line."""
 
-    def __init__(self, position: int | None, depth: int = 4, provision_seconds: float = 30.0):
+    def __init__(
+        self,
+        position: int | None,
+        depth: int = 4,
+        provision_seconds: float = 30.0,
+        slot_available: bool = False,
+    ):
         self.expected_position = position
         self.expected_depth = depth
         self.provision_seconds = provision_seconds
+        self.slot_available = slot_available
+
+    async def has_free_slot(self, lab_slug: str) -> bool:
+        """True when a slot is free."""
+        return self.slot_available
 
     async def position(self, user_id: str, lab_slug: str) -> int | None:
         """The caller's place in line, or None when not queued."""

@@ -16,7 +16,12 @@ import { Spinner } from "@repo/design-system/ui/spinner"
 import { useTranslations } from "next-intl"
 import { useCallback, useState } from "react"
 import { toast } from "sonner"
-import type { LaunchResult, QueuedResult, SessionData } from "../types"
+import type {
+  LaunchDenial,
+  LaunchResult,
+  QueuedResult,
+  SessionData,
+} from "../types"
 import { useLaunchLab } from "../hooks/use-launch-lab"
 import { ConsentStep } from "./consent-step"
 import { CredentialsDialog } from "./credentials-dialog"
@@ -79,6 +84,16 @@ export function LaunchLabConfirmTrigger({
     setReadySession(session)
   }, [])
 
+  // A refusal while queued ends the wait and reopens the confirm dialog.
+  const handleQueueDenied = useCallback(
+    (denial: LaunchDenial) => {
+      setQueued(null)
+      setConfirmOpen(true)
+      handleResult(denial)
+    },
+    [handleResult]
+  )
+
   const handleQueueCancel = useCallback(() => {
     setQueued(null)
     reset()
@@ -125,6 +140,7 @@ export function LaunchLabConfirmTrigger({
           initial={queued}
           open
           onReady={handleQueueReady}
+          onDenied={handleQueueDenied}
           onCancel={handleQueueCancel}
         />
       )}

@@ -11,6 +11,7 @@ export type QueueStatusShape = {
   position: number
   depth: number
   etaSec: number
+  slotAvailable: boolean
 }
 
 export const sessionKeys = {
@@ -44,6 +45,7 @@ export function queueStatusQuery(labSlug: string) {
       position: wire.queue_position ?? 0,
       depth: wire.queue_depth ?? 0,
       etaSec: wire.eta_sec ?? 0,
+      slotAvailable: wire.slot_available,
     }),
     refetchInterval: (query) => (query.state.data?.in_queue ? 5000 : false),
   })

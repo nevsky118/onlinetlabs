@@ -15,6 +15,7 @@ class QueueStatusResponse(BaseModel):
 
     in_queue: bool
     queue_depth: int
+    slot_available: bool
     queue_position: int | None = None
     eta_sec: int | None = None
 

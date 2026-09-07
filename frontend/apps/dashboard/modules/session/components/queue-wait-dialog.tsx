@@ -12,7 +12,7 @@ import {
 } from "@repo/design-system/ui/dialog"
 import { Spinner } from "@repo/design-system/ui/spinner"
 import { useTranslations } from "next-intl"
-import type { QueuedResult, SessionData } from "../types"
+import type { LaunchDenial, QueuedResult, SessionData } from "../types"
 import { QUEUE_POLL_INTERVAL_MS, useQueuePoll } from "../hooks/use-queue-poll"
 
 export function QueueWaitDialog({
@@ -20,17 +20,25 @@ export function QueueWaitDialog({
   initial,
   open,
   onReady,
+  onDenied,
   onCancel,
 }: {
   labSlug: string
   initial: QueuedResult
   open: boolean
   onReady: (session: SessionData) => void
+  onDenied: (denial: LaunchDenial) => void
   onCancel: () => void
 }) {
   const t = useTranslations("dashboard.session.queueWaitDialog")
   const durationT = useTranslations("dashboard.session.duration")
-  const queued = useQueuePoll({ labSlug, initial, enabled: open, onReady })
+  const queued = useQueuePoll({
+    labSlug,
+    initial,
+    enabled: open,
+    onReady,
+    onDenied,
+  })
 
   return (
     <Dialog

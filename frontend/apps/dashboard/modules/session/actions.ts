@@ -53,6 +53,7 @@ export async function fetchQueueStatus(labSlug: string): Promise<{
   in_queue: boolean
   queue_position?: number
   queue_depth: number
+  slot_available: boolean
   eta_sec?: number
 }> {
   const res = await getQueueStatusApi(labSlug)
