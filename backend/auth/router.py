@@ -30,7 +30,12 @@ from auth.service import (
 from config import settings
 from i18n import LocalizedError
 from kit.db import get_db
-from kit.rate_limit import credentials_rate_limit_key, exchange_rate_limit_key, limiter
+from kit.rate_limit import (
+    address_rate_limit_key,
+    credentials_rate_limit_key,
+    exchange_rate_limit_key,
+    limiter,
+)
 from models.identity import User
 from users.data_export import erase_subject
 
@@ -38,12 +43,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 async def _stash_credentials_subject(request: FastAPIRequest) -> None:
-    """Stashes the email from the body into request.state before the rate limit check.
-
-    Same mechanics as _stash_exchange_subject, and needed for the same reason:
-    /login and /register arrive from the Next BFF, so credentials_rate_limit_key
-    has to key on the subject rather than on the one address they all share.
-    """
+    """Puts the body email on request.state for the login key."""
     try:
         body = await request.json()
         request.state.auth_subject = body.get("email")
@@ -51,13 +51,13 @@ async def _stash_credentials_subject(request: FastAPIRequest) -> None:
         request.state.auth_subject = None
 
 
+# Keyed by address: the sign-up email is caller-chosen.
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-@limiter.limit("3/minute", key_func=credentials_rate_limit_key)
+@limiter.limit("20/minute", key_func=address_rate_limit_key)
 async def register(
     request: FastAPIRequest,
     req: RegisterRequest,
     db: AsyncSession = Depends(get_db),
-    _: None = Depends(_stash_credentials_subject),
 ):
     """Registers a new user. Returns 409 if the email is taken."""
     existing = await get_user_by_email(db, req.email)
@@ -76,7 +76,9 @@ async def register(
     )
 
 
+# Two buckets: per address, and per address plus account.
 @router.post("/login", response_model=UserResponse)
+@limiter.limit("60/minute", key_func=address_rate_limit_key)
 @limiter.limit("5/minute", key_func=credentials_rate_limit_key)
 async def login(
     request: FastAPIRequest,

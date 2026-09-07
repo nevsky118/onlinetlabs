@@ -4,10 +4,11 @@ from mcp_sdk.testing.custom_assertions import assert_equal, assert_true
 from starlette.requests import Request
 
 from kit.rate_limit import (
+    address_rate_limit_key,
     credentials_rate_limit_key,
     exchange_rate_limit_key,
-    ticket_rate_limit_key,
 )
+from tests.settings.data.rate_limit_data import RateLimitRequestData
 
 pytestmark = [pytest.mark.unit]
 
@@ -78,54 +79,146 @@ class TestExchangeRateLimitKey:
 
 
 class TestCredentialsRateLimitKey:
-    """/login and /register arrive from the Next BFF, so every caller shares one address."""
+    """Login buckets pair the address with the account."""
 
-    @autotest.num("724")
-    @autotest.external_id("5c1f0a92-7b3e-4d81-90a2-6f4c1de83b17")
+    @autotest.num("3503")
+    @autotest.external_id("77052dff-4715-4a5d-8883-58e9124a4081")
     @autotest.name("credentials_rate_limit_key: two learners on one address get separate buckets")
-    def test_5c1f0a92_distinct_learners_distinct_keys(self):
-        with autotest.step("Arrange: two sign-ins relayed from the same BFF address"):
-            first = _request("alice@example.com", attr="auth_subject")
-            second = _request("bob@example.com", attr="auth_subject")
+    def test_77052dff_distinct_learners_distinct_keys(self):
+        with autotest.step("Arrange: two sign-ins from one classroom address"):
+            first = RateLimitRequestData.forwarded_from(
+                RateLimitRequestData.learner_address,
+                auth_subject=RateLimitRequestData.learner_email,
+            )
+            second = RateLimitRequestData.forwarded_from(
+                RateLimitRequestData.learner_address,
+                auth_subject=RateLimitRequestData.other_email,
+            )
 
         with autotest.step("Act: derive a key for each"):
             key_a = credentials_rate_limit_key(first)
             key_b = credentials_rate_limit_key(second)
 
-        with autotest.step("Assert: keyed by learner, so a class does not share one allowance"):
+        with autotest.step("Assert: a cohort behind one address does not share an allowance"):
             assert_true(key_a != key_b, "one bucket per learner")
-            assert_true("10.0.0.1" not in key_a, "not tied to the relaying address")
+            assert_true(
+                RateLimitRequestData.relay_address not in key_a,
+                "keyed on the learner's address, not the relaying container",
+            )
 
-    @autotest.num("725")
-    @autotest.external_id("9d20b5ac-1e64-42f7-8b0d-2ac7e5f19a34")
-    @autotest.name("credentials_rate_limit_key: no email falls back to the address")
-    def test_9d20b5ac_fallback_is_the_address(self):
-        with autotest.step("Arrange: a request whose body carried no email"):
-            request = _request(None)
-
-        with autotest.step("Act: derive the key"):
-            key = credentials_rate_limit_key(request)
-
-        with autotest.step("Assert: falls back to the address, in its own namespace"):
-            assert_true("10.0.0.1" in key, "fallback uses the address")
-            assert_true(key.startswith("credentials:ip:"), "namespaced apart from subject keys")
-
-
-class TestTicketRateLimitKey:
-    """Redeem is bucketed per ticket: every student opening a lab redeems one."""
-
-    @autotest.num("726")
-    @autotest.external_id("b7e4318f-05ca-4a6d-9c31-8e2f0d5ab946")
-    @autotest.name("ticket_rate_limit_key: two redemptions do not share an allowance")
-    def test_b7e4318f_distinct_tickets_distinct_keys(self):
-        with autotest.step("Arrange: two students redeeming their own tickets"):
-            first = _request("ticket-one", attr="redeem_ticket")
-            second = _request("ticket-two", attr="redeem_ticket")
+    @autotest.num("3504")
+    @autotest.external_id("3c8ab547-6ef2-4382-9383-97c8289332ad")
+    @autotest.name("credentials_rate_limit_key: one account from two addresses gets two buckets")
+    def test_3c8ab547_same_account_distinct_addresses(self):
+        with autotest.step("Arrange: the same email tried from the owner's address and another"):
+            owner = RateLimitRequestData.forwarded_from(
+                RateLimitRequestData.learner_address,
+                auth_subject=RateLimitRequestData.learner_email,
+            )
+            stranger = RateLimitRequestData.forwarded_from(
+                RateLimitRequestData.other_address,
+                auth_subject=RateLimitRequestData.learner_email,
+            )
 
         with autotest.step("Act: derive a key for each"):
-            key_a = ticket_rate_limit_key(first)
-            key_b = ticket_rate_limit_key(second)
+            owner_key = credentials_rate_limit_key(owner)
+            stranger_key = credentials_rate_limit_key(stranger)
 
-        with autotest.step("Assert: one bucket per ticket, so a cohort opens labs in parallel"):
-            assert_true(key_a != key_b, "one bucket per ticket")
-            assert_equal(key_a, "ticket:ticket-one", "keyed by the ticket itself")
+        with autotest.step("Assert: nobody can spend an account's allowance from elsewhere"):
+            assert_true(
+                owner_key != stranger_key,
+                "the email alone is not the bucket, so the owner cannot be locked out",
+            )
+
+    @autotest.num("3505")
+    @autotest.external_id("4894f4dc-364d-4df1-aa89-8b0b146b56e1")
+    @autotest.name("credentials_rate_limit_key: a body with no email still keys on the address")
+    def test_4894f4dc_missing_email_still_bounded(self):
+        with autotest.step("Arrange: two requests from one address whose body carried no email"):
+            first = RateLimitRequestData.forwarded_from(RateLimitRequestData.learner_address)
+            second = RateLimitRequestData.forwarded_from(RateLimitRequestData.learner_address)
+
+        with autotest.step("Act: derive a key for each"):
+            first_key = credentials_rate_limit_key(first)
+            second_key = credentials_rate_limit_key(second)
+
+        with autotest.step("Assert: one bucket, so a malformed body cannot dodge the limit"):
+            assert_equal(first_key, second_key, "same address, same bucket")
+            assert_true(
+                RateLimitRequestData.learner_address in first_key, "the address carries the key"
+            )
+
+
+class TestAddressRateLimitKey:
+    """Sign-up and redeem bucket on the address alone."""
+
+    @autotest.num("3506")
+    @autotest.external_id("f85200b1-4268-4ad5-9743-b0d95cea56af")
+    @autotest.name("address_rate_limit_key: two addresses get separate buckets")
+    def test_f85200b1_distinct_addresses_distinct_keys(self):
+        with autotest.step("Arrange: two learners arriving from their own addresses"):
+            first = RateLimitRequestData.forwarded_from(RateLimitRequestData.learner_address)
+            second = RateLimitRequestData.forwarded_from(RateLimitRequestData.other_address)
+
+        with autotest.step("Act: derive a key for each"):
+            key_a = address_rate_limit_key(first)
+            key_b = address_rate_limit_key(second)
+
+        with autotest.step("Assert: one caller's traffic does not spend another's allowance"):
+            assert_true(key_a != key_b, "one bucket per address")
+
+    @autotest.num("3507")
+    @autotest.external_id("94468ec3-86f2-44aa-8c41-58054f24db53")
+    @autotest.name("address_rate_limit_key: a fresh ticket or email does not mint a fresh bucket")
+    def test_94468ec3_caller_chosen_values_share_one_bucket(self):
+        with autotest.step("Arrange: one address redeeming two different tickets"):
+            first = RateLimitRequestData.forwarded_from(
+                RateLimitRequestData.learner_address,
+                redeem_ticket=RateLimitRequestData.first_ticket,
+            )
+            second = RateLimitRequestData.forwarded_from(
+                RateLimitRequestData.learner_address,
+                redeem_ticket=RateLimitRequestData.second_ticket,
+            )
+
+        with autotest.step("Act: derive a key for each"):
+            key_a = address_rate_limit_key(first)
+            key_b = address_rate_limit_key(second)
+
+        with autotest.step("Assert: guessing tickets stays metered instead of unbounded"):
+            assert_equal(key_a, key_b, "the ticket does not enter the key")
+
+    @autotest.num("3508")
+    @autotest.external_id("c82b9880-5309-4445-8e5f-c9e93280d437")
+    @autotest.name("address_rate_limit_key: a caller-supplied address does not shift the bucket")
+    def test_c82b9880_spoofed_address_ignored(self):
+        with autotest.step("Arrange: a caller that put its own value in front of the real one"):
+            spoofed = RateLimitRequestData.spoofed_by(
+                claimed="203.0.113.9", real=RateLimitRequestData.learner_address
+            )
+            honest = RateLimitRequestData.forwarded_from(RateLimitRequestData.learner_address)
+
+        with autotest.step("Act: derive a key for each"):
+            spoofed_key = address_rate_limit_key(spoofed)
+            honest_key = address_rate_limit_key(honest)
+
+        with autotest.step("Assert: the appended entry wins, so the bucket cannot be reset"):
+            assert_equal(spoofed_key, honest_key, "only the proxy's own entry is trusted")
+
+    @autotest.num("3512")
+    @autotest.external_id("5db89d31-5ea4-4794-be5c-d4d2bb29ce1f")
+    @autotest.name("address_rate_limit_key: a forwarded address without the token is ignored")
+    def test_5db89d31_untrusted_forward_falls_back_to_peer(self):
+        with autotest.step("Arrange: two callers with no token, each claiming its own address"):
+            first = RateLimitRequestData.forged_without_token(RateLimitRequestData.learner_address)
+            second = RateLimitRequestData.forged_without_token(RateLimitRequestData.other_address)
+
+        with autotest.step("Act: derive a key for each"):
+            first_key = address_rate_limit_key(first)
+            second_key = address_rate_limit_key(second)
+
+        with autotest.step("Assert: both fall back to the peer, so forging wins no allowance"):
+            assert_equal(first_key, second_key, "the claimed address is not believed")
+            assert_true(
+                RateLimitRequestData.relay_address in first_key, "keyed by the address it dialled"
+            )

@@ -10,6 +10,7 @@
     "./analytics": "./analytics.ts",
     "./realtime-token": "./realtime-token.ts",
     "./http": "./http.ts",
+    "./client-address": "./client-address.ts",
     "./request-locale": "./request-locale.ts"
   },
   "scripts": {

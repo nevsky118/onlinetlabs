@@ -39,7 +39,11 @@ export const credentialAuthPlugin = () => {
         async (ctx) => {
           let backendUser: BackendUser
           try {
-            backendUser = await backendLogin(ctx.body.email, ctx.body.password)
+            backendUser = await backendLogin(
+              ctx.body.email,
+              ctx.body.password,
+              ctx.headers
+            )
           } catch {
             throw new APIError("UNAUTHORIZED", {
               message: "Invalid email or password",
@@ -92,7 +96,8 @@ export const credentialAuthPlugin = () => {
             backendUser = await backendRegister(
               ctx.body.email,
               ctx.body.password,
-              ctx.body.name
+              ctx.body.name,
+              ctx.headers
             )
           } catch (error) {
             const detail =

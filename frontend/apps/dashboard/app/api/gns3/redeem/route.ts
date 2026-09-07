@@ -1,3 +1,4 @@
+import { forwardClientAddress } from "@repo/api/client-address"
 import { serverEnv } from "@repo/api/env"
 import { getRequestLocale } from "@repo/api/request-locale"
 
@@ -17,6 +18,9 @@ export async function POST(request: Request) {
     headers: {
       "Content-Type": "application/json",
       "X-Locale": await getRequestLocale(),
+      // The learner's address, vouched for by the internal token.
+      Authorization: `Bearer ${serverEnv.INTERNAL_API_TOKEN}`,
+      ...forwardClientAddress(request.headers),
     },
     body: JSON.stringify({ ticket: body.ticket }),
     cache: "no-store",

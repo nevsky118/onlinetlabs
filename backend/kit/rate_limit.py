@@ -1,8 +1,12 @@
 """Shared slowapi Limiter instance. Moved into a separate module because of import cycles."""
 
+import secrets
+
 from fastapi import Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+
+from config import settings
 
 # Caddy appends the direct peer to X-Forwarded-For, so the last entry is the
 # real caller. Anything a client puts in the header itself sits to its left.
@@ -15,6 +19,21 @@ def client_ip(request: Request) -> str:
     parts = [p.strip() for p in forwarded.split(",") if p.strip()]
     if len(parts) >= TRUSTED_PROXY_HOPS:
         return parts[-TRUSTED_PROXY_HOPS]
+    return get_remote_address(request)
+
+
+def _is_trusted_relay(request: Request) -> bool:
+    """True when the caller presents the internal token."""
+    expected = settings.security.internal_api_token
+    header = request.headers.get("authorization", "") if hasattr(request, "headers") else ""
+    presented = header[7:] if header[:7].lower() == "bearer " else ""
+    return bool(expected and presented) and secrets.compare_digest(presented, expected)
+
+
+def trusted_client_ip(request: Request) -> str:
+    """Forwarded address from a trusted relay, else the peer."""
+    if _is_trusted_relay(request):
+        return client_ip(request)
     return get_remote_address(request)
 
 
@@ -46,31 +65,11 @@ def exchange_rate_limit_key(request: Request) -> str:
 
 
 def credentials_rate_limit_key(request: Request) -> str:
-    """The rate limit key for /auth/login and /auth/register, keyed by email.
-
-    These reach the backend the same way /auth/exchange does: server-side from the
-    Next BFF, every request carrying the dashboard container's address. Keyed by IP
-    they would share one bucket, so a class signing in together would spend the whole
-    per-minute allowance on the first few students and the rest would see 429.
-    The email is stashed on request.state by _stash_credentials_subject before the
-    limit is evaluated.
-    """
+    """Login key: caller address paired with the email."""
     subject = getattr(request.state, "auth_subject", None)
-    if subject:
-        return f"credentials:user:{subject}"
-    return f"credentials:ip:{client_ip(request)}"
+    return f"credentials:{trusted_client_ip(request)}:{subject or '-'}"
 
 
-def ticket_rate_limit_key(request: Request) -> str:
-    """The rate limit key for /gns3/redeem, keyed by the ticket being redeemed.
-
-    Same BFF path, same collapse into one bucket if keyed by IP, and here the ceiling
-    is reached by ordinary use: every student opening a lab redeems a ticket.
-    Guessing is not what the limit defends against anyway, a ticket is 256 bits and
-    single-use, so the bucket is per ticket: one ticket cannot be hammered, and
-    students no longer queue behind each other.
-    """
-    ticket = getattr(request.state, "redeem_ticket", None)
-    if ticket:
-        return f"ticket:{ticket}"
-    return f"ticket:ip:{client_ip(request)}"
+def address_rate_limit_key(request: Request) -> str:
+    """Key on the caller address alone."""
+    return f"address:{trusted_client_ip(request)}"
