@@ -9,6 +9,7 @@ from analytics.runtime.mrt import censor_open_decisions
 from config import settings
 from experiment.assignment import effective_arm, is_l2_session
 from experiment.finalizer import compute_session_metrics
+from i18n import LocalizedError
 from labs.service import template_project_id_for
 from models.catalog import Lab, LabStep
 from models.identity import User
@@ -89,13 +90,20 @@ async def _finalize_experiment_metrics(db: AsyncSession, session: LearningSessio
     await db.commit()
 
 
-async def _release_slot(lab_slug: str) -> None:
-    """Releases the queue slot and decrements the active-sessions gauge."""
+async def _release_slot(lab_slug: str, *, was_active: bool) -> None:
+    """Releases the queue slot and decrements the active-sessions gauge.
+
+    The gauge counts sessions that reached active, which is the only state the launch
+    endpoint increments on. A provisioning row the reaper collects never got counted,
+    so decrementing for it would walk the gauge below zero.
+    """
 
     try:
         await _get_or_create_singleton().release(lab_slug)
     except Exception:
         logger.exception("Queue slot release failed for lab %s", lab_slug)
+    if not was_active:
+        return
     try:
         active_sessions_gauge.labels(lab_slug=lab_slug).dec()
     except Exception:
@@ -115,6 +123,7 @@ async def _mark_ended_and_finalize(
     if session.ended_at is not None:
         return session
 
+    was_active = session.status == "active"
     session.status = status
     session.ended_at = datetime.now(UTC)
     await db.commit()
@@ -132,7 +141,7 @@ async def _mark_ended_and_finalize(
     except Exception:
         logger.exception("Censoring of MRT points failed for session %s", session.id)
 
-    await _release_slot(session.lab_slug)
+    await _release_slot(session.lab_slug, was_active=was_active)
     return session
 
 
@@ -196,9 +205,15 @@ async def reset_lab(db, session_id: str, user_id: str, gns3_client) -> bool:
     if session is None:
         return False
     lab = await db.get(Lab, session.lab_slug)
+    if lab is None:
+        raise LocalizedError("error.lab.not_found", status_code=404)
     template_pid = template_project_id_for(lab)
     meta = dict(session.meta or {})
-    result = await gns3_client.reset_project(meta["gns3_service_session_id"], template_pid)
+    gns3_sid = meta.get("gns3_service_session_id")
+    if not gns3_sid:
+        # Nothing to reset: the row never got its GNS3 payload, so it is not a live lab.
+        raise LocalizedError("error.session.incomplete", status_code=409)
+    result = await gns3_client.reset_project(gns3_sid, template_pid)
     meta["gns3_project_id"] = result["project_id"]
     session.meta = meta  # reassign so SQLAlchemy detects JSON change
     await db.commit()

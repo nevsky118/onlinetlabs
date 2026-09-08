@@ -85,7 +85,7 @@ class TestApiWiring:
     @autotest.name("api: mounting passes no prefix, tags or dependencies of its own")
     def test_766b8c0f_api_only_includes(self):
         with autotest.step("Arrange: the source of api.register"):
-            tree = ast.parse((_BACKEND / "api.py").read_text())
+            tree = ast.parse((_BACKEND / "api.py").read_text(encoding="utf-8"))
 
         with autotest.step("Act: collect keyword arguments given to include_router"):
             kwargs = []

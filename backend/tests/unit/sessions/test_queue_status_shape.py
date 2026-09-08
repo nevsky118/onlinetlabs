@@ -37,11 +37,17 @@ class TestQueueStatusShape:
         with autotest.step("Act: read the queue status"):
             resp = client.get("/users/me/sessions/queue-status", params={"lab_slug": _LAB})
 
-        with autotest.step("Assert: exactly the four fields the dashboard reads"):
+        with autotest.step("Assert: exactly the five fields the dashboard reads"):
             assert_equal(resp.status_code, 200, "200 OK")
             assert_equal(
                 resp.json(),
-                {"in_queue": True, "queue_position": 3, "queue_depth": 4, "eta_sec": 90},
+                {
+                    "in_queue": True,
+                    "queue_position": 3,
+                    "queue_depth": 4,
+                    "slot_available": False,
+                    "eta_sec": 90,
+                },
                 "queued body",
             )
 
@@ -55,6 +61,24 @@ class TestQueueStatusShape:
         with autotest.step("Act: read the queue status"):
             resp = client.get("/users/me/sessions/queue-status", params={"lab_slug": _LAB})
 
-        with autotest.step("Assert: the two-field body, with no null padding"):
+        with autotest.step("Assert: the three-field body, with no null padding"):
             assert_equal(resp.status_code, 200, "200 OK")
-            assert_equal(resp.json(), {"in_queue": False, "queue_depth": 4}, "unqueued body")
+            assert_equal(
+                resp.json(),
+                {"in_queue": False, "queue_depth": 4, "slot_available": False},
+                "unqueued body",
+            )
+
+    @autotest.num("3509")
+    @autotest.external_id("d4f52e34-f60f-417b-b650-3041f89e7ba2")
+    @autotest.name("queue-status: a freed slot is reported so the waiter knows to claim it")
+    def test_d4f52e34_free_slot_reported(self):
+        with autotest.step("Arrange: the learner is next in line and a slot has freed"):
+            client = _client(FixedPositionQueueData(1, slot_available=True))
+
+        with autotest.step("Act: read the queue status"):
+            resp = client.get("/users/me/sessions/queue-status", params={"lab_slug": _LAB})
+
+        with autotest.step("Assert: the watcher is told to spend a launch attempt"):
+            assert_equal(resp.status_code, 200, "200 OK")
+            assert_equal(resp.json()["slot_available"], True, "a slot is free")

@@ -17,6 +17,9 @@ from models.identity import User, UserRole
 # Deepest row the data browser will count or page to.
 COUNT_CAP = 10_000
 
+# Columns the user list may be ordered by. Mirrors the Literal on the endpoint.
+USER_SORTABLE = frozenset({"name", "email", "role"})
+
 
 @dataclass(frozen=True)
 class Page:
@@ -39,7 +42,9 @@ async def list_users(
     is_active: bool | None = None,
 ) -> Page:
     """Users filtered, sorted and paged."""
-    col = getattr(User, sort)
+    # The router constrains sort to a Literal, but getattr on an unchecked name would
+    # reach any attribute of the model. browse_table whitelists for the same reason.
+    col = getattr(User, sort if sort in USER_SORTABLE else "name")
     order_col = col.asc() if order == "asc" else col.desc()
 
     query = select(User)

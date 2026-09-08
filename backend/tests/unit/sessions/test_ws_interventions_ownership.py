@@ -40,7 +40,10 @@ class TestSessionInterventionsWsOwnership:
 
         with autotest.step("Act: connect to someone else's session_id"):
             with (
-                patch("sessions.routers.ws.decode_backend_token", return_value={"sub": "user-1"}),
+                patch(
+                    "sessions.routers.ws.verify_jwt_for_ws",
+                    new=AsyncMock(return_value={"id": "user-1", "role": "student"}),
+                ),
                 patch("sessions.routers.ws.get_session", new=AsyncMock(return_value=None)),
             ):
                 await session_interventions_ws(fake_ws, "someone-elses-session", token="t")
@@ -62,7 +65,10 @@ class TestSessionInterventionsWsOwnership:
 
         with autotest.step("Act: owner connects to their own session"):
             with (
-                patch("sessions.routers.ws.decode_backend_token", return_value={"sub": "user-1"}),
+                patch(
+                    "sessions.routers.ws.verify_jwt_for_ws",
+                    new=AsyncMock(return_value={"id": "user-1", "role": "student"}),
+                ),
                 patch("sessions.routers.ws.get_session", new=AsyncMock(return_value=owned_session)),
             ):
                 await session_interventions_ws(fake_ws, "session-1", token="t")

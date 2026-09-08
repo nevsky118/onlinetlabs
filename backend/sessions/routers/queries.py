@@ -84,15 +84,17 @@ async def queue_status(
     current_user: dict = Depends(get_current_user),
     queue: SessionQueueService = Depends(get_queue_service),
 ):
-    """Returns the user's position in the lab queue and its depth."""
+    """Returns queue position, depth, and whether a slot is free."""
     pos = await queue.position(current_user["id"], lab_slug)
     depth = await queue.queue_depth(lab_slug)
+    free = await queue.has_free_slot(lab_slug)
     if pos is None:
-        return {"in_queue": False, "queue_depth": depth}
+        return {"in_queue": False, "queue_depth": depth, "slot_available": free}
     return {
         "in_queue": True,
         "queue_position": pos,
         "queue_depth": depth,
+        "slot_available": free,
         "eta_sec": round(pos * await queue.avg_provision_seconds()),
     }
 

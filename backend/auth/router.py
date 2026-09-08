@@ -20,6 +20,7 @@ from auth.schemas import (
     UserResponse,
 )
 from auth.service import (
+    DUMMY_PASSWORD_HASH,
     create_user,
     get_user_by_email,
     hash_password_async,
@@ -29,15 +30,30 @@ from auth.service import (
 from config import settings
 from i18n import LocalizedError
 from kit.db import get_db
-from kit.rate_limit import exchange_rate_limit_key, limiter
+from kit.rate_limit import (
+    address_rate_limit_key,
+    credentials_rate_limit_key,
+    exchange_rate_limit_key,
+    limiter,
+)
 from models.identity import User
 from users.data_export import erase_subject
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+async def _stash_credentials_subject(request: FastAPIRequest) -> None:
+    """Puts the body email on request.state for the login key."""
+    try:
+        body = await request.json()
+        request.state.auth_subject = body.get("email")
+    except Exception:
+        request.state.auth_subject = None
+
+
+# Keyed by address: the sign-up email is caller-chosen.
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-@limiter.limit("3/minute")
+@limiter.limit("20/minute", key_func=address_rate_limit_key)
 async def register(
     request: FastAPIRequest,
     req: RegisterRequest,
@@ -60,16 +76,23 @@ async def register(
     )
 
 
+# Two buckets: per address, and per address plus account.
 @router.post("/login", response_model=UserResponse)
-@limiter.limit("5/minute")
+@limiter.limit("60/minute", key_func=address_rate_limit_key)
+@limiter.limit("5/minute", key_func=credentials_rate_limit_key)
 async def login(
     request: FastAPIRequest,
     req: LoginRequest,
     db: AsyncSession = Depends(get_db),
+    _: None = Depends(_stash_credentials_subject),
 ):
     """Verifies email and password. Returns 401 on invalid credentials."""
     user = await get_user_by_email(db, req.email)
+    # An unknown email must cost the same as a known one. Returning before the hash
+    # comparison makes the two answer at visibly different speeds, which is enough to
+    # enumerate who has an account here.
     if not user or not user.password_hash:
+        await verify_password_async(req.password, DUMMY_PASSWORD_HASH)
         raise LocalizedError(
             "error.auth.invalid_credentials", status_code=status.HTTP_401_UNAUTHORIZED
         )

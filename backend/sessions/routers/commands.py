@@ -55,8 +55,9 @@ router = APIRouter(
 BackendNodeAction = Literal["start", "stop", "suspend", "reload"]
 
 
+# Per-user cap on launch attempts. Waiters watch /queue-status.
 @router.post("", status_code=status.HTTP_201_CREATED)
-@limiter.limit("2000/minute")
+@limiter.limit("10/minute")
 async def launch_endpoint(
     request: FastAPIRequest,
     body: LearningSessionCreate,
@@ -101,7 +102,7 @@ async def launch_endpoint(
                 },
             )
     try:
-        session, creds = await launch_session(
+        session, creds, created = await launch_session(
             db, current_user["id"], body.lab_slug, gns3_client, db_factory=db_factory, locale=locale
         )
     except LocalizedError:
@@ -112,10 +113,24 @@ async def launch_endpoint(
         if is_new_launch:
             await queue.release(body.lab_slug)
         raise LocalizedError("error.session.provisioning_failed", status_code=502)
+
+    # A launch that raced ours can make the session active between the lookup above
+    # and launch_session's own. We then took a slot for a session we only resumed,
+    # and nothing would give it back: the one release happens when the session ends,
+    # against the slot the launch that actually created it took.
+    if is_new_launch and not created:
+        await queue.release(body.lab_slug)
+
     structlog.contextvars.bind_contextvars(session_id=session.id)
-    if is_new_launch and session.status == "active":
-        ctx = build_session_context(session)
-        await monitor_registry.start(session.id, session.user_id, session.lab_slug, ctx)
+    if created and session.status == "active":
+        # Monitoring is what the platform watches the session with, not what makes the
+        # session work. Failing the request here would hide a lab that is already
+        # running and already holding its slot, and lose the credentials with it.
+        try:
+            ctx = build_session_context(session)
+            await monitor_registry.start(session.id, session.user_id, session.lab_slug, ctx)
+        except Exception:
+            logger.exception("monitor start failed for session %s", session.id)
 
         active_sessions_gauge.labels(lab_slug=body.lab_slug).inc()
     return LaunchResponse(

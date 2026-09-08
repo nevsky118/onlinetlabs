@@ -26,9 +26,13 @@ class GitHubCallbackRequest(BaseModel):
 
 
 class ExchangeRequest(BaseModel):
-    """Request body for exchanging a better-auth session for a backend JWT."""
+    """Request body for exchanging a better-auth session for a backend JWT.
 
-    user_id: str
+    The email is the whole identity here: the backend resolves it against its own
+    User row. The caller also sends better-auth's user id, which is ephemeral in
+    cookie mode and never matches ours, so it is deliberately not declared.
+    """
+
     email: str
 
 

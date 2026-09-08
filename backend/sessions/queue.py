@@ -169,6 +169,12 @@ class SessionQueueService:
         """Returns the current number of waiters in the lab's queue."""
         return await self._redis.llen(self._queue_key(lab_slug))
 
+    async def has_free_slot(self, lab_slug: str) -> bool:
+        """Reads both caps. A check, not a claim."""
+        per_lab_cap, global_cap = self._caps(lab_slug)
+        lab_raw, total_raw = await self._redis.mget(self._active_key(lab_slug), self._total_key())
+        return int(lab_raw or 0) < per_lab_cap and int(total_raw or 0) < global_cap
+
     async def record_provision_seconds(self, seconds: float) -> None:
         """Adds one observed provisioning duration to the rolling window."""
         key = self._provision_key()

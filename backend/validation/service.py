@@ -65,7 +65,7 @@ async def prepare_validation(
 
 
 async def stream_validation(
-    db: AsyncSession,
+    db_factory,
     session_id: str,
     lab_slug: str,
     user_id: str,
@@ -77,9 +77,10 @@ async def stream_validation(
     """Drives the runner and writes the final result to the DB."""
     ctx = await build_check_context(gns3_client, gns3_sid, settings)
 
-    run_id = await create_run(db, session_id, lab_slug)
-    session = await get_owned_session(db, session_id, user_id)
-    locale = negotiate(session.locale) if session else DEFAULT_LOCALE
+    async with db_factory() as db:
+        run_id = await create_run(db, session_id, lab_slug)
+        session = await get_owned_session(db, session_id, user_id)
+        locale = negotiate(session.locale) if session else DEFAULT_LOCALE
 
     final_status = "failed"
     final_steps: list = []
@@ -93,9 +94,10 @@ async def stream_validation(
                 final_steps = list(steps_snapshot)
             yield event
     finally:
-        await finish_run(db, run_id, final_status, final_steps)
-        # The validation run is the only signal of lab progress: carry
-        # its outcome into LabProgress (score + status), which is what the
-        # student and the instructor dashboard read from.
-        if final_steps:
-            await record_lab_validation(db, user_id, lab_slug, final_steps)
+        async with db_factory() as db:
+            await finish_run(db, run_id, final_status, final_steps)
+            # The validation run is the only signal of lab progress: carry
+            # its outcome into LabProgress (score + status), which is what the
+            # student and the instructor dashboard read from.
+            if final_steps:
+                await record_lab_validation(db, user_id, lab_slug, final_steps)

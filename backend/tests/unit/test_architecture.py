@@ -54,7 +54,7 @@ def _package_of(path: Path) -> str:
 def _imported_roots(path: Path) -> set[str]:
     """Top-level package names this file imports."""
     try:
-        tree = ast.parse(path.read_text())
+        tree = ast.parse(path.read_text(encoding="utf-8"))
     except SyntaxError:
         return set()
     roots: set[str] = set()
@@ -92,7 +92,7 @@ class TestLayering:
             for path in _modules():
                 if _package_of(path) == "models":
                     continue
-                if "__tablename__" in path.read_text():
+                if "__tablename__" in path.read_text(encoding="utf-8"):
                     offenders.append(str(path.relative_to(_BACKEND)))
 
         with autotest.step("Assert: none"):
@@ -124,7 +124,7 @@ class TestLayering:
                     continue
                 if path.parent.name == "routers" or _package_of(path) == "":
                     continue
-                text = path.read_text()
+                text = path.read_text(encoding="utf-8")
                 if "@router.get(" in text or "@router.post(" in text:
                     offenders.append(str(path.relative_to(_BACKEND)))
 
@@ -148,7 +148,7 @@ class TestLayering:
                 ]
                 if len(modules) != 1:
                     continue
-                if len(modules[0].read_text().splitlines()) < 80 and not any(
+                if len(modules[0].read_text(encoding="utf-8").splitlines()) < 80 and not any(
                     child.is_dir() and child.name != "__pycache__" for child in package.iterdir()
                 ):
                     offenders.append(str(package.relative_to(_BACKEND)))

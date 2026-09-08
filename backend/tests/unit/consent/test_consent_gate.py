@@ -201,7 +201,7 @@ class TestLaunchConsentGate:
                 patch.object(launch_mod, "study_decision", AsyncMock(return_value=DECLINED)),
                 patch.object(launch_mod, "get_active_session", AsyncMock(return_value=None)),
                 patch.object(
-                    launch_mod, "launch_session", AsyncMock(return_value=(session, _CREDS))
+                    launch_mod, "launch_session", AsyncMock(return_value=(session, _CREDS, True))
                 ),
                 patch.object(launch_mod, "build_session_context", MagicMock(return_value=object())),
                 patch("sessions.routers.commands.active_sessions_gauge"),

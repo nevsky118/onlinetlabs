@@ -9,6 +9,8 @@ error:
     not_found: Session not found
     already_launching: This lab is already starting for you. Wait for it to finish.
     ticket_invalid: This lab link has expired. Open the lab again from your session page.
+    incomplete: |-
+      This session did not finish starting. End it on your session page and launch the lab again.
     forbidden: You do not have permission to view this session
     limit_reached: |-
       You have reached the limit of {max} active sessions. Finish one of them before starting another.

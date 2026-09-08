@@ -8,9 +8,19 @@
   <p id="status">Открываем лабораторию в GNS3…</p>
   <script>
     (function () {
-      var params = new URLSearchParams(window.location.search);
-      var ticket = params.get('ticket');
-      var project = params.get('project');
+      // The ticket arrives in the fragment: a fragment never reaches a server, so it
+      // stays out of access logs and out of the Referer this page sends onward. The
+      // query is still read so a link minted just before the switch keeps working.
+      var params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      var query = new URLSearchParams(window.location.search);
+      var ticket = params.get('ticket') || query.get('ticket');
+      var project = params.get('project') || query.get('project');
+
+      // Drop the credential from the address bar before anything else runs, so it is
+      // not left in history for the next person at this machine.
+      if (window.location.hash) {
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
 
       function fail(message) {
         document.getElementById('status').textContent = message;

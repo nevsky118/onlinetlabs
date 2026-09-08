@@ -1,3 +1,5 @@
+import { forwardClientAddress } from "@repo/api/client-address"
+import { serverEnv } from "@repo/api/env"
 import { api } from "@repo/api/http"
 
 export interface BackendUser {
@@ -13,24 +15,38 @@ interface TokenResponse {
   token_type: string
 }
 
-export async function backendLogin(email: string, password: string) {
-  const { data } = await api.post<BackendUser>("/auth/login", {
-    email,
-    password,
-  })
+// The learner's address, vouched for by the internal token.
+function relayHeaders(callerHeaders?: Headers | null): Record<string, string> {
+  return {
+    Authorization: `Bearer ${serverEnv.INTERNAL_API_TOKEN}`,
+    ...forwardClientAddress(callerHeaders),
+  }
+}
+
+export async function backendLogin(
+  email: string,
+  password: string,
+  callerHeaders?: Headers | null
+) {
+  const { data } = await api.post<BackendUser>(
+    "/auth/login",
+    { email, password },
+    { headers: relayHeaders(callerHeaders) }
+  )
   return data
 }
 
 export async function backendRegister(
   email: string,
   password: string,
-  name?: string
+  name?: string,
+  callerHeaders?: Headers | null
 ) {
-  const { data } = await api.post<BackendUser>("/auth/register", {
-    email,
-    password,
-    name,
-  })
+  const { data } = await api.post<BackendUser>(
+    "/auth/register",
+    { email, password, name },
+    { headers: relayHeaders(callerHeaders) }
+  )
   return data
 }
 

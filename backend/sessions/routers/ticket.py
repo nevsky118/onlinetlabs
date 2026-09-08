@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from i18n import LocalizedError
 from kit.db import get_db
 from kit.deps import get_gns3_client
-from kit.rate_limit import limiter
+from kit.rate_limit import address_rate_limit_key, limiter
 from sessions.services.proxy import redeem_gns3_ticket
 
 router = APIRouter(prefix="/gns3", tags=["gns3"])
@@ -27,8 +27,9 @@ class TicketRedeemResponse(BaseModel):
     gns3_url: str
 
 
+# Keyed by address: the ticket is caller-chosen.
 @router.post("/redeem", response_model=TicketRedeemResponse)
-@limiter.limit("30/minute")
+@limiter.limit("30/minute", key_func=address_rate_limit_key)
 async def redeem(
     request: Request,
     body: TicketRedeemRequest,

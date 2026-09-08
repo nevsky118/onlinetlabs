@@ -4,6 +4,7 @@ from urllib.parse import urlencode
 from fastapi import Request
 
 from config import settings
+from i18n import LocalizedError
 from kit.secrets import decrypt_secret
 from sessions.services.persist import persist_volatile_configs
 from sessions.services.query import get_owned_session
@@ -35,6 +36,10 @@ def existing_gns3_deep_url(session, ticket: str | None = None) -> str:
     Goes through auth-relay.html: a direct jump to /controller/1/project/<id>
     hits the GNS3 login form. The relay exchanges a one-time ticket for a JWT
     server-side, so no password reaches the browser.
+
+    The ticket rides in the fragment, not the query. A fragment is never sent to a
+    server, so the credential stays out of access logs and out of the Referer header
+    the relay page sends on its way onward. auth-relay.html reads it from there.
     """
 
     meta = session.meta or {}
@@ -43,9 +48,29 @@ def existing_gns3_deep_url(session, ticket: str | None = None) -> str:
     if not project_id:
         return settings.gns3.public_url
     if ticket:
-        query = urlencode({"ticket": ticket, "project": project_id})
-        return f"{base}/static/web-ui/auth-relay.html?{query}"
+        fragment = urlencode({"ticket": ticket, "project": project_id})
+        return f"{base}/static/web-ui/auth-relay.html#{fragment}"
     return f"{base}/static/web-ui/controller/1/project/{project_id}"
+
+
+def session_credentials(session, ticket: str | None) -> dict:
+    """The GNS3 links and account name the client needs to open the session.
+
+    A row can be active with meta that never got its GNS3 fields: provisioning
+    finalised the status but not the payload, or the row predates a field. Reading
+    the key directly turns that into a 500 on every attempt, and since the session
+    stays active the learner cannot get past it. A named conflict tells them to end
+    the session and start it again.
+    """
+    meta = session.meta or {}
+    username = meta.get("gns3_username")
+    if not username:
+        raise LocalizedError("error.session.incomplete", status_code=409)
+    return {
+        "gns3_username": username,
+        "gns3_url": existing_gns3_url(session),
+        "gns3_deep_url": existing_gns3_deep_url(session, ticket),
+    }
 
 
 async def get_credentials(db, session_id: str, user_id: str) -> dict | None:
@@ -53,13 +78,8 @@ async def get_credentials(db, session_id: str, user_id: str) -> dict | None:
     session = await get_owned_session(db, session_id, user_id)
     if session is None or not session.meta:
         return None
-    meta = session.meta
     ticket = await get_ticket_store().issue(str(session.id), user_id)
-    return {
-        "gns3_username": meta["gns3_username"],
-        "gns3_url": existing_gns3_url(session),
-        "gns3_deep_url": existing_gns3_deep_url(session, ticket),
-    }
+    return session_credentials(session, ticket)
 
 
 async def redeem_gns3_ticket(db, ticket: str, gns3_client) -> dict | None:

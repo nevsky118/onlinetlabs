@@ -12,6 +12,10 @@ from models.identity import Account, StudyParticipant, User, UserRole
 
 _bcrypt_executor = ThreadPoolExecutor(max_workers=4)
 
+# Compared against when the email is unknown, so a miss costs the same as a wrong
+# password. Hashed at the same cost factor gensalt() picks; it matches no password.
+DUMMY_PASSWORD_HASH = "$2b$12$TeB0zzsK5D5Talyf.5zzxeZVfC3LYKj6tfMwI8vTkkRageTwLWMRe"
+
 
 async def hash_password_async(password: str) -> str:
     """Hashes password with bcrypt in a separate thread, without blocking the event loop."""
