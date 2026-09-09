@@ -21,6 +21,7 @@ configure_logging(
 configure_sentry("gns3-service", environment=os.getenv("ENVIRONMENT", "dev"))
 
 from src.clients.admin import GNS3AdminClient
+from src.console_capture import ConsoleCapture
 from src.db.session import create_session_factory
 from src.events_broker import EventBroker
 from src.exceptions import SessionClosed, SessionNotFound
@@ -29,6 +30,7 @@ from src.history_listener_pg import HistoryPgListener
 from src.middleware.request_id import RequestIDMiddleware
 from src.observability.metrics import configure_metrics
 from src.routers import (
+    console_ws_router,
     exec_router,
     health_router,
     history_router,
@@ -105,6 +107,10 @@ async def lifespan(app: FastAPI):
     app.state.ws_proxy = ws_proxy
     app.state.pg_listener = pg_listener
 
+    console_capture = ConsoleCapture(db_factory)
+    await console_capture.start()
+    app.state.console_capture = console_capture
+
     await pg_listener.start()
 
     async def _state_cache_sweep():
@@ -127,6 +133,7 @@ async def lifespan(app: FastAPI):
         await sweep_task
     except asyncio.CancelledError:
         pass
+    await console_capture.stop()
     await pg_listener.stop()
     await ws_proxy.stop_all()
     await broker.close()
@@ -152,6 +159,9 @@ app.include_router(sessions_router, dependencies=[Depends(verify_internal_token)
 app.include_router(history_router, dependencies=[Depends(verify_internal_token)])
 app.include_router(health_router)
 app.include_router(ws_router)
+# The console proxy carries the learner's own GNS3 token through to gns3-server,
+# which is what authorises it - no internal-token dependency here.
+app.include_router(console_ws_router)
 app.include_router(exec_router)
 app.include_router(templates_router)
 

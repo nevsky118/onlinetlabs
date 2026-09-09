@@ -1,0 +1,24 @@
+# Dev-only stand-in for the production Caddy in front of the GNS3 Web UI.
+#
+# Without it a local browser talks to gns3-server directly and the console
+# socket never crosses gns3-service, so console capture silently records
+# nothing in dev while working in prod. Routing here mirrors
+# deployment/prod/Caddyfile so the two environments cannot drift apart.
+
+{
+	# Plain HTTP on a bare port: no certificates in dev.
+	auto_https off
+	admin off
+}
+
+:3081 {
+	route {
+		# The node console socket is recorded on the way through gns3-service.
+		# The regexp matches both the controller- and compute-level console URLs.
+		@console path_regexp ^/v3/.*/console/ws$
+		reverse_proxy @console gns3-service:8101
+
+		# Everything else - the Web UI bundle and the rest of the v3 API.
+		reverse_proxy gns3-server:3080
+	}
+}

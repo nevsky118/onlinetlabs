@@ -80,7 +80,9 @@ services:
       - "8101:8101"
     environment:
       GNS3_URL: http://gns3-server:3080
-      GNS3_PUBLIC_URL: http://localhost:3080
+      # Browsers reach the Web UI through gns3-proxy, which routes the console
+      # socket via gns3-service so it can be recorded. See gns3-proxy/Caddyfile.
+      GNS3_PUBLIC_URL: http://localhost:3081
       GNS3_ADMIN_USER: ${GNS3_ADMIN_USER:-admin}
       GNS3_ADMIN_PASSWORD: ${GNS3_ADMIN_PASSWORD:-admin}
       DB_USER: ${GNS3_DB_USER:-gns3test}
@@ -110,6 +112,25 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8101/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Dev stand-in for the production Caddy: puts the console socket through
+  # gns3-service and passes everything else to gns3-server untouched.
+  gns3-proxy:
+    image: caddy:2-alpine
+    ports:
+      - "3081:3081"
+    volumes:
+      - ./gns3-proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      gns3-server:
+        condition: service_healthy
+      gns3-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost:3081/v3/version"]
       interval: 5s
       timeout: 3s
       retries: 10
