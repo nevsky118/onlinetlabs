@@ -128,10 +128,7 @@ class ConsoleCommandEntry(BaseModel):
     response_model=list[ConsoleCommandEntry],
     tags=["history"],
     summary="Reconstructed console commands",
-    description=(
-        "Commands a learner ran on the node consoles of a session, with the node's "
-        "answer, reconstructed from the recorded console stream."
-    ),
+    description="Commands a learner ran on the node consoles, with the node's answer.",
 )
 async def get_console_commands(
     session_id: str = Path(description="Session UUID"),
@@ -139,7 +136,7 @@ async def get_console_commands(
     limit: int = Query(default=200, ge=1, le=2000, description="Max. number of commands"),
     db=Depends(get_db),
 ):
-    """Newest first, so a caller polling for what just happened reads the head."""
+    """Newest first."""
     from sqlalchemy import select
 
     from src.db.models import ConsoleCommand

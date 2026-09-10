@@ -22,8 +22,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@local.dev}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
     ports:
-      # Not 5050: the gns3 stack publishes node console ports 5000-5199, and
-      # pgadmin on 5050 makes gns3-server fail to start with a port collision.
+      # Not 5050: it collides with the gns3 console port range 5000-5199.
       - "${PGADMIN_PORT:-5250}:80"
     volumes:
       - ./pgadmin/servers.json:/pgadmin4/servers.json:ro

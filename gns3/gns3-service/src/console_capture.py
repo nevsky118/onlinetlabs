@@ -1,13 +1,8 @@
 """Capture of node console traffic that crosses the console WS proxy.
 
-Two rules shape everything here:
-
-1. Capture must never slow the console down. ConsoleTap.record only stamps a
-   sequence number and drops the frame into a queue; a background task does the
-   database work. When the queue is full the frame is dropped and counted, never
-   awaited - a stalled database must not turn into lag while a learner types.
-2. Capture must never break the console. Every failure path is swallowed and
-   logged, and the proxy keeps relaying with capture disabled.
+Two rules: capture never slows the console down (recording is a non-blocking
+enqueue drained by a background task, dropping frames rather than awaiting), and
+never breaks it (every failure is swallowed and the proxy keeps relaying).
 """
 
 from __future__ import annotations
@@ -25,28 +20,21 @@ from src.console_reconstruct import ConsoleReconstructor
 
 logger = logging.getLogger(__name__)
 
-# A single frame larger than this is stored truncated. Console frames are
-# normally tiny; a huge one means a "show tech-support" style dump.
+# Frames are normally tiny; a huge one is a "show tech-support" dump.
 MAX_CHUNK_BYTES = 64 * 1024
 
-# Once a connection has produced this much, capture stops for that socket. Keeps
-# one runaway console from filling the table.
+# Past this, capture stops for the socket, so one console cannot fill the table.
 MAX_CONNECTION_BYTES = 8 * 1024 * 1024
 
-# The tail of node output is matched against this to notice an open password
-# prompt. "assword" rather than "password" so it matches either case, and
-# [^\S\r\n] is "space or tab but not a newline".
+# An open password prompt in the output tail. [^\S\r\n] is space or tab, not newline.
 _PASSWORD_PROMPT_RE = re.compile(rb"assword[^\S\r\n]*:[^\S\r\n]*\Z", re.IGNORECASE)
 
 # How much of the node output tail is kept to match the prompt against.
 _TAIL_BYTES = 64
 
-# How long after a keypress the echo of that command may still arrive. A device
-# echoes as you type, so the gap is milliseconds; the window is generous only so
-# a loaded node cannot cost us a real command.
+# How long after a keypress its echo may still arrive. Normally milliseconds.
 _LEARNER_ENTER_WINDOW = timedelta(seconds=2.0)
 
-# Enough pending keypresses for any realistic burst of typing.
 _MAX_PENDING_ENTERS = 32
 
 # The bytes a keyboard sends for Enter.
@@ -133,8 +121,7 @@ class ConsoleCapture:
         except asyncio.QueueFull:
             self._dropped += 1
             now = time.monotonic()
-            # One line per 10s: a saturated queue would otherwise flood the log
-            # with exactly the message that is least useful when repeated.
+            # One line per 10s: a saturated queue would flood the log.
             if now - self._last_drop_report > 10.0:
                 self._last_drop_report = now
                 logger.warning("console capture: queue full, dropped %d frames", self._dropped)
@@ -214,9 +201,8 @@ class ConsoleCapture:
 class ConsoleTap:
     """Per-socket capture state: ordering, byte budget, password masking.
 
-    Not thread-safe and does not need to be: both relay directions of one socket
-    run as tasks on the same event loop, and neither awaits inside _record, so
-    the sequence number cannot interleave.
+    Both relay directions run on one event loop and never await inside _record,
+    so the sequence number cannot interleave.
     """
 
     def __init__(self, capture: ConsoleCapture, session_id: uuid.UUID, node_id: str) -> None:
@@ -238,9 +224,8 @@ class ConsoleTap:
         if self._password_mode:
             data, redacted = self._mask_password(data)
         self._record("in", data, redacted)
-        # Every command a learner runs ends with them sending a carriage return.
-        # Nothing else on this socket produces one, which is what later tells a
-        # learner's command apart from a probe run by the platform.
+        # Only a learner sends a carriage return here; that is what tells their
+        # commands apart from the platform's probes.
         if CR in data or LF in data:
             self._pending_enters.append(datetime.now(UTC))
 
@@ -248,8 +233,7 @@ class ConsoleTap:
         """Records bytes the node sent, notices a password prompt, reconstructs commands."""
         self._record("out", data, False)
         self._emit(self._reconstructor.feed(data, datetime.now(UTC)))
-        # Tracked even when over budget: missing the prompt would unmask the next
-        # password typed on this socket.
+        # Tracked even over budget, or the next password would go unmasked.
         self._tail = (self._tail + data)[-_TAIL_BYTES:]
         if _PASSWORD_PROMPT_RE.search(self._tail):
             self._password_mode = True
@@ -261,19 +245,12 @@ class ConsoleTap:
     def _is_learner_command(self, command) -> bool:
         """Whether a learner ran this command, rather than the platform probing.
 
-        A node console is shared: gns3-server relays its output to everyone
-        attached, and the platform's own spec checks reach the same node over
-        telnet (see the validation checks that write "show ip" every poll). Their
-        echo arrives on this socket looking exactly like a learner's command, and
-        recording it would fill the behavioural data with the platform's own
-        regular heartbeat.
-
-        The learner's keypresses are the thing a probe cannot fake: they crossed
-        this WebSocket. So a command counts as the learner's only if one of their
-        carriage returns is still unclaimed and arrived just before the echo.
-        Matching on the keypress rather than on the typed text keeps commands
-        recalled from history or finished with Tab, where the learner sends
-        almost no characters of the command itself.
+        A node console is shared: the platform's spec checks reach the same node
+        over telnet and their echo arrives here looking like a learner's command.
+        Only the learner's keypresses cross this socket, so a command counts as
+        theirs only if an unclaimed carriage return arrived just before the echo.
+        Matching the keypress rather than the text also keeps commands recalled
+        from history or finished with Tab.
         """
         cutoff = command.ts - _LEARNER_ENTER_WINDOW
         while self._pending_enters and self._pending_enters[0] < cutoff:
@@ -286,8 +263,7 @@ class ConsoleTap:
     def _emit(self, commands) -> None:
         """Queues the commands a learner ran, dropping the platform's probes.
 
-        A password is never among them: it is typed at a prompt the device does
-        not echo, and the reconstructor reads the node's output, not keystrokes.
+        A password is never among them: the device does not echo it.
         """
         for command in commands:
             if not self._is_learner_command(command):
@@ -307,11 +283,9 @@ class ConsoleTap:
             )
 
     def _mask_password(self, data: bytes) -> tuple[bytes, bool]:
-        """Replaces the secret with stars, keeping length so keystroke counts survive.
+        """Replaces the secret with stars, keeping length for keystroke counts.
 
-        The device never echoes a password, so "out" is clean - but "in" carries
-        it in the clear, which is why this runs before the frame is queued rather
-        than on the way back out of the database.
+        Only "in" carries the password, so this runs before the frame is queued.
         """
         breaks = [i for i in (data.find(b"\r"), data.find(b"\n")) if i != -1]
         if not breaks:

@@ -1,21 +1,9 @@
 """Transparent proxy for the GNS3 node console WebSocket.
 
-The learner keeps using the console built into the GNS3 Web UI. Caddy routes just
-the console socket here instead of straight to gns3-server, so the frames pass
-through this process and can be recorded on the way.
-
-Two things are deliberately NOT done here:
-
-* No authentication of our own. The learner's GNS3 token rides along in the query
-  string untouched and gns3-server decides, exactly as it did before. Duplicating
-  the GNS3 permission model would be a second place to get it wrong.
-* No parsing. Frame boundaries mean nothing, so frames are relayed and stored raw.
-  Commands are reconstructed alongside, by the tap, and the raw rows stay the
-  source of truth so a changed parser can be re-run over old sessions.
-
-The path is taken verbatim from the request rather than rebuilt, so both the
-controller-level and the compute-level console URLs work without this module
-knowing which one the Web UI uses.
+Caddy routes just the console socket here, so frames pass through and can be
+recorded. Deliberately no authentication of our own (the learner's GNS3 token is
+forwarded untouched) and no parsing (frames are relayed and stored raw). The path
+is taken verbatim from the request, so both console URL shapes work.
 """
 
 from __future__ import annotations
@@ -33,7 +21,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Frames are usually keystrokes; a burst of output is what makes this matter.
 _UPSTREAM_PING_INTERVAL = 20
 _UPSTREAM_PING_TIMEOUT = 20
 
@@ -41,9 +28,8 @@ _UPSTREAM_PING_TIMEOUT = 20
 def parse_console_path(path: str) -> tuple[str, str] | None:
     """Returns (project_id, node_id) for a console WS path, or None if it is not one.
 
-    Shape-agnostic on purpose: it only requires the path to end with
-    .../projects/<pid>/.../nodes/<nid>/console/ws, which both GNS3 v3 console
-    URLs satisfy.
+    Requires only .../projects/<pid>/.../nodes/<nid>/console/ws, which both GNS3
+    v3 console URLs satisfy.
     """
     parts = [p for p in path.split("/") if p]
     if len(parts) < 5 or parts[-1] != "ws" or parts[-2] != "console" or parts[-4] != "nodes":
@@ -84,8 +70,7 @@ async def _resolve_session(app, project_id: str) -> uuid.UUID | None:
 async def _make_tap(websocket: WebSocket, project_id: str, node_id: str):
     """Builds a tap for this socket, or None when the traffic cannot be attributed.
 
-    A console that cannot be attributed is still proxied. Losing the recording of
-    one session is an analytics gap; refusing the connection would break the lab.
+    Such a console is still proxied: refusing it would break the lab.
     """
     capture = getattr(websocket.app.state, "console_capture", None)
     if capture is None:
@@ -106,15 +91,13 @@ async def console_ws(websocket: WebSocket, rest: str) -> None:
     """Relays one console socket to gns3-server, recording both directions."""
     parsed = parse_console_path(websocket.url.path)
     if parsed is None:
-        # Only the console socket is routed here; anything else is a misrouted
-        # request, not something to quietly forward.
+        # Only the console socket is routed here; anything else is misrouted.
         await websocket.close(code=4404)
         return
     project_id, node_id = parsed
 
-    # Connect upstream before accepting the client: if gns3-server rejects the
-    # token, the learner gets a failed handshake instead of a socket that opens
-    # and immediately dies.
+    # Upstream first: a rejected token then fails the handshake, rather than
+    # opening a socket that immediately dies.
     subprotocols = websocket.scope.get("subprotocols") or []
     try:
         upstream = await websockets.connect(
@@ -180,7 +163,6 @@ async def console_ws(websocket: WebSocket, rest: str) -> None:
                 logger.debug("console proxy: relay for node %s ended", node_id, exc_info=True)
     finally:
         if tap is not None:
-            # Flushes the command still open when the socket went away.
             tap.close()
         try:
             await upstream.close()

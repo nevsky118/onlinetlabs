@@ -159,8 +159,7 @@ app.include_router(sessions_router, dependencies=[Depends(verify_internal_token)
 app.include_router(history_router, dependencies=[Depends(verify_internal_token)])
 app.include_router(health_router)
 app.include_router(ws_router)
-# The console proxy carries the learner's own GNS3 token through to gns3-server,
-# which is what authorises it - no internal-token dependency here.
+# Authorised by the learner's own GNS3 token, forwarded to gns3-server.
 app.include_router(console_ws_router)
 app.include_router(exec_router)
 app.include_router(templates_router)

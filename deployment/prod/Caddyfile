@@ -53,12 +53,8 @@ www.{$APP_DOMAIN} {
 
 	# Student GNS3 Web UI, the SPA + assets (/static/web-ui/*) and API/websockets (/v3/*)
 	# → gns3-server. Without this the auth-relay link ends up at a Next.js 404.
-	#
-	# The node console socket is the exception: it goes through gns3-service, which
-	# relays it to gns3-server verbatim and records both directions for analytics.
-	# `route` is what makes the console matcher win — outside it Caddy sorts by its
-	# own directive order and the broader @gns3 matcher can swallow the console.
-	# The regexp matches both the controller- and compute-level console URLs.
+	# The console socket is the exception: gns3-service relays it and records it.
+	# `route` keeps the console matcher ahead of the broader @gns3 one.
 	route {
 		@gns3_console path_regexp ^/v3/.*/console/ws$
 		reverse_proxy @gns3_console gns3-service:8101

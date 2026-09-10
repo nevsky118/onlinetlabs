@@ -1,23 +1,12 @@
 """Turns a raw console byte stream back into commands and their output.
 
-Reconstruction reads the node's own output rather than the learner's keystrokes.
-That sounds backwards, but the output is the better source: the device echoes
-every character it accepted, so tab-completion arrives already expanded, a recalled
-history entry arrives as the command it expanded to, and backspaces have already
-been applied. The typed stream is kept for timing and keystroke counts, not for
-the text of the command.
+Reads the node's echo, not the keystrokes: the echo arrives with tab-completion
+expanded, history recalled and backspaces applied. Streaming, so only the current
+response is ever in memory.
 
-Streaming on purpose. Buffering a whole session and parsing it at the end would
-hold megabytes per console; here only the current response is in memory, and a
-finished command is handed over as soon as the next prompt appears.
-
-Known limits, all of which show up as an odd row rather than lost data:
-
-* A device can print unprompted (a Cisco `%LINK-3-UPDOWN` log lands mid-typing),
-  so a response may carry lines the command did not cause.
-* Paged output (`--More--`) is driven by spacebar presses; the marker is dropped
-  but the pauses stay inside the measured duration.
-* A response line that happens to look like a prompt splits a command in two.
+Known limits, which show up as an odd row rather than lost data: unprompted device
+logs land inside a response, `--More--` pauses inflate the duration, and a response
+line that looks like a prompt splits a command in two.
 """
 
 from __future__ import annotations
@@ -36,13 +25,11 @@ _MORE_RE = re.compile(rb"--\s*More\s*--")
 # Control bytes that carry no text once backspaces have been applied.
 _CONTROL_RE = re.compile(rb"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
-# A prompt ends in # > or $, optionally preceded by a Cisco mode like (config-if).
-# The command, when present, follows on the same line because the device echoes
-# it - and on IOS it follows the prompt with no space at all ("R1#show ip route"),
-# so the separator has to be optional rather than required.
+# Prompt ends in # > or $, optionally with a Cisco mode like (config-if). On IOS
+# the command follows with no space ("R1#show ip route"), so the gap is optional.
 _PROMPT_RE = re.compile(r"^(?P<prompt>[\w.@:~/\-\[\]]+(?:\([^)]*\))?\s?[#>$])\s?(?P<command>.*)$")
 
-# One response is capped so a `show tech-support` cannot grow without bound.
+# Caps a runaway `show tech-support`.
 MAX_RESPONSE_CHARS = 256 * 1024
 
 
@@ -94,9 +81,8 @@ class ConsoleReconstructor:
                 break
             line, self._buf = self._buf[: match.start()], self._buf[match.end() :]
             self._consume(_clean(line), ts, finished)
-        # A prompt arrives without a trailing newline - the device is waiting for
-        # input. That is exactly what closes the previous command, so the tail is
-        # inspected without being consumed.
+        # A prompt with no trailing newline means the device is waiting: that
+        # closes the previous command, so peek at the tail without consuming it.
         tail = _clean(self._buf)
         if tail and _PROMPT_RE.match(tail):
             self._close(ts, finished)
@@ -118,8 +104,7 @@ class ConsoleReconstructor:
                 self._response.append(line)
                 self._response_chars += len(line) + 1
             return
-        # A prompt line ends the previous command whether or not a new one
-        # follows it: a bare prompt is the learner pressing Enter.
+        # A prompt ends the previous command even with nothing after it.
         self._close(ts, finished)
         command = (match.group("command") or "").strip()
         if command and ts is not None:
