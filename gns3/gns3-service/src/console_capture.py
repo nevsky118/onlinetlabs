@@ -17,8 +17,9 @@ import logging
 import re
 import time
 import uuid
+from collections import deque
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from src.console_reconstruct import ConsoleReconstructor
 
@@ -39,6 +40,18 @@ _PASSWORD_PROMPT_RE = re.compile(rb"assword[^\S\r\n]*:[^\S\r\n]*\Z", re.IGNORECA
 
 # How much of the node output tail is kept to match the prompt against.
 _TAIL_BYTES = 64
+
+# How long after a keypress the echo of that command may still arrive. A device
+# echoes as you type, so the gap is milliseconds; the window is generous only so
+# a loaded node cannot cost us a real command.
+_LEARNER_ENTER_WINDOW = timedelta(seconds=2.0)
+
+# Enough pending keypresses for any realistic burst of typing.
+_MAX_PENDING_ENTERS = 32
+
+# The bytes a keyboard sends for Enter.
+CR = bytes([13])
+LF = bytes([10])
 
 
 @dataclass(slots=True)
@@ -217,6 +230,7 @@ class ConsoleTap:
         self._tail = b""
         self._password_mode = False
         self._reconstructor = ConsoleReconstructor()
+        self._pending_enters: deque[datetime] = deque(maxlen=_MAX_PENDING_ENTERS)
 
     def from_client(self, data: bytes) -> None:
         """Records bytes the learner typed, masked while a password prompt is open."""
@@ -224,6 +238,11 @@ class ConsoleTap:
         if self._password_mode:
             data, redacted = self._mask_password(data)
         self._record("in", data, redacted)
+        # Every command a learner runs ends with them sending a carriage return.
+        # Nothing else on this socket produces one, which is what later tells a
+        # learner's command apart from a probe run by the platform.
+        if CR in data or LF in data:
+            self._pending_enters.append(datetime.now(UTC))
 
     def from_node(self, data: bytes) -> None:
         """Records bytes the node sent, notices a password prompt, reconstructs commands."""
@@ -239,13 +258,40 @@ class ConsoleTap:
         """Closes the socket's state, emitting the command still in flight."""
         self._emit(self._reconstructor.flush())
 
-    def _emit(self, commands) -> None:
-        """Queues reconstructed commands. A masked password is never one of them.
+    def _is_learner_command(self, command) -> bool:
+        """Whether a learner ran this command, rather than the platform probing.
 
-        A password is typed at a prompt the device does not echo, so it never
-        reaches the reconstructor - it reads the node's output, not the keystrokes.
+        A node console is shared: gns3-server relays its output to everyone
+        attached, and the platform's own spec checks reach the same node over
+        telnet (see the validation checks that write "show ip" every poll). Their
+        echo arrives on this socket looking exactly like a learner's command, and
+        recording it would fill the behavioural data with the platform's own
+        regular heartbeat.
+
+        The learner's keypresses are the thing a probe cannot fake: they crossed
+        this WebSocket. So a command counts as the learner's only if one of their
+        carriage returns is still unclaimed and arrived just before the echo.
+        Matching on the keypress rather than on the typed text keeps commands
+        recalled from history or finished with Tab, where the learner sends
+        almost no characters of the command itself.
+        """
+        cutoff = command.ts - _LEARNER_ENTER_WINDOW
+        while self._pending_enters and self._pending_enters[0] < cutoff:
+            self._pending_enters.popleft()
+        if self._pending_enters and self._pending_enters[0] <= command.ts:
+            self._pending_enters.popleft()
+            return True
+        return False
+
+    def _emit(self, commands) -> None:
+        """Queues the commands a learner ran, dropping the platform's probes.
+
+        A password is never among them: it is typed at a prompt the device does
+        not echo, and the reconstructor reads the node's output, not keystrokes.
         """
         for command in commands:
+            if not self._is_learner_command(command):
+                continue
             self._capture.submit(
                 ConsoleCommandRecord(
                     session_id=self._session_id,

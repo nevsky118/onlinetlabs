@@ -124,6 +124,10 @@ services:
       - "3081:3081"
     volumes:
       - ./gns3-proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+    # The dashboard serving /api/* lives in the other compose project, so it is
+    # reached over the host gateway rather than by service name.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       gns3-server:
         condition: service_healthy

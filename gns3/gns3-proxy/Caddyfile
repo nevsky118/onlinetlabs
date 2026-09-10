@@ -18,6 +18,15 @@
 		@console path_regexp ^/v3/.*/console/ws$
 		reverse_proxy @console gns3-service:8101
 
+		# auth-relay.html redeems its one-time ticket with a same-origin
+		# fetch('/api/gns3/redeem'). In production the dashboard domain serves
+		# the relay page and /api/* alike, so the fetch just works; here the
+		# page comes from this proxy, and without this route it would land on
+		# gns3-server and 404. The dashboard runs in the other compose project,
+		# reachable over the host gateway.
+		@api path /api/*
+		reverse_proxy @api host.docker.internal:3000
+
 		# Everything else - the Web UI bundle and the rest of the v3 API.
 		reverse_proxy gns3-server:3080
 	}

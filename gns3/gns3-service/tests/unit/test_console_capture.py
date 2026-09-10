@@ -6,7 +6,11 @@ import pytest
 from mcp_sdk.testing import autotest
 from mcp_sdk.testing.custom_assertions import assert_equal
 
-from src.console_capture import MAX_CONNECTION_BYTES, ConsoleCapture
+from src.console_capture import (
+    MAX_CONNECTION_BYTES,
+    ConsoleCapture,
+    ConsoleCommandRecord,
+)
 from src.routers.console_ws import parse_console_path
 
 pytestmark = [pytest.mark.unit]
@@ -165,3 +169,92 @@ class TestQueueBackpressure:
         with autotest.step("Assert: one queued, one counted as dropped"):
             assert_equal(capture._queue.qsize(), 1, "queued")
             assert_equal(capture.dropped, 1, "dropped")
+
+
+class TestProbeFiltering:
+    """A shared console carries the platform's own checks; those are not learner data."""
+
+    @autotest.name("ConsoleTap: a command the learner typed is recorded")
+    def test_keeps_typed_command(self):
+        with autotest.step("Arrange"):
+            capture = _capture()
+            tap = capture.tap(uuid.uuid4(), "node-1")
+
+        with autotest.step("Act: type the command, then let the node echo it"):
+            tap.from_client(b"show ip\r")
+            tap.from_node(b"VPCS> show ip\r\n")
+            tap.from_node(b"IP/MASK : 0.0.0.0/0\r\n")
+            tap.from_node(b"VPCS> ")
+
+        with autotest.step("Assert: the command is queued"):
+            commands = [f for f in _drain(capture) if isinstance(f, ConsoleCommandRecord)]
+            assert_equal([c.command for c in commands], ["show ip"], "commands")
+
+    @autotest.name("ConsoleTap: a probe nobody typed is dropped")
+    def test_drops_untyped_probe(self):
+        with autotest.step("Arrange: no keystrokes at all on this socket"):
+            capture = _capture()
+            tap = capture.tap(uuid.uuid4(), "node-1")
+
+        with autotest.step("Act: the platform's spec check echoes through the shared console"):
+            tap.from_node(b"VPCS> show ip\r\n")
+            tap.from_node(b"IP/MASK : 0.0.0.0/0\r\n")
+            tap.from_node(b"VPCS> ")
+
+        with autotest.step("Assert: nothing is recorded as a command"):
+            commands = [f for f in _drain(capture) if isinstance(f, ConsoleCommandRecord)]
+            assert_equal(len(commands), 0, "commands")
+
+    @autotest.name("ConsoleTap: one keypress claims one command, not the probes after it")
+    def test_one_enter_claims_one_command(self):
+        with autotest.step("Arrange: the learner runs one command"):
+            capture = _capture()
+            tap = capture.tap(uuid.uuid4(), "node-1")
+            tap.from_client(b"show ip\r")
+            tap.from_node(b"VPCS> show ip\r\n")
+            tap.from_node(b"VPCS> ")
+
+        with autotest.step("Act: the platform then probes the same console twice"):
+            tap.from_node(b"VPCS> show ip\r\n")
+            tap.from_node(b"VPCS> ")
+            tap.from_node(b"VPCS> ping 192.168.1.12\r\n")
+            tap.from_node(b"VPCS> ")
+
+        with autotest.step("Assert: only the learner's command survives"):
+            commands = [f for f in _drain(capture) if isinstance(f, ConsoleCommandRecord)]
+            assert_equal([c.command for c in commands], ["show ip"], "commands")
+
+    @autotest.name("ConsoleTap: a command recalled from history still counts as the learner's")
+    def test_keeps_history_recall(self):
+        with autotest.step("Arrange: up-arrow then Enter sends no letters of the command"):
+            capture = _capture()
+            tap = capture.tap(uuid.uuid4(), "node-1")
+
+        with autotest.step("Act"):
+            tap.from_client(b"\x1b[A")
+            tap.from_client(b"\r")
+            tap.from_node(b"VPCS> show ip\r\n")
+            tap.from_node(b"VPCS> ")
+
+        with autotest.step("Assert: matching on the keypress keeps it"):
+            commands = [f for f in _drain(capture) if isinstance(f, ConsoleCommandRecord)]
+            assert_equal([c.command for c in commands], ["show ip"], "commands")
+
+    @autotest.name("ConsoleTap: a bare Enter does not license a later probe")
+    def test_bare_enter_does_not_claim_probe(self):
+        with autotest.step("Arrange: the learner presses Enter on an empty prompt"):
+            capture = _capture()
+            tap = capture.tap(uuid.uuid4(), "node-1")
+            tap.from_client(b"\r")
+            tap.from_node(b"VPCS> \r\n")
+            tap.from_node(b"VPCS> ")
+            _drain(capture)
+
+        with autotest.step("Act: a probe arrives well after that keypress"):
+            tap._pending_enters.clear()  # the window has passed
+            tap.from_node(b"VPCS> show ip\r\n")
+            tap.from_node(b"VPCS> ")
+
+        with autotest.step("Assert"):
+            commands = [f for f in _drain(capture) if isinstance(f, ConsoleCommandRecord)]
+            assert_equal(len(commands), 0, "commands")
