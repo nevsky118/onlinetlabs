@@ -1,0 +1,4 @@
+# CRLF breaks Linux shebangs.
+*.sh text eol=lf
+Dockerfile* text eol=lf
+*.Dockerfile text eol=lf

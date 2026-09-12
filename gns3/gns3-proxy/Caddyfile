@@ -1,0 +1,24 @@
+# Dev stand-in for the production Caddy, mirroring deployment/prod/Caddyfile.
+# Without it a local browser reaches gns3-server directly and console capture
+# records nothing in dev while working in prod.
+
+{
+	auto_https off
+	admin off
+}
+
+:3081 {
+	route {
+		# Console socket: recorded on the way through gns3-service.
+		@console path_regexp ^/v3/.*/console/ws$
+		reverse_proxy @console gns3-service:8101
+
+		# auth-relay.html redeems its ticket with a same-origin /api/gns3/redeem.
+		# The dashboard lives in the other compose project, hence the host gateway.
+		@api path /api/*
+		reverse_proxy @api host.docker.internal:3000
+
+		# Web UI bundle and the rest of the v3 API.
+		reverse_proxy gns3-server:3080
+	}
+}

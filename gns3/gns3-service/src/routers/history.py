@@ -109,3 +109,51 @@ async def get_session_activity(
     ]
     next_cursor = rows[-1].timestamp.isoformat() if has_more and rows else None
     return ActivityResponse(events=events, next_cursor=next_cursor)
+
+
+class ConsoleCommandEntry(BaseModel):
+    """One reconstructed console command."""
+
+    node_id: str
+    seq: int
+    prompt: str | None
+    command: str
+    response: str
+    ts: datetime
+    duration_ms: float | None
+
+
+@router.get(
+    "/sessions/{session_id}/console-commands",
+    response_model=list[ConsoleCommandEntry],
+    tags=["history"],
+    summary="Reconstructed console commands",
+    description="Commands a learner ran on the node consoles, with the node's answer.",
+)
+async def get_console_commands(
+    session_id: str = Path(description="Session UUID"),
+    node_id: str | None = Query(default=None, description="Only this node"),
+    limit: int = Query(default=200, ge=1, le=2000, description="Max. number of commands"),
+    db=Depends(get_db),
+):
+    """Newest first."""
+    from sqlalchemy import select
+
+    from src.db.models import ConsoleCommand
+
+    stmt = select(ConsoleCommand).where(ConsoleCommand.session_id == uuid.UUID(session_id))
+    if node_id:
+        stmt = stmt.where(ConsoleCommand.node_id == node_id)
+    result = await db.execute(stmt.order_by(ConsoleCommand.ts.desc()).limit(limit))
+    return [
+        ConsoleCommandEntry(
+            node_id=row.node_id,
+            seq=row.seq,
+            prompt=row.prompt,
+            command=row.command,
+            response=row.response,
+            ts=row.ts,
+            duration_ms=row.duration_ms,
+        )
+        for row in result.scalars().all()
+    ]

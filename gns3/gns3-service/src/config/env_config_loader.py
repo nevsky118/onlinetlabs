@@ -5,6 +5,7 @@ import os
 from dotenv import dotenv_values
 
 from src.config.config_model import (
+    CapacityConfig,
     DatabaseConfig,
     GNS3Config,
     GNS3ServiceConfigModel,
@@ -56,10 +57,14 @@ class EnvConfigLoader:
         )
         redis = RedisConfig(url=_req("REDIS_URL"))
         security = SecurityConfig(internal_api_token=_req("INTERNAL_API_TOKEN"))
+        capacity = CapacityConfig(
+            console_retention_days=int(values.get("CAPACITY_CONSOLE_RETENTION_DAYS", "90")),
+        )
         return GNS3ServiceConfigModel(
             gns3=gns3,
             database=database,
             service=service,
             redis=redis,
             security=security,
+            capacity=capacity,
         )

@@ -14,6 +14,7 @@ class Gns3SessionsApi:
     :param client: httpx.AsyncClient.
     :param config: ConfigModel.
     :param base_url: Base URL of gns3-service.
+    :param internal_token: Internal API token. Defaults to config.internal_api_token.
     """
 
     def __init__(
@@ -21,18 +22,22 @@ class Gns3SessionsApi:
         client: AsyncClient = None,
         config: ConfigModel = None,
         base_url: str = "",
+        internal_token: str | None = None,
     ):
+        resolved_internal_token = config.internal_api_token if internal_token is None else internal_token
         self.api_client = ApiClient(
             client=client,
             config=config,
             controller_path="/sessions",
             base_url=base_url,
+            internal_token=resolved_internal_token,
         )
         self.history_client = ApiClient(
             client=client,
             config=config,
             controller_path="/history",
             base_url=base_url,
+            internal_token=resolved_internal_token,
         )
 
     async def post_session(self, data: dict) -> Response:
@@ -123,5 +128,19 @@ class Gns3SessionsApi:
         with autotest.step(f"GET /sessions/{session_id}/activity"):
             return await self.api_client.get(
                 f"{session_id}/activity",
+                params=params,
+            )
+
+    async def get_console_commands(self, session_id: str, params: dict) -> Response:
+        """
+        GET /sessions/{session_id}/console-commands. Reconstructed console commands.
+
+        :param session_id: Session UUID.
+        :param params: Query parameters (limit, node_id).
+        :return: HTTP response.
+        """
+        with autotest.step(f"GET /sessions/{session_id}/console-commands"):
+            return await self.api_client.get(
+                f"{session_id}/console-commands",
                 params=params,
             )

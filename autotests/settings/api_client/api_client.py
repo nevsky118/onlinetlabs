@@ -40,12 +40,14 @@ class ApiClient:
         controller_path: str = "",
         service_name: str = "",
         base_url: str = "",
+        internal_token: str = "",
     ):
         self.client = client or AsyncClient()
         self.config = config
         self.account_name = account_name
         self.controller_path = controller_path
         self.service_name = service_name
+        self.internal_token = internal_token
 
         if base_url:
             effective_base = base_url
@@ -88,6 +90,9 @@ class ApiClient:
             token = self.config.accounts[self.account_name].token
             if token:
                 result["Authorization"] = f"Bearer {token}"
+
+        if self.internal_token:
+            result["Authorization"] = f"Bearer {self.internal_token}"
 
         return result
 

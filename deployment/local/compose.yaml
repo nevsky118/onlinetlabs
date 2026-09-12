@@ -22,7 +22,8 @@ services:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@local.dev}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
     ports:
-      - "${PGADMIN_PORT:-5050}:80"
+      # Not 5050: it collides with the gns3 console port range 5000-5199.
+      - "${PGADMIN_PORT:-5250}:80"
     volumes:
       - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
     depends_on:

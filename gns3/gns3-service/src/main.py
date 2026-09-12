@@ -4,6 +4,7 @@ import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
+from datetime import timedelta
 
 import uvicorn
 from fastapi import Depends, FastAPI, Request
@@ -21,6 +22,8 @@ configure_logging(
 configure_sentry("gns3-service", environment=os.getenv("ENVIRONMENT", "dev"))
 
 from src.clients.admin import GNS3AdminClient
+from src.console_capture import ConsoleCapture
+from src.console_retention import run_console_retention
 from src.db.session import create_session_factory
 from src.events_broker import EventBroker
 from src.exceptions import SessionClosed, SessionNotFound
@@ -29,6 +32,7 @@ from src.history_listener_pg import HistoryPgListener
 from src.middleware.request_id import RequestIDMiddleware
 from src.observability.metrics import configure_metrics
 from src.routers import (
+    console_ws_router,
     exec_router,
     health_router,
     history_router,
@@ -105,6 +109,10 @@ async def lifespan(app: FastAPI):
     app.state.ws_proxy = ws_proxy
     app.state.pg_listener = pg_listener
 
+    console_capture = ConsoleCapture(db_factory)
+    await console_capture.start()
+    app.state.console_capture = console_capture
+
     await pg_listener.start()
 
     async def _state_cache_sweep():
@@ -121,12 +129,22 @@ async def lifespan(app: FastAPI):
 
     sweep_task = asyncio.create_task(_state_cache_sweep())
 
+    console_retention_task = asyncio.create_task(
+        run_console_retention(db_factory, timedelta(days=settings.capacity.console_retention_days))
+    )
+
     yield
     sweep_task.cancel()
     try:
         await sweep_task
     except asyncio.CancelledError:
         pass
+    console_retention_task.cancel()
+    try:
+        await console_retention_task
+    except asyncio.CancelledError:
+        pass
+    await console_capture.stop()
     await pg_listener.stop()
     await ws_proxy.stop_all()
     await broker.close()
@@ -152,6 +170,8 @@ app.include_router(sessions_router, dependencies=[Depends(verify_internal_token)
 app.include_router(history_router, dependencies=[Depends(verify_internal_token)])
 app.include_router(health_router)
 app.include_router(ws_router)
+# Authorised by the learner's own GNS3 token, forwarded to gns3-server.
+app.include_router(console_ws_router)
 app.include_router(exec_router)
 app.include_router(templates_router)
 

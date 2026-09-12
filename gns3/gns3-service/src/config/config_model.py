@@ -55,9 +55,18 @@ class SecurityConfig(BaseModel):
     internal_api_token: str = Field(description="Shared bearer token required on /v1/exec/vtysh")
 
 
+class CapacityConfig(BaseModel):
+    """Retention windows for capacity-bound tables."""
+
+    console_retention_days: int = Field(
+        default=90, ge=1, description="Age at which the retention sweep drops console rows"
+    )
+
+
 class GNS3ServiceConfigModel(BaseModel):
     gns3: GNS3Config
     database: DatabaseConfig
     service: ServiceConfig
     redis: RedisConfig
     security: SecurityConfig
+    capacity: CapacityConfig = Field(default_factory=CapacityConfig)

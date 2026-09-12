@@ -1,5 +1,6 @@
 """REST and WebSocket routers for gns3-service."""
 
+from .console_ws import router as console_ws_router
 from .exec import router as exec_router
 from .health import router as health_router
 from .history import router as history_router
@@ -8,6 +9,7 @@ from .templates import router as templates_router
 from .ws import router as ws_router
 
 __all__ = [
+    "console_ws_router",
     "exec_router",
     "health_router",
     "history_router",
