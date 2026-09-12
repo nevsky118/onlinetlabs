@@ -1,5 +1,4 @@
-# Run inside Linux containers: a CRLF checkout breaks the shebang and the image
-# dies with "exec /start.sh: no such file or directory".
+# CRLF breaks Linux shebangs.
 *.sh text eol=lf
 Dockerfile* text eol=lf
 *.Dockerfile text eol=lf

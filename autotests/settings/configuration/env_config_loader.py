@@ -56,4 +56,5 @@ class EnvConfigLoader:
             gns3_base_url=values.get("GNS3_BASE_URL", "http://localhost:8101"),
             gns3_lab_template_project_id=values.get("GNS3_LAB_TEMPLATE_PROJECT_ID", ""),
             accounts=accounts,
+            internal_api_token=values.get("INTERNAL_API_TOKEN", "dev-secret"),
         )

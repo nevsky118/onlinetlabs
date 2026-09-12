@@ -1,9 +1,4 @@
-"""Capture of node console traffic that crosses the console WS proxy.
-
-Two rules: capture never slows the console down (recording is a non-blocking
-enqueue drained by a background task, dropping frames rather than awaiting), and
-never breaks it (every failure is swallowed and the proxy keeps relaying).
-"""
+"""Captures console traffic without blocking the proxy."""
 
 from __future__ import annotations
 
@@ -13,31 +8,54 @@ import re
 import time
 import uuid
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
 from src.console_reconstruct import ConsoleReconstructor
 
 logger = logging.getLogger(__name__)
 
-# Frames are normally tiny; a huge one is a "show tech-support" dump.
+# Caps one console frame.
 MAX_CHUNK_BYTES = 64 * 1024
 
-# Past this, capture stops for the socket, so one console cannot fill the table.
+# Per-connection byte budget.
 MAX_CONNECTION_BYTES = 8 * 1024 * 1024
 
-# An open password prompt in the output tail. [^\S\r\n] is space or tab, not newline.
+# Per-connection row budget.
+MAX_CONNECTION_ROWS = 20_000
+
+# Backlog byte budget.
+MAX_QUEUE_BYTES = 64 * 1024 * 1024
+
+# Matches ConsoleCommand.prompt.
+MAX_PROMPT_CHARS = 255
+
+# Matches ConsoleChunk/ConsoleCommand.node_id.
+MAX_NODE_ID_CHARS = 64
+
+# Password prompt at tail end.
 _PASSWORD_PROMPT_RE = re.compile(rb"assword[^\S\r\n]*:[^\S\r\n]*\Z", re.IGNORECASE)
 
-# How much of the node output tail is kept to match the prompt against.
+# Keyword, separators, then the rest of the line.
+_SECRET_ARG_RE = re.compile(
+    rb"(?i)("
+    rb"\b(?:secret|password|passwd|key-string|pre-shared-key|authentication-key"
+    rb"|key(?![^\S\r\n]+(?:chain|generate|zeroize|config-key|pair|exchange"
+    rb"|pubkey-chain|to|id|is)(?=\s|\Z))"
+    rb"|community|psk|passphrase|auth|priv)\b"
+    rb"(?:[^\S\r\n]|[:=])+"
+    rb")[^\r\n]+"
+)
+
+# Tail kept for prompt matching.
 _TAIL_BYTES = 64
 
-# How long after a keypress its echo may still arrive. Normally milliseconds.
+# Max keypress-to-echo delay.
 _LEARNER_ENTER_WINDOW = timedelta(seconds=2.0)
 
-_MAX_PENDING_ENTERS = 32
+_MAX_PENDING_ENTERS = 256
 
-# The bytes a keyboard sends for Enter.
+# Enter key bytes.
 CR = bytes([13])
 LF = bytes([10])
 
@@ -72,6 +90,27 @@ class ConsoleFrame:
     ts: datetime
 
 
+@dataclass(slots=True)
+class _DirectionBuffer:
+    """Bytes of one direction awaiting a line break."""
+
+    data: bytearray = field(default_factory=bytearray)
+    ts: datetime | None = None
+
+
+def redact_secrets(data: bytes) -> tuple[bytes, bool]:
+    """Replaces credential arguments with stars."""
+    redacted = _SECRET_ARG_RE.sub(rb"\1***", data)
+    return redacted, redacted != data
+
+
+def _frame_bytes(item: ConsoleFrame | ConsoleCommandRecord) -> int:
+    """Rough resident size of one queued item."""
+    if isinstance(item, ConsoleFrame):
+        return len(item.payload)
+    return len(item.command) + len(item.response)
+
+
 class ConsoleCapture:
     """Queue plus a background flusher writing console frames in batches."""
 
@@ -80,6 +119,7 @@ class ConsoleCapture:
         db_factory,
         *,
         queue_size: int = 10_000,
+        max_queue_bytes: int = MAX_QUEUE_BYTES,
         batch_size: int = 200,
         flush_interval: float = 1.0,
     ) -> None:
@@ -92,11 +132,19 @@ class ConsoleCapture:
         self._task: asyncio.Task | None = None
         self._dropped = 0
         self._last_drop_report = 0.0
+        self._max_queue_bytes = max_queue_bytes
+        self._queued_bytes = 0
+        self._in_flight: list[ConsoleFrame | ConsoleCommandRecord] = []
 
     @property
     def dropped(self) -> int:
         """Frames discarded because the queue was full."""
         return self._dropped
+
+    @property
+    def queued_bytes(self) -> int:
+        """Resident size of the backlog."""
+        return self._queued_bytes
 
     async def start(self) -> None:
         """Starts the flusher."""
@@ -112,19 +160,32 @@ class ConsoleCapture:
                 await task
             except asyncio.CancelledError:
                 pass
-        await self._drain_once(final=True)
+        await self._drain_once()
 
     def submit(self, frame: ConsoleFrame | ConsoleCommandRecord) -> None:
         """Enqueues a frame. Never blocks, never raises."""
+        size = _frame_bytes(frame)
+        if self._queued_bytes + size > self._max_queue_bytes:
+            self._drop(size)
+            return
         try:
             self._queue.put_nowait(frame)
         except asyncio.QueueFull:
-            self._dropped += 1
-            now = time.monotonic()
-            # One line per 10s: a saturated queue would flood the log.
-            if now - self._last_drop_report > 10.0:
-                self._last_drop_report = now
-                logger.warning("console capture: queue full, dropped %d frames", self._dropped)
+            self._drop(size)
+            return
+        self._queued_bytes += size
+
+    def _drop(self, size: int) -> None:
+        """Counts a dropped frame, logging at most once per 10s."""
+        self._dropped += 1
+        now = time.monotonic()
+        if now - self._last_drop_report > 10.0:
+            self._last_drop_report = now
+            logger.warning(
+                "console capture: backlog full, dropped %d frames, %d bytes queued",
+                self._dropped,
+                self._queued_bytes,
+            )
 
     def tap(self, session_id: uuid.UUID, node_id: str) -> ConsoleTap:
         """Creates a tap for one console socket."""
@@ -140,33 +201,40 @@ class ConsoleCapture:
             except Exception:
                 logger.exception("console capture: flush failed")
 
-    async def _drain_once(self, final: bool = False) -> None:
-        """Writes up to one batch, or everything still queued when final."""
+    async def _drain_once(self) -> None:
+        """Writes every queued frame, resuming a batch a cancellation interrupted."""
         if self._db_factory is None:
             return
         while True:
-            batch: list[ConsoleFrame | ConsoleCommandRecord] = []
+            batch = self._in_flight
+            self._in_flight = []
             while len(batch) < self._batch_size:
                 try:
-                    batch.append(self._queue.get_nowait())
+                    item = self._queue.get_nowait()
                 except asyncio.QueueEmpty:
                     break
+                self._queued_bytes -= _frame_bytes(item)
+                batch.append(item)
             if not batch:
                 return
+            # Kept until the write returns.
+            self._in_flight = batch
             try:
                 await self._write(batch)
             except Exception:
                 logger.exception("console capture: dropping a batch of %d frames", len(batch))
-            if not final:
-                return
+            self._in_flight = []
+            await asyncio.sleep(0)
 
     async def _write(self, batch: list[ConsoleFrame | ConsoleCommandRecord]) -> None:
         from src.db.models import ConsoleChunk, ConsoleCommand
 
-        rows: list = []
+        records = [item for item in batch if isinstance(item, ConsoleCommandRecord)]
+        chunk_rows: list = []
+        command_rows: list = []
         for item in batch:
             if isinstance(item, ConsoleFrame):
-                rows.append(
+                chunk_rows.append(
                     ConsoleChunk(
                         session_id=item.session_id,
                         node_id=item.node_id,
@@ -180,7 +248,7 @@ class ConsoleCapture:
                     )
                 )
             else:
-                rows.append(
+                command_rows.append(
                     ConsoleCommand(
                         session_id=item.session_id,
                         node_id=item.node_id,
@@ -193,111 +261,154 @@ class ConsoleCapture:
                         duration_ms=item.duration_ms,
                     )
                 )
-        async with self._db_factory() as db:
-            db.add_all(rows)
-            await db.commit()
+        # Isolate chunk and command commits.
+        if chunk_rows:
+            try:
+                async with self._db_factory() as db:
+                    db.add_all(chunk_rows)
+                    await db.commit()
+                    # Replay can no longer repeat them.
+                    self._in_flight = records
+            except Exception:
+                logger.exception("console capture: dropping %d chunk rows", len(chunk_rows))
+        if command_rows:
+            try:
+                async with self._db_factory() as db:
+                    db.add_all(command_rows)
+                    await db.commit()
+                    self._in_flight = []
+            except Exception:
+                logger.exception("console capture: dropping %d command rows", len(command_rows))
 
 
 class ConsoleTap:
-    """Per-socket capture state: ordering, byte budget, password masking.
-
-    Both relay directions run on one event loop and never await inside _record,
-    so the sequence number cannot interleave.
-    """
+    """Per-socket capture state; sequence numbers never interleave."""
 
     def __init__(self, capture: ConsoleCapture, session_id: uuid.UUID, node_id: str) -> None:
         self._capture = capture
         self._session_id = session_id
-        self._node_id = node_id
+        self._node_id = node_id[:MAX_NODE_ID_CHARS]
         self.connection_id = uuid.uuid4()
         self._seq = 0
         self._bytes = 0
         self._over_budget = False
+        self._max_rows = MAX_CONNECTION_ROWS
+        self._rows = 0
         self._tail = b""
         self._password_mode = False
         self._reconstructor = ConsoleReconstructor()
         self._pending_enters: deque[datetime] = deque(maxlen=_MAX_PENDING_ENTERS)
+        self._last_enter_match = datetime.now(UTC)
+        self._buffers = {"in": _DirectionBuffer(), "out": _DirectionBuffer()}
 
     def from_client(self, data: bytes) -> None:
-        """Records bytes the learner typed, masked while a password prompt is open."""
-        redacted = False
-        if self._password_mode:
-            data, redacted = self._mask_password(data)
-        self._record("in", data, redacted)
-        # Only a learner sends a carriage return here; that is what tells their
-        # commands apart from the platform's probes.
-        if CR in data or LF in data:
-            self._pending_enters.append(datetime.now(UTC))
+        """Records bytes the learner typed, masked during password prompts."""
+        self._ingest("in", data)
+        # Count keypresses; CRLF collapsed first.
+        now = datetime.now(UTC)
+        collapsed = data.replace(CR + LF, LF)
+        for _ in range(collapsed.count(CR) + collapsed.count(LF)):
+            self._pending_enters.append(now)
 
     def from_node(self, data: bytes) -> None:
-        """Records bytes the node sent, notices a password prompt, reconstructs commands."""
-        self._record("out", data, False)
+        """Records node output, detects password prompts, reconstructs commands."""
+        self._ingest("out", data)
         self._emit(self._reconstructor.feed(data, datetime.now(UTC)))
-        # Tracked even over budget, or the next password would go unmasked.
+        # Tracked even over budget.
         self._tail = (self._tail + data)[-_TAIL_BYTES:]
         if _PASSWORD_PROMPT_RE.search(self._tail):
             self._password_mode = True
 
     def close(self) -> None:
-        """Closes the socket's state, emitting the command still in flight."""
+        """Closes the socket's state, flushing buffered bytes and open command."""
+        for direction in ("in", "out"):
+            buffer = self._buffers[direction]
+            while buffer.data and not self._over_budget:
+                size = min(len(buffer.data), MAX_CHUNK_BYTES)
+                self._emit_buffer(direction, size, truncated=size < len(buffer.data))
         self._emit(self._reconstructor.flush())
 
     def _is_learner_command(self, command) -> bool:
-        """Whether a learner ran this command, rather than the platform probing.
-
-        A node console is shared: the platform's spec checks reach the same node
-        over telnet and their echo arrives here looking like a learner's command.
-        Only the learner's keypresses cross this socket, so a command counts as
-        theirs only if an unclaimed carriage return arrived just before the echo.
-        Matching the keypress rather than the text also keeps commands recalled
-        from history or finished with Tab.
-        """
+        """True when the learner ran it, not a platform probe."""
         cutoff = command.ts - _LEARNER_ENTER_WINDOW
-        while self._pending_enters and self._pending_enters[0] < cutoff:
+        # Keeps a paste's queue alive.
+        while (
+            self._pending_enters and max(self._pending_enters[0], self._last_enter_match) < cutoff
+        ):
             self._pending_enters.popleft()
         if self._pending_enters and self._pending_enters[0] <= command.ts:
             self._pending_enters.popleft()
+            self._last_enter_match = command.ts
             return True
         return False
 
-    def _emit(self, commands) -> None:
-        """Queues the commands a learner ran, dropping the platform's probes.
+    def _over_row_budget(self) -> bool:
+        """Whether this connection has written its allowance."""
+        if self._rows >= self._max_rows:
+            if not self._over_budget:
+                self._over_budget = True
+                logger.warning(
+                    "console capture: connection %s hit the row budget, capture off",
+                    self.connection_id,
+                )
+            return True
+        self._rows += 1
+        return False
 
-        A password is never among them: the device does not echo it.
-        """
+    def _emit(self, commands) -> None:
+        """Queues learner commands, skipping platform probes; passwords never appear."""
         for command in commands:
             if not self._is_learner_command(command):
                 continue
+            if self._over_budget or self._over_row_budget():
+                continue
+            text, _ = redact_secrets(command.command.encode())
+            response, _ = redact_secrets(command.response.encode())
             self._capture.submit(
                 ConsoleCommandRecord(
                     session_id=self._session_id,
                     node_id=self._node_id,
                     connection_id=self.connection_id,
                     seq=command.seq,
-                    prompt=command.prompt,
-                    command=command.command,
-                    response=command.response,
+                    prompt=(command.prompt or "")[:MAX_PROMPT_CHARS] or None,
+                    command=text.decode("utf-8", errors="replace"),
+                    response=response.decode("utf-8", errors="replace"),
                     ts=command.ts,
                     duration_ms=command.duration_ms,
                 )
             )
 
     def _mask_password(self, data: bytes) -> tuple[bytes, bool]:
-        """Replaces the secret with stars, keeping length for keystroke counts.
+        """Replaces the secret with stars, keeping its length."""
+        masked = bytearray()
+        redacted = False
+        start = 0
+        while self._password_mode and start < len(data):
+            breaks = [
+                position
+                for position in (data.find(CR, start), data.find(LF, start))
+                if position != -1
+            ]
+            if not breaks:
+                masked.extend(b"*" * (len(data) - start))
+                return bytes(masked), True
+            end = min(breaks)
+            masked.extend(b"*" * (end - start))
+            # An empty line keeps masking armed.
+            if end > start:
+                redacted = True
+                self._password_mode = False
+                self._tail = b""
+            masked.append(data[end])
+            start = end + 1
+        masked.extend(data[start:])
+        return bytes(masked), redacted
 
-        Only "in" carries the password, so this runs before the frame is queued.
-        """
-        breaks = [i for i in (data.find(b"\r"), data.find(b"\n")) if i != -1]
-        if not breaks:
-            return b"*" * len(data), True
-        end = min(breaks)
-        self._password_mode = False
-        self._tail = b""
-        return b"*" * end + data[end:], end > 0
-
-    def _record(self, direction: str, data: bytes, redacted: bool) -> None:
+    def _ingest(self, direction: str, data: bytes) -> None:
+        """Buffers raw bytes; a full line becomes a frame."""
         if self._over_budget or not data:
             return
+        # Counts raw ingested bytes.
         self._bytes += len(data)
         if self._bytes > MAX_CONNECTION_BYTES:
             self._over_budget = True
@@ -306,7 +417,39 @@ class ConsoleTap:
                 self.connection_id,
             )
             return
-        truncated = len(data) > MAX_CHUNK_BYTES
+        buffer = self._buffers[direction]
+        if not buffer.data:
+            buffer.ts = datetime.now(UTC)
+        # Everything before the new bytes was searched already.
+        searched = len(buffer.data)
+        buffer.data.extend(data)
+        while not self._over_budget:
+            limit = min(len(buffer.data), MAX_CHUNK_BYTES)
+            break_at = max(
+                buffer.data.rfind(CR, searched, limit),
+                buffer.data.rfind(LF, searched, limit),
+            )
+            if break_at >= 0:
+                self._emit_buffer(direction, break_at + 1, truncated=False)
+            elif len(buffer.data) >= MAX_CHUNK_BYTES:
+                self._emit_buffer(direction, MAX_CHUNK_BYTES, truncated=True)
+            else:
+                return
+            searched = 0
+
+    def _emit_buffer(self, direction: str, size: int, truncated: bool) -> None:
+        """Turns the head of one direction's buffer into a frame."""
+        buffer = self._buffers[direction]
+        payload = bytes(buffer.data[:size])
+        ts = buffer.ts or datetime.now(UTC)
+        del buffer.data[:size]
+        buffer.ts = datetime.now(UTC) if buffer.data else None
+        redacted = False
+        if direction == "in" and self._password_mode:
+            payload, redacted = self._mask_password(payload)
+        payload, secret_found = redact_secrets(payload)
+        if self._over_row_budget():
+            return
         self._seq += 1
         self._capture.submit(
             ConsoleFrame(
@@ -315,9 +458,9 @@ class ConsoleTap:
                 connection_id=self.connection_id,
                 seq=self._seq,
                 direction=direction,
-                payload=data[:MAX_CHUNK_BYTES] if truncated else data,
+                payload=payload,
                 truncated=truncated,
-                redacted=redacted,
-                ts=datetime.now(UTC),
+                redacted=redacted or secret_found,
+                ts=ts,
             )
         )

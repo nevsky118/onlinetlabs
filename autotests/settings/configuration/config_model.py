@@ -68,3 +68,7 @@ class ConfigModel(BaseModel):
         default={},
         description="Dictionary of test accounts, keyed by account name.",
     )
+    internal_api_token: str = Field(
+        default="dev-secret",
+        description="Shared secret between the backend and gns3-service.",
+    )

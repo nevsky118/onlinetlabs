@@ -4,6 +4,7 @@ import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
+from datetime import timedelta
 
 import uvicorn
 from fastapi import Depends, FastAPI, Request
@@ -22,6 +23,7 @@ configure_sentry("gns3-service", environment=os.getenv("ENVIRONMENT", "dev"))
 
 from src.clients.admin import GNS3AdminClient
 from src.console_capture import ConsoleCapture
+from src.console_retention import run_console_retention
 from src.db.session import create_session_factory
 from src.events_broker import EventBroker
 from src.exceptions import SessionClosed, SessionNotFound
@@ -127,10 +129,19 @@ async def lifespan(app: FastAPI):
 
     sweep_task = asyncio.create_task(_state_cache_sweep())
 
+    console_retention_task = asyncio.create_task(
+        run_console_retention(db_factory, timedelta(days=settings.capacity.console_retention_days))
+    )
+
     yield
     sweep_task.cancel()
     try:
         await sweep_task
+    except asyncio.CancelledError:
+        pass
+    console_retention_task.cancel()
+    try:
+        await console_retention_task
     except asyncio.CancelledError:
         pass
     await console_capture.stop()

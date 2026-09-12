@@ -1,13 +1,4 @@
-"""Turns a raw console byte stream back into commands and their output.
-
-Reads the node's echo, not the keystrokes: the echo arrives with tab-completion
-expanded, history recalled and backspaces applied. Streaming, so only the current
-response is ever in memory.
-
-Known limits, which show up as an odd row rather than lost data: unprompted device
-logs land inside a response, `--More--` pauses inflate the duration, and a response
-line that looks like a prompt splits a command in two.
-"""
+"""Reconstructs commands and their output from a console byte stream."""
 
 from __future__ import annotations
 
@@ -16,21 +7,29 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
 
-# CSI sequences (colours, cursor moves), OSC title strings, and charset selects.
+# ANSI/OSC escape sequences.
 _ANSI_RE = re.compile(rb"\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b[()][B0]")
 
-# Pager marker, with or without the backspaces a device uses to erase it.
+# Pager prompt marker.
 _MORE_RE = re.compile(rb"--\s*More\s*--")
 
-# Control bytes that carry no text once backspaces have been applied.
+# Non-text control bytes.
 _CONTROL_RE = re.compile(rb"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
-# Prompt ends in # > or $, optionally with a Cisco mode like (config-if). On IOS
-# the command follows with no space ("R1#show ip route"), so the gap is optional.
+# Matches a CLI prompt line.
 _PROMPT_RE = re.compile(r"^(?P<prompt>[\w.@:~/\-\[\]]+(?:\([^)]*\))?\s?[#>$])\s?(?P<command>.*)$")
+
+# Ends one console line.
+_LINE_BREAK_RE = re.compile(rb"\r\n|\n|\r")
 
 # Caps a runaway `show tech-support`.
 MAX_RESPONSE_CHARS = 256 * 1024
+
+# Bounds the unterminated tail.
+MAX_BUFFER_BYTES = 8 * 1024
+
+# Longest possible prompt tail.
+MAX_PROMPT_TAIL_BYTES = 512
 
 
 @dataclass(slots=True)
@@ -63,7 +62,7 @@ class ConsoleReconstructor:
     """Incremental parser: feed node output, get finished commands back."""
 
     def __init__(self) -> None:
-        self._buf = b""
+        self._buf = bytearray()
         self._seq = 0
         self._open: ReconstructedCommand | None = None
         self._response: list[str] = []
@@ -72,28 +71,35 @@ class ConsoleReconstructor:
 
     def feed(self, data: bytes, ts: datetime) -> list[ReconstructedCommand]:
         """Consumes node output, returning any commands completed by it."""
-        self._buf += data
+        # Everything before the new bytes was searched already.
+        searched = len(self._buf)
+        self._buf.extend(data)
         self._last_ts = ts
         finished: list[ReconstructedCommand] = []
+        line_start = 0
         while True:
-            match = re.search(rb"\r\n|\n|\r", self._buf)
+            match = _LINE_BREAK_RE.search(self._buf, searched)
             if match is None:
                 break
-            line, self._buf = self._buf[: match.start()], self._buf[match.end() :]
-            self._consume(_clean(line), ts, finished)
-        # A prompt with no trailing newline means the device is waiting: that
-        # closes the previous command, so peek at the tail without consuming it.
-        tail = _clean(self._buf)
-        if tail and _PROMPT_RE.match(tail):
-            self._close(ts, finished)
+            self._consume(_clean(self._buf[line_start : match.start()]), ts, finished)
+            line_start = searched = match.end()
+        if line_start:
+            del self._buf[:line_start]
+        if len(self._buf) > MAX_BUFFER_BYTES:
+            del self._buf[: len(self._buf) - MAX_BUFFER_BYTES // 2]
+        # Trailing prompt implies command closed.
+        if len(self._buf) <= MAX_PROMPT_TAIL_BYTES:
+            tail = _clean(self._buf)
+            if tail and _PROMPT_RE.match(tail):
+                self._close(ts, finished)
         return finished
 
     def flush(self) -> list[ReconstructedCommand]:
-        """Closes whatever is still open, for when the socket goes away."""
+        """Closes any command still open."""
         finished: list[ReconstructedCommand] = []
         if self._buf:
             self._consume(_clean(self._buf), self._last_ts, finished)
-            self._buf = b""
+            self._buf.clear()
         self._close(self._last_ts, finished)
         return finished
 
@@ -104,14 +110,18 @@ class ConsoleReconstructor:
                 self._response.append(line)
                 self._response_chars += len(line) + 1
             return
-        # A prompt ends the previous command even with nothing after it.
+        # Prompt always ends prior command.
         self._close(ts, finished)
+        prompt = match.group("prompt")
         command = (match.group("command") or "").strip()
+        # Drop the repeated tail prompt.
+        while command.startswith(prompt):
+            command = command[len(prompt) :].strip()
         if command and ts is not None:
             self._seq += 1
             self._open = ReconstructedCommand(
                 seq=self._seq,
-                prompt=match.group("prompt"),
+                prompt=prompt,
                 command=command,
                 response="",
                 ts=ts,
@@ -131,7 +141,7 @@ class ConsoleReconstructor:
 
 
 def reconstruct(frames: Iterable[tuple[str, bytes, datetime]]) -> list[ReconstructedCommand]:
-    """Runs the reconstructor over stored frames. Only the `out` direction is read."""
+    """Reconstructs commands from stored `out` frames."""
     reconstructor = ConsoleReconstructor()
     commands: list[ReconstructedCommand] = []
     for direction, payload, ts in frames:

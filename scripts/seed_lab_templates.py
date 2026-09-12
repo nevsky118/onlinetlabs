@@ -11,8 +11,8 @@ from pathlib import Path
 
 from sqlalchemy import select
 
-from kit.db import async_session
-from models.catalog import Lab
+from db.session import async_session
+from models.lab import Lab
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
